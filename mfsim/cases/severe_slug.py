@@ -404,37 +404,20 @@ REFERENCE_RUNS = {
 
 
 def export_run_cases(out_dir=CASES_DIR, runs=None):
-    """Exporta para JSON os casos das corridas gravadas (via `mfsim.runs.case_from_meta`),
-    com o `meta` da corrida e as opções do integrador na secção `integration`."""
+    """Exporta para JSON os casos das corridas gravadas (o `case_json` de cada corrida, com a
+    secção `integration` e o meta do gerador), com a condição inicial como receita nos dutos
+    únicos."""
+    import copy
+
     from ..io.spec import case_to_json
-    from ..runs import integrator_opts_from_meta, load_run
+    from ..runs import load_run
 
     os.makedirs(out_dir, exist_ok=True)
     written = []
     for run_name, name in (runs or REFERENCE_RUNS).items():
         run = load_run(run_name)
-        net = run.case
+        net = copy.deepcopy(run.case)  # já traz a secção integration e o meta do gerador (conversão v2)
         net.name = name
-        o = integrator_opts_from_meta(run.meta)
-        net.set_integration(
-            integrator="implicit",
-            rtol=o["rtol"],
-            tol_range=o["tol_range"],
-            max_newton=o["max_newton"],
-            slow_exit=o["slow"],
-            backend="jax" if o["jax"] else "numpy",
-            first_step=1e-3,
-            max_order=2,
-            newton_tol=1e-3,
-        )
-        net.meta = dict(
-            net.meta,
-            run=run_name,
-            generator="severe_slug_case",
-            generator_params={
-                k: v for k, v in run.meta.items() if k not in ("n_steps", "n_rejected", "cpu", "parcial", "note")
-            },
-        )
         if not run.meta.get("network", False) and run.meta.get("start", "blocked") in ("blocked", "shut_in"):
             # duto único: a condição inicial fica como receita (ficheiro auto-contido)
             m = net.meta

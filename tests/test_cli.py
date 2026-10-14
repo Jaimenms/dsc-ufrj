@@ -107,7 +107,9 @@ def test_val_matches_old_val_summary(capsys, tmp_path, data_dir):
 
     rc = main(["val", *_runs("val_runs.txt"), "--plot", "--out-dir", str(tmp_path)])
     out = capsys.readouterr().out
-    # o antigo val_summary imprimia sempre "passos ?"; o comando mostra os passos quando os há
+    # o antigo val_summary imprimia sempre "passos ?"; o comando mostra os passos quando os há.
+    # Referência de Jansen corrigida (Bøe vSL_min 0.095 -> 0.093): o script lia n_h1 do meta do
+    # gerador, que não o tem, e usava 2 células em vez das 15 da linha de entrada
     norm = lambda s: re.sub(
         r"passos +\S+", "passos ?", "\n".join(l for l in s.splitlines() if not l.startswith("figura:")) + "\n"
     )

@@ -339,7 +339,14 @@ class ReferenceSpec:
 
 @dataclass(frozen=True)
 class IntegrationSpec:
-    """Integrador e tolerâncias (SimulatorSettings + opções do ImplicitBDF usadas pelos drivers)."""
+    """Integrador e tolerâncias (tudo o que o `simulate` precisa para correr o caso).
+
+    `None` significa o default do próprio integrador (`ImplicitBDF`): first_step automático,
+    max_order 2, max_newton 12, newton_tol 1e-3, min_step 1e-8, slow_exit ligado,
+    predict_space "x". `tol_range` substitui `atol` por uma fração da faixa de cada estado;
+    `atol_P`/`atol_q` impõem tolerâncias absolutas por variável; `accumulate` integra os fluxos
+    de contorno com a recorrência BDF (balanço exato); `tight_bounds` aperta os limites da
+    fração de gás a [alpha_min, alpha_max]."""
 
     integrator: str = "bdf"  # bdf (scipy) | implicit | radau | LSODA
     method_quadrature: int = 1  # ordem de quadratura (Galerkin): 1->3, 2->5, 3->8, 4->12 pontos
@@ -348,13 +355,36 @@ class IntegrationSpec:
     rtol: float = 1e-4
     backend: str = "numpy"  # numpy | jax
     tol_range: Optional[float] = None
-    first_step: float = 1e-3
-    max_order: int = 2
-    max_newton: int = 12
-    newton_tol: float = 1e-3
-    slow_exit: bool = False
+    atol_P: Optional[float] = None
+    atol_q: Optional[float] = None
+    first_step: Optional[float] = None
+    max_order: Optional[int] = None
+    max_newton: Optional[int] = None
+    newton_tol: Optional[float] = None
+    min_step: Optional[float] = None
+    slow_exit: Optional[bool] = None
+    predict_space: Optional[str] = None
+    jt_refresh: Optional[str] = None
+    accumulate: bool = False
+    tight_bounds: bool = False
     galerkin_band: Optional[int] = None
     extra: tuple = ()
+
+    OPTIONAL = (
+        "tol_range",
+        "atol_P",
+        "atol_q",
+        "first_step",
+        "max_order",
+        "max_newton",
+        "newton_tol",
+        "min_step",
+        "slow_exit",
+        "predict_space",
+        "jt_refresh",
+        "galerkin_band",
+    )
+    FLAGS = ("accumulate", "tight_bounds")
 
     def to_json(self):
         d = {
@@ -364,15 +394,14 @@ class IntegrationSpec:
             "atol": self.atol,
             "rtol": self.rtol,
             "backend": self.backend,
-            "tol_range": self.tol_range,
-            "first_step": self.first_step,
-            "max_order": self.max_order,
-            "max_newton": self.max_newton,
-            "newton_tol": self.newton_tol,
-            "slow_exit": self.slow_exit,
         }
-        if self.galerkin_band is not None:
-            d["galerkin_band"] = self.galerkin_band
+        for k in self.OPTIONAL:
+            v = getattr(self, k)
+            if v is not None:
+                d[k] = v
+        for k in self.FLAGS:
+            if getattr(self, k):
+                d[k] = True
         if self.extra:
             d["extra"] = dict(self.extra)
         return d
@@ -380,6 +409,15 @@ class IntegrationSpec:
     @classmethod
     def from_json(cls, d):
         ms = d.get("max_step", 1.0)
+        kw = {k: d.get(k) for k in cls.OPTIONAL}
+        for k in ("max_order", "max_newton", "galerkin_band"):
+            if kw[k] is not None:
+                kw[k] = int(kw[k])
+        for k in ("tol_range", "atol_P", "atol_q", "first_step", "newton_tol", "min_step"):
+            if kw[k] is not None:
+                kw[k] = float(kw[k])
+        if kw["slow_exit"] is not None:
+            kw["slow_exit"] = bool(kw["slow_exit"])
         return cls(
             integrator=d.get("integrator", "bdf"),
             method_quadrature=int(d.get("quadrature_order", 1)),
@@ -387,12 +425,8 @@ class IntegrationSpec:
             atol=float(d.get("atol", 1e-3)),
             rtol=float(d.get("rtol", 1e-4)),
             backend=d.get("backend", "numpy"),
-            tol_range=d.get("tol_range"),
-            first_step=float(d.get("first_step", 1e-3)),
-            max_order=int(d.get("max_order", 2)),
-            max_newton=int(d.get("max_newton", 12)),
-            newton_tol=float(d.get("newton_tol", 1e-3)),
-            slow_exit=bool(d.get("slow_exit", False)),
-            galerkin_band=d.get("galerkin_band"),
+            accumulate=bool(d.get("accumulate", False)),
+            tight_bounds=bool(d.get("tight_bounds", False)),
             extra=tuple(sorted((d.get("extra") or {}).items())),
+            **kw,
         )

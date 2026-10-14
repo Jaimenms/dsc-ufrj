@@ -1,4 +1,4 @@
-"""Linha de comando do mfsim: `mfsim run|steady|stats|scan|riser|val|export-case|nb`.
+"""Linha de comando do mfsim: `mfsim run|steady|stats|scan|riser|val|export-case|convert-runs|nb`.
 
     mfsim run cases/severe_slug/reference.json --backend jax --tf 150 --out runs/ref150.npz
     mfsim steady cases/chapter10/10_1_1.json --out /tmp/10_1_1_ss.json
@@ -11,9 +11,10 @@
     mfsim export-case --severe --out novo.json --param D=0.05 --param start=blocked
     mfsim nb notebooks_src/nb_severe_slug.py [--execute]
 
-As corridas são gravadas no formato v2 (`mfsim.runs.save_run`: trajetória, `meta`,
-`info_json`, `provenance_json` e o caso completo em `case_json`); uma falha do integrador
-grava a trajetória parcial em `<out>` com `info_json["success"] = false`.
+As corridas são gravadas no formato v2 (`mfsim.runs.save_run`: trajetória, `info_json`,
+`provenance_json` e o caso completo em `case_json`); uma falha do integrador grava a
+trajetória parcial em `<out>` com `info_json["success"] = false`. `convert-runs` traz os
+ficheiros antigos (`meta` v1) para este formato.
 """
 
 from __future__ import annotations
@@ -46,57 +47,64 @@ def _parse_params(items):
 
 def cmd_run(a):
     from .io.spec import case_from_json
-    from .runs import integrate_run, integrator_opts_from_case, save_run
+    from .runs import save_run
+    from .simulation import simulate
 
     case = case_from_json(a.case)
     if a.tf is not None:
         case.set_time(tf=float(a.tf))
     if a.dt_out is not None:
         case.set_time(dt_out=float(a.dt_out))
-    opts = integrator_opts_from_case(case)
+    overrides = {
+        k: getattr(a, k)
+        for k in ("rtol", "tol_range", "max_newton", "newton_tol", "first_step")
+        if getattr(a, k) is not None
+    }
     if a.backend:
-        opts["jax"] = a.backend == "jax"
+        overrides["backend"] = a.backend
     if a.slow is not None:
-        opts["slow"] = bool(a.slow)
-    for key in ("rtol", "tol_range", "max_newton", "newton_tol", "first_step"):
-        v = getattr(a, key)
-        if v is not None:
-            opts[key] = v
+        overrides["slow_exit"] = bool(a.slow)
+    if overrides:
+        case.set_integration(**overrides)  # o caso gravado com a corrida reflete as opções efetivas
+    it = case.integration
     out = a.out or os.path.join("runs", f"{case.name}.npz")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     print(
-        f"caso {case.name}: tf = {case.time.tf} s, dt_out = {case.time.dt_out} s, backend = {'jax' if opts.get('jax') else 'numpy'}, "
-        f"rtol = {opts['rtol']}, tol_range = {opts.get('tol_range')}, max_newton = {opts['max_newton']}, slow_exit = {opts['slow']}",
+        f"caso {case.name}: tf = {case.time.tf} s, dt_out = {case.time.dt_out} s, integrador = {it.integrator}, backend = {it.backend}, "
+        f"rtol = {it.rtol}, tol_range = {it.tol_range}, max_newton = {it.max_newton}, slow_exit = {it.slow_exit}, estado inicial = {case.initial}",
         flush=True,
     )
     t0 = time.time()
-    model, T, X, info = integrate_run(case, opts, verbose=a.verbose, partial=True)
-    meta = dict(getattr(case, "meta", {}) or {})
-    meta.update(
-        n_steps=info.get("n_steps"),
-        n_rejected=info.get("n_rejected"),
-        cpu=info.get("cpu"),
-        parcial=not info.get("success", True),
-        jax=bool(opts.get("jax")),
-        rtol=opts["rtol"],
-        tol_range=opts.get("tol_range"),
-        max_newton=opts["max_newton"],
-        slow=opts["slow"],
-        tf=case.time.tf,
-        dt_out=case.time.dt_out,
-    )
+    res = simulate(case, progress=False, verbose=a.verbose, partial=True)
+    info = res.info
+    T, X = res.T, res.X
     if not info.get("success", True):
         print(
             f"FALHA: {info.get('error')} após {info.get('n_steps')} passos ({time.time() - t0:.1f} s); trajetória parcial até t = {T[-1] if T.size else float('nan')} s",
             flush=True,
         )
-    save_run(out, T, X, meta, acc=info.get("accum"), info=info, command=" ".join(sys.argv), case=case)
+    save_run(out, T, X, res.model.network, info=info, acc=info.get("accum"), command=" ".join(sys.argv))
     print(
         f"{'OK' if info.get('success', True) else 'parcial'}: {info.get('n_steps')} passos, {info.get('n_rejected')} rejeitados, "
         f"{info.get('n_rhs')} rhs, {info.get('n_jac')} jac, {time.time() - t0:.1f} s -> {out}",
         flush=True,
     )
     return 0 if info.get("success", True) else 1
+
+
+def cmd_convert_runs(a):
+    from .io.legacy_runs import convert_run
+
+    rc = 0
+    for src in a.files:
+        dst = os.path.join(a.out_dir, os.path.basename(src)) if a.out_dir else None
+        try:
+            written = convert_run(src, dst)
+            print(f"{src}: {'já em v2' if written is None else 'convertido -> ' + written}", flush=True)
+        except Exception as e:
+            print(f"{src}: NÃO convertido ({e})", flush=True)
+            rc = 1
+    return rc
 
 
 def cmd_steady(a):
@@ -286,6 +294,15 @@ def main(argv=None):
     e.add_argument("--out")
     e.add_argument("--param", action="append", default=[], help="chave=valor (JSON) de severe_slug_case")
     e.set_defaults(func=cmd_export_case)
+
+    cv = sub.add_parser(
+        "convert-runs", help="converte corridas no formato antigo (meta v1 / opts do driver) para v2 (case_json)"
+    )
+    cv.add_argument("files", nargs="+")
+    cv.add_argument(
+        "--out-dir", dest="out_dir", help="escreve as cópias convertidas nesta pasta (por omissão substitui no lugar)"
+    )
+    cv.set_defaults(func=cmd_convert_runs)
 
     n = sub.add_parser("nb", help="converte (e executa) um notebook de notebooks_src")
     n.add_argument("src")

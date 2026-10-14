@@ -299,6 +299,11 @@
   "max_order": 2,
   "max_newton": 20,
   "newton_tol": 0.001,
-  "slow_exit": false
+  "min_step": 1e-09,
+  "slow_exit": false,
+  "accumulate": true
+ },
+ "initial_state": {
+  "source": "edges"
  }
 }

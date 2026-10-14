@@ -144,17 +144,14 @@ def lab_validation_figure(run, tag, t0=None, t1=None, out=None, dpi=90):
     as faixas publicadas, vazão de líquido na saída, fração de gás na base e no topo do riser
     e velocidades das fases na base. (Era tools/val_plot.py.)"""
     from .analysis import lab_reference
-    from .results import Results
-    from .runs import case_from_severe_opts, driver_opts, flows_from_severe_opts
-    from .simulation import build_model
 
-    opts = driver_opts(run)
-    T = run.T
-    case = case_from_severe_opts(opts, tf=T[-1])
+    case = run.case
     fluid = case.fluid
-    qL, qG, A, _ = flows_from_severe_opts(opts, fluid)
-    p = Results(build_model(case), T, run.X).pipe(0)
     m = case.meta
+    A = np.pi * case.pipes[0].D ** 2 / 4
+    qL = m["qL"]
+    T = run.T
+    p = run.pipe(0)
     x = p["x"]
     ib = int(np.argmin(np.abs(x - m["s_elbow0"])))
     it_ = int(np.argmin(np.abs(x - (m["s_elbow0"] + m["H_riser"]))))

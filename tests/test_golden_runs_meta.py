@@ -1,7 +1,7 @@
-"""O carregador único `mfsim.runs.case_from_meta` reconstrói cada corrida gravada em
-notebooks/data exatamente como o notebook (tamanho do estado, rhs e saídas no primeiro
-instante, fluxos de contorno) — os golden foram gerados com uma cópia literal de
-`load_blocked_run`."""
+"""Cada corrida gravada em notebooks/data (formato v2, `case_json`) reconstrói o modelo
+exatamente como o notebook o fazia a partir do `meta` v1 (tamanho do estado, rhs e saídas no
+primeiro instante, fluxos de contorno) — os golden foram gerados com uma cópia literal de
+`load_blocked_run` e a conversão v1 -> v2 tem de preservá-los."""
 
 import numpy as np
 import pytest

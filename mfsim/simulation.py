@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .integrators import integrate_implicit, integrate_scipy
+from .integrators import integrate_scipy
 from .network.model import NetworkModel
 from .results import Results
 from . import steady as _steady
@@ -84,52 +84,137 @@ def steady_state(case, method=None, X0=None, verbose=True, update_case=True, sch
     return model, X, info
 
 
+def _integrate_bdf(model, X0, t_eval, spec, progress=True, verbose=False, partial=False):
+    """BDF implícito construído a partir do `IntegrationSpec` do caso (os campos a None usam os
+    defaults do `ImplicitBDF`): tolerância por faixa ou por variável, limites físicos,
+    mapa conservativo, Jacobiana exata em JAX, acumulador dos fluxos de contorno,
+    `slow_exit`/`predict_space`/`jt_refresh`, primeiro passo e pontos de quebra."""
+    import time as _time
+
+    from .integrators.implicit import ImplicitBDF
+
+    X0 = np.asarray(X0, float)
+    rtol = float(spec.rtol)
+    if spec.tol_range is not None:
+        atol = float(spec.tol_range) * model.state_scales(X0)
+    else:
+        atol = float(spec.atol)
+        if spec.atol_P is not None or spec.atol_q is not None:
+            atol = atol * np.ones(X0.size)
+            slots = model.state_slots()
+            if spec.atol_P is not None:
+                atol[slots == 1] = spec.atol_P
+            if spec.atol_q is not None:
+                atol[(slots == 2) | (slots == 3)] = spec.atol_q
+    lo, hi = state_bounds(model)
+    if spec.tight_bounds:
+        slots = model.pipes[0].free % 4
+        lo[slots == 0] = 1e-3
+        hi[slots == 0] = 1 - 1e-3
+    kw = {}
+    if model.conservative:
+        kw.update(transform=model.transform, inverse=model.inverse_transform, transform_jac=model.transform_jacobian)
+    fun, jac_fun = model.rhs, None
+    if spec.backend == "jax":
+        from .compiled import get_jax
+
+        fun, jac_fun = get_jax(model)
+    bdf = ImplicitBDF(
+        fun,
+        S=model.jac_sparsity(),
+        rtol=rtol,
+        atol=atol,
+        max_step=float(spec.max_step),
+        min_step=1e-8 if spec.min_step is None else float(spec.min_step),
+        newton_tol=1e-3 if spec.newton_tol is None else float(spec.newton_tol),
+        max_newton=12 if spec.max_newton is None else int(spec.max_newton),
+        max_order=2 if spec.max_order is None else int(spec.max_order),
+        bounds=(lo, hi),
+        verbose=verbose,
+        jac_fun=jac_fun,
+        **kw,
+    )
+    if spec.slow_exit is not None:
+        bdf.slow_exit = bool(spec.slow_exit)
+    if spec.predict_space is not None:
+        bdf.predict_space = spec.predict_space
+    if spec.jt_refresh is not None:
+        bdf.jt_refresh = spec.jt_refresh
+    if spec.accumulate:
+        bdf.accum = model.boundary_net_fluxes
+    t_start = _time.time()
+    try:
+        T, X, info = bdf.integrate(t_eval, X0, first_step=spec.first_step, breakpoints=model.spec_breakpoints())
+    except Exception as e:
+        if not partial:
+            raise
+        out = getattr(bdf, "_out", None) or []
+        X = np.array(out).T if out else np.zeros((X0.size, 0))
+        T = np.asarray(getattr(bdf, "_t_eval", t_eval), float)[: X.shape[1]]
+        info = dict(
+            success=False,
+            error=f"{type(e).__name__}: {e}",
+            n_steps=bdf.n_steps,
+            n_rejected=bdf.n_rejected,
+            n_rhs=bdf.n_rhs,
+            n_jac=bdf.n_jac,
+            cpu=_time.time() - t_start,
+        )
+    if progress and info.get("success", True):
+        print(
+            f"[implicit BDF] steps={info['n_steps']} rejected={info['n_rejected']} rhs={info['n_rhs']} "
+            f"jac={info['n_jac']} | {info['cpu']:.1f}s"
+        )
+    return T, X, info
+
+
 def simulate(
     case,
     method=None,
-    integrator=None,
+    scheme_settings=None,
     X0=None,
     t_eval=None,
-    rtol=None,
-    atol=None,
-    max_step=None,
     progress=True,
-    scheme_settings=None,
-    jax=False,
-    tol_range=None,
-    **kw,
+    verbose=False,
+    partial=False,
+    jax=None,
+    **overrides,
 ):
-    """Simulação dinâmica do caso. Retorna Results. jax=True: lado direito compilado e
-    Jacobiana exata (só com integrator="implicit")."""
+    """Simulação dinâmica de um caso (`Network`, ou o registo legado): o caminho único.
+
+    Tudo vem do caso — tempo (`time`), integrador e tolerâncias (`integration`) e a política
+    de estado inicial (`initial`: condições iniciais dos dutos/tanques ou estimativa);
+    `overrides` (rtol, atol, max_step, integrator, backend, tol_range, first_step, max_order,
+    max_newton, newton_tol, min_step, slow_exit, accumulate, ...) substituem campos de
+    `integration` só nesta chamada (`jax=True` é atalho de `backend="jax"`). `X0`/`t_eval`
+    substituem o estado inicial e os instantes de saída. Com `partial=True` uma falha do
+    integrador devolve a trajetória integrada até aí (`info["success"] = False`). Devolve
+    `Results`."""
+    from dataclasses import replace
+
     model = build_model(case, method, scheme_settings)
-    it = model.integration
+    spec = model.integration
+    if jax is not None:
+        overrides["backend"] = "jax" if jax else "numpy"
+    if overrides:
+        spec = replace(spec, **overrides)
     if X0 is None:
-        X0 = model.initial_state()
+        if model.network.initial == "guess":
+            from .initial_guess import initial_guess
+
+            X0 = initial_guess(model)
+        else:
+            X0 = model.initial_state()
     if t_eval is None:
         t_eval = np.arange(model.t0, model.tf + 0.5 * model.dt_out, model.dt_out)
-    rtol = it.rtol if rtol is None else rtol
-    atol = it.atol if atol is None else atol
-    max_step = it.max_step if max_step is None else max_step
-    integrator = integrator or it.integrator
+    integrator = spec.integrator
     if integrator in ("bdf", "BDF", "Radau", "radau", "LSODA"):
         meth = {"bdf": "BDF", "radau": "Radau"}.get(integrator, integrator)
         T, X, info = integrate_scipy(
-            model, X0, t_eval, method=meth, rtol=rtol, atol=atol, max_step=max_step, progress=progress, **kw
+            model, X0, t_eval, method=meth, rtol=spec.rtol, atol=spec.atol, max_step=spec.max_step, progress=progress
         )
     elif integrator == "implicit":
-        T, X, info = integrate_implicit(
-            model,
-            X0,
-            t_eval,
-            rtol=rtol,
-            atol=atol,
-            max_step=max_step,
-            bounds=state_bounds(model),
-            progress=progress,
-            jax=jax,
-            tol_range=tol_range,
-            **kw,
-        )
+        T, X, info = _integrate_bdf(model, X0, t_eval, spec, progress=progress, verbose=verbose, partial=partial)
     else:
         raise ValueError(integrator)
     return Results(model, T, X, info)

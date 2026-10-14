@@ -268,6 +268,7 @@ def network_to_json(net: Network, ic_file=None):
             if e.get("ic", {}).get("arrays") is not None:
                 e["ic"]["arrays"]["file"] = ic_file or f"{net.name}.ic.npz"
     d["integration"] = net.integration.to_json()
+    d["initial_state"] = {"source": net.initial}
     return d, ic_store
 
 
@@ -295,6 +296,7 @@ def network_from_json(d, ic_arrays=None, base_dir=None) -> Network:
         time=TimeSpec.from_json(d.get("time") or {}),
         reference=ref,
         integration=IntegrationSpec.from_json(d.get("integration") or {}),
+        initial=str((d.get("initial_state") or {}).get("source", "edges")),
         vertices=[_vertex_from_json(v, ref.PR) for v in d["network"]["vertices"]],
         edges=[_edge_from_json(e, ic_arrays) for e in d["network"]["edges"]],
         meta=dict(d.get("meta") or {}),

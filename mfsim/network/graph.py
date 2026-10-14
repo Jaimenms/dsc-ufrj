@@ -268,6 +268,7 @@ class Network:
     edges: list
     meta: dict = field(default_factory=dict)
     description: str = ""
+    initial: str = "edges"  # estado inicial: "edges" (condições iniciais dos dutos/tanques) | "guess" (estimativa)
 
     # --- construção --------------------------------------------------------
     @classmethod
@@ -289,6 +290,7 @@ class Network:
         rtol=1e-4,
         state_ref=None,
         meta=None,
+        initial="edges",
         **integration,
     ) -> "Network":
         """Grafo a partir das listas de vértices e arestas e das opções de tempo/referência/integração."""
@@ -309,6 +311,7 @@ class Network:
             vertices=list(vertices),
             edges=list(edges),
             meta=dict(meta or {}),
+            initial=initial,
         )
         return net.validate()
 
@@ -482,9 +485,7 @@ class Network:
         gb = ex.pop("galerkin_band", None)
         # opções do integrador que os drivers guardam em settings.extra (fase 1): campos próprios
         integ = {
-            k: ex.pop(k)
-            for k in ("tol_range", "max_newton", "slow_exit", "backend", "first_step", "max_order", "newton_tol")
-            if k in ex
+            k: ex.pop(k) for k in IntegrationSpec.OPTIONAL + IntegrationSpec.FLAGS + ("backend", "initial") if k in ex
         }
         integration = IntegrationSpec(
             integrator=s.integrator,
@@ -492,16 +493,14 @@ class Network:
             max_step=float(s.max_step),
             atol=float(s.atol),
             rtol=float(s.rtol),
-            galerkin_band=gb,
-            extra=tuple(sorted(ex.items())),
-            tol_range=integ.get("tol_range"),
-            max_newton=int(integ.get("max_newton", 12)),
-            slow_exit=bool(integ.get("slow_exit", False)),
+            galerkin_band=gb if gb is not None else integ.get("galerkin_band"),
             backend=integ.get("backend", "numpy"),
-            first_step=float(integ.get("first_step", 1e-3)),
-            max_order=int(integ.get("max_order", 2)),
-            newton_tol=float(integ.get("newton_tol", 1e-3)),
+            accumulate=bool(integ.get("accumulate", False)),
+            tight_bounds=bool(integ.get("tight_bounds", False)),
+            extra=tuple(sorted(ex.items())),
+            **{k: integ.get(k) for k in IntegrationSpec.OPTIONAL if k != "galerkin_band"},
         )
+        initial = integ.get("initial", "edges")
         net = cls(
             name=case.name,
             fluid=case.fluid,
@@ -511,6 +510,7 @@ class Network:
             vertices=vertices,
             edges=edges,
             meta=dict(getattr(case, "meta", {}) or {}),
+            initial=initial,
         )
         return net.validate()
 
@@ -603,16 +603,16 @@ class Network:
         couplings = [Coupling(v_up=index[e.v_from], v_down=index[e.v_to]) for e in self.edges_of(Connector)]
         it = self.integration
         extra = dict(it.extra)
-        if it.tol_range is not None or it.max_newton != 12 or it.slow_exit or it.backend != "numpy":
-            extra.update(
-                tol_range=it.tol_range,
-                max_newton=it.max_newton,
-                slow_exit=it.slow_exit,
-                backend=it.backend,
-                first_step=it.first_step,
-                max_order=it.max_order,
-                newton_tol=it.newton_tol,
-            )
+        for k in IntegrationSpec.OPTIONAL:
+            if k != "galerkin_band" and getattr(it, k) is not None:
+                extra[k] = getattr(it, k)
+        for k in IntegrationSpec.FLAGS:
+            if getattr(it, k):
+                extra[k] = True
+        if it.backend != "numpy":
+            extra["backend"] = it.backend
+        if self.initial != "edges":
+            extra["initial"] = self.initial
         if self.reference.state_ref:
             extra["state_ref"] = dict(self.reference.state_ref)
         if it.galerkin_band is not None:

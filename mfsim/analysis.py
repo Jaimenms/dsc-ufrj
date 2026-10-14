@@ -335,20 +335,16 @@ def lab_reference(tag):
 def lab_validation(run, tag):
     """Assinatura de uma corrida de validação contra os valores publicados: período (blowdowns
     separados por 30 % do período medido), pressão de entrada em kPa, pico de líquido, fração
-    de gás na base do riser e critério de Bøe com a fração média da linha. O caso é
-    reconstruído no dialeto do driver (`mfsim.runs.driver_opts`)."""
+    de gás na base do riser e critério de Bøe com a fração média da linha."""
     from .cases.severe_slug import boe_criterion
-    from .results import Results
-    from .runs import case_from_severe_opts, driver_opts, flows_from_severe_opts
-    from .simulation import build_model
 
-    opts = driver_opts(run)
-    T = run.T
-    case = case_from_severe_opts(opts, tf=T[-1])
+    case = run.case
     fluid = case.fluid
-    qL, qG, A, _ = flows_from_severe_opts(opts, fluid)
-    model = build_model(case)
-    p = Results(model, T, run.X).pipe(0)
+    m = case.meta
+    A = np.pi * case.pipes[0].D ** 2 / 4
+    qL, qG = m["qL"], m["qG"]
+    T = run.T
+    p = run.pipe(0)
     P1 = p["out"]["P_bar"][1] * 100.0
     q = p["out"]["qL"][-1]
     x = p["x"]
@@ -358,24 +354,23 @@ def lab_validation(run, tag):
     sel = T > 0.2 * T[-1]
     tb = blowdowns(T[sel], P1[sel], 0.3 * per_ref)
     per = float(np.mean(np.diff(tb))) if tb.size > 1 else np.nan
-    m = case.meta
     P_base = m["P_out_bar"] * 1e5 + fluid.rhoL0 * 9.81 * m["H_riser"]
     vSL = qL / fluid.rhoL0 / A
     vSG_out = qG / fluid.rhoG(m["P_out_bar"] * 1e5) / A
+    gp = run.meta
     vmin, sev = boe_criterion(
         vSL,
         vSG_out,
         P_base,
         fluid.rhoL0,
-        1 - float(np.mean(1 - aG[1 : m.get("n_h1", 2) + opts["n_down"], sel])),
+        1 - float(np.mean(1 - aG[1 : gp.get("n_h1", 2) + gp["n_down"], sel])),
         m["L_h1"] + m["L_down"],
     )
     ib = int(np.argmin(np.abs(x - m["s_elbow0"])))
-    n_steps = run.meta.get("n_steps") or run.info.get("n_steps")
     return dict(
         tag=tag,
         ref=ref,
-        n_steps=n_steps,
+        n_steps=gp.get("n_steps"),
         blowdowns=tb,
         interval=per,
         P_min=float(P1[sel].min()),

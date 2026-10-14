@@ -52,12 +52,12 @@ def test_results_chapter10(key, golden):
 
 @pytest.mark.data
 def test_results_severe(golden, data_dir):
-    from mfsim.runs import case_from_meta, load_run
+    from mfsim.runs import load_run
 
     g = golden("results.npz")
     gs = golden("severe.npz")
     run = load_run(str(data_dir / "severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys.npz"))
-    model = build_model(case_from_meta(run.meta, tf=150.0, dt_out=2.0))
+    model = build_model(run.network(tf=150.0, dt_out=2.0))
     T, X = gs["reference_numpy_150s/T"], gs["reference_numpy_150s/X"]
     res = Results(model, T, X)
     _check_results(g, "severe150", res, np.array([0, T.size // 2, T.size - 1]))

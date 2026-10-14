@@ -26,6 +26,7 @@ PATTERNS = [
     "legacy/*.pdf",
     "legacy/*.DOC",
     "archive/scratch_2026-10/npz/*.npz",
+    "archive/data_v1_2026-10/*.npz",
     "archive/scratch_2026-10/logs/*",
     "archive/scratch_2026-10/nblogs/*",
     "archive/scratch_2026-10/cmp/*",

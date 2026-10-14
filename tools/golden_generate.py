@@ -147,24 +147,24 @@ LAB_RUN = "severe_slug_lab_jansen_tese_bloqueada"
 
 
 def _severe_case(name, tf, dt_out):
-    from mfsim.runs import load_run, case_from_meta, integrator_opts_from_meta
+    from mfsim.runs import load_run
 
     run = load_run(str(DATA / f"{name}.npz"))
-    return run, case_from_meta(run.meta, tf=tf, dt_out=dt_out), integrator_opts_from_meta(run.meta)
+    return run, run.network(tf=tf, dt_out=dt_out)
 
 
 def gen_severe():
     """Severe slug de referência (150 s, numpy e JAX), rhs/Jacobiana/transformação nos estados
     históricos da corrida de referência e caso de laboratório (Jansen, 10 s, JAX)."""
-    from mfsim.runs import integrate_run
     from mfsim.compiled import build_jax_rhs
+    from mfsim.simulation import simulate
 
     out = {}
-    run, case, opts = _severe_case(REFERENCE_RUN, tf=150.0, dt_out=2.0)
+    run, case = _severe_case(REFERENCE_RUN, tf=150.0, dt_out=2.0)
     for backend in ("numpy", "jax"):
-        o = dict(opts, jax=(backend == "jax"))
         t0 = time.time()
-        model, T, X, info = integrate_run(case, o)
+        res = simulate(case, backend=backend, progress=False)
+        model, T, X, info = res.model, res.T, res.X, res.info
         out[f"reference_{backend}_150s/T"] = T
         out[f"reference_{backend}_150s/X"] = X
         out[f"reference_{backend}_150s/acc"] = info["accum"]
@@ -187,9 +187,10 @@ def gen_severe():
     rhs_j, jac_j = build_jax_rhs(model)
     out["reference_samples/rhs_jax"] = np.stack([rhs_j(T[i], X[:, i]) for i in idx])
     out["reference_samples/jac_jax"] = np.stack([np.asarray(jac_j(T[i], X[:, i])) for i in idx[:3]])
-    run_l, case_l, opts_l = _severe_case(LAB_RUN, tf=10.0, dt_out=0.25)
+    run_l, case_l = _severe_case(LAB_RUN, tf=10.0, dt_out=0.25)
     t0 = time.time()
-    model, T, X, info = integrate_run(case_l, dict(opts_l, jax=True))
+    res = simulate(case_l, backend="jax", progress=False)
+    model, T, X, info = res.model, res.T, res.X, res.info
     out["lab_jansen_jax_10s/T"] = T
     out["lab_jansen_jax_10s/X"] = X
     out["lab_jansen_jax_10s/n_steps"] = np.array(info["n_steps"])
@@ -360,9 +361,12 @@ def gen_runs_meta():
     out, names = {}, []
     for f in sorted(DATA.glob("*.npz")):
         with np.load(f, allow_pickle=False) as d:
-            if "meta" not in d.files:
+            if "case_json" in d.files:
+                mb = dict(_json.loads(str(d["case_json"])).get("meta", {}).get("generator_params") or {})
+            elif "meta" in d.files:
+                mb = _json.loads(str(d["meta"]))
+            else:
                 continue
-            mb = _json.loads(str(d["meta"]))
             T = d["T"]
             X = d["X"]
         if any(k not in mb for k in ("n_down", "n_riser", "switch_frac", "relax_time", "conservative")):
@@ -383,13 +387,13 @@ def gen_nightly():
     from mfsim.integrators.implicit import ImplicitBDF
     from mfsim.network.graph import Choke
     from mfsim.network.schedules import PiecewiseLinear
-    from mfsim.runs import integrate_run
-    from mfsim.simulation import build_model, state_bounds
+    from mfsim.simulation import build_model, simulate, state_bounds
 
     out = {}
-    run, case, opts = _severe_case(REFERENCE_RUN, tf=3000.0, dt_out=2.0)
+    run, case = _severe_case(REFERENCE_RUN, tf=3000.0, dt_out=2.0)
     t0 = time.time()
-    model, T, X, info = integrate_run(case, dict(opts, jax=True))
+    res = simulate(case, backend="jax", progress=False)
+    model, T, X, info = res.model, res.T, res.X, res.info
     out["reference_jax_3000s/T"] = T
     out["reference_jax_3000s/X"] = X
     out["reference_jax_3000s/n_steps"] = np.array(info["n_steps"])

@@ -13,7 +13,8 @@ import pytest
 from mfsim.analysis import cycle_signature
 from mfsim.network.graph import Choke
 from mfsim.network.schedules import PiecewiseLinear
-from mfsim.runs import case_from_meta, integrate_run, integrator_opts_from_meta, load_run
+from mfsim.runs import load_run
+from mfsim.simulation import simulate
 
 pytestmark = [pytest.mark.nightly, pytest.mark.golden]
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,8 +25,8 @@ def test_reference_jax_3000s(golden, data_dir):
     pytest.importorskip("jax")
     g = golden("nightly.npz")
     run = load_run(str(data_dir / f"{REFERENCE_RUN}.npz"))
-    case = case_from_meta(run.meta, tf=3000.0, dt_out=2.0)
-    model, T, X, info = integrate_run(case, dict(integrator_opts_from_meta(run.meta), jax=True))
+    res = simulate(run.network(tf=3000.0, dt_out=2.0), backend="jax", progress=False)
+    model, T, X, info = res.model, res.T, res.X, res.info
     g.assert_equal("reference_jax_3000s/T", T)
     g.assert_equal("reference_jax_3000s/X", X)
     from mfsim.results import Results
@@ -72,8 +73,8 @@ def test_lab_validation_signature(name, min_gap, tol_interval, tol_n, data_dir):
     pytest.importorskip("jax")
     run = load_run(str(data_dir / f"{name}.npz"))
     ref = run.signature(min_gap=min_gap, t_skip=0.2 * run.T[-1])
-    case = case_from_meta(run.meta, tf=float(run.T[-1]))
-    model, T, X, info = integrate_run(case, run.integrator_opts())
+    res = simulate(run.network(tf=float(run.T[-1])), progress=False)
+    model, T, X, info = res.model, res.T, res.X, res.info
     from mfsim.results import Results
 
     p = Results(model, T, X).pipe(0)

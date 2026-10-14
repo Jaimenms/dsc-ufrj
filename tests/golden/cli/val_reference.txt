@@ -1,3 +1,2 @@
 severe_slug_lab_fabre2_fisico passos      ? | blowdowns 8 | período  135.8 s (exp  137.0) | P_in  105.2- 237.9 kPa (exp 126-235) | pico líquido 8.499 kg/s (32.3x) | αG base riser -0.00-1.00 | Bøe vSL_min 0.535 (não)
-severe_slug_lab_jansen_fisico passos      ? | blowdowns 7 | período   62.6 s (exp   46.6) | P_in   99.1- 132.6 kPa (exp 111-133) | pico líquido 0.793 kg/s (16.3x) | αG base riser -0.00-1.00 | Bøe vSL_min 0.095 (sim)
-v3_fabre2_phys     passos      ? | blowdowns 8 | período  135.8 s (exp  137.0) | P_in  105.2- 237.9 kPa (exp 126-235) | pico líquido 8.499 kg/s (32.3x) | αG base riser -0.00-1.00 | Bøe vSL_min 0.535 (não)
+severe_slug_lab_jansen_fisico passos      ? | blowdowns 7 | período   62.6 s (exp   46.6) | P_in   99.1- 132.6 kPa (exp 111-133) | pico líquido 0.793 kg/s (16.3x) | αG base riser -0.00-1.00 | Bøe vSL_min 0.093 (sim)

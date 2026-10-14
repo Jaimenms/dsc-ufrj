@@ -13,6 +13,7 @@ legacy/DSc_JAIME_v92.DOC
 # saídas de corridas e diagnósticos; dados da antiga scratch arquivados (fixados pelo manifesto)
 runs/
 archive/scratch_2026-10/npz/
+archive/data_v1_2026-10/
 archive/scratch_2026-10/logs/
 archive/scratch_2026-10/nblogs/
 archive/scratch_2026-10/cmp/

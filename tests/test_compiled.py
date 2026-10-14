@@ -111,10 +111,10 @@ def test_lab_shut_in_jacobian_finite(name, data_dir):
     """Casos de laboratório com partida de linha fechada (fases paradas, arrasto físico de
     bolhas): a Jacobiana compilada é finita no estado inicial (regressão encontrada na
     noturna: NaN pelo diâmetro de bolha infinito)."""
-    from mfsim.runs import case_from_meta, load_run
+    from mfsim.runs import load_run
 
     run = load_run(str(data_dir / f"{name}.npz"))
-    model = build_model(case_from_meta(run.meta, tf=10.0))
+    model = build_model(run.network(tf=10.0))
     cn = CompiledNetwork(model)
     X0 = model.initial_state()
     assert np.all(np.isfinite(cn.rhs(0.0, X0)))

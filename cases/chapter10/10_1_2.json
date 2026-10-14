@@ -153,12 +153,9 @@
   "max_step": 5.0,
   "atol": 0.0001,
   "rtol": 0.01,
-  "backend": "numpy",
-  "tol_range": null,
-  "first_step": 0.001,
-  "max_order": 2,
-  "max_newton": 12,
-  "newton_tol": 0.001,
-  "slow_exit": false
+  "backend": "numpy"
+ },
+ "initial_state": {
+  "source": "edges"
  }
 }

@@ -8,7 +8,8 @@ import numpy as np
 import pytest
 
 from mfsim.analysis import cycle_signature
-from mfsim.runs import case_from_meta, integrate_run, integrator_opts_from_meta, load_run
+from mfsim.runs import load_run
+from mfsim.simulation import simulate
 
 pytestmark = [pytest.mark.golden, pytest.mark.data]
 
@@ -18,7 +19,7 @@ LAB_RUN = "severe_slug_lab_jansen_tese_bloqueada"
 
 def _reference(data_dir, tf, dt_out):
     run = load_run(str(data_dir / f"{REFERENCE_RUN}.npz"))
-    return run, case_from_meta(run.meta, tf=tf, dt_out=dt_out), integrator_opts_from_meta(run.meta)
+    return run, run.network(tf=tf, dt_out=dt_out)
 
 
 @pytest.mark.parametrize("backend", ["numpy", "jax"])
@@ -26,8 +27,9 @@ def test_reference_150s(backend, golden, data_dir):
     if backend == "jax":
         pytest.importorskip("jax")
     g = golden("severe.npz")
-    run, case, opts = _reference(data_dir, 150.0, 2.0)
-    model, T, X, info = integrate_run(case, dict(opts, jax=(backend == "jax")))
+    run, case = _reference(data_dir, 150.0, 2.0)
+    res = simulate(case, backend=backend, progress=False)
+    model, T, X, info = res.model, res.T, res.X, res.info
     g.assert_equal(f"reference_{backend}_150s/T", T)
     g.assert_equal(f"reference_{backend}_150s/X", X)
     g.assert_equal(f"reference_{backend}_150s/acc", info["accum"])
@@ -87,8 +89,8 @@ def test_lab_jansen_jax_10s(golden, data_dir):
     pytest.importorskip("jax")
     g = golden("severe.npz")
     run = load_run(str(data_dir / f"{LAB_RUN}.npz"))
-    case = case_from_meta(run.meta, tf=10.0, dt_out=0.25)
-    model, T, X, info = integrate_run(case, dict(integrator_opts_from_meta(run.meta), jax=True))
+    res = simulate(run.network(tf=10.0, dt_out=0.25), backend="jax", progress=False)
+    model, T, X, info = res.model, res.T, res.X, res.info
     g.assert_equal("lab_jansen_jax_10s/T", T)
     g.assert_equal("lab_jansen_jax_10s/X", X)
     g.assert_equal("lab_jansen_jax_10s/n_steps", np.array(info["n_steps"]))
