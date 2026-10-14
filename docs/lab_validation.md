@@ -106,3 +106,16 @@ Newton (`slow`) na fase quase estática (achado 3); a sensibilidade do período 
 banda de chaveamento do gás é de ±7–10 %. Dados em
 `notebooks/data/severe_slug_lab_<caso>_<tese|fisico>.npz`; secção
 correspondente no `nb_severe_slug`.
+
+## Sensibilidade do caso de Jansen (nota da reorganização, 2026-10-14)
+
+Ao re-correr a validação com o lado direito compilado unificado (igual ao anterior a
+1e−14), o caso de Jansen (1", arrasto físico, linha fechada, `slow`) manteve o ciclo
+clássico com refluxo mas mudou o intervalo médio entre blowouts: 89.9 s com 7 blowouts
+em 600 s contra 69.1 s com 9 na corrida gravada. Duas corridas perturbadas isolam a causa:
+`rtol` 3e−3 → 2.9e−3 dá 57.9 s (8 blowouts) e o primeiro passo 1e−3 → 1.1e−3 dá 78.9 s
+(8). Pressões (mín. 0.99–1.00 bar, máx. 1.326–1.327 bar) e pico de líquido (0.70–0.79 kg/s)
+são reprodutíveis; o período deste caso irregular não é (58–90 s pelo mesmo modelo), o que
+alarga a faixa "56–63 s" indicada acima e reforça que a comparação com os 46.6 s medidos
+(com choke) pede o choke modelado (item 9). O teste noturno passa a exigir, para Jansen,
+só o número de blowouts (±2), as pressões e o pico; Fabre caso 2 mantém ±5 % no período.
