@@ -70,8 +70,8 @@ class ClosureTerms:
     tauL: np.ndarray        # tensão líquido-parede
 
     @classmethod
-    def zeros(cls, n):
-        return cls(**{f.name: np.zeros(n) for f in fields(cls)})
+    def zeros(cls, n, xp=np):
+        return cls(**{f.name: xp.zeros(n) for f in fields(cls)})
 
     def names(self):
         return [f.name for f in fields(self)]

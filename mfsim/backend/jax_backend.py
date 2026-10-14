@@ -102,3 +102,14 @@ class JaxBackend(Backend):
 
 
 JAX = JaxBackend()
+
+
+# dataclasses de arrays do pacote como pytrees (uma vez, ao carregar o backend)
+def _register_containers():
+    from ..closures.common import ClosureInputs, ClosureTerms
+    from ..closures.regime import RegimeFlags
+    for cls in (ClosureInputs, ClosureTerms, RegimeFlags):
+        JAX.register_container(cls)
+
+
+_register_containers()

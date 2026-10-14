@@ -15,36 +15,66 @@ _P_BETA = 1.0e2 * np.array(
 )
 
 
-def stratified_level(alphaG, tol=1e-9, max_iter=100):
+def stratified_level(alphaG, tol=1e-9, max_iter=100, bk=None):
     """Altura adimensional de líquido hD=h/D e ângulo molhado beta para a
     fração de área de gás alphaG numa seção circular.
 
     Resolve  sin(beta) - beta + 2*pi*alphaL = 0  por Newton (vetorizado),
-    partindo da aproximação polinomial do código original.
+    partindo da aproximação polinomial do código original. O critério de saída é
+    global (todos os pontos intermédios com |passo| <= tol). No backend numpy o
+    Newton corre só nos pontos intermédios (subconjunto, como o código original: as
+    funções transcendentais do numpy podem diferir em ulps entre o laço vetorial e o
+    escalar, logo o subconjunto preserva os resultados bit a bit); no JAX corre em
+    todos os pontos com `while_loop` e o mesmo critério.
     """
-    alphaG = np.asarray(alphaG, dtype=float)
+    from .backend import NUMPY
+    bk = bk or NUMPY
+    xp = bk.xp
+    if not bk.is_jax:
+        alphaG = np.asarray(alphaG, dtype=float)
+        alphaL = 1.0 - alphaG
+        beta = np.polyval(_P_BETA, alphaG)
+        beta = np.clip(beta, 0.0, 2 * np.pi)
+        only_liq = alphaL > 1 - 1e-6
+        only_gas = alphaL < 1e-6
+        mid = ~(only_liq | only_gas)
+        b = beta.copy()
+        b[only_liq] = 2 * np.pi * alphaL[only_liq]
+        b[only_gas] = 2 * np.pi * alphaG[only_gas]
+        bm = b[mid]
+        aL = alphaL[mid]
+        for _ in range(max_iter):
+            F0 = np.sin(bm) - bm + 2 * np.pi * aL
+            dF = np.cos(bm) - 1.0
+            dF = np.where(np.abs(dF) < 1e-14, -1e-14, dF)
+            step = F0 / dF
+            bm = bm - step
+            if np.all(np.abs(step) <= tol):
+                break
+        b[mid] = bm
+        hD = 0.5 * (1.0 - np.cos(b / 2.0))
+        return hD, b
     alphaL = 1.0 - alphaG
-    beta = np.polyval(_P_BETA, alphaG)
-    beta = np.clip(beta, 0.0, 2 * np.pi)
-    # casos extremos tratados como no código original
+    beta = xp.clip(xp.polyval(xp.asarray(_P_BETA), alphaG), 0.0, 2 * xp.pi)
     only_liq = alphaL > 1 - 1e-6
     only_gas = alphaL < 1e-6
     mid = ~(only_liq | only_gas)
-    b = beta.copy()
-    b[only_liq] = 2 * np.pi * alphaL[only_liq]
-    b[only_gas] = 2 * np.pi * alphaG[only_gas]
-    bm = b[mid]
-    aL = alphaL[mid]
-    for _ in range(max_iter):
-        F0 = np.sin(bm) - bm + 2 * np.pi * aL
-        dF = np.cos(bm) - 1.0
-        dF = np.where(np.abs(dF) < 1e-14, -1e-14, dF)
-        step = F0 / dF
-        bm = bm - step
-        if np.all(np.abs(step) <= tol):
-            break
-    b[mid] = bm
-    hD = 0.5 * (1.0 - np.cos(b / 2.0))
+    b0 = xp.where(only_liq, 2 * xp.pi * alphaL, xp.where(only_gas, 2 * xp.pi * alphaG, beta))
+
+    def body(c):
+        bm, _, i = c
+        F0 = xp.sin(bm) - bm + 2 * xp.pi * alphaL
+        dF = xp.cos(bm) - 1.0
+        dF = xp.where(xp.abs(dF) < 1e-14, -1e-14, dF)
+        step = xp.where(mid, F0 / dF, 0.0)
+        return bm - step, step, i + 1
+
+    def cond(c):
+        return (c[2] < max_iter) & ~xp.all(xp.abs(c[1]) <= tol)
+
+    bm, _, _ = bk.while_loop(cond, body, (b0, xp.full(b0.shape, xp.inf), 0))
+    b = xp.where(mid, bm, b0)
+    hD = 0.5 * (1.0 - xp.cos(b / 2.0))
     return hD, b
 
 
