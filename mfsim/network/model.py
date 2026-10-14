@@ -190,6 +190,12 @@ class NetworkModel:
         base = self.n_pipe_states + 2 * k
         return base, base + 1
 
+    def state_slots(self):
+        """Slot (0 alphaG, 1 PT, 2 qL, 3 qG) de cada estado do vetor X: dutos (nós livres)
+        e, no fim, (HG, PT) de cada vértice dinâmico (0, 1)."""
+        parts = [pb.free % 4 for pb in self.pipes] + [np.array([0, 1], dtype=int) for _ in self.vA]
+        return np.concatenate(parts) if parts else np.zeros(0, dtype=int)
+
     def spec_breakpoints(self):
         """Instantes em que as especificações mudam de inclinação."""
         bp = set()

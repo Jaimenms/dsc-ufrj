@@ -26,4 +26,4 @@ duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
    7 gas          qG        2.32e-04       1.85e-02   1.26e-02
 
 ### célula 5
-JAX: <t>s (78 passos; compilação <t>s, uma vez por modelo) | numpy: <t>s (78 passos) | diferença máxima relativa dos estados 2.8e-11
+JAX: <t>s (78 passos; compilação <t>s, uma vez por modelo) | numpy: <t>s (78 passos) | diferença máxima relativa dos estados 2.1e-05

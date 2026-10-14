@@ -84,4 +84,4 @@ vértices dinâmicos: máx |dif| = [1.89813366e-05 1.68324182e-06 2.27794649e-05
  9.44477327e-06 9.63297608e-07]
 
 ### célula 11
-JAX: <t>s (176 passos; compilação <t>s, uma vez por modelo) | numpy: <t>s (176 passos) | diferença máxima relativa dos estados 2.4e-12
+JAX: <t>s (176 passos; compilação <t>s, uma vez por modelo) | numpy: <t>s (176 passos) | diferença máxima relativa dos estados 2.9e-12

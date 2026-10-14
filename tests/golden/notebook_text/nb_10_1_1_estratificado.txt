@@ -44,8 +44,6 @@ fd_central  N=   5:   <t>s, 153 passos
 
 ### célula 10
 fd_central  N=  10:   <t>s, 161 passos
-
-### célula 10
 fd_central  N=  25:   <t>s, 167 passos
 
 ### célula 10
@@ -57,16 +55,16 @@ fd_central  N= 100:   <t>s, 169 passos
 ### célula 13
 Tabela 10.1 - tempos computacionais (estado estacionário + simulação, Python)
 Método           N   CPU (s)  passos
-galerkin         5      0.18     156
-galerkin        10      0.24     167
-galerkin        25      0.41     169
-galerkin        50      0.73     173
-galerkin       100      2.92     180
-fd_central       5      0.16     153
-fd_central      10      0.19     161
-fd_central      25      0.22     167
-fd_central      50      0.28     169
-fd_central     100      0.27     169
+galerkin         5     <t>s     156
+galerkin        10     <t>s     167
+galerkin        25     <t>s     169
+galerkin        50     <t>s     173
+galerkin       100     <t>s     180
+fd_central       5     <t>s     153
+fd_central      10     <t>s     161
+fd_central      25     <t>s     167
+fd_central      50     <t>s     169
+fd_central     100     <t>s     169
 
 ### célula 15
 máx parte real: formulação 1 = 1.185952351307293e-11 | formulação 2 = -0.00046499390509174425

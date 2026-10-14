@@ -15,5 +15,5 @@ abertura 12%: período estimado ≈ <t>s (autocorrelação 0.61)
 abertura 10%: período estimado ≈ <t>s (autocorrelação 0.60)
 
 ### célula 9
-abertura 12% (JAX): 2842 passos, 527 rejeitados, <t>s de CPU (compilação <t>s)
-diferença máxima relativa dos estados numpy x JAX: 3.3e-01
+abertura 12% (JAX): 2860 passos, 552 rejeitados, <t>s de CPU (compilação <t>s)
+diferença máxima relativa dos estados numpy x JAX: 1.6e-01

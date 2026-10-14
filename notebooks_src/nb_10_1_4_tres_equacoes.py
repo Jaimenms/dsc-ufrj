@@ -34,7 +34,7 @@ from mfsim.simulation import build_model
 from mfsim.io_legacy import legacy_states
 Tl, Xl = legacy_states(raw)
 model = build_model(case)
-r = model.rhs(0.0, Xl[:, 0]); slots = model.pipes[0].free % 4
+r = model.rhs(0.0, Xl[:, 0]); slots = model.state_slots()
 print("resíduo |dX/dt| no estado gravado, por variável:", {n: f"{np.max(np.abs(r[slots == s])):.2e}" for s, n in [(1, 'PT'), (2, 'qL'), (3, 'qG')]})
 
 # %% [markdown]
@@ -57,7 +57,7 @@ fig.suptitle("Python (cheio) × MATLAB 2010 (tracejado, fechamento de atrito ant
 # %% [markdown]
 # ## Lado direito compilado (JAX)
 # A mesma simulação com `simulate(..., jax=True)`: lado direito compilado por
-# `jax.jit` e Jacobiana exata por diferenciação automática (`mfsim/jaxrhs.py`),
+# `jax.jit` e Jacobiana exata por diferenciação automática (`mfsim/compiled.py`, o mesmo código numpy com o backend JAX),
 # no lugar das diferenças finitas coloridas. O resultado deve coincidir com a versão
 # numpy dentro da tolerância do integrador (as sequências de passos podem diferir
 # porque a Jacobiana muda o Newton); o ganho de tempo cresce com o número de passos

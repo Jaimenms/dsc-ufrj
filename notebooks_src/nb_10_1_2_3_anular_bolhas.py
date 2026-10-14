@@ -69,7 +69,7 @@ show_pipe(res, raw, 0)
 # %% [markdown]
 # ## Lado direito compilado (JAX)
 # A mesma simulação com `simulate(..., jax=True)`: lado direito compilado por
-# `jax.jit` e Jacobiana exata por diferenciação automática (`mfsim/jaxrhs.py`),
+# `jax.jit` e Jacobiana exata por diferenciação automática (`mfsim/compiled.py`, o mesmo código numpy com o backend JAX),
 # no lugar das diferenças finitas coloridas. O resultado deve coincidir com a versão
 # numpy dentro da tolerância do integrador (as sequências de passos podem diferir
 # porque a Jacobiana muda o Newton); o ganho de tempo cresce com o número de passos

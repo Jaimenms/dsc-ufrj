@@ -243,6 +243,7 @@ else:
 # a deriva real de massa da integração.
 
 # %%
+from mfsim.runs import load_run
 from mfsim.analysis import mass_balance
 
 
@@ -275,44 +276,17 @@ def cycle_stats(T_, P_in, q_out):
     return tb.size, per, float(q_out[T_ > 100].max())
 
 
-def load_blocked_run(dd):
-    """Reconstrói o modelo de uma trajetória gravada (partida bloqueada) e calcula os balanços."""
-    mb = json.loads(str(dd["meta"]))
-    # geometria, vazões e lei do gás do meta (as corridas antigas não as têm: valores do caso base)
-    # fluido, diâmetro e trecho de topo também do meta (casos de laboratório, item 8); vSG dada à pressão P_gas_ref (padrão: separador + 1 bar)
-    fluid_b = Fluid(rhoL0=mb.get("rhoL", fluid.rhoL0), rhoG0=mb.get("rhoG0", fluid.rhoG0), muL=mb.get("muL", fluid.muL), muG=mb.get("muG", fluid.muG), gammaL=mb.get("gammaL", fluid.gammaL),
-                    gammaG=mb.get("gammaG", fluid.gammaG), P0=mb.get("P0", fluid.P0), sigma=mb.get("sigma", fluid.sigma))
-    D_b = mb.get("D", D); A_b = np.pi * D_b**2 / 4
-    P_out_b = mb.get("P_out", P_out); P_gas = mb.get("P_gas_ref") or (P_out_b + 1.0)
-    qL_b = mb.get("vSL", 0.3) * fluid_b.rhoL0 * A_b; qG_b = mb.get("vSG", 0.1) * fluid_b.rhoG(P_gas * 1e5) * A_b
-    case_b = severe_slug_case(method="fv_upwind", tf=dd["T"][-1], dt_out=mb.get("dt_out", 2.0), qL=qL_b, qG=qG_b, D=D_b, P_out_bar=P_out_b, L_h1=mb.get("L_h1", 20.0), L_down=mb.get("L_down", 300.0),
-                              slope_down_deg=mb.get("slope", -3.0), H_riser=mb.get("H_riser", 20.0), L_h2=mb.get("L_h2", 5.0), n_h1=mb.get("n_h1", 2), n_down=mb["n_down"], n_riser=mb["n_riser"], n_h2=2,
-                              regime=mb.get("regime", 4), single_pipe=not mb.get("network", False), fluid=fluid_b, roughness=mb.get("roughness", 1e-5), start=mb.get("start", "blocked"), t_ramp=mb.get("t_ramp", 100.0), dP_margin_bar=mb.get("dP_margin", 0.3),
-                              elbow_radius=mb.get("elbow_radius", 0.0), n_elbow=mb.get("n_elbow", 0),
-                              grading_down=mb.get("grading_down", 1.0), grading_riser=mb.get("grading_riser", 1.0), upstream_volume=mb.get("upstream_volume", 0.0),
-                              extra={"regime_vertical": mb.get("regime_vertical", 0 if mb.get("regime", 4) == 6 else 2), "k_switch": mb.get("k_switch", 1e6),
-                                     "ipe_smooth": mb.get("ipe_smooth", False), "ipe_local": mb.get("ipe_local", False),
-                                     "alpha_face": mb.get("alpha_face", "upwind"), "relax_target": mb.get("relax_target", "raw"),
-                                     "fi_mult": mb.get("fi_mult", 1.0), "fi_vgt": mb.get("fi_vgt", 5.5), "virtual_mass": mb.get("virtual_mass", 0.0), "vm_lambda": mb.get("vm_lambda", 1.0), "bubble_drag": mb.get("bubble_drag", "tese"),
-                                     "q_switch_L": 0.02 * qL_b, "q_switch_G": 0.02 * qG_b, "switch_frac": mb["switch_frac"],
-                                     "relax_time": mb["relax_time"], "conservative": mb["conservative"],
-                                     "vertical_blend": mb.get("vertical_blend", 0.0), "art_visc": mb.get("art_visc", 0.0),
-                                     "low_void_regime": mb.get("low_void_regime", 0), "interfacial_pressure": mb.get("interfacial_pressure", 0.0),
-                                     "high_void_regime": mb.get("high_void_regime", 0), "high_void_alpha": mb.get("high_void_alpha", 0.9),
-                                     "vertex_volume": mb.get("vertex_volume", 0.05)})
-    model_b = build_model(case_b); res_b = Results(model_b, dd["T"], dd["X"]); pb_ = res_b.pipe(0)
-    out = dict(meta=mb, case=case_b, model=model_b, res=res_b, T=dd["T"], p=pb_,
-               ib=int(np.argmin(np.abs(pb_["x"] - case_b.meta["s_elbow0"]))),       # célula no início do joelho
-               balL=mass_balance(res_b, 0, "L"), balG=mass_balance(res_b, 0, "G"),
-               acc=dd["acc"] if "acc" in dd.files else None)      # integral BDF-consistente dos fluxos de contorno
-    if mb.get("network", False):
-        # rede: saída do sistema é o último duto; base do riser é a 1ª célula do duto 3
-        out["p_last"] = res_b.pipe(len(model_b.pipes) - 1)
-        out["aG_riser_base"] = res_b.pipe(2)["out"]["alphaG"][1]
-    else:
-        out["p_last"] = pb_
-        out["aG_riser_base"] = pb_["out"]["alphaG"][out["ib"] + mb.get("n_elbow", 0) + 1]
-    return out
+def load_blocked_run(f):
+    """Corrida gravada (partida bloqueada ou linha fechada) pelo carregador único
+    `mfsim.runs.load_run` (reconstrói o caso do `meta` com os defaults deste notebook, ou de
+    `case_json` nas corridas novas) e os balanços de massa; era uma cópia desta lógica."""
+    r = load_run(f)
+    return dict(meta=r.meta, case=r.case, model=r.model, res=r.res, T=r.T, p=r.pipe(0),
+                ib=r.ib,                                   # célula no início do joelho
+                balL=r.balance("L"), balG=r.balance("G"),
+                acc=r.acc,                                 # integral BDF-consistente dos fluxos de contorno
+                p_last=r.p_last,                           # duto que termina no separador (rede: o último)
+                aG_riser_base=r.aG_riser_base())
 
 
 runs = {}
@@ -320,8 +294,7 @@ for tag, fname in (("primitivas", "severe_slug_blocked_primitive.npz"), ("conser
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
         print("trajetória não encontrada:", f); continue
-    dd = np.load(f); mb = json.loads(str(dd["meta"]))
-    runs[tag] = load_blocked_run(dd)
+    runs[tag] = load_blocked_run(f); mb = runs[tag]["meta"]
     print(f"{tag:13s}: {mb['n_steps']} passos, {mb['n_rejected']} rejeitados, {mb['cpu']/60:.0f} min de CPU")
 
 # %% [markdown]
@@ -419,7 +392,7 @@ for tag, fname in (("primitivas", "severe_slug_blocked_primitive_arc.npz"), ("co
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
         print("trajetória não encontrada:", f); continue
-    runs_arc[tag] = load_blocked_run(np.load(f))
+    runs_arc[tag] = load_blocked_run(f)
     mb = runs_arc[tag]["meta"]
     print(f"{tag:13s} (arco R = {mb['elbow_radius']} m, {mb['n_elbow']} elementos, Δ = {mb['vertical_blend']}°): "
           f"{mb['n_steps']} passos, {mb['n_rejected']} rejeitados, {mb['cpu']/60:.0f} min de CPU")
@@ -536,7 +509,7 @@ for tag, fname in (("uniforme 15/5", "severe_slug_blocked_conservative_arc_av.np
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
         print("trajetória não encontrada:", f); continue
-    runs_mesh[tag] = load_blocked_run(np.load(f))
+    runs_mesh[tag] = load_blocked_run(f)
 
 # %%
 if runs_mesh:
@@ -715,7 +688,7 @@ for tag, fname in (("referência (noslip)", "severe_slug_blocked_conservative_ar
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
         print("trajetória não encontrada:", f); continue
-    runs_phys[tag] = load_blocked_run(np.load(f))
+    runs_phys[tag] = load_blocked_run(f)
 if runs_phys:
     fig, ax = plt.subplots(figsize=(11, 3.8))
     for tag, r in runs_phys.items():
@@ -776,7 +749,7 @@ for tag, r in runs_phys.items():
 # tem ~100–200 estados e é limitado por latência de chamadas numpy, não por vazão.
 #
 # Alavancas testadas em janelas de reinício na fase cara (800–830 s, com as
-# sondagens `scratch/restart_ring.py` e `scratch/restart_probe.py`):
+# sondagens `archive/scratch_2026-10/py/restart_ring.py` e `restart_probe.py`):
 #
 # | alavanca | passos na janela | observação |
 # |---|---|---|
@@ -788,10 +761,10 @@ for tag, r in runs_phys.items():
 # | + tolerância absoluta 0.05 kg/s e 0.2 bar | 993 (30 s) | −68 %; desvio 0.04 bar |
 # | BDF1, relaxação 0.5/0.005 s, γL = 30, rtol só em P, Jacobiana a cada passo | sem ganho ou pior | |
 #
-# **Lado direito compilado (JAX).** `mfsim/jaxrhs.py` reescreve em JAX o
-# subconjunto usado aqui (esquema escalonado conservativo, fechamentos
-# estratificado e bolhas com as misturas, limitador, relaxação, viscosidade
-# artificial, contornos tipo B) e reproduz o lado direito numpy a 1e−13. Com `jit`
+# **Lado direito compilado (JAX).** `mfsim/compiled.py` executa o mesmo código numpy
+# (fechamentos, esquema escalonado conservativo, limitador, relaxação, viscosidade
+# artificial, contornos tipo B) com o backend JAX injetado — até à reorganização
+# `jaxrhs.py` era uma reescrita — e reproduz o lado direito numpy a 1e−13. Com `jit`
 # a avaliação cai de 0.43 para 0.08 ms e a Jacobiana exata por diferenciação
 # automática (`jax.jacfwd`) custa 0.9 ms contra 10.7 ms das diferenças finitas
 # coloridas; o integrador recebe a Jacobiana pela opção `jac_fun`. A Jacobiana
@@ -816,7 +789,7 @@ for tag, fname in (("referência (ν = 0.01)", "severe_slug_blocked_conservative
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
         print("trajetória não encontrada:", f); continue
-    runs_fast[tag] = load_blocked_run(np.load(f))
+    runs_fast[tag] = load_blocked_run(f)
 
 # %%
 if runs_fast:
@@ -862,7 +835,7 @@ for tag, fname in (("duto único curvado", "severe_slug_blocked_conservative_arc
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
         print("trajetória não encontrada:", f); continue
-    runs_net[tag] = load_blocked_run(np.load(f))
+    runs_net[tag] = load_blocked_run(f)
 
 # %%
 if runs_net:
@@ -893,7 +866,7 @@ if runs_net:
 # (estratificado) e Pots (anular) obtidas por busca em tabela, critérios de
 # Kelvin–Helmholtz, Jeffreys, Froude e turbulência, e indicadores com chaveamento
 # sigmoidal de inclinação `k_switch` = 1e6 (degraus). Ela foi portada para JAX
-# (`jax_physics.equilibrium_fractions`/`identify_regime`, reprodução a 1e−14,
+# (`closures.regime.equilibrium_fractions`/`identify_regime` com `bk=JAX`, reprodução a 1e−14,
 # Jacobiana exata) e aplicada ao severe slug.
 #
 # **O IPE da tese não funciona em dinâmica tal como está.** Nos estados gravados da
@@ -952,7 +925,7 @@ for tag, fname in (("padrão fixo (estratificado + bolhas no riser)", "severe_sl
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
         print("trajetória não encontrada:", f); continue
-    runs_ipe[tag] = load_blocked_run(np.load(f))
+    runs_ipe[tag] = load_blocked_run(f)
 
 
 def regime_map(r, step=2):
@@ -1055,7 +1028,7 @@ for tag, fname in (("referência (relaxação com fração real)", "severe_slug_
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
         print("trajetória não encontrada:", f); continue
-    runs_ns[tag] = load_blocked_run(np.load(f))
+    runs_ns[tag] = load_blocked_run(f)
 
 
 def front_width(r):
@@ -1089,7 +1062,7 @@ if runs_ns:
 # %%
 from mfsim.network.data import BC_ABSENT, BC_DIRICHLET, BC_NEUMANN, Case, Pipe, SimulatorSettings, Vertex
 from mfsim.integrators.implicit import ImplicitBDF
-from mfsim.jaxrhs import build_jax_rhs
+from mfsim.compiled import build_jax_rhs
 from mfsim.simulation import state_bounds
 
 
@@ -1126,8 +1099,8 @@ def run_column(case_):
     bdf_.slow_exit = False
     st = case_.settings; T_, X_, info_ = bdf_.integrate(np.arange(0, st.tf + 0.5 * st.dt_out, st.dt_out), X0_, first_step=1e-4)
     X_ = np.asarray(X_); X_ = X_.T if X_.shape[0] != T_.size else X_
-    pb_ = m_.pipes[0]; E_ = np.array([[tb(0.0) for tb in row] for row in m_.tables])
-    q_mid = np.array([pb_.assemble(X_[i, pb_.offset:pb_.offset + pb_.n_states], E_[m_.vpos[pb_.pipe.v_in]], E_[m_.vpos[pb_.pipe.v_out]])[pb_.scheme.N // 2, 2] for i in range(T_.size)])
+    N_ = m_.pipes[0].scheme.N
+    q_mid = np.array([m_.assemble(0.0, X_[i])[1][0][N_ // 2, 2] for i in range(T_.size)])
     return T_, q_mid, info_
 
 
@@ -1230,9 +1203,8 @@ for tag, fname in (("caso base, bolhas no riser", "severe_slug_blocked_conservat
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
         print("trajetória não encontrada:", f); continue
-    dd = np.load(f); mb = json.loads(str(dd["meta"]))
-    r_ = load_blocked_run(dd)                      # P_in pelo Results (o índice do estado muda com vértice a montante)
-    T_ = dd["T"]; P1 = r_["p"]["out"]["P_bar"][1]; sel = T_ > 300
+    r_ = load_blocked_run(f); mb = r_["meta"]      # P_in pelo Results (o índice do estado muda com vértice a montante)
+    T_ = r_["T"]; P1 = r_["p"]["out"]["P_bar"][1]; sel = T_ > 300
     P_base = mb.get("P_out", 4.0) * 1e5 + fluid.rhoL0 * 9.81 * mb.get("H_riser", 20.0)
     # a alimentação de gás é definida a P_out + 1 bar (severe_D.py); vSG à pressão do separador
     vSG_ = mb.get("vSG", 0.1) * fluid.rhoG((mb.get("P_out", 4.0) + 1.0) * 1e5) / fluid.rhoG(mb.get("P_out", 4.0) * 1e5)
@@ -1266,8 +1238,8 @@ for key in LAB_REF:
         f = os.path.join(os.path.dirname(DATA), f"severe_slug_lab_{key}_{closure}.npz")
         if not os.path.exists(f):
             continue
-        dd = np.load(f); mb = json.loads(str(dd["meta"])); r_ = load_blocked_run(dd)
-        T_ = dd["T"]; P1 = r_["p"]["out"]["P_bar"][1] * 100.0; q_ = r_["p_last"]["out"]["qL"][-1]
+        r_ = load_blocked_run(f); mb = r_["meta"]
+        T_ = r_["T"]; P1 = r_["p"]["out"]["P_bar"][1] * 100.0; q_ = r_["p_last"]["out"]["qL"][-1]
         sel = T_ > 0.2 * T_[-1]; per_ref = LAB_REF[key]["periodo"]
         amp = P1[sel].max() - P1[sel].min()
         tb = blowdowns(T_[sel], P1[sel], min_gap=0.3 * per_ref) if amp > 5.0 else np.array([])
@@ -1317,7 +1289,7 @@ for tag, fname in (("caso base, regras físicas", "severe_slug_blocked_conservat
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
         print("trajetória não encontrada:", f); continue
-    runs_ent[tag] = load_blocked_run(np.load(f))
+    runs_ent[tag] = load_blocked_run(f)
 print(f"{'caso':42s} {'riser > 90 % gás':>16s} {'E > 0.1':>8s} {'E máx':>6s} {'vSG máx':>8s} {'produção com E_topo > 0.1':>26s}")
 for tag, r in runs_ent.items():
     th_ = np.rad2deg(r["model"].pipes[0].scheme.theta_nodes); riser_ = np.flatnonzero(th_ > 80); T_ = r["T"]

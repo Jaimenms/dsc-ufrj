@@ -97,10 +97,10 @@ for ab, res in runs.items():
 # %% [markdown]
 # ## Lado direito compilado (JAX)
 # O caso com choke a 12 % repetido com o lado direito compilado e a Jacobiana exata
-# (`mfsim.jaxrhs.get_jax`), passando `jac_fun` ao integrador.
+# (`mfsim.compiled.get_jax`), passando `jac_fun` ao integrador.
 
 # %%
-from mfsim.jaxrhs import get_jax
+from mfsim.compiled import get_jax
 
 
 def run_gas_lift_jax(opening, tf=16000.0, rtol=1e-3, order=2):

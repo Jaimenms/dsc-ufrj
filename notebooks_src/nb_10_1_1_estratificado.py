@@ -85,8 +85,7 @@ plt.show()
 # %%
 fig = pipe_timeseries(res, 0, legacy=legacy)
 plt.show()
-pb = res.model.pipes[0]
-slots = pb.free % 4
+slots = res.model.state_slots()
 for s, name in enumerate(["alphaG", "PT", "qL", "qG"]):
     m = slots == s
     print(f"{name:7s}: máx |Python - MATLAB| = {np.max(np.abs(res.X[m] - Xl[m])):.2e}  (faixa MATLAB {np.ptp(Xl[m]):.2e})")
@@ -149,7 +148,7 @@ fig.tight_layout(); plt.show()
 print("Tabela 10.1 - tempos computacionais (estado estacionário + simulação, Python)")
 print(f"{'Método':12s} {'N':>5s} {'CPU (s)':>9s} {'passos':>7s}")
 for method, nel, cpu, steps in table:
-    print(f"{method:12s} {nel:5d} {cpu:9.2f} {steps:7d}")
+    print(f"{method:12s} {nel:5d} {cpu:8.2f}s {steps:7d}")
 
 # %% [markdown]
 # ## Autovalores da Jacobiana no estado final (Figuras 10.7 e 10.8)
@@ -189,7 +188,7 @@ print("máx parte real: formulação 1 =", ev1.real.max(), "| formulação 2 =",
 # %% [markdown]
 # ## Lado direito compilado (JAX)
 # A mesma simulação com `simulate(..., jax=True)`: lado direito compilado por
-# `jax.jit` e Jacobiana exata por diferenciação automática (`mfsim/jaxrhs.py`),
+# `jax.jit` e Jacobiana exata por diferenciação automática (`mfsim/compiled.py`, o mesmo código numpy com o backend JAX),
 # no lugar das diferenças finitas coloridas. O resultado deve coincidir com a versão
 # numpy dentro da tolerância do integrador (as sequências de passos podem diferir
 # porque a Jacobiana muda o Newton); o ganho de tempo cresce com o número de passos
