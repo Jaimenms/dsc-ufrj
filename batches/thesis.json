@@ -224,6 +224,15 @@
     "network.edges.1.scheme.type=fd_central",
     "network.edges.1.ic=null"
    ]
+  },
+  {
+   "name": "10_1_1_neumann",
+   "case": "cases/chapter10/10_1_1.json",
+   "steady": true,
+   "set": [
+    "network.edges.1.ports.in.alphaG=neumann",
+    "network.edges.1.ic=null"
+   ]
   }
  ],
  "description": "Casos do capítulo 10 da tese tal e qual (integração exportada dos .mf2) e as sensibilidades de malha das figuras 10.4-10.6 e 10.12-10.13 (estado estacionário recalculado em cada malha)."

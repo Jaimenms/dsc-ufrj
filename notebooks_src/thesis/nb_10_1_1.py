@@ -90,6 +90,29 @@ for scheme in ("galerkin", "fd_central"):
         print(f"{scheme:12s} {n:5d} {r.info.get('cpu_total', float('nan')):7.2f}s")
 
 # %% [markdown]
+# ## Autovalores da Jacobiana no estado final (Figuras 10.7 e 10.8)
+# Formulação 1: condições de contorno do ficheiro (vazões e pressão de saída impostas, fração de gás
+# livre na entrada; 201 estados). Formulação 2: fração de gás na entrada com gradiente nulo imposto
+# (200 estados; corrida `10_1_1_neumann` do lote, com o estacionário recalculado). Com a fração de gás
+# livre surge um autovalor nulo (modo neutro: a fração de gás de entrada não é determinada pelas
+# equações); com gradiente nulo todos os autovalores ficam no semiplano esquerdo.
+
+# %%
+from mfsim.analysis import jacobian_eigenvalues
+from mfsim.plotting import eigenvalue_plot
+
+run2 = load_run("chapter10/10_1_1_neumann")
+ev1 = jacobian_eigenvalues(res.model, res.X[:, -1], t=run.T[-1])
+ev2 = jacobian_eigenvalues(run2.res.model, run2.X[:, -1], t=run2.T[-1])
+fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+eigenvalue_plot(ev1, axes[0], "Formulação 1 (Fig. 10.7)")
+eigenvalue_plot(ev2, axes[1], "Formulação 2 (Fig. 10.8)")
+for ax in axes:
+    ax.set_xscale("symlog", linthresh=1e-3)
+plt.show()
+print(f"máx parte real: formulação 1 = {ev1.real.max():.2e} | formulação 2 = {ev2.real.max():.2e}")
+
+# %% [markdown]
 # ---
 # *Notebook de reprodução fiel: nenhuma simulação corre aqui. As corridas vêm do lote
 # `batches/thesis.json` (`uv run mfsim batch batches/thesis.json`), com a configuração exportada

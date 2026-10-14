@@ -1,0 +1,11 @@
+### célula 3
+formulação                      N  αG entrada  αG saída  P entrada (bar)
+fração de gás livre (original)    5      0.4621    0.4713          100.028
+gradiente nulo na entrada       5      0.4636    0.4636          100.028
+escalonado (fv_upwind)          5      0.4636    0.4637          100.024
+fração de gás livre (original)   50      0.4636    0.4626          100.028
+gradiente nulo na entrada      50      0.4637    0.4645          100.028
+escalonado (fv_upwind)         50      0.4636    0.4637          100.028
+
+### célula 5
+sucesso = 0 | parou em t = <t>s de 3000 | 680 passos | RuntimeError: passo mínimo atingido em t=0.6566

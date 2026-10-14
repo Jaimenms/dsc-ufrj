@@ -1,0 +1,10 @@
+### célula 3
+trajetória não encontrada: severe_slug_lab_fabre1_tese.npz
+trajetória não encontrada: severe_slug_lab_teng1_tese.npz
+caso                                                           bolhas     período (exp)         P_in kPa (exp)  pico qL blowdowns  passos
+Jansen 1996 (1", riser 3 m; U_LS 0.096, U_GSO 0.075)           tese     <t>s ( 46.6)  122.2- 132.8 (111-133)     0.21         3   63349
+Jansen 1996 (1", riser 3 m; U_LS 0.096, U_GSO 0.075)           fisico    <t>s ( 46.6)   99.1- 132.6 (111-133)     0.79         7   98214
+Fabre 1990 caso 2 (2", riser 13.5 m; vSL 0.13, vSG0 0.20)      tese       nan s (137.0)  145.1- 237.0 (126-235)     1.10         1   43735
+Fabre 1990 caso 2 (2", riser 13.5 m; vSL 0.13, vSG0 0.20)      fisico   <t>s (137.0)  105.2- 237.9 (126-235)     8.50         8  117508
+Fabre 1990 caso 1 (2", riser 13.5 m; vSL 0.13, vSG0 0.45)      fisico   <t>s ( 70.0)  121.3- 167.2 (128-210)     3.21         8    6711
+Tengesdal 2002 teste 1 (3", riser 14.6 m, óleo; vSL 0.32, vSG 0.35) fisico    <t>s ( 79.0)  123.1- 232.9 (121-222)    16.69        10   50439

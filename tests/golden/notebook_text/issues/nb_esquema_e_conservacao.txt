@@ -1,0 +1,29 @@
+### célula 2
+vSL = 0.296 m/s, vSG = 0.124 m/s (à pressão de saída) | critério de Bøe: vSL_min = 0.050 m/s -> severe: True
+(Bøe na forma de Taitel 1986 / Jansen 1996: vSL >= P vSG / (rhoL g (1 - alphaG) L), sem fator de inclinação; L = linha de entrada + descendente)
+
+### célula 3
+trajetória carregada: severe_slug_run.npz até t = 8000.0
+
+### célula 5
+erro final de massa: -87.6 kg (estoque inicial 607.1 kg, entrada acumulada 4241 kg)
+
+### célula 12
+instantes dos picos de líquido (s): [2606, 2912, 3224, 3538, 3852, 4164, 4478, 4792, 5104, 5410, 5726, 6038, 6352, 6664, 6974, 7290, 7602, 7916]
+período médio ≈ <t>s; pico máximo 11.3 kg/s (21x a alimentação)
+
+### célula 14
+picos (s): [2656, 2876, 3114, 3342, 3574, 3794, 4026, 4262, 4498, 4722, 4958, 5198, 5424, 5660, 5886, 6112, 6340, 6566, 6796, 7026, 7264, 7494, 7722, 7944] | período médio ≈ <t>s | pico máximo 8.7 kg/s
+erro final de massa: -112.1 kg em 4241 kg alimentados
+
+### célula 16
+primitivas   : 91783 passos, 24105 rejeitados, 18 min de CPU
+conservativo : 132679 passos, 39681 rejeitados, 25 min de CPU
+
+### célula 20
+primitivas   : 12 blowdowns, primeiro em <t>s, período médio ≈ <t>s, pico máximo 8.9 kg/s
+   erro de massa (trapézios nas saídas de <t>s): líquido -59.74 kg (-3.76 % do alimentado), gás +0.3588 kg (+10.96 %)
+   erro de massa (integral consistente com o BDF):   líquido -4.30e+01 kg (-2.71e+00 %), gás +2.78e-01 kg (+8.48e+00 %)
+conservativo : 12 blowdowns, primeiro em <t>s, período médio ≈ <t>s, pico máximo 8.5 kg/s
+   erro de massa (trapézios nas saídas de <t>s): líquido -1.74 kg (-0.11 % do alimentado), gás +0.2096 kg (+6.40 %)
+   erro de massa (integral consistente com o BDF):   líquido -1.14e-05 kg (-7.16e-07 %), gás -7.19e-08 kg (-2.20e-06 %)

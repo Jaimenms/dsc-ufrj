@@ -1,0 +1,45 @@
+### célula 3
+configuração                           passos    CPU blowdowns intervalo  pico máx   P_in (bar)
+referência (noslip)                     25228    <t>s         4     <t>s    7.1 kg/s  4.14–5.92
+anular > 90 % + massa virtual + bolhas < 1 % (regras físicas)    16833    <t>s         4     <t>s    6.1 kg/s  4.00–5.85
+riser intermitente (regime_vertical = 3)   101181   <t>s         1     nan s    2.0 kg/s  4.36–5.91
+riser intermitente + regras físicas    112355   <t>s         1     nan s    2.4 kg/s  4.31–5.85
+γG = 1.0 (+ regras físicas)             17363    <t>s         4     <t>s    6.3 kg/s  4.00–5.85
+γG = 1.3 (+ regras físicas)             17963    <t>s         5     <t>s    5.4 kg/s  4.01–5.85
+volume a montante 0.1 m³ (+ regras físicas)    17927   <t>s         4     <t>s    6.4 kg/s  3.99–5.85
+volume a montante 0.5 m³ (+ regras físicas)    17614   <t>s         5     <t>s    7.3 kg/s  3.99–5.86
+volume a montante 2 m³ (+ regras físicas)    20938   <t>s         4     <t>s    9.3 kg/s  3.95–5.85
+
+### célula 5
+caso                                 vSL  L (m)  P_out  vSL_mín Bøe  passos  ΔP_in (t><t>s) blowdowns intervalo
+caso base, bolhas no riser          0.30    300    4.0        0.050   25228         1.78 bar         3     <t>s
+caso base, intermitente no riser    0.30    300    4.0        0.050  101181         0.23 bar         0     nan s
+vSL = 1.2, bolhas                   1.20    300    4.0        0.050     555         0.04 bar         0     nan s
+vSL = 1.2, intermitente             1.20    300    4.0        0.050    1123         0.00 bar         0     nan s
+vSL = 1.6, bolhas                   1.60    300    4.0        0.050     356         0.03 bar         0     nan s
+vSL = 1.6, intermitente             1.60    300    4.0        0.050    3325         0.03 bar         0     nan s
+L = 1000 m, 2 bar, bolhas           0.30   1000    2.0        0.012  105019         1.68 bar         2    <t>s
+L = 1000 m, 2 bar, bolhas, sobrepressão 0.1 bar  0.30   1000    2.0        0.012   63993         1.69 bar         2    <t>s
+L = 1000 m, 2 bar, bolhas + regras físicas  0.30   1000    2.0        0.012   56710         1.61 bar         2    <t>s
+L = 1000 m, 2 bar, intermitente + regras físicas  0.30   1000    2.0        0.012   59230         1.81 bar         2    <t>s
+L = 1000 m, 2 bar, vSL = 0.5, regras  0.50   1000    2.0        0.012   28552         1.44 bar         4    <t>s
+L = 1000 m, 2 bar, vSL = 0.8, regras  0.80   1000    2.0        0.012   15614         1.33 bar         4    <t>s
+L = 1000 m, 4 bar, vSL = 0.5, regras  0.50   1000    4.0        0.016   29369         1.49 bar         4    <t>s
+L = 1000 m, 4 bar, vSL = 0.8, regras  0.80   1000    4.0        0.016   17169         1.42 bar         6    <t>s
+L = 1000 m, 2 bar, vSL = 0.15, regras  0.15   1000    2.0        0.012  116306         1.82 bar         2    <t>s
+L = 1000 m, 2 bar, vSL = 0.3, regras  0.30   1000    2.0        0.012   59114         1.62 bar         3    <t>s
+L = 1000 m, 4 bar, vSL = 0.3, regras  0.30   1000    4.0        0.016   59241         1.65 bar         4    <t>s
+L = 1000 m, 2 bar, vSG = 0.05, regras  0.30   1000    2.0        0.006   61846         1.63 bar         2    <t>s
+L = 1000 m, 2 bar, vSG = 0.2, regras  0.30   1000    2.0        0.025  101974         1.67 bar         4    <t>s
+L = 1000 m, 2 bar, 2 m³ a montante (vértice), regras  0.30   1000    2.0        0.012   78421         1.85 bar         3    <t>s
+L = 1000 m, 2 bar, vSG = 0.2, intermitente + regras  0.30   1000    2.0        0.025  118474         1.83 bar         5    <t>s
+caso base + 200 m de linha de entrada, regras  0.30    300    4.0        0.032   15183         1.88 bar         4     <t>s
+caso base + 500 m de linha de entrada, regras  0.30    300    4.0        0.020   19420         1.95 bar         3    <t>s
+L = 1000 m, 2 bar, γG = 1.3, regras  0.30   1000    2.0        0.012   80705         1.77 bar         3    <t>s
+
+### célula 7
+caso                                       riser > 90 % gás  E > 0.1  E máx  vSG máx  produção com E_topo > 0.1
+caso base, regras físicas                             21.4%     0.0%   0.12    9.3 m/s                       0.0%
+caso base + 500 m de linha de entrada                 47.4%     0.1%   0.16   11.1 m/s                       5.0%
+linha de 1000 m, 2 bar, bolhas + regras               11.2%     1.0%   0.56   28.9 m/s                       1.1%
+linha de 1000 m, 2 bar, vSG = 0.29                    15.7%     0.5%   0.61   27.4 m/s                       1.5%

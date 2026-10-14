@@ -97,6 +97,17 @@ def test_thesis_batch_runs():
     assert all(info.get("success", True) for _, _, info in done), [n for n, _, i in done if not i.get("success", True)]
 
 
+def test_issues_batch_runs():
+    """O lote dos notebooks de issues (`batches/issues.json`: coluna, capítulo 10 em numpy/JAX,
+    estacionários, poço de deriva, gas lift 16 000 s) corre por inteiro; a entrada do upwind da tese
+    termina parcial por construção."""
+    from mfsim.runs import run_batch
+
+    done = run_batch(str(ROOT / "batches" / "issues.json"), force=True, progress=False)
+    failed = [n for n, path, i in done if path is None or (not i.get("success", True) and n != "10_1_1_fd_upwind")]
+    assert len(done) >= 25 and not failed, failed
+
+
 NOTEBOOKS = sorted(
     str(p.relative_to(ROOT / "notebooks_src").with_suffix("")) for p in (ROOT / "notebooks_src").rglob("nb_*.py")
 )

@@ -1,0 +1,150 @@
+{
+ "schema": "mfsim-case/1",
+ "name": "column_Ap_open_raw",
+ "description": "coluna de 20 m: Ap (pressões fixas), relax_target=raw",
+ "fluid": {
+  "type": "polytropic",
+  "rhoL0": 900.0,
+  "rhoG0": 1.2,
+  "muL": 0.002,
+  "muG": 1.8e-05,
+  "gammaL": 100.0,
+  "gammaG": 1.05,
+  "P0": 100000.0,
+  "sigma": 0.05
+ },
+ "reference": {
+  "PR": 1000000.0
+ },
+ "time": {
+  "t0": 0.0,
+  "tf": 3.0,
+  "dt_out": 0.001
+ },
+ "network": {
+  "vertices": [
+   {
+    "id": "1",
+    "kind": "boundary",
+    "spec": {
+     "PT": 0.52
+    }
+   },
+   {
+    "id": "2",
+    "kind": "boundary",
+    "spec": {
+     "PT": 0.5
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "1",
+    "type": "pipe",
+    "from": "1",
+    "to": "2",
+    "D": 0.05,
+    "roughness": 1e-05,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        20.0,
+        0.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 20
+      }
+     ]
+    },
+    "model": {
+     "type": "two_fluid",
+     "regime": {
+      "type": "fixed",
+      "regime": "stratified_smooth"
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fv_upwind",
+     "options": {
+      "conservative": true,
+      "q_switch_G": 1e-05,
+      "q_switch_L": 0.001,
+      "relax_target": "raw",
+      "switch_frac": 0.5
+     }
+    },
+    "ports": {
+     "in": {
+      "alphaG": "neumann",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "1",
+      "file": "column_Ap_open_raw.ic.npz"
+     }
+    }
+   }
+  ]
+ },
+ "integration": {
+  "integrator": "implicit",
+  "quadrature_order": 2,
+  "max_step": null,
+  "atol": 0.001,
+  "rtol": 0.003,
+  "backend": "jax",
+  "first_step": 0.0001,
+  "max_order": 2,
+  "max_newton": 20,
+  "newton_tol": 0.001,
+  "min_step": 1e-09,
+  "slow_exit": false
+ },
+ "initial_state": {
+  "source": "edges"
+ }
+}

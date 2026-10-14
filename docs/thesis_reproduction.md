@@ -21,7 +21,8 @@ figuras 10.4–10.6 e 10.12–10.13 são entradas do lote com o estado estacion�
 cada malha. As correções necessárias para carregar os ficheiros (estado inicial de
 `estados.X[:, 0]`, padrão do 10.3.1, composição do 10.3.2a) estão nos JSON e descritas na
 [issue 001](issues/001-reproducao-capitulo-10.md); tudo o que é melhoria fica nos notebooks de
-`notebooks_src/issues/` (em reorganização) e no [índice de issues](issues/INDEX.md). A suíte
+`notebooks_src/issues/` (um por grupo de issues, com as corridas de `batches/issues.json` e de
+`notebooks/data`) e no [índice de issues](issues/INDEX.md). A suíte
 noturna reexecuta o lote e os notebooks e compara os textos.
 
 ## Principais resultados da reprodução

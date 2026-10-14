@@ -254,14 +254,21 @@ def run_batch(spec_path, force=False, only=None, progress=True):
             if progress:
                 print(f"{name}: existe, saltado ({path})", flush=True)
             continue
-        case = case_from_json(_abs(entry["case"]), overrides=entry.get("set"))
-        time_kw = {k: float(entry[k]) for k in ("tf", "dt_out") if k in entry}
-        if time_kw:
-            case.set_time(**time_kw)
         t0 = time.time()
-        if entry.get("steady"):
-            steady_state(case, X0="auto", verbose=False, update_case=True)
-        res = simulate(case, progress=False, partial=True)
+        try:
+            case = case_from_json(_abs(entry["case"]), overrides=entry.get("set"))
+            time_kw = {k: float(entry[k]) for k in ("tf", "dt_out") if k in entry}
+            if time_kw:
+                case.set_time(**time_kw)
+            if entry.get("steady"):
+                steady_state(case, X0="auto", verbose=False, update_case=True)
+            res = simulate(case, progress=False, partial=True)
+        except Exception as e:  # noqa: BLE001  (uma entrada que rebenta não trava o lote)
+            info = {"success": False, "error": f"{type(e).__name__}: {e}", "cpu_total": time.time() - t0}
+            if progress:
+                print(f"{name}: FALHOU ({info['error'][:120]})", flush=True)
+            done.append((name, None, info))
+            continue
         info = dict(res.info)
         info["cpu_total"] = time.time() - t0
         save_run(
@@ -274,7 +281,7 @@ def run_batch(spec_path, force=False, only=None, progress=True):
             command=f"mfsim batch {spec_path} --only {name}",
         )
         if progress:
-            ok = "OK" if info.get("success", True) else "FALHOU"
+            ok = "OK" if info.get("success", True) else "PARCIAL"
             print(f"{name}: {ok} {info.get('n_steps')} passos, {info['cpu_total']:.1f} s -> {path}", flush=True)
         done.append((name, path, info))
     return done

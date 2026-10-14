@@ -1,0 +1,9 @@
+### célula 4
+configuração           estados   passos    CPU blowdowns intervalo  pico máx   P_in (bar)
+duto único curvado         112    25923    <t>s         4     <t>s    7.9 kg/s  4.14–6.00
+rede, V = 0.05 m³          124    35518   <t>s         6     <t>s    4.4 kg/s  4.32–5.80
+rede, V = 0.005 m³         124    61109   <t>s         4     <t>s   10.0 kg/s  4.04–5.87
+rede, V = 0.002 m³         124    65018   <t>s         4     <t>s   11.7 kg/s  4.07–5.94
+
+### célula 7
+volume finito: None passos, nan s

@@ -1,0 +1,60 @@
+### célula 5
+configuração                           passos    CPU blowdowns intervalo  pico máx   P_in (bar)
+referência (noslip)                     25228    <t>s         4     <t>s    7.1 kg/s  4.14–5.92
+regras físicas + arrasto de bolhas da tese    16833    <t>s         4     <t>s    6.1 kg/s  4.00–5.85
+regras físicas + arrasto físico de bolhas (referência atual)    15602    <t>s         4     <t>s    6.5 kg/s  4.00–5.85
+atrito interfacial × 0.5                30578    <t>s         4     <t>s    7.5 kg/s  4.17–5.91
+atrito interfacial × 2                  20217    <t>s         4     <t>s    6.6 kg/s  4.15–5.92
+atrito interfacial Taitel–Dukler        27250    <t>s         4     <t>s    6.5 kg/s  4.13–5.92
+massa virtual 0.5 (λ = 1)               23597    <t>s         4     <t>s    7.6 kg/s  4.02–6.02
+massa virtual 0.5 + bolhas < 1 %        21919    <t>s         4     <t>s    6.3 kg/s  4.03–5.85
+massa virtual 0.5 (λ = 2)               20003    <t>s         4     <t>s    7.8 kg/s  4.02–5.93
+bolhas < 1 % + Bestion δ = 1.2          41437    <t>s         4     <t>s    5.9 kg/s  4.16–5.85
+riser intermitente (regime_vertical = 3)   101181   <t>s         1     nan s    2.0 kg/s  4.36–5.91
+riser intermitente + anular > 90 % + massa virtual + bolhas < 1 %   112355   <t>s         1     nan s    2.4 kg/s  4.31–5.85
+anular acima de 90 % de gás             23512    <t>s         4     <t>s    8.3 kg/s  4.01–5.98
+anular > 90 % + massa virtual + bolhas < 1 %    16833    <t>s         4     <t>s    6.1 kg/s  4.00–5.85
+γG = 1.0 (+ regras físicas)             17363    <t>s         4     <t>s    6.3 kg/s  4.00–5.85
+γG = 1.3 (+ regras físicas)             17963    <t>s         5     <t>s    5.4 kg/s  4.01–5.85
+volume a montante 0.1 m³ (+ regras físicas)    17927   <t>s         4     <t>s    6.4 kg/s  3.99–5.85
+volume a montante 0.5 m³ (+ regras físicas)    17614   <t>s         5     <t>s    7.3 kg/s  3.99–5.86
+volume a montante 2 m³ (+ regras físicas)    20938   <t>s         4     <t>s    9.3 kg/s  3.95–5.85
+malha fina graduada, noslip             77869   <t>s         5     <t>s   10.3 kg/s  4.16–5.83
+malha fina graduada, massa virtual + bolhas < 1 %    68929   <t>s         4     <t>s    9.7 kg/s  4.02–5.83
+
+### célula 6
+Força líquida por metro sobre o filme (N/m; negativo = para baixo), αG = 0.95, riser vertical, peso do filme 0.87 N/m
+ vL (m/s)  vG (m/s)  anular: GammaL  resultante  bolhas: GammaL  resultante
+     -0.3       1.0          -0.458      -0.409          -318.9      +318.1
+     -0.3       3.0          -0.481      -0.385         -2055.1     +2054.2
+     -0.3       6.0          -0.551      -0.316         -7490.0     +7489.1
+     -0.3      10.0          -0.966      +0.099        -20020.5    +20019.6
+     -0.1       1.0          -0.155      -0.712          -228.3      +227.5
+     -0.1       3.0          -0.176      -0.690         -1813.5     +1812.6
+     -0.1       6.0          -0.243      -0.623         -7022.0     +7021.1
+     -0.1      10.0          -0.645      -0.222        -19250.5    +19249.7
+     +0.0       1.0          -0.003      -0.863          -188.7      +187.8
+     +0.0       3.0          -0.024      -0.843         -1698.4     +1697.5
+     +0.0       6.0          -0.090      -0.777         -6793.6     +6792.8
+     +0.0      10.0          -0.484      -0.383        -18871.2    +18870.3
+
+configuração                                 riser > 90 % gás  filme descendo  líquido subindo > 0.5 m/s
+referência (noslip)                                     18.9%            5.0%                      28.5%
+regras físicas + arrasto de bolhas da tese              21.4%           65.9%                       5.6%
+regras físicas + arrasto físico de bolhas (referência atual)            20.9%           64.8%                       7.0%
+atrito interfacial × 0.5                                20.4%            4.3%                      28.4%
+atrito interfacial × 2                                  19.1%            4.7%                      30.5%
+atrito interfacial Taitel–Dukler                        18.6%            4.6%                      29.9%
+massa virtual 0.5 (λ = 1)                               22.1%            3.3%                      18.6%
+massa virtual 0.5 + bolhas < 1 %                        22.3%            3.6%                      22.5%
+massa virtual 0.5 (λ = 2)                               22.0%            2.6%                      19.6%
+bolhas < 1 % + Bestion δ = 1.2                          20.3%            3.6%                      28.7%
+riser intermitente (regime_vertical = 3)                 5.3%            1.5%                       6.5%
+riser intermitente + anular > 90 % + massa virtual + bolhas < 1 %             5.3%           40.7%                       0.8%
+anular acima de 90 % de gás                             21.4%           56.0%                       6.4%
+anular > 90 % + massa virtual + bolhas < 1 %            21.4%           65.9%                       5.6%
+γG = 1.0 (+ regras físicas)                             22.1%           68.3%                       6.2%
+γG = 1.3 (+ regras físicas)                             23.1%           67.0%                       4.0%
+volume a montante 0.1 m³ (+ regras físicas)             22.2%           61.4%                       5.3%
+volume a montante 0.5 m³ (+ regras físicas)             34.8%           50.6%                       6.2%
+volume a montante 2 m³ (+ regras físicas)               58.6%           19.6%                       7.0%

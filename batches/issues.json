@@ -1,0 +1,271 @@
+{
+ "description": "Corridas dos notebooks de issues (notebooks_src/issues): coluna de líquido (006), capítulo 10 com o BDF próprio em numpy e JAX (032/036), estacionários do 10.1.1 (001), escalonado de deriva no poço (012), gas lift com intermitência forte (033/034/036).",
+ "out_dir": "runs/issues",
+ "runs": [
+  {
+   "name": "column_B_open",
+   "case": "cases/studies/column_B_open.json"
+  },
+  {
+   "name": "column_Ap_open_raw",
+   "case": "cases/studies/column_Ap_open_raw.json"
+  },
+  {
+   "name": "column_Ap_open_noslip",
+   "case": "cases/studies/column_Ap_open_noslip.json"
+  },
+  {
+   "name": "column_B_closed",
+   "case": "cases/studies/column_B_closed.json"
+  },
+  {
+   "name": "column_Ap_closed_raw",
+   "case": "cases/studies/column_Ap_closed_raw.json"
+  },
+  {
+   "name": "column_Ap_closed_noslip",
+   "case": "cases/studies/column_Ap_closed_noslip.json"
+  },
+  {
+   "name": "10_1_1_implicit",
+   "case": "cases/chapter10/10_1_1.json",
+   "set": [
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=0.0001",
+    "integration.atol=1e-06"
+   ]
+  },
+  {
+   "name": "10_1_1_jax",
+   "case": "cases/chapter10/10_1_1.json",
+   "set": [
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=0.0001",
+    "integration.atol=1e-06",
+    "integration.backend=jax"
+   ]
+  },
+  {
+   "name": "10_1_4_implicit",
+   "case": "cases/chapter10/10_1_4.json",
+   "set": [
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=0.0001",
+    "integration.atol=1e-06"
+   ]
+  },
+  {
+   "name": "10_1_4_jax",
+   "case": "cases/chapter10/10_1_4.json",
+   "set": [
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=0.0001",
+    "integration.atol=1e-06",
+    "integration.backend=jax"
+   ]
+  },
+  {
+   "name": "10_3_1_implicit",
+   "case": "cases/chapter10/10_3_1.json",
+   "set": [
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=0.0001",
+    "integration.atol=1e-06"
+   ]
+  },
+  {
+   "name": "10_3_1_jax",
+   "case": "cases/chapter10/10_3_1.json",
+   "set": [
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=0.0001",
+    "integration.atol=1e-06",
+    "integration.backend=jax"
+   ]
+  },
+  {
+   "name": "10_3_2b_implicit",
+   "case": "cases/chapter10/10_3_2b.json",
+   "set": [
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=0.001",
+    "integration.atol=1e-05"
+   ]
+  },
+  {
+   "name": "10_3_2b_jax",
+   "case": "cases/chapter10/10_3_2b.json",
+   "set": [
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=0.001",
+    "integration.atol=1e-05",
+    "integration.backend=jax"
+   ]
+  },
+  {
+   "name": "10_3_3_implicit",
+   "case": "cases/chapter10/10_3_3.json",
+   "set": [
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=0.0001",
+    "integration.atol=1e-06"
+   ]
+  },
+  {
+   "name": "10_3_3_jax",
+   "case": "cases/chapter10/10_3_3.json",
+   "set": [
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=0.0001",
+    "integration.atol=1e-06",
+    "integration.backend=jax"
+   ]
+  },
+  {
+   "name": "10_1_1_steady_free_n5",
+   "case": "cases/chapter10/10_1_1.json",
+   "steady": true,
+   "tf": 0.0,
+   "set": [
+    "network.edges.1.geometry.segments.0.n=5",
+    "network.edges.1.ic=null"
+   ]
+  },
+  {
+   "name": "10_1_1_steady_neumann_n5",
+   "case": "cases/chapter10/10_1_1.json",
+   "steady": true,
+   "tf": 0.0,
+   "set": [
+    "network.edges.1.geometry.segments.0.n=5",
+    "network.edges.1.ic=null",
+    "network.edges.1.ports.in.alphaG=neumann"
+   ]
+  },
+  {
+   "name": "10_1_1_steady_fv_n5",
+   "case": "cases/chapter10/10_1_1.json",
+   "steady": true,
+   "tf": 0.0,
+   "set": [
+    "network.edges.1.geometry.segments.0.n=5",
+    "network.edges.1.ic=null",
+    "network.edges.1.scheme.type=fv_upwind"
+   ]
+  },
+  {
+   "name": "10_1_1_steady_free_n50",
+   "case": "cases/chapter10/10_1_1.json",
+   "steady": true,
+   "tf": 0.0,
+   "set": [
+    "network.edges.1.geometry.segments.0.n=50",
+    "network.edges.1.ic=null"
+   ]
+  },
+  {
+   "name": "10_1_1_steady_neumann_n50",
+   "case": "cases/chapter10/10_1_1.json",
+   "steady": true,
+   "tf": 0.0,
+   "set": [
+    "network.edges.1.geometry.segments.0.n=50",
+    "network.edges.1.ic=null",
+    "network.edges.1.ports.in.alphaG=neumann"
+   ]
+  },
+  {
+   "name": "10_1_1_steady_fv_n50",
+   "case": "cases/chapter10/10_1_1.json",
+   "steady": true,
+   "tf": 0.0,
+   "set": [
+    "network.edges.1.geometry.segments.0.n=50",
+    "network.edges.1.ic=null",
+    "network.edges.1.scheme.type=fv_upwind"
+   ]
+  },
+  {
+   "name": "10_1_1_fd_upwind",
+   "case": "cases/chapter10/10_1_1.json",
+   "set": [
+    "network.edges.1.scheme.type=fd_upwind",
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=1e-4",
+    "integration.atol=1e-6"
+   ]
+  },
+  {
+   "name": "10_3_1_fv_drift",
+   "case": "cases/chapter10/10_3_1.json",
+   "steady": true,
+   "set": [
+    "network.edges.1.scheme.type=fv_upwind",
+    "network.edges.1.scheme.options.conservative=true",
+    "network.edges.1.scheme.options.q_switch=0.05",
+    "network.edges.1.ic=null",
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=1e-3",
+    "integration.atol=1e-6"
+   ]
+  },
+  {
+   "name": "gas_lift_12",
+   "case": "cases/chapter10/10_3_2b.json",
+   "tf": 16000.0,
+   "dt_out": 5.0,
+   "set": [
+    "network.edges.choke_6.opening={\"t\": [0.0, 100.0, 150.0, 16000.0], \"v\": [0.75, 0.75, 0.12, 0.12]}",
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=1e-3",
+    "integration.atol=1e-5",
+    "integration.max_order=2",
+    "integration.min_step=1e-9"
+   ]
+  },
+  {
+   "name": "gas_lift_10",
+   "case": "cases/chapter10/10_3_2b.json",
+   "tf": 16000.0,
+   "dt_out": 5.0,
+   "set": [
+    "network.edges.choke_6.opening={\"t\": [0.0, 100.0, 150.0, 16000.0], \"v\": [0.75, 0.75, 0.1, 0.1]}",
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=1e-3",
+    "integration.atol=1e-5",
+    "integration.max_order=2",
+    "integration.min_step=1e-9"
+   ]
+  },
+  {
+   "name": "gas_lift_12_jax",
+   "case": "cases/chapter10/10_3_2b.json",
+   "tf": 16000.0,
+   "dt_out": 5.0,
+   "set": [
+    "network.edges.choke_6.opening={\"t\": [0.0, 100.0, 150.0, 16000.0], \"v\": [0.75, 0.75, 0.12, 0.12]}",
+    "integration.integrator=implicit",
+    "integration.max_step=null",
+    "integration.rtol=1e-3",
+    "integration.atol=1e-5",
+    "integration.max_order=2",
+    "integration.min_step=1e-9",
+    "integration.backend=jax"
+   ]
+  }
+ ]
+}

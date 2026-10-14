@@ -118,7 +118,10 @@ gravada quando a malha muda), `steady` resolve o estado estacionário antes de i
 `mfsim steady`), `tf`/`dt_out` alteram o tempo. Os caminhos são relativos à raiz do projeto;
 uma entrada cuja saída já existe é saltada (`--force` reexecuta, `--only nome` restringe). Cada
 saída é uma corrida v2 normal (`case_json` com os overrides aplicados, `info_json` com
-`cpu_total`). `batches/thesis.json` é o lote dos casos da tese e das sensibilidades de malha.
+`cpu_total`). `batches/thesis.json` é o lote dos casos da tese e das sensibilidades de malha; `batches/issues.json` o dos
+notebooks de issues (coluna de líquido de `generators/column.py` em `cases/studies/`, capítulo 10 com o
+BDF próprio em numpy e JAX, estacionários do 10.1.1, poço de deriva, gas lift de 16 000 s). Uma entrada
+que rebenta é registada como falha e não trava o lote; uma que para a meio fica gravada como parcial.
 
 ## Referências de regressão (`tests/golden/`)
 

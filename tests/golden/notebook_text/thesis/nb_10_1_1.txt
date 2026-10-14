@@ -22,3 +22,6 @@ fd_central      10    <t>s
 fd_central      25    <t>s
 fd_central      50    <t>s
 fd_central     100    <t>s
+
+### célula 11
+máx parte real: formulação 1 = 5.54e-12 | formulação 2 = -4.65e-04
