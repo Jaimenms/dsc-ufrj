@@ -8,8 +8,8 @@ import copy
 import numpy as np
 import pytest
 
-from mfsim.cases import chapter10_case
-from mfsim.cases.severe_slug import severe_slug_case
+from mfsim.io_legacy import chapter10_case
+from generators.severe_slug import severe_slug_case
 from mfsim.closures import ClosureInputs, equilibrium_fractions, identify_regime, intermittent, annular
 from mfsim.fluid import Fluid
 from mfsim.simulation import build_model

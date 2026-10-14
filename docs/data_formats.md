@@ -43,7 +43,7 @@ Cadeias (`a` herda de `b` que herda de `c`) e várias bases são permitidas; a c
 `meta.extends`, a validação é sobre o caso expandido e as corridas gravam o caso expandido.
 `case_to_json(net, path, extends="reference.json")` escreve o remendo mínimo (`make_patch`,
 verificado por fusão antes de gravar); as seis variantes de `cases/severe_slug` (`EXTENDS` em
-`mfsim/cases/severe_slug.py`) são remendos de 0.4–3 kB sobre `reference`, `lab_fabre2` e
+`tools/export_severe_cases.py`) são remendos de 0.4–3 kB sobre `reference`, `lab_fabre2` e
 `lab_jansen`, p. ex. `lab_fabre2_thesis_bubbles.json` = nome, `meta` e
 `closures.bubble.drag`. Para variar um caso sem ficheiro novo: `mfsim run caso.json --set
 integration.integrator=radau --set network.edges.1.D=0.06` (qualquer campo, por caminho; um
@@ -54,14 +54,16 @@ segmento sobre uma lista é o `id` do elemento ou, se nenhum coincidir, o índic
   `uv run mfsim export-case --chapter10` (`mfsim.io.legacy_mf2.network_from_mf2`: condição
   inicial de `estados.X[:, 0]`, `LEGACY_OVERRIDES`, composição do 10.3.2a; registado em
   `meta.provenance`). São a **fonte** dos casos: a descrição (secção, título, figuras,
-  descrição) vive em `meta` e a exportação preserva-a. `mfsim.cases.chapter10_keys()`,
+  descrição) vive em `meta` e a exportação preserva-a. `mfsim.io_legacy.chapter10_keys()`,
   `chapter10_case(chave)` e `chapter10_info(chave)` leem-nos; `legacy_results(chave)` carrega
   o .mf2 indicado em `meta.provenance.source` só para comparar com os resultados do MATLAB.
-- `cases/severe_slug/*.json`: referência (config recomendada com arrasto físico de
-  bolhas), variantes e os casos de laboratório, exportados das corridas gravadas
-  (`uv run python -m mfsim.cases.severe_slug --export-runs`); casos novos por
-  `generate(**parâmetros de severe_slug_case)` ou pela linha de comando
-  (`python -m mfsim.cases.severe_slug --out x.json --param D=0.05 ...`).
+- `cases/severe_slug/*.json`: referência (configuração recomendada), variantes (`$extends`) e
+  casos de laboratório. Foram gerados pelo gerador paramétrico `generators/severe_slug.py`
+  (fora do simulador: `severe_slug_case(**parâmetros)` constrói o grafo, `generate` acrescenta
+  a receita de condição inicial e regista os parâmetros em `meta.generator_params`); casos
+  novos por `uv run python -m generators.severe_slug --out x.json --param D=0.05 ...`. A
+  corrida de origem de cada ficheiro está em `meta.run` (reexportação em
+  `tools/export_severe_cases.py`).
 - `mfsim.io.case_from_json(caminho)` devolve o `Network` que `simulate`/`build_model`
   consomem; `case_to_json(case_ou_grafo, caminho)` grava. O grafo (`mfsim/network/graph.py`:
   `Vertex` → `BoundaryVertex`/`JunctionVertex`/`TankVertex`; `Edge` → `Pipe`/`Connector`/
@@ -87,9 +89,9 @@ para as análises. `load_run(nome)` procura em `runs/` e `notebooks/data/`.
 
 Formato v1 (corridas históricas até 2026-10-14): os mesmos arrays e `meta` (JSON com as
 opções da corrida nos nomes do antigo driver; defaults do notebook, em particular
-γL = 100). O dialeto está isolado em `mfsim/io/legacy_runs.py` (`case_from_meta`,
+γL = 100). O dialeto está isolado em `tools/legacy_runs.py` (`case_from_meta`,
 `case_from_severe_opts` para os ficheiros do driver com `opts`, `apply_driver_integration`
-com os defaults do driver) e só o conversor o usa: `mfsim convert-runs <ficheiros>
+com os defaults do driver) e só o conversor o usa: `uv run python tools/convert_runs.py <ficheiros>
 [--out-dir]` (`convert_run`) reescreve em v2 com `case_json`, `info_json` e proveniência da
 conversão. As 76 corridas de `notebooks/data` foram convertidas no lugar (T/X/acc
 bit-idênticos; modelos reconstruídos iguais ao golden `runs_meta`), com cópias v1 em

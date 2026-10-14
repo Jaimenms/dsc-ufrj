@@ -1,6 +1,6 @@
 """Converte uma corrida do antigo driver (`runs/<tag>.npz` ou `archive/scratch_2026-10/npz/severe_D_<tag>.npz`,
 com `opts`; passos e CPU lidos do `log` ao lado em `logs/` quando existe) em `notebooks/data/<nome>.npz`
-no formato v2 (`mfsim.io.legacy_runs.convert_run`).
+no formato v2 (`tools/legacy_runs.py: convert_run`).
 uso: uv run python tools/save_run_data.py <tag> <nome>"""
 
 import json
@@ -10,7 +10,7 @@ import sys
 
 import numpy as np
 
-from mfsim.io.legacy_runs import convert_run
+from legacy_runs import convert_run
 from mfsim.runs import find_run
 
 tag, name = sys.argv[1], sys.argv[2]

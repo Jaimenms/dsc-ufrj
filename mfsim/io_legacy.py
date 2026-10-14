@@ -7,6 +7,8 @@ constrói o `Case` equivalente.
 
 from __future__ import annotations
 
+import os
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -257,3 +259,78 @@ def legacy_states(raw):
     if not est:
         return None, None
     return np.asarray(est["T"], float).ravel(), np.asarray(est["X"], float)
+
+
+# ----------------------------------------------------------------------------- casos do capítulo 10
+CHAPTER10_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cases", "chapter10")
+CHAPTER10_PREFIX = "chapter10_"
+
+
+def chapter10_json_path(key: str) -> str:
+    return os.path.join(CHAPTER10_DIR, key.replace(".", "_") + ".json")
+
+
+def chapter10_keys() -> list:
+    """Chaves ('10.1.1', ..., '10.3.3') dos casos exportados em `cases/chapter10/`."""
+    import glob
+    import json
+
+    keys = []
+    for path in sorted(glob.glob(os.path.join(CHAPTER10_DIR, "*.json"))):
+        with open(path, encoding="utf-8") as f:
+            name = json.load(f).get("name", "")
+        if name.startswith(CHAPTER10_PREFIX):
+            keys.append(name[len(CHAPTER10_PREFIX) :])
+    return keys
+
+
+def chapter10_case(key: str):
+    """O grafo (`Network`) do caso `key` do capítulo 10, do JSON exportado."""
+    from .io.spec import case_from_json
+
+    path = chapter10_json_path(key)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"{path}: exportar com `uv run mfsim export-case --chapter10`")
+    return case_from_json(path)
+
+
+@dataclass(frozen=True)
+class CaseInfo:
+    """Descrição de um caso do capítulo 10, lida de `meta` do JSON."""
+
+    key: str
+    section: str
+    title: str
+    description: str
+    figures: str
+    source: str  # ficheiro .mf2 com a entrada e os resultados do MATLAB
+
+
+def chapter10_info(key: str) -> CaseInfo:
+    import json
+
+    with open(chapter10_json_path(key), encoding="utf-8") as f:
+        d = json.load(f)
+    meta = d.get("meta") or {}
+    prov = meta.get("provenance") or {}
+    return CaseInfo(
+        key=key,
+        section=prov.get("section", key),
+        title=prov.get("title", ""),
+        description=meta.get("description", d.get("description", "")),
+        figures=prov.get("figures", ""),
+        source=prov.get("source", ""),
+    )
+
+
+def legacy_results(case_or_key):
+    """Dicionário do `.mf2` original (`dados`, `saidas`, `estados`) de um caso convertido da tese,
+    para comparar com os resultados do MATLAB; o ficheiro vem de `meta.provenance.source`."""
+    if isinstance(case_or_key, str):
+        source = chapter10_info(case_or_key).source
+    else:
+        source = ((case_or_key.meta or {}).get("provenance") or {}).get("source", "")
+    if not source:
+        raise ValueError("o caso não indica o .mf2 de origem em meta.provenance.source")
+    return load_mf2(source)
+

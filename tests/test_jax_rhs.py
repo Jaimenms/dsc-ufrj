@@ -6,7 +6,7 @@ resíduo é suave."""
 import numpy as np
 import pytest
 
-from mfsim.cases.severe_slug import severe_slug_case
+from generators.severe_slug import severe_slug_case
 from mfsim.fluid import Fluid
 from mfsim.simulation import build_model
 

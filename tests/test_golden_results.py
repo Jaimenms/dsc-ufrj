@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from mfsim.analysis import mass_balance
-from mfsim.cases import chapter10_case
+from mfsim.io_legacy import chapter10_case
 from mfsim.results import Results
 from mfsim.simulation import build_model
 

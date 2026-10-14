@@ -18,7 +18,7 @@
 # %%
 import copy, numpy as np, matplotlib.pyplot as plt
 from mfsim.notebook_utils import describe, run_case, compare_states, show_pipe
-from mfsim.cases import chapter10_case, legacy_results
+from mfsim.io_legacy import chapter10_case, legacy_results
 from mfsim.simulation import steady_state, simulate
 from mfsim.plotting import pipe_surfaces, pipe_timeseries, legacy_pipe_dict
 

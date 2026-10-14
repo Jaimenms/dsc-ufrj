@@ -44,7 +44,8 @@ import numpy as np, matplotlib.pyplot as plt, time, warnings, os
 
 warnings.filterwarnings("ignore")
 from mfsim.fluid import Fluid
-from mfsim.cases.severe_slug import severe_slug_case, superficial_velocities, boe_criterion
+from generators.severe_slug import severe_slug_case
+from mfsim.analysis import boe_criterion, superficial_velocities
 from mfsim.simulation import build_model, state_bounds
 from mfsim.initial_guess import initial_guess
 from mfsim.integrators.implicit import ImplicitBDF
@@ -1640,7 +1641,7 @@ for lab, n_, qf, f_dom, rate in rows:
 # inicial violento com 0.3 bar de sobrepressão, rastejo no riser cheio de líquido com 0.1.)
 
 # %%
-from mfsim.cases.severe_slug import boe_criterion
+from mfsim.analysis import boe_criterion
 
 runs_boe = {}
 for tag, fname in (

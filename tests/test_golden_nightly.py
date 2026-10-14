@@ -38,7 +38,7 @@ def test_reference_jax_3000s(golden, data_dir):
 
 @pytest.mark.parametrize("opening", [0.12, 0.10])
 def test_gaslift_intermittency_2000s(opening, golden):
-    from mfsim.cases import chapter10_case
+    from mfsim.io_legacy import chapter10_case
     from mfsim.integrators.implicit import ImplicitBDF
     from mfsim.simulation import build_model, state_bounds
 

@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from mfsim.cases import chapter10_keys, chapter10_case
+from mfsim.io_legacy import chapter10_keys, chapter10_case
 from mfsim.io.spec import case_from_json
 from mfsim.simulation import build_model
 

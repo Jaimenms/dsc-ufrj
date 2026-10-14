@@ -28,7 +28,7 @@ def test_case_files_obey_schema(path):
 
 
 def test_generated_case_obeys_schema(tmp_path):
-    from mfsim.cases.severe_slug import generate
+    from generators.severe_slug import generate
 
     net = generate(D=0.05, n_down=8, n_riser=4, start="blocked")
     d = case_to_json(net, str(tmp_path / "g.json"))  # valida antes de escrever

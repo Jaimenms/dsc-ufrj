@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from mfsim.cases import chapter10_case, legacy_results
+from mfsim.io_legacy import chapter10_case, legacy_results
 from mfsim.io_legacy import legacy_states
 from mfsim.simulation import build_model, state_bounds
 from mfsim.integrators import integrate_implicit

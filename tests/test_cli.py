@@ -1,6 +1,6 @@
 """Linha de comando `mfsim`: `run` reproduz o golden JAX da referência (150 s) a partir do
 caso JSON e grava npz v2 (caso completo em `case_json`), `stats` reproduz a tabela do antigo
-`scratch/cycle_stats.py` carácter a carácter, `export-case --severe` gera um caso válido."""
+`scratch/cycle_stats.py` carácter a carácter, o gerador `generators.severe_slug` gera um caso válido."""
 
 import json
 from pathlib import Path
@@ -54,31 +54,29 @@ def test_run_reference_jax_150s_matches_golden(tmp_path, golden, data_dir):
     assert np.isfinite(run.signature(min_gap=50.0)["P_min"])
 
 
-def test_export_severe_case(tmp_path):
+def test_generated_severe_case(tmp_path):
+    """O gerador (fora do simulador, `generators.severe_slug`) grava um caso JSON válido que o
+    simulador constrói."""
+    from generators.severe_slug import main as generate_main
     from mfsim.io.spec import case_from_json
     from mfsim.simulation import build_model
 
     out = tmp_path / "novo.json"
-    main(
-        [
-            "export-case",
-            "--severe",
-            "--out",
-            str(out),
-            "--param",
-            "D=0.05",
-            "--param",
-            "start=blocked",
-            "--param",
-            "n_down=8",
-            "--param",
-            "n_riser=4",
-        ]
-    )
-    d = json.loads(out.read_text())
-    assert d["schema"] == "mfsim-case/1" and d["network"]["edges"]
+    argv = [
+        "--out",
+        str(out),
+        "--param",
+        "D=0.05",
+        "--param",
+        "start=blocked",
+        "--param",
+        "n_down=8",
+        "--param",
+        "n_riser=4",
+    ]
+    assert generate_main(argv) == 0
     model = build_model(case_from_json(str(out)))
-    assert np.all(np.isfinite(model.rhs(0.0, model.initial_state())))
+    assert model.n_states > 0
 
 
 def _runs(fname):

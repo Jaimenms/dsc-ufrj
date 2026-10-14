@@ -8,7 +8,7 @@ import json
 import numpy as np
 import pytest
 
-from mfsim.cases import chapter10_keys, chapter10_case
+from mfsim.io_legacy import chapter10_keys, chapter10_case
 from mfsim.io import case_from_json, case_to_json
 from mfsim.network.graph import Network
 
@@ -88,18 +88,19 @@ def test_network_editing_helpers():
 
 @pytest.mark.data
 def test_severe_json_cases_match_runs(data_dir):
-    """Os JSON de cases/severe_slug reconstroem os modelos das corridas gravadas que os definem."""
-    import os
-    from mfsim.cases.severe_slug import CASES_DIR, REFERENCE_RUNS
+    """Os JSON de cases/severe_slug reconstroem os modelos das corridas gravadas que os definem
+    (a corrida de origem está em `meta.run` de cada ficheiro)."""
+    from pathlib import Path
+
     from mfsim.runs import load_run
 
     n = 0
-    for run_name, name in REFERENCE_RUNS.items():
-        path = os.path.join(CASES_DIR, f"{name}.json")
-        if not os.path.exists(path) or not (data_dir / f"{run_name}.npz").exists():
+    for path in sorted((Path(__file__).resolve().parents[1] / "cases" / "severe_slug").glob("*.json")):
+        net_j = case_from_json(str(path))
+        run_name = (net_j.meta or {}).get("run")
+        if not run_name or not (data_dir / f"{run_name}.npz").exists():
             continue
         run = load_run(str(data_dir / f"{run_name}.npz"))
-        net_j = case_from_json(path)
         _assert_same(run.case, net_j, X=run.X[:, 0])
         n += 1
         assert net_j.integration.integrator == "implicit" and net_j.integration.tol_range is not None

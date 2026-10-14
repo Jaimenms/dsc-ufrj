@@ -1,5 +1,5 @@
 """Corrida do severe slug com as opções do antigo driver `scratch/severe_D.py` (dialeto
-curto: vSL, vSG, H, rv, fsw, delta, vol, ...; ver `mfsim.io.legacy_runs.case_from_severe_opts`).
+curto: vSL, vSG, H, rv, fsw, delta, vol, ...; ver `tools/legacy_runs.py: case_from_severe_opts`).
 Invólucro fino: o caso (grafo + secção `integration`) vem do dialeto, a integração é o
 `simulate` único (trajetória parcial gravada em caso de falha) e a gravação é `save_run`
 (npz v2 com o caso completo em `case_json`). Para casos novos prefira `mfsim run caso.json`.
@@ -16,8 +16,8 @@ import warnings
 import numpy as np
 
 warnings.filterwarnings("ignore")
-from mfsim.cases.severe_slug import boe_criterion, superficial_velocities  # noqa: E402
-from mfsim.io.legacy_runs import apply_driver_integration, case_from_severe_opts, meta_from_severe_opts  # noqa: E402
+from mfsim.analysis import boe_criterion, superficial_velocities  # noqa: E402
+from legacy_runs import apply_driver_integration, case_from_severe_opts, meta_from_severe_opts  # noqa: E402
 from mfsim.runs import save_run  # noqa: E402
 from mfsim.simulation import simulate  # noqa: E402
 

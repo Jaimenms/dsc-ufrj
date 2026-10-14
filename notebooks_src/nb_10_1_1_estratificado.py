@@ -16,7 +16,7 @@
 import copy, time
 import numpy as np
 import matplotlib.pyplot as plt
-from mfsim.cases import chapter10_case, chapter10_info, legacy_results
+from mfsim.io_legacy import chapter10_case, chapter10_info, legacy_results
 from mfsim.network.graph import ports
 from mfsim.simulation import simulate, steady_state, build_model
 from mfsim.plotting import (

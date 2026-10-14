@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from mfsim.cases.severe_slug import severe_slug_case
+from generators.severe_slug import severe_slug_case
 from mfsim.fluid import Fluid
 from mfsim.geometry import pipe_mesh
 from mfsim.models.base import PipeParams

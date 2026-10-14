@@ -1,4 +1,4 @@
-"""Linha de comando do mfsim: `mfsim run|steady|stats|scan|riser|val|export-case|validate|convert-runs|nb`.
+"""Linha de comando do mfsim: `mfsim run|steady|stats|scan|riser|val|export-case|validate|nb`.
 
     mfsim run cases/severe_slug/reference.json --backend jax --tf 150 --out runs/ref150.npz
     mfsim run cases/severe_slug/reference.json --set integration.integrator=radau --set integration.rtol=1e-5
@@ -8,15 +8,13 @@
     mfsim riser severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys   (filme no riser: contracorrente)
     mfsim val severe_slug_lab_fabre2_fisico --plot              (validação de laboratório contra os valores publicados)
     mfsim export-case --chapter10 [--out cases/chapter10]
-    mfsim export-case --severe-runs
-    mfsim export-case --severe --out novo.json --param D=0.05 --param start=blocked
     mfsim validate cases/**/*.json                              (schema mfsim-case/1)
     mfsim nb notebooks_src/nb_severe_slug.py [--execute]
 
 As corridas são gravadas no formato v2 (`mfsim.runs.save_run`: trajetória, `info_json`,
 `provenance_json` e o caso completo em `case_json`); uma falha do integrador grava a
-trajetória parcial em `<out>` com `info_json["success"] = false`. `convert-runs` traz os
-ficheiros antigos (`meta` v1) para este formato.
+trajetória parcial em `<out>` com `info_json["success"] = false`. `tools/convert_runs.py` traz os
+ficheiros antigos (`meta` v1) para este formato; `generators/severe_slug.py` gera casos novos.
 """
 
 from __future__ import annotations
@@ -32,19 +30,6 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-def _parse_params(items):
-    out = {}
-    for it in items or []:
-        k, _, v = it.partition("=")
-        if not _:
-            raise SystemExit(f"--param espera chave=valor: {it}")
-        try:
-            out[k] = json.loads(v)
-        except json.JSONDecodeError:
-            out[k] = v
-    return out
 
 
 def cmd_run(a):
@@ -105,21 +90,6 @@ def cmd_validate(a):
         for e in errs:
             print("   ", e)
         rc = rc or (1 if errs else 0)
-    return rc
-
-
-def cmd_convert_runs(a):
-    from .io.legacy_runs import convert_run
-
-    rc = 0
-    for src in a.files:
-        dst = os.path.join(a.out_dir, os.path.basename(src)) if a.out_dir else None
-        try:
-            written = convert_run(src, dst)
-            print(f"{src}: {'já em v2' if written is None else 'convertido -> ' + written}", flush=True)
-        except Exception as e:
-            print(f"{src}: NÃO convertido ({e})", flush=True)
-            rc = 1
     return rc
 
 
@@ -205,22 +175,6 @@ def cmd_export_case(a):
         for pth in export_chapter10(**kw):
             print("escrito", pth)
         return 0
-    if a.severe_runs:
-        from .cases.severe_slug import export_run_cases
-
-        for pth in export_run_cases():
-            print("escrito", pth)
-        return 0
-    if a.severe:
-        from .cases.severe_slug import generate
-        from .io.spec import case_to_json
-
-        if not a.out:
-            raise SystemExit("--severe exige --out")
-        net = generate(**_parse_params(a.param))
-        case_to_json(net, a.out)
-        print("escrito", a.out)
-        return 0
     if a.mf2:
         from .io.spec import case_to_json
         from .io_legacy import load_case
@@ -231,7 +185,7 @@ def cmd_export_case(a):
         case_to_json(case, a.out)
         print("escrito", a.out)
         return 0
-    raise SystemExit("indique --chapter10, --severe-runs, --severe ou --mf2")
+    raise SystemExit("indique --chapter10 ou --mf2")
 
 
 def cmd_nb(a):
@@ -318,25 +272,13 @@ def main(argv=None):
 
     e = sub.add_parser("export-case", help="exporta casos para JSON (mfsim-case/1)")
     e.add_argument("--chapter10", action="store_true")
-    e.add_argument("--severe-runs", dest="severe_runs", action="store_true")
-    e.add_argument("--severe", action="store_true")
     e.add_argument("--mf2")
     e.add_argument("--out")
-    e.add_argument("--param", action="append", default=[], help="chave=valor (JSON) de severe_slug_case")
     e.set_defaults(func=cmd_export_case)
 
     vs = sub.add_parser("validate", help="valida casos JSON contra o schema mfsim-case/1")
     vs.add_argument("files", nargs="+")
     vs.set_defaults(func=cmd_validate)
-
-    cv = sub.add_parser(
-        "convert-runs", help="converte corridas no formato antigo (meta v1 / opts do driver) para v2 (case_json)"
-    )
-    cv.add_argument("files", nargs="+")
-    cv.add_argument(
-        "--out-dir", dest="out_dir", help="escreve as cópias convertidas nesta pasta (por omissão substitui no lugar)"
-    )
-    cv.set_defaults(func=cmd_convert_runs)
 
     n = sub.add_parser("nb", help="converte (e executa) um notebook de notebooks_src")
     n.add_argument("src")

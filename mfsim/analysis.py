@@ -4,6 +4,33 @@ from __future__ import annotations
 
 import numpy as np
 
+G = 9.80665
+
+
+def boe_criterion(vSL, vSG, P_base, rhoL, alphaG, L_gas):
+    """Critério de Bøe (1981) na forma citada por Taitel (1986) e Jansen et al. (1996):
+
+        vSL >= P / (rhoL g (1 - alphaG) L) * vSG
+
+    Compara a taxa de subida da coluna hidrostática no riser (rhoL g vSL) com a taxa
+    de compressão do gás da linha (P vSG / (alphaG L)); L é o comprimento de linha
+    ocupado pelo gás (bolsão + volume a montante), sem fator de inclinação. Uma
+    versão anterior desta função multiplicava L por sin|theta|, o que não consta
+    das fontes e superestimava vSL_min por 1/sin|theta| (19x a -3 graus).
+    Retorna (vSL_min, severe) com severe = vSL >= vSL_min."""
+    vSL_min = P_base / (rhoL * G * (1.0 - alphaG) * L_gas) * vSG
+    return vSL_min, vSL >= vSL_min
+
+
+def superficial_velocities(case):
+    """(vSL, vSG) à pressão de saída de um caso gerado (duto único; `meta` do gerador)."""
+    p = case.pipes[0]
+    A = np.pi * p.D**2 / 4
+    fl = case.fluid
+    P = case.meta["P_out_bar"] * 1e5
+    rhoL, rhoG, _, _ = fl.props(P)
+    return case.meta["qL"] / rhoL / A, case.meta["qG"] / rhoG / A
+
 
 def dense_jacobian(model, X, t=0.0, rel=1e-7, abs_=1e-9):
     X = np.asarray(X, float)
@@ -199,7 +226,6 @@ def scan_summary(run, t_skip=300.0):
     pressão, critério de Bøe, padrão da linha pela identificação da tese (estado médio da
     célula no meio do trecho descendente), amplitude da pressão de entrada depois de
     `t_skip`, blowdowns e intervalo."""
-    from .cases.severe_slug import boe_criterion
     from .closures import equilibrium_fractions, identify_regime
 
     mb = run.meta
@@ -336,8 +362,6 @@ def lab_validation(run, tag):
     """Assinatura de uma corrida de validação contra os valores publicados: período (blowdowns
     separados por 30 % do período medido), pressão de entrada em kPa, pico de líquido, fração
     de gás na base do riser e critério de Bøe com a fração média da linha."""
-    from .cases.severe_slug import boe_criterion
-
     case = run.case
     fluid = case.fluid
     m = case.meta

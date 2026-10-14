@@ -7,7 +7,7 @@ ficheiro é o mapa.*
 ## O caso
 
 Geometria linha–riser (`cases/severe_slug/reference.json`, gerada por
-`mfsim.cases.severe_slug.severe_slug_case`): 20 m horizontais, 300 m descendentes a −3°,
+`generators/severe_slug.py`, fora do simulador): 20 m horizontais, 300 m descendentes a −3°,
 joelho em arco (R = 5 m, 4 elementos), riser de 20 m e 5 m até o separador a 4 bar;
 D = 50 mm, vSL = 0.3 m/s, vSG ≈ 0.1 m/s; malha de 15 + 5 células; partida de linha
 bloqueada. Modelo a dois fluidos no esquema de volumes finitos escalonados, conservativo,

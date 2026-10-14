@@ -5,7 +5,7 @@ sucesso/erro) e `provenance_json` (commit, versões, comando).
 
 `load_run(nome)` procura em `runs/`, `notebooks/data/` e no arquivo; `Run` reconstrói
 caso, modelo e resultados a partir do `case_json`. Os ficheiros no formato antigo (`meta`
-v1) convertem-se com `mfsim convert-runs` (`mfsim.io.legacy_runs`).
+v1) convertem-se com `tools/convert_runs.py` (`tools/legacy_runs.py`).
 """
 
 from __future__ import annotations
@@ -134,7 +134,9 @@ def load_run(path) -> Run:
     path = find_run(path)
     with np.load(path, allow_pickle=False) as d:
         if "case_json" not in d.files:
-            raise ValueError(f"{path}: corrida no formato antigo (meta v1); converta com `mfsim convert-runs {path}`")
+            raise ValueError(
+                f"{path}: corrida no formato antigo (meta v1); converta com `uv run python tools/convert_runs.py {path}`"
+            )
         info = json.loads(str(d["info_json"])) if "info_json" in d.files else {}
         prov = json.loads(str(d["provenance_json"])) if "provenance_json" in d.files else {}
         case_json = json.loads(str(d["case_json"]))

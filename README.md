@@ -45,8 +45,8 @@ uv run mfsim val   severe_slug_lab_fabre2_fisico --plot                        #
 # casos e corridas
 uv run mfsim validate cases/chapter10/*.json cases/severe_slug/*.json      # schema mfsim-case/1
 uv run mfsim export-case --chapter10                                       # .mf2 -> cases/chapter10/*.json
-uv run mfsim export-case --severe --out novo.json --param D=0.05 --param start=blocked
-uv run mfsim convert-runs antiga.npz --out-dir runs/                       # corrida v1 (meta) -> v2 (case_json)
+uv run python -m generators.severe_slug --out novo.json --param D=0.05 --param start=blocked   # gerador (fora do simulador)
+uv run python tools/convert_runs.py antiga.npz --out-dir runs/            # corrida v1 (meta) -> v2 (case_json)
 ```
 
 - **Um só caminho de execução.** `simulate(case)` lê tudo do caso, em numpy ou JAX; CLI,
@@ -75,12 +75,12 @@ uv run mfsim convert-runs antiga.npz --out-dir runs/                       # cor
 | `mfsim/backend/`, `mfsim/compiled.py` | backend numérico injetado (`NUMPY`, `JAX`): fluido, fechamentos, modelos, esquemas e rede escritos **uma só vez**; `CompiledNetwork` reconstrói o mesmo `NetworkSystem` em JAX com `jit` e Jacobiana exata por `jacfwd` |
 | `mfsim/integrators/`, `steady.py`, `initial_guess.py` | BDF implícito próprio (ordem 1–2, passo adaptativo, Newton modificado, Jacobiana colorida ou externa) e invólucro do `solve_ivp`; estado estacionário (Newton + pseudo-transiente); estimativa inicial |
 | `mfsim/simulation.py`, `results.py` | `build_model`, `simulate`, `steady_state`; `Results` com as saídas da tese por duto e por vértice |
-| `mfsim/io/`, `mfsim/initial/` | casos em JSON (`spec.py`; `$extends`/`$ref`/`$include` em `extends.py`; schema e `validate.py`), conversão dos `.mf2` (`legacy_mf2.py`), registo legado (`legacy_case.py`, só formato de entrada), dialeto das corridas antigas (`legacy_runs.py`, só para `convert-runs`); receitas de condição inicial (bloqueada, linha fechada) |
-| `mfsim/runs.py`, `analysis.py`, `cli.py` | corridas gravadas v2 (`load_run`, `save_run`, `Run.case`/`network`/`res`); assinaturas de ciclo e análises (varredura, riser, laboratório); `mfsim run\|steady\|stats\|scan\|riser\|val\|export-case\|validate\|convert-runs\|nb` |
-| `mfsim/cases/`, `io_legacy.py` | acesso aos casos do capítulo 10 pelos JSON (`chapter10_case`, `chapter10_info`; `legacy_results` lê o `.mf2` só para comparar com o MATLAB) e gerador paramétrico do severe slug (`severe_slug_case`, `generate`) |
+| `mfsim/io/`, `mfsim/initial/` | casos em JSON (`spec.py`; `$extends`/`$ref`/`$include` em `extends.py`; schema e `validate.py`), exportação dos `.mf2` da tese (`legacy_mf2.py`), registo legado (`legacy_case.py`, só formato de entrada); receitas de condição inicial (bloqueada, linha fechada) |
+| `mfsim/runs.py`, `analysis.py`, `cli.py` | corridas gravadas v2 (`load_run`, `save_run`, `Run.case`/`network`/`res`); assinaturas de ciclo e análises (varredura, riser, laboratório); `mfsim run\|steady\|stats\|scan\|riser\|val\|export-case\|validate\|nb` |
+| `mfsim/io_legacy.py` | leitura dos `.mf2` originais e acesso aos casos do capítulo 10 pelos JSON (`chapter10_keys`, `chapter10_case`, `chapter10_info`; `legacy_results` abre o `.mf2` só para comparar com o MATLAB) |
 | `mfsim/plotting.py`, `notebook_utils.py` | figuras no estilo da tese e apoio aos notebooks |
-| `cases/` | JSON: `examples/hello_world`, `chapter10/` (11 casos da tese), `severe_slug/` (referência, variantes como `$extends`, laboratório) |
-| `tools/`, `tests/`, `notebooks_src/` | `golden_generate` (referências de regressão), `manifest`, `make_nb`, `severe_run`/`save_run_data` (dialeto antigo); testes com `tests/golden/` (nível A = bit a bit, B = tolerância, C = assinaturas de ciclo; `CHANGELOG.md`); fontes dos 9 notebooks |
+| `cases/`, `generators/` | JSON: `examples/hello_world`, `chapter10/` (11 casos da tese), `severe_slug/` (referência, variantes como `$extends`, laboratório); gerador paramétrico do severe slug **fora do simulador** (`generators/severe_slug.py`: parâmetros físicos → JSON) |
+| `tools/`, `tests/`, `notebooks_src/` | `golden_generate` (referências de regressão), `manifest`, `make_nb`, migração do dialeto antigo (`legacy_runs`, `convert_runs`, `severe_run`, `save_run_data`, `export_severe_cases`); testes com `tests/golden/` (nível A = bit a bit, B = tolerância, C = assinaturas de ciclo; `CHANGELOG.md`); fontes dos 9 notebooks |
 | `legacy/`, `archive/` | `.mf2` e código MATLAB originais; arquivo da antiga `scratch/`, dos diagnósticos e das corridas v1 |
 
 ## Documentação

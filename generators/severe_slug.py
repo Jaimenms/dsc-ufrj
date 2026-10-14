@@ -4,37 +4,24 @@ Geometria clássica (Taitel 1986; Schmidt et al. 1980): linha horizontal,
 trecho descendente (inclinação negativa) que termina na base de um riser
 vertical, seguido de um trecho horizontal até o separador (pressão fixa).
 
-Critério de Bøe (1981) para ocorrência de intermitência severa em
-linha-riser:  vSL >= (P / (rhoL g (1 - alphaG) L)) vSG   (Bøe, 1981; sem fator de inclinação)
-onde L é o comprimento do trecho descendente, P a pressão na base do riser.
+Gerador de casos, fora do simulador: `severe_slug_case(**parâmetros)` constrói o grafo
+(`mfsim.Network`) a partir de ~30 parâmetros físicos (geometria com arco no joelho e malha
+graduada, vazões a partir de vSL/vSG, fluido, partida, opções do modelo e do esquema) e
+`generate(**parâmetros)` acrescenta a receita de condição inicial e regista os parâmetros em
+`meta.generator_params`; `python -m generators.severe_slug --out x.json --param D=0.05` grava
+o JSON. Os ficheiros em `cases/severe_slug/` foram produzidos assim. O simulador só lê JSON.
+O critério de Bøe e as velocidades superficiais estão em `mfsim.analysis`.
 """
 
 from __future__ import annotations
 
-import os
-
 import numpy as np
 
-from ..fluid import Fluid
-from ..core.slots import BC_ABSENT, BC_DIRICHLET, BC_NEUMANN
-from ..network.graph import BoundaryVertex, Network, Pipe, TankVertex, specs
+from mfsim.fluid import Fluid
+from mfsim.core.slots import BC_ABSENT, BC_DIRICHLET, BC_NEUMANN
+from mfsim.network.graph import BoundaryVertex, Network, Pipe, TankVertex, specs
 
 G = 9.80665
-
-
-def boe_criterion(vSL, vSG, P_base, rhoL, alphaG, L_gas):
-    """Critério de Bøe (1981) na forma citada por Taitel (1986) e Jansen et al. (1996):
-
-        vSL >= P / (rhoL g (1 - alphaG) L) * vSG
-
-    Compara a taxa de subida da coluna hidrostática no riser (rhoL g vSL) com a taxa
-    de compressão do gás da linha (P vSG / (alphaG L)); L é o comprimento de linha
-    ocupado pelo gás (bolsão + volume a montante), sem fator de inclinação. Uma
-    versão anterior desta função multiplicava L por sin|theta|, o que não consta
-    das fontes e superestimava vSL_min por 1/sin|theta| (19x a -3 graus).
-    Retorna (vSL_min, severe) com severe = vSL >= vSL_min."""
-    vSL_min = P_base / (rhoL * G * (1.0 - alphaG) * L_gas) * vSG
-    return vSL_min, vSL >= vSL_min
 
 
 def severe_slug_case(
@@ -242,7 +229,7 @@ def severe_slug_case(
         state_ref=state_ref,
     )
     if start == "blocked":
-        from ..geometry import pipe_mesh
+        from mfsim.geometry import pipe_mesh
 
         mesh = pipe_mesh(x, y, z, n_el_list, grading=grading)
         s_nodes = mesh["s"]
@@ -253,8 +240,8 @@ def severe_slug_case(
         s_front = s_riser0 - front_liquid_length
         if pocket_alpha is None:
             # fração de gás de equilíbrio do estratificado no trecho descendente
-            from ..closures import ClosureInputs, equilibrium_fractions
-            from ..geometry import stratified_level
+            from mfsim.closures import ClosureInputs, equilibrium_fractions
+            from mfsim.geometry import stratified_level
 
             P_est = P_out_bar * 1e5 + fluid.rhoL0 * G * H_riser
             rhoL_, rhoG_, CL_, CG_ = fluid.props(P_est)
@@ -285,7 +272,7 @@ def severe_slug_case(
                 hD=hD,
             )
             pocket_alpha = float(np.clip(equilibrium_fractions(inp)[2][0], 0.3, 0.95))
-        from ..initial.recipes import blocked_ic
+        from mfsim.initial.recipes import blocked_ic
 
         ic_full, P, aG0 = blocked_ic(
             s_nodes,
@@ -339,7 +326,7 @@ def severe_slug_case(
     if start == "shut_in" and single_pipe:
         # estado inicial: fluido parado, fração de gás prescrita por trecho e
         # pressão hidrostática (densidade da mistura) a partir da saída
-        from ..geometry import pipe_mesh
+        from mfsim.geometry import pipe_mesh
 
         mesh = pipe_mesh(
             x, y, z, pipes[0].n_elements, grading=None if pipes[0].grading is None else list(pipes[0].grading)
@@ -347,7 +334,7 @@ def severe_slug_case(
         s_nodes = mesh["s"]
         z_nodes = mesh["xyz"][:, 2]
         n_nodes = s_nodes.size
-        from ..initial.recipes import shut_in_ic
+        from mfsim.initial.recipes import shut_in_ic
 
         pipes[0].ic = shut_in_ic(
             s_nodes,
@@ -373,104 +360,14 @@ def severe_slug_case(
     return net
 
 
-def superficial_velocities(case):
-    p = case.pipes[0]
-    A = np.pi * p.D**2 / 4
-    fl = case.fluid
-    P = case.meta["P_out_bar"] * 1e5
-    rhoL, rhoG, _, _ = fl.props(P)
-    return case.meta["qL"] / rhoL / A, case.meta["qG"] / rhoG / A
-
-
-# ----------------------------------------------------------------------------- JSON
-CASES_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "cases", "severe_slug"
-)
-
-# corridas gravadas que definem os casos de referência (nome em notebooks/data -> nome do JSON)
-REFERENCE_RUNS = {
-    "severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys": "reference",
-    "severe_slug_blocked_conservative_arc_tol_hv_vm_lv": "reference_thesis_bubbles",
-    "severe_slug_blocked_regime6_local": "reference_auto_regime",
-    "severe_slug_blocked_conservative_arc_boe_bub_rules": "long_line_2bar",
-    "severe_slug_blocked_network_v005": "reference_network",
-    "severe_slug_lab_fabre1_fisico": "lab_fabre1",
-    "severe_slug_lab_fabre2_fisico": "lab_fabre2",
-    "severe_slug_lab_fabre2_tese": "lab_fabre2_thesis_bubbles",
-    "severe_slug_lab_jansen_fisico": "lab_jansen",
-    "severe_slug_lab_jansen_tese": "lab_jansen_thesis_bubbles",
-    "severe_slug_lab_teng1_fisico": "lab_tengesdal1",
-}
-
-
-# variantes gravadas como remendo (`"$extends"`) sobre o caso base da mesma pasta
-EXTENDS = {
-    "reference_thesis_bubbles": "reference",
-    "reference_auto_regime": "reference",
-    "long_line_2bar": "reference",
-    "lab_fabre1": "lab_fabre2",
-    "lab_fabre2_thesis_bubbles": "lab_fabre2",
-    "lab_jansen_thesis_bubbles": "lab_jansen",
-}
-
-
-def export_run_cases(out_dir=CASES_DIR, runs=None):
-    """Exporta para JSON os casos das corridas gravadas (o `case_json` de cada corrida, com a
-    secção `integration` e o meta do gerador), com a condição inicial como receita nos dutos
-    únicos; as variantes de `EXTENDS` ficam como remendo sobre o caso base."""
-    import copy
-
-    from ..io.spec import case_to_json
-    from ..runs import load_run
-
-    os.makedirs(out_dir, exist_ok=True)
-    written = []
-    items = sorted((runs or REFERENCE_RUNS).items(), key=lambda it: it[1] in EXTENDS)  # bases primeiro
-    for run_name, name in items:
-        run = load_run(run_name)
-        net = copy.deepcopy(run.case)  # já traz a secção integration e o meta do gerador (conversão v2)
-        net.name = name
-        if not run.meta.get("network", False) and run.meta.get("start", "blocked") in ("blocked", "shut_in"):
-            # duto único: a condição inicial fica como receita (ficheiro auto-contido)
-            m = net.meta
-            pipe = net.pipes[0]
-            if run.meta.get("start", "blocked") == "blocked":
-                pipe.ic_recipe = {
-                    "recipe": "blocked",
-                    "s_front": float(m["s_front"]),
-                    "s_top": float(m["s_top"]),
-                    "pocket_alpha": float(m["pocket_alpha"]),
-                    "P_out_bar": float(m["P_out_bar"]),
-                    "dP_margin_bar": float(run.meta.get("dP_margin", 0.3)),
-                    "qL": float(m["qL"]),
-                    "qG": float(m["qG"]),
-                }
-            else:
-                pipe.ic_recipe = {
-                    "recipe": "shut_in",
-                    "s_elbow0": float(m["s_elbow0"]),
-                    "alpha_line": 0.5,
-                    "alpha_riser": 0.01,
-                    "P_out_bar": float(m["P_out_bar"]),
-                }
-            pipe.ic = None
-        path = os.path.join(out_dir, f"{name}.json")
-        base = EXTENDS.get(name)
-        case_to_json(net, path, ic_file=f"{name}.ic.npz", extends=f"{base}.json" if base else None)
-        written.append(path)
-    return written
-
-
 def generate(**kw):
     """Grafo (`Network`) de um caso de intermitência severa a partir dos parâmetros de
     `severe_slug_case` (geometria, vazões, partida, opções em `extra`), com a condição inicial
     como receita quando é duto único. É a forma de criar casos novos em JSON:
 
         net = generate(D=0.05, L_down=300.0, ..., start="blocked")
-        case_to_json(net, "cases/severe_slug/novo.json")
+        mfsim.io.case_to_json(net, "cases/severe_slug/novo.json")
     """
-    from ..io.spec import case_to_json  # noqa: F401  (documentação)
-
     net = severe_slug_case(**kw)
     m = net.meta
     if kw.get("single_pipe", True) and kw.get("start", "guess") in ("blocked", "shut_in"):
@@ -503,9 +400,12 @@ def generate(**kw):
     return net
 
 
-if __name__ == "__main__":
-    import argparse, json as _json
-    from ..io.spec import case_to_json
+def main(argv=None):
+    """`python -m generators.severe_slug --out novo.json --param D=0.05 --param start=blocked`."""
+    import argparse
+    import json as _json
+
+    from mfsim.io.spec import case_to_json
 
     ap = argparse.ArgumentParser(
         description="Gera um caso de intermitência severa em JSON a partir dos parâmetros de severe_slug_case."
@@ -513,24 +413,22 @@ if __name__ == "__main__":
     ap.add_argument("--out", required=True)
     ap.add_argument(
         "--param",
-        nargs="*",
+        action="append",
         default=[],
-        help="chave=valor (JSON) de severe_slug_case, ex.: D=0.05 start=blocked 'extra={\"conservative\": true}'",
+        help="chave=valor (JSON) de severe_slug_case, ex.: --param D=0.05 --param start=blocked",
     )
-    ap.add_argument(
-        "--export-runs", action="store_true", help="reexporta os casos das corridas de referência (cases/severe_slug)"
-    )
-    a = ap.parse_args()
-    if a.export_runs:
-        for p in export_run_cases():
-            print("escrito", p)
-    else:
-        kw = {}
-        for item in a.param:
-            k, v = item.split("=", 1)
-            try:
-                kw[k] = _json.loads(v)
-            except _json.JSONDecodeError:
-                kw[k] = v
-        case_to_json(generate(**kw), a.out)
-        print("escrito", a.out)
+    a = ap.parse_args(argv)
+    kw = {}
+    for item in a.param:
+        k, v = item.split("=", 1)
+        try:
+            kw[k] = _json.loads(v)
+        except _json.JSONDecodeError:
+            kw[k] = v
+    case_to_json(generate(**kw), a.out)
+    print("escrito", a.out)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

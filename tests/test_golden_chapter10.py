@@ -9,7 +9,7 @@ from mfsim.network.graph import ports
 import numpy as np
 import pytest
 
-from mfsim.cases import chapter10_keys, chapter10_case, legacy_results
+from mfsim.io_legacy import chapter10_keys, chapter10_case, legacy_results
 from mfsim.notebook_utils import run_case
 from mfsim.simulation import simulate, steady_state
 

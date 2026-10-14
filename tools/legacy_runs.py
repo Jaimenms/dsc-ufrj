@@ -1,9 +1,9 @@
 """Corridas gravadas no formato antigo (v1): o `meta` com as opções da corrida no dialeto do
 antigo driver `scratch/severe_D.py` e os defaults do notebook `nb_severe_slug`.
 
-Só para conversão e para o lançador no dialeto antigo (`tools/severe_run.py`): o simulador
+Só para conversão e para o lançador no dialeto antigo (`tools/severe_run.py`) e `tools/convert_runs.py`: o simulador
 e as análises consomem o formato v2 (`case_json`, lido por `mfsim.runs.load_run`).
-`mfsim convert-runs` chama `convert_run`, que reconstrói o caso do `meta` (`case_from_meta`,
+`tools/convert_runs.py` chama `convert_run`, que reconstrói o caso do `meta` (`case_from_meta`,
 cópia verificada do carregador do notebook: γL = 100 por omissão) e completa a secção
 `integration` com o que o driver fazia (primeiro passo 1e-3, ordem 2, passo mínimo 1e-9,
 acumulador dos fluxos de contorno, tolerância por faixa ou `atol = rtol/100`).
@@ -16,8 +16,8 @@ import os
 
 import numpy as np
 
-from ..cases.severe_slug import severe_slug_case
-from ..fluid import Fluid
+from generators.severe_slug import severe_slug_case
+from mfsim.fluid import Fluid
 
 # fluido do caso base do notebook (usado quando o meta não grava o campo)
 NOTEBOOK_FLUID = dict(rhoL0=900.0, rhoG0=1.2, muL=2e-3, muG=1.8e-5, gammaL=100.0, gammaG=1.05, P0=1e5, sigma=0.05)
@@ -355,7 +355,7 @@ def convert_run(src, dst=None):
     """Converte um ficheiro de corrida v1 (`meta`, ou `opts` do driver) para o formato v2
     (`case_json`, `info_json`, `provenance_json`); devolve o caminho escrito, ou None se o
     ficheiro já está em v2. Escrita atómica (ficheiro temporário + substituição)."""
-    from ..runs import save_run
+    from mfsim.runs import save_run
 
     dst = dst or src
     with np.load(src, allow_pickle=False) as d:
@@ -379,6 +379,6 @@ def convert_run(src, dst=None):
     if meta.get("note"):
         info["note"] = meta["note"]
     tmp = dst + ".tmp.npz"
-    save_run(tmp, T, X, net, info=info, acc=acc, command=f"mfsim convert-runs {src}")
+    save_run(tmp, T, X, net, info=info, acc=acc, command=f"tools/convert_runs.py {src}")
     os.replace(tmp, dst)
     return dst

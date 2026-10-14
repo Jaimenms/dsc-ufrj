@@ -8,7 +8,7 @@ import copy
 import numpy as np
 import pytest
 
-from mfsim.cases import chapter10_case
+from mfsim.io_legacy import chapter10_case
 from mfsim.simulation import build_model, state_bounds, steady_state
 from mfsim.integrators.implicit import ImplicitBDF
 

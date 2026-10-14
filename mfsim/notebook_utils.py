@@ -7,8 +7,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .cases import chapter10_case, chapter10_info, legacy_results
-from .io_legacy import legacy_states
+from .io_legacy import chapter10_case, chapter10_info, legacy_results, legacy_states
 from .plotting import legacy_pipe_dict, pipe_surfaces, pipe_timeseries
 from .simulation import build_model, simulate
 

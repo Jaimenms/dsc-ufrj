@@ -46,7 +46,7 @@ conservativa para fechar o balanço de massa (004); a primeira versão com limit
 
 *Texto movido de `docs/severe_slug.md` (secção «Intermitência severa») em 2026-10-14.*
 
-Geometria linha–riser (`mfsim/cases/severe_slug.py`): 20 m horizontais, 300 m
+Geometria linha–riser (`generators/severe_slug.py`): 20 m horizontais, 300 m
 descendentes a −3°, riser de 20 m e 5 m até o separador (4 bar), D = 50 mm,
 vSL = 0.3 m/s, vSG ≈ 0.1 m/s. Um único duto com padrão estratificado na linha e
 bolhas nos trechos quase verticais (`regime_vertical`), esquema `fv_upwind`,

@@ -7,7 +7,7 @@ from mfsim.network.schedules import Constant
 
 import numpy as np
 
-from mfsim.cases import chapter10_case
+from mfsim.io_legacy import chapter10_case
 from mfsim.integrators.implicit import ImplicitBDF
 from mfsim.simulation import build_model, state_bounds, steady_state
 
@@ -102,7 +102,7 @@ def test_network_vertices_conserve_mass():
     """Rede de dutos conservativos com vértices dinâmicos conservativos: o estoque total
     (dutos + vértices) segue exatamente a integral BDF-consistente de entrada - saída."""
     import numpy as np
-    from mfsim.cases.severe_slug import severe_slug_case
+    from generators.severe_slug import severe_slug_case
     from mfsim.fluid import Fluid
     from mfsim.analysis import mass_balance
     from mfsim.results import Results
