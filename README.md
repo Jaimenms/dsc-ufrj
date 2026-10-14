@@ -133,3 +133,7 @@ pendências do documento-resumo.
 | 7 | Arraste e deposição de gotas no anular (forma do pico de produção) | avaliado (2026-10-13): fração arrastada de Ishii–Mishima desprezível (E > 0.1 em ≤ 1 % do tempo com riser cheio de gás; 1–5 % do líquido produzido); sem modelo de gotas |
 | 8 | Validação com dados experimentais (Jansen–Shoham–Taitel 1996, Fabre 1990, Tengesdal 2002) | feito (2026-10-13): [docs/lab_validation.md](docs/lab_validation.md). Com o fechamento de bolhas da tese nenhum caso cicla (gás a 4 m/s com 3 % de fração a 1 atm); com `bubble_drag="fisico"` (sem efeito no caso de campo) Fabre 2 dá 135.8 s contra 137 medidos, Tengesdal 64–68 s contra 79, Jansen 56–63 s contra 46.6 (ensaio com choke), Fabre 1 o tipo certo (penetração contínua, +50 %). Critério de Bøe corrigido. Numérica a 1 atm: banda de undershoot ligada a γG/γL e recálculo da Jacobiana no Newton (`slow`). Por fazer: choke no topo (item 9) para fechar a comparação com Jansen |
 | 9 | Mitigação com os elementos existentes: choke no topo e gas lift na base | não iniciado |
+
+## Licença
+
+MIT ([LICENSE](LICENSE)).
