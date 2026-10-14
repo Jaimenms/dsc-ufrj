@@ -23,8 +23,19 @@ from .network.graph import (
 )
 
 __all__ = [
-    "Fluid", "Network", "BoundaryVertex", "JunctionVertex", "TankVertex", "Pipe", "Connector", "Choke",
-    "Reservoir", "CheckValve", "as_network", "ports", "specs",
+    "Fluid",
+    "Network",
+    "BoundaryVertex",
+    "JunctionVertex",
+    "TankVertex",
+    "Pipe",
+    "Connector",
+    "Choke",
+    "Reservoir",
+    "CheckValve",
+    "as_network",
+    "ports",
+    "specs",
 ]
 
 
@@ -32,11 +43,14 @@ def __getattr__(name):
     # importações tardias para evitar ciclos na carga do pacote
     if name == "NetworkModel":
         from .network.model import NetworkModel
+
         return NetworkModel
     if name in ("simulate", "steady_state"):
         from . import simulation
+
         return getattr(simulation, name)
     if name == "Results":
         from .results import Results
+
         return Results
     raise AttributeError(name)

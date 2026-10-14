@@ -34,9 +34,17 @@ for k in (0, 1):
 # %%
 fig, axes = plt.subplots(2, 2, figsize=(11, 7))
 for ax, key in zip(axes.ravel(), ["alphaG", "P_bar", "qL", "qG"]):
-    compare_runs({"Formulação A (conexão)": resA, "Formulação B (vértice dinâmico)": resB}, k=1, key=key,
-                 node=-1 if key != "P_bar" else 0, ax=ax, legacy=legacy_pipe_dict(rawA, 1) if key != "P_bar" else None)
-fig.suptitle("Dois trechos em série: formulações A e B (trecho 2)", y=1.02); fig.tight_layout(); plt.show()
+    compare_runs(
+        {"Formulação A (conexão)": resA, "Formulação B (vértice dinâmico)": resB},
+        k=1,
+        key=key,
+        node=-1 if key != "P_bar" else 0,
+        ax=ax,
+        legacy=legacy_pipe_dict(rawA, 1) if key != "P_bar" else None,
+    )
+fig.suptitle("Dois trechos em série: formulações A e B (trecho 2)", y=1.02)
+fig.tight_layout()
+plt.show()
 
 # %% [markdown]
 # ### Fechamento do balanço de massa no vértice de acoplamento (Figura 10.24, Tabela 10.3)
@@ -47,14 +55,21 @@ for label, res in (("A", resA), ("B", resB)):
     dL = p1["out"]["qL"][-1] - p2["out"]["qL"][0]
     dG = p1["out"]["qG"][-1] - p2["out"]["qG"][0]
     fig, ax = plt.subplots(figsize=(6, 3.2))
-    ax.plot(res.T, dL, label="líquido"); ax.plot(res.T, dG, label="gás")
-    ax.set_xlabel("Tempo (s)"); ax.set_ylabel("q_saída(1) - q_entrada(2) (kg/s)"); ax.set_title(f"Formulação {label}"); ax.legend(); ax.grid(alpha=0.3)
+    ax.plot(res.T, dL, label="líquido")
+    ax.plot(res.T, dG, label="gás")
+    ax.set_xlabel("Tempo (s)")
+    ax.set_ylabel("q_saída(1) - q_entrada(2) (kg/s)")
+    ax.set_title(f"Formulação {label}")
+    ax.legend()
+    ax.grid(alpha=0.3)
     plt.show()
     print(f"Formulação {label} - Tabela 10.3")
     print(f"{'t (s)':>6s} {'qL saída 1':>11s} {'qL entrada 2':>13s} {'qG saída 1':>11s} {'qG entrada 2':>13s}")
     for t in (0, 750, 1000, 2000, 3000):
         it = int(np.argmin(np.abs(res.T - t)))
-        print(f"{res.T[it]:6.0f} {p1['out']['qL'][-1, it]:11.3f} {p2['out']['qL'][0, it]:13.3f} {p1['out']['qG'][-1, it]:11.3f} {p2['out']['qG'][0, it]:13.3f}")
+        print(
+            f"{res.T[it]:6.0f} {p1['out']['qL'][-1, it]:11.3f} {p2['out']['qL'][0, it]:13.3f} {p1['out']['qG'][-1, it]:11.3f} {p2['out']['qG'][0, it]:13.3f}"
+        )
 
 # %% [markdown]
 # ## 10.2.2 Rede com ciclo
@@ -81,4 +96,5 @@ plot_vertices(res, raw)
 
 # %%
 from mfsim.notebook_utils import jax_comparison
+
 res_jax = jax_comparison(case, res, rtol=1e-4, atol=1e-6)

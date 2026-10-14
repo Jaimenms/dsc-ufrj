@@ -37,35 +37,57 @@ class PipeParams:
     """Parâmetros geométricos de um duto para avaliação do modelo."""
 
     D: float
-    eps: float              # rugosidade [m]
-    PR: float               # pressão de referência para PT
-    regime: int = 4         # 1 anular, 2 bolhas, 3 intermitente, 4/5 estratificado, 6 automático
-    k_switch: float = 1e6   # suavidade do chaveamento de regime
-    ipe_smooth: bool = False   # identificação de padrão suave (sigmoides relativas, k ~ 20; equilíbrios com |v| e hD interpolado; sentido com tanh)
-    ipe_local: bool = False    # critérios de padrão no estado local (nível/fração reais; fração de bolhas max(aG_bol, alphaG)) em vez dos equilíbrios
+    eps: float  # rugosidade [m]
+    PR: float  # pressão de referência para PT
+    regime: int = 4  # 1 anular, 2 bolhas, 3 intermitente, 4/5 estratificado, 6 automático
+    k_switch: float = 1e6  # suavidade do chaveamento de regime
+    ipe_smooth: bool = (
+        False  # identificação de padrão suave (sigmoides relativas, k ~ 20; equilíbrios com |v| e hD interpolado; sentido com tanh)
+    )
+    ipe_local: bool = (
+        False  # critérios de padrão no estado local (nível/fração reais; fração de bolhas max(aG_bol, alphaG)) em vez dos equilíbrios
+    )
     alpha_min: float = 1e-3
     alpha_max: float = 1.0 - 1e-3
-    legacy_convective: bool = True   # usa v|v| e 2|v| como no MFSIM original
-    regime_vertical: int = 0         # se > 0, padrão usado onde |theta| > vertical_angle (ex.: riser)
-    vertical_angle: float = 45.0     # graus
-    vertical_blend: float = 0.0      # graus: meia-largura da transição suave entre o padrão da linha e o vertical (0 = chave dura)
-    interfacial_pressure: float = 0.0   # delta: termo de pressão interfacial regularizante (CATHARE/Bestion), 0 = desligado
-    low_void_regime: int = 0            # se > 0, padrão usado quando alphaG < low_void_alpha (ex.: 2 = bolhas; o estratificado é mal posto com camada de gás muito fina)
-    low_void_alpha: float = 0.01        # fração de gás abaixo da qual o padrão de baixa fração entra (rampa C1 até 2x esse valor)
-    high_void_regime: int = 0           # se > 0, padrão usado quando alphaG > high_void_alpha (ex.: 1 = anular: filme de parede num duto quase cheio de gás)
-    high_void_alpha: float = 0.9        # fração de gás acima da qual o padrão de alta fração entra (rampa C1 de high_void_alpha - 0.05 a + 0.05)
-    ip_slip_max: float = 10.0           # m/s: limite do escorregamento usado no termo de pressão interfacial
-    bb_derivatives: str = "exact"       # Beggs & Brill: derivadas internas (momento, hold-up) "exact" (diferenciação
-                                        # automática, só no caminho JAX) ou "fd" (diferenças finitas de 1e-3, como na tese;
-                                        # o caminho numpy usa sempre "fd")
-    fi_mult: float = 1.0     # multiplicador do fator de atrito interfacial do estratificado (sensibilidade)
-    fi_vgt: float = 5.5      # v_GT (m/s) de Andritsos & Hanratty no atrito interfacial; inf -> Taitel & Dukler (f_I = f_G)
-    virtual_mass: float = 0.0   # coeficiente de massa virtual C_vm (Drew & Lahey; 0.5 para bolhas esféricas), pesado pelo indicador de bolhas
-    bubble_drag: str = "tese"   # arrasto interfacial do padrão bolhas: "tese" (modelo_bolhas.m: vb = sqrt(0.51 db + 2.14/db), sem g e
-                                # sigma/rhoL; tensão interfacial f_I rhoG dv|dv|/2 com f_I = 1.5 alphaG rhoL CD/db, isto é, força ~ rhoG alphaG^2)
-                                # ou "fisico" (vb de Mendelson/Fan-Tsuchiya sqrt(2.14 sigma/(rhoL db) + 0.505 g db), CD = 4/3 g db Δrho/(rhoL vb^2),
-                                # força por volume 3/4 CD alphaG rhoL |vr| vr / db: na velocidade terminal o arrasto iguala o empuxo)
-    vm_lambda: float = 1.0      # forma objetiva de Drew & Lahey: termos (lambda-2)(vG-vL) dvG/dx + (1-lambda)(vG-vL) dvL/dx (lambda = 2: só acelerações)
+    legacy_convective: bool = True  # usa v|v| e 2|v| como no MFSIM original
+    regime_vertical: int = 0  # se > 0, padrão usado onde |theta| > vertical_angle (ex.: riser)
+    vertical_angle: float = 45.0  # graus
+    vertical_blend: float = (
+        0.0  # graus: meia-largura da transição suave entre o padrão da linha e o vertical (0 = chave dura)
+    )
+    interfacial_pressure: float = (
+        0.0  # delta: termo de pressão interfacial regularizante (CATHARE/Bestion), 0 = desligado
+    )
+    low_void_regime: int = (
+        0  # se > 0, padrão usado quando alphaG < low_void_alpha (ex.: 2 = bolhas; o estratificado é mal posto com camada de gás muito fina)
+    )
+    low_void_alpha: float = (
+        0.01  # fração de gás abaixo da qual o padrão de baixa fração entra (rampa C1 até 2x esse valor)
+    )
+    high_void_regime: int = (
+        0  # se > 0, padrão usado quando alphaG > high_void_alpha (ex.: 1 = anular: filme de parede num duto quase cheio de gás)
+    )
+    high_void_alpha: float = (
+        0.9  # fração de gás acima da qual o padrão de alta fração entra (rampa C1 de high_void_alpha - 0.05 a + 0.05)
+    )
+    ip_slip_max: float = 10.0  # m/s: limite do escorregamento usado no termo de pressão interfacial
+    bb_derivatives: str = "exact"  # Beggs & Brill: derivadas internas (momento, hold-up) "exact" (diferenciação
+    # automática, só no caminho JAX) ou "fd" (diferenças finitas de 1e-3, como na tese;
+    # o caminho numpy usa sempre "fd")
+    fi_mult: float = 1.0  # multiplicador do fator de atrito interfacial do estratificado (sensibilidade)
+    fi_vgt: float = 5.5  # v_GT (m/s) de Andritsos & Hanratty no atrito interfacial; inf -> Taitel & Dukler (f_I = f_G)
+    virtual_mass: float = (
+        0.0  # coeficiente de massa virtual C_vm (Drew & Lahey; 0.5 para bolhas esféricas), pesado pelo indicador de bolhas
+    )
+    bubble_drag: str = (
+        "tese"  # arrasto interfacial do padrão bolhas: "tese" (modelo_bolhas.m: vb = sqrt(0.51 db + 2.14/db), sem g e
+    )
+    # sigma/rhoL; tensão interfacial f_I rhoG dv|dv|/2 com f_I = 1.5 alphaG rhoL CD/db, isto é, força ~ rhoG alphaG^2)
+    # ou "fisico" (vb de Mendelson/Fan-Tsuchiya sqrt(2.14 sigma/(rhoL db) + 0.505 g db), CD = 4/3 g db Δrho/(rhoL vb^2),
+    # força por volume 3/4 CD alphaG rhoL |vr| vr / db: na velocidade terminal o arrasto iguala o empuxo)
+    vm_lambda: float = (
+        1.0  # forma objetiva de Drew & Lahey: termos (lambda-2)(vG-vL) dvG/dx + (1-lambda)(vG-vL) dvL/dx (lambda = 2: só acelerações)
+    )
     extra: dict = field(default_factory=dict)
 
 
@@ -83,6 +105,7 @@ class PipeModel:
 
     def __init__(self, fluid, params: PipeParams, bk=None):
         from ..backend import NUMPY
+
         self.fluid = fluid
         self.params = params
         self.bk = bk or NUMPY

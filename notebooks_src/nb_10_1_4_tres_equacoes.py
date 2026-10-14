@@ -32,10 +32,15 @@ print("regime do duto:", case.pipes[0].regime, "(6 = identificação automática
 # %%
 from mfsim.simulation import build_model
 from mfsim.io_legacy import legacy_states
+
 Tl, Xl = legacy_states(raw)
 model = build_model(case)
-r = model.rhs(0.0, Xl[:, 0]); slots = model.state_slots()
-print("resíduo |dX/dt| no estado gravado, por variável:", {n: f"{np.max(np.abs(r[slots == s])):.2e}" for s, n in [(1, 'PT'), (2, 'qL'), (3, 'qG')]})
+r = model.rhs(0.0, Xl[:, 0])
+slots = model.state_slots()
+print(
+    "resíduo |dX/dt| no estado gravado, por variável:",
+    {n: f"{np.max(np.abs(r[slots == s])):.2e}" for s, n in [(1, "PT"), (2, "qL"), (3, "qG")]},
+)
 
 # %% [markdown]
 # ## Estado estacionário consistente e simulação dinâmica
@@ -49,9 +54,12 @@ print("estado estacionário: convergiu =", info_ss["converged"], " resíduo =", 
 res = simulate(case_ss, integrator="implicit", rtol=1e-4, atol=1e-6, max_step=np.inf)
 p = res.pipe(0)
 print("pressão de entrada (bar):", p["out"]["P_bar"][0, 0], " fração de gás média:", p["out"]["alphaG"][:, 0].mean())
-fig = pipe_surfaces(res, 0); fig.suptitle("Figura 10.17 - Modelo a 3 equações (Beggs & Brill)", y=1.02); plt.show()
+fig = pipe_surfaces(res, 0)
+fig.suptitle("Figura 10.17 - Modelo a 3 equações (Beggs & Brill)", y=1.02)
+plt.show()
 fig = pipe_timeseries(res, 0, legacy=legacy_pipe_dict(raw, 0))
-fig.suptitle("Python (cheio) × MATLAB 2010 (tracejado, fechamento de atrito anterior)", y=1.02); plt.show()
+fig.suptitle("Python (cheio) × MATLAB 2010 (tracejado, fechamento de atrito anterior)", y=1.02)
+plt.show()
 
 
 # %% [markdown]
@@ -65,4 +73,5 @@ fig.suptitle("Python (cheio) × MATLAB 2010 (tracejado, fechamento de atrito ant
 
 # %%
 from mfsim.notebook_utils import jax_comparison
+
 res_jax = jax_comparison(case_ss, res, rtol=1e-4, atol=1e-6)

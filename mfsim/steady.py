@@ -20,6 +20,7 @@ def newton_steady(model, X0, t=0.0, tol=1e-9, max_iter=50, verbose=True, bounds=
     """Newton amortecido; jax=True usa o lado direito compilado e a Jacobiana exata (densa)."""
     if jax:
         from .compiled import get_jax
+
         rhs, jac = get_jax(model)
     else:
         rhs, jac = model.rhs, None
@@ -72,13 +73,15 @@ def newton_steady(model, X0, t=0.0, tol=1e-9, max_iter=50, verbose=True, bounds=
     return X, dict(residual=res, iterations=len(hist) - 1, history=hist, converged=res < tol)
 
 
-def pseudo_transient(model, X0, t=0.0, t_final=1e5, rtol=1e-6, atol=1e-8, verbose=True, bounds=None,
-                     max_step=np.inf, jax=False):
+def pseudo_transient(
+    model, X0, t=0.0, t_final=1e5, rtol=1e-6, atol=1e-8, verbose=True, bounds=None, max_step=np.inf, jax=False
+):
     """Integra o sistema congelando as especificações em t até o regime permanente."""
     S = model.jac_sparsity()
     kw = {}
     if jax:
         from .compiled import get_jax
+
         rhs_j, jac_j = get_jax(model)
         kw["jac_fun"] = lambda tt, x: jac_j(t, x)
         rhs_t = rhs_j

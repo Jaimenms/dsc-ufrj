@@ -13,7 +13,14 @@ MODEL_BY_LEGACY_ID = {
 }
 
 __all__ = [
-    "PipeModel", "TwoFluidModel", "SinglePhaseLiquid", "SinglePhaseGas",
-    "BeggsBrillModel", "MODEL_BY_LEGACY_ID",
-    "SLOT_ALPHA", "SLOT_P", "SLOT_QL", "SLOT_QG",
+    "PipeModel",
+    "TwoFluidModel",
+    "SinglePhaseLiquid",
+    "SinglePhaseGas",
+    "BeggsBrillModel",
+    "MODEL_BY_LEGACY_ID",
+    "SLOT_ALPHA",
+    "SLOT_P",
+    "SLOT_QL",
+    "SLOT_QG",
 ]

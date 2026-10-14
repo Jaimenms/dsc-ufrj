@@ -46,7 +46,7 @@ class Results:
                 for kp in model.leaving[vi]:
                     QL -= Ys[kp][model.pipes[kp].inlet_q_node, 2]
                     QG -= Ys[kp][model.pipes[kp].inlet_q_node, 3]
-                row = model.report_row[vi]           # junção que desdobra o vértice (choke/reservatório), se houver
+                row = model.report_row[vi]  # junção que desdobra o vértice (choke/reservatório), se houver
                 vert[k_v]["holdupG"].append(E[row, 0])
                 vert[k_v]["pressao"].append(E[row, 1] * model.PR / 1e5)
                 vert[k_v]["vazaoMassaL"].append(QL)
@@ -59,16 +59,19 @@ class Results:
                             continue
                         store.setdefault(kk, []).append(vv)
         for k, pb in enumerate(model.pipes):
-            Yarr = np.array(pipes[k]["Y"])            # (nt, n_nodes, 4)
+            Yarr = np.array(pipes[k]["Y"])  # (nt, n_nodes, 4)
             pipes[k]["Y"] = Yarr
             # saídas secundárias por instante
             outs = {}
             for it in range(nt):
-                o = (pb.scheme.model.coefficients(Yarr[it], pb.scheme.theta_nodes, outputs=True)[1]
-                     if hasattr(pb.scheme, "to_primitive") else pb.scheme.outputs(Yarr[it]))
+                o = (
+                    pb.scheme.model.coefficients(Yarr[it], pb.scheme.theta_nodes, outputs=True)[1]
+                    if hasattr(pb.scheme, "to_primitive")
+                    else pb.scheme.outputs(Yarr[it])
+                )
                 for kk, vv in o.items():
                     outs.setdefault(kk, []).append(np.broadcast_to(vv, (pb.n_nodes,)))
-            pipes[k]["out"] = {kk: np.array(vv).T for kk, vv in outs.items()}   # (n_nodes, nt)
+            pipes[k]["out"] = {kk: np.array(vv).T for kk, vv in outs.items()}  # (n_nodes, nt)
             pipes[k]["out"]["alphaG"] = Yarr[:, :, 0].T
             pipes[k]["out"]["PT"] = Yarr[:, :, 1].T
             pipes[k]["out"]["qL"] = Yarr[:, :, 2].T

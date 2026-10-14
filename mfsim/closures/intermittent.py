@@ -39,10 +39,17 @@ def slug_liquid_fraction(D, eps, theta, sigma, rhoL, rhoG, muL, uLS, uGS, bk=NUM
     A = (2.457 * xp.log(1.0 / (0.27 * eps / D + (7.0 / ReS) ** 0.9))) ** 16
     B = (37530.0 / ReS) ** 16
     fS = 2.0 * ((8.0 / ReS) ** 12 + 1.0 / (A + B) ** 1.5) ** (1.0 / 12.0)
-    alphas = 0.058 * (
-        2.0 * xp.sqrt(0.4 * sigma / G_CLOSURE / (rhoL - rhoG))
-        * bk.safe_pow(2.0 * fS / D * xp.abs(uS) ** 3, 2.0 / 5.0) * (rhoL / sigma) ** (3.0 / 5.0) - 0.725
-    ) ** 2
+    alphas = (
+        0.058
+        * (
+            2.0
+            * xp.sqrt(0.4 * sigma / G_CLOSURE / (rhoL - rhoG))
+            * bk.safe_pow(2.0 * fS / D * xp.abs(uS) ** 3, 2.0 / 5.0)
+            * (rhoL / sigma) ** (3.0 / 5.0)
+            - 0.725
+        )
+        ** 2
+    )
     alphas = xp.clip(alphas, 0.0, 1.0 - 0.48)
     return 1.0 - alphas
 
@@ -110,15 +117,29 @@ def intermittent(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
 
     Area = xp.pi * D**2 / 4.0
     inp_s = inp.replace(
-        alphaG=1.0 - Rs, alphaL=Rs, vL=uL, vLS=uL * Rs, vG=ub, vGS=ub * (1.0 - Rs),
-        AreaL=Area * Rs, AreaG=Area * (1.0 - Rs),
+        alphaG=1.0 - Rs,
+        alphaL=Rs,
+        vL=uL,
+        vLS=uL * Rs,
+        vG=ub,
+        vGS=ub * (1.0 - Rs),
+        AreaL=Area * Rs,
+        AreaG=Area * (1.0 - Rs),
     )
     Ss = bubble(inp_s, bk=bk)
 
     hD, beta = stratified_level(1.0 - Rf, bk=bk)
     inp_f = inp.replace(
-        alphaG=1.0 - Rf, alphaL=Rf, vL=uf, vLS=uf * Rf, vG=uG, vGS=uG * (1.0 - Rf),
-        AreaL=Area * Rf, AreaG=Area * (1.0 - Rf), beta=beta, hD=hD,
+        alphaG=1.0 - Rf,
+        alphaL=Rf,
+        vL=uf,
+        vLS=uf * Rf,
+        vG=uG,
+        vGS=uG * (1.0 - Rf),
+        AreaL=Area * Rf,
+        AreaG=Area * (1.0 - Rf),
+        beta=beta,
+        hD=hD,
     )
     Sf = stratified(inp_f, bk=bk)
 
@@ -126,11 +147,17 @@ def intermittent(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
         return (a * ls + b * lf) / lu
 
     return ClosureTerms(
-        GammaL=mix(Ss.GammaL, Sf.GammaL), GammaG=mix(Ss.GammaG, Sf.GammaG),
-        dPL=mix(Ss.dPL, Sf.dPL), dPG=mix(Ss.dPG, Sf.dPG),
-        ddPLdP=mix(Ss.ddPLdP, Sf.ddPLdP), ddPGdP=mix(Ss.ddPGdP, Sf.ddPGdP),
+        GammaL=mix(Ss.GammaL, Sf.GammaL),
+        GammaG=mix(Ss.GammaG, Sf.GammaG),
+        dPL=mix(Ss.dPL, Sf.dPL),
+        dPG=mix(Ss.dPG, Sf.dPG),
+        ddPLdP=mix(Ss.ddPLdP, Sf.ddPLdP),
+        ddPGdP=mix(Ss.ddPGdP, Sf.ddPGdP),
         ddPLdalphaG=mix(Ss.ddPLdalphaG, Sf.ddPLdalphaG),
         ddPGdalphaG=mix(Ss.ddPGdalphaG, Sf.ddPGdalphaG),
-        dPI=mix(Ss.dPI, Sf.dPI), hL=hD * D, beta=beta,
-        tauG=mix(Ss.tauG, Sf.tauG), tauL=mix(Ss.tauL, Sf.tauL),
+        dPI=mix(Ss.dPI, Sf.dPI),
+        hL=hD * D,
+        beta=beta,
+        tauG=mix(Ss.tauG, Sf.tauG),
+        tauL=mix(Ss.tauL, Sf.tauL),
     )

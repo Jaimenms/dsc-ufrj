@@ -11,6 +11,7 @@ capítulo 10 (simulação dinâmica) e na exploração de intermitência severa
 uv sync                      # cria o ambiente e instala o pacote (editável)
 uv run pytest                # testes (fechamentos x MATLAB, regressão dos casos)
 uv run jupyter lab notebooks # notebooks de reprodução das figuras
+uv run black mfsim tests tools notebooks_src   # formatação (black, 120 colunas; `--check` para só verificar)
 ```
 
 Os notebooks são gerados a partir de `notebooks_src/*.py` (marcadores `# %%`):

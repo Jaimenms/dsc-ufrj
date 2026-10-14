@@ -32,8 +32,13 @@ REGIME_AUTO = 6
 G = 9.81
 
 CLOSURE_FUNCS = {"Est": stratified, "Anu": annular, "Int": intermittent, "Bub": bubble}
-REGIME_FLAG = {REGIME_ANNULAR: "Anu", REGIME_BUBBLE: "Bub", REGIME_INTERMITTENT: "Int",
-               REGIME_STRAT_SMOOTH: "Est", REGIME_STRAT_WAVY: "Est"}
+REGIME_FLAG = {
+    REGIME_ANNULAR: "Anu",
+    REGIME_BUBBLE: "Bub",
+    REGIME_INTERMITTENT: "Int",
+    REGIME_STRAT_SMOOTH: "Est",
+    REGIME_STRAT_WAVY: "Est",
+}
 # termos em que NaN/inf (estados extremos) são postos a zero depois da ponderação
 NAN_TO_ZERO = ("ddPLdalphaG", "ddPGdalphaG", "dPL", "dPG", "dPI", "ddPLdP", "ddPGdP")
 
@@ -109,8 +114,8 @@ def closures_used(regime, *extra_regimes):
 _AUX = (10.0 ** np.arange(-3, 0.0001, 0.01)) / 2.0
 _HD_TEST = np.concatenate([_AUX, 1.0 - _AUX[::-1]])
 _HD_TEST2 = np.arange(0.01, 0.9901, 0.01)
-V_SOBE = 0.02       # m/s: largura da regularização do indicador de sentido (vM > 0) no modo suave
-EPS_SMAX = 0.02     # largura do máximo suave entre a fração de bolhas de equilíbrio e a fração local (modo local)
+V_SOBE = 0.02  # m/s: largura da regularização do indicador de sentido (vM > 0) no modo suave
+EPS_SMAX = 0.02  # largura do máximo suave entre a fração de bolhas de equilíbrio e a fração local (modo local)
 
 
 def _table_geometry(hD, geometry, n=0.2, m=0.2):
@@ -163,16 +168,32 @@ def _equilibrium_vLS(vGS, D, eta, muL, muG, rhoL, rhoG, FI, LAMBDA, CL=0.046, CG
         X2 = (4.0 * Y[:, None] + FI) / LAMBDA
         X2 = xp.where(X2 < 0, xp.nan, X2)
         tau_LS = X2 * tau_GS[:, None]
-        vLS = ((tau_LS / CL) ** (1.0 / (2.0 - n)) * (D * rhoL / muL)[:, None] ** (n / (2.0 - n))
-               * (rhoL / 2.0)[:, None] ** (1.0 / (n - 2.0)))
+        vLS = (
+            (tau_LS / CL) ** (1.0 / (2.0 - n))
+            * (D * rhoL / muL)[:, None] ** (n / (2.0 - n))
+            * (rhoL / 2.0)[:, None] ** (1.0 / (n - 2.0))
+        )
     return vLS
 
 
 def _lockhart_vLS(vGS, hD, D, eta, muL, muG, rhoL, rhoG, geometry, CL=0.046, CG=0.046, n=0.2, m=0.2):
     """Forma antiga (broadcasting (n,1) x (1,nh)): mantida para referência/testes."""
     FI, LAMBDA = _table_geometry(np.asarray(hD).ravel(), geometry, n, m)
-    return _equilibrium_vLS(np.asarray(vGS).ravel(), np.asarray(D).ravel(), np.asarray(eta).ravel(), np.asarray(muL).ravel(),
-                            np.asarray(muG).ravel(), np.asarray(rhoL).ravel(), np.asarray(rhoG).ravel(), FI, LAMBDA, CL, CG, n, m)
+    return _equilibrium_vLS(
+        np.asarray(vGS).ravel(),
+        np.asarray(D).ravel(),
+        np.asarray(eta).ravel(),
+        np.asarray(muL).ravel(),
+        np.asarray(muG).ravel(),
+        np.asarray(rhoL).ravel(),
+        np.asarray(rhoG).ravel(),
+        FI,
+        LAMBDA,
+        CL,
+        CG,
+        n,
+        m,
+    )
 
 
 def smooth_max(a, b, eps=EPS_SMAX, bk=NUMPY):
@@ -211,7 +232,7 @@ def _interp_pick(sel, v_table, vLS, hd_table, FI, LAM, args, smooth, bk):
         return xp.where(has, hd[idx], 1e-6)
     cols = xp.stack([prv, idx, nxt], axis=1)
     if bk.has_ad:
-        v3 = _equilibrium_vLS(*args, xp.asarray(FI)[cols], xp.asarray(LAM)[cols], bk=bk)   # (n, 3) com gradiente
+        v3 = _equilibrium_vLS(*args, xp.asarray(FI)[cols], xp.asarray(LAM)[cols], bk=bk)  # (n, 3) com gradiente
     else:
         v3 = xp.take_along_axis(v_table, cols, axis=1)
     vp, vj, vn = v3[:, 0], v3[:, 1], v3[:, 2]
@@ -303,6 +324,7 @@ def identify_regime(inp: ClosureInputs, k_switch=1e6, eq=None, smooth=False, loc
 
     def sig(x1, x2):
         return sigmoid(k_switch, x1, x2, relative=smooth, bk=bk)
+
     hD_est, hD_anu, aG_est, aG_anu, aG_bol = eq
     if local:
         hD_est = xp.clip(inp.hD, 1e-6, 1 - 1e-6)
@@ -371,8 +393,13 @@ def identify_regime(inp: ClosureInputs, k_switch=1e6, eq=None, smooth=False, loc
     # mistura parada: dmax infinito sem formar o produto (tangente 0 * inf = NaN em AD)
     arg = xp.abs(2.0 * f_M * vM**3 / D)
     small = arg == 0
-    dmax = xp.where(small, xp.inf, (0.725 + 4.15 * bk.safe_sqrt(xp.abs(vGS / vM_s))) * (sigma / rhoL) ** (3.0 / 5.0)
-                    * xp.where(small, 1.0, arg) ** (-2.0 / 5.0))
+    dmax = xp.where(
+        small,
+        xp.inf,
+        (0.725 + 4.15 * bk.safe_sqrt(xp.abs(vGS / vM_s)))
+        * (sigma / rhoL) ** (3.0 / 5.0)
+        * xp.where(small, 1.0, arg) ** (-2.0 / 5.0),
+    )
     ddef = 2.0 * xp.sqrt(0.4 * sigma / xp.abs(rhoL - rhoG) / G)
     dmigr = (3.0 / 8.0) * rhoL / xp.abs(rhoL - rhoG) * f_M * vM**2 / G / cos_t
 
@@ -393,14 +420,28 @@ def identify_regime(inp: ClosureInputs, k_switch=1e6, eq=None, smooth=False, loc
     EsW = Est * (flag_wavy1 * flag_sobe + flag_wavy2 * (1.0 - flag_sobe))
     EsS = Est * (1.0 - EsW)
     Anu = (1.0 - Est) * p_anu
-    p_bub = (flag_bubble1 * (1.0 - flag_horizontal)
-             + flag_bubble2 * (1.0 - flag_horizontal) * (1.0 - flag_intermitente1) * (1.0 - flag_bubble1)
-             + flag_bubble3 * flag_horizontal)
+    p_bub = (
+        flag_bubble1 * (1.0 - flag_horizontal)
+        + flag_bubble2 * (1.0 - flag_horizontal) * (1.0 - flag_intermitente1) * (1.0 - flag_bubble1)
+        + flag_bubble3 * flag_horizontal
+    )
     Bub = (1.0 - Est) * (1.0 - Anu) * p_bub
     Int = (1.0 - Est) * (1.0 - Anu) * (1.0 - p_bub)
     flags = RegimeFlags(Est=Est, EsS=EsS, EsW=EsW, Anu=Anu, Bub=Bub, Int=Int)
-    factors = dict(FL=FL, FG=FG, NL=NL, K=K, T=T, FGcosteta=FGast,
-                   FL_c=FL_c, NL_c=NL_c, K_c=K_c, T_c=T_c, FG_c=FG_c, FGast_c=FGast_c)
+    factors = dict(
+        FL=FL,
+        FG=FG,
+        NL=NL,
+        K=K,
+        T=T,
+        FGcosteta=FGast,
+        FL_c=FL_c,
+        NL_c=NL_c,
+        K_c=K_c,
+        T_c=T_c,
+        FG_c=FG_c,
+        FGast_c=FGast_c,
+    )
     return flags, factors
 
 

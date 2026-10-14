@@ -38,13 +38,23 @@ class PipeBlock:
         self.bk = bk or NUMPY
         self.fluid, self.PR = fluid, PR
         pts = np.asarray(pipe.points, float)
-        self.mesh = pipe_mesh(pts[:, 0].copy(), pts[:, 1].copy(), pts[:, 2].copy(), np.asarray(pipe.n_elements, int),
-                              grading=None if pipe.grading is None else list(pipe.grading))
+        self.mesh = pipe_mesh(
+            pts[:, 0].copy(),
+            pts[:, 1].copy(),
+            pts[:, 2].copy(),
+            np.asarray(pipe.n_elements, int),
+            grading=None if pipe.grading is None else list(pipe.grading),
+        )
         model_id, regime_id, extra = pipe.model.to_legacy()
         extra.update(pipe.scheme.to_legacy_extra())
         self.extra = extra
-        params = PipeParams(D=float(pipe.D), eps=float(pipe.roughness), PR=PR, regime=regime_id,
-                            **{k: v for k, v in extra.items() if k in PIPE_PARAM_KEYS})
+        params = PipeParams(
+            D=float(pipe.D),
+            eps=float(pipe.roughness),
+            PR=PR,
+            regime=regime_id,
+            **{k: v for k, v in extra.items() if k in PIPE_PARAM_KEYS},
+        )
         self.model = MODEL_BY_LEGACY_ID[model_id](fluid, params, bk=self.bk)
         self.bc_in = tuple(k.legacy for k in pipe.ports_in)
         self.bc_out = tuple(k.legacy for k in pipe.ports_out)
@@ -68,7 +78,7 @@ class PipeBlock:
         self.mask = mask
         self.free = np.flatnonzero(mask.ravel())
         self.n_states = self.free.size
-        self.offset = 0          # definidos pela rede
+        self.offset = 0  # definidos pela rede
         self.i_from = self.i_to = None
         self._base_Y_flat = self.bk.xp.asarray(self.base_Y().ravel())
         self._ic = None
@@ -90,7 +100,18 @@ class PipeBlock:
                 self._ic = np.asarray(self.pipe.ic, float)
             elif self.pipe.ic_recipe is not None:
                 from ..initial.recipes import materialize
-                self._ic = np.asarray(materialize(self.pipe.ic_recipe, self.pipe.points, self.pipe.n_elements, self.pipe.grading, self.fluid, self.PR), float)
+
+                self._ic = np.asarray(
+                    materialize(
+                        self.pipe.ic_recipe,
+                        self.pipe.points,
+                        self.pipe.n_elements,
+                        self.pipe.grading,
+                        self.fluid,
+                        self.PR,
+                    ),
+                    float,
+                )
         return self._ic
 
     def state_index(self, node, slot):
@@ -166,13 +187,21 @@ class NetworkSystem:
         self.vA_pos = {vi: k for k, vi in enumerate(self.vA)}
 
         # tabelas de especificação (Schedule por porta; ausente = Unspecified)
-        self.tables = [[v.spec.get(key) if hasattr(v, "spec") and v.spec.get(key) is not None else Unspecified() for key in SLOT_KEYS]
-                       for v in self.vertices]
+        self.tables = [
+            [
+                v.spec.get(key) if hasattr(v, "spec") and v.spec.get(key) is not None else Unspecified()
+                for key in SLOT_KEYS
+            ]
+            for v in self.vertices
+        ]
         self._specified = np.array([[tb.is_specified for tb in row] for row in self.tables], dtype=bool)
 
         # dutos
         n_quad = N_QUAD[max(0, min(3, int(network.integration.method_quadrature) - 1))]
-        self.pipes = [PipeBlock(k, p, self.fluid, self.PR, n_quad, self.scheme_settings, bk=self.bk) for k, p in enumerate(network.pipes)]
+        self.pipes = [
+            PipeBlock(k, p, self.fluid, self.PR, n_quad, self.scheme_settings, bk=self.bk)
+            for k, p in enumerate(network.pipes)
+        ]
         off = 0
         for pb in self.pipes:
             pb.offset = off
@@ -180,8 +209,8 @@ class NetworkSystem:
             pb.i_from, pb.i_to = self.vpos[pb.pipe.v_from], self.vpos[pb.pipe.v_to]
         self.n_pipe_states = off
         self.n_states = off + 2 * len(self.vA)
-        self.pipes_in = {i: [] for i in range(self.NV)}    # dutos que chegam ao vértice
-        self.pipes_out = {i: [] for i in range(self.NV)}   # dutos que saem do vértice
+        self.pipes_in = {i: [] for i in range(self.NV)}  # dutos que chegam ao vértice
+        self.pipes_out = {i: [] for i in range(self.NV)}  # dutos que saem do vértice
         for k, pb in enumerate(self.pipes):
             self.pipes_out[pb.i_from].append(k)
             self.pipes_in[pb.i_to].append(k)
@@ -293,7 +322,7 @@ class NetworkSystem:
     def assemble(self, t, X):
         X = np.asarray(X, float)
         E, info = self.specifications(t, X)
-        Ys = [pb.assemble(X[pb.offset:pb.offset + pb.n_states], E[pb.i_from], E[pb.i_to]) for pb in self.pipes]
+        Ys = [pb.assemble(X[pb.offset : pb.offset + pb.n_states], E[pb.i_from], E[pb.i_to]) for pb in self.pipes]
         return E, Ys, info, X
 
     def rhs_core(self, x, E_t, opt_t):
@@ -303,7 +332,7 @@ class NetworkSystem:
         Ys = []
         parts = []
         for pb in self.pipes:
-            Y = pb.assemble(x[pb.offset:pb.offset + pb.n_states], E[pb.i_from], E[pb.i_to])
+            Y = pb.assemble(x[pb.offset : pb.offset + pb.n_states], E[pb.i_from], E[pb.i_to])
             Ys.append(Y)
             dY = pb.scheme.rhs(Y)
             parts.append(dY.ravel()[pb.free])
@@ -385,7 +414,7 @@ class NetworkSystem:
             Yic = pb.scheme.prepare_ic(Yic)
             if hasattr(pb.scheme, "from_primitive"):
                 Yic = pb.scheme.from_primitive(Yic)
-            X[pb.offset:pb.offset + pb.n_states] = Yic.ravel()[pb.free]
+            X[pb.offset : pb.offset + pb.n_states] = Yic.ravel()[pb.free]
         for vi in self.vA:
             v = self.vertices[vi]
             iH, iP = self.vertex_A_index(v.id)
@@ -395,10 +424,12 @@ class NetworkSystem:
                 aG, PT = [], []
                 for kp in self.pipes_in[vi]:
                     Y = self.pipes[kp].ic_nodal(np.asarray(self.pipes[kp].ic, float))
-                    aG.append(Y[-1, SLOT_ALPHA]); PT.append(Y[-1, SLOT_P])
+                    aG.append(Y[-1, SLOT_ALPHA])
+                    PT.append(Y[-1, SLOT_P])
                 for kp in self.pipes_out[vi]:
                     Y = self.pipes[kp].ic_nodal(np.asarray(self.pipes[kp].ic, float))
-                    aG.append(Y[0, SLOT_ALPHA]); PT.append(Y[0, SLOT_P])
+                    aG.append(Y[0, SLOT_ALPHA])
+                    PT.append(Y[0, SLOT_P])
                 HG0 = HG0 if HG0 is not None else float(np.mean(aG))
                 PT0 = PT0 if PT0 is not None else float(np.mean(PT))
             X[iH] = HG0
@@ -432,15 +463,16 @@ class NetworkSystem:
 
     def _apply_mass_map(self, X, direction):
         from ..discretization.staggered import _mass_map, solve_pressure
+
         X = np.asarray(X, float).copy()
         for pb in self.pipes:
             if not getattr(pb.scheme, "conservative", False):
                 continue
-            seg = X[pb.offset:pb.offset + pb.n_states]
+            seg = X[pb.offset : pb.offset + pb.n_states]
             Y = pb.base_Y().ravel()
             Y[pb.free] = seg
             Y = _mass_map(pb.scheme, Y.reshape(pb.n_nodes, 4), direction)
-            X[pb.offset:pb.offset + pb.n_states] = Y.ravel()[pb.free]
+            X[pb.offset : pb.offset + pb.n_states] = Y.ravel()[pb.free]
         if self.vA and self.conservative:
             # vértices dinâmicos: (HG, PT) <-> massas por volume (mG, mL) = (rhoG HG, rhoL (1 - HG))
             # (o volume V é constante e fica fora do mapa; a EDO do vértice devolve QG/V, QL/V)
@@ -494,7 +526,7 @@ class NetworkSystem:
                 X0 = None
         if X0 is not None:
             for pb in self.pipes:
-                seg = X0[pb.offset:pb.offset + pb.n_states]
+                seg = X0[pb.offset : pb.offset + pb.n_states]
                 sl = pb.free % 4
                 for s_, key in ((SLOT_P, "PT"), (SLOT_QL, "qL"), (SLOT_QG, "qG")):
                     if np.any(sl == s_):
@@ -536,6 +568,7 @@ class NetworkSystem:
         Por célula, na base (alphaG, PT): d(mG)/d(alphaG) = rhoG, d(mG)/d(PT) = PR CG alphaG,
         d(mL)/d(alphaG) = -rhoL, d(mL)/d(PT) = PR CL (1 - alphaG). Identidade nos demais estados."""
         import scipy.sparse as sp
+
         X = np.asarray(X, float)
         n = X.size
         rows, cols, vals = [np.arange(n)], [np.arange(n)], [np.ones(n)]
@@ -545,7 +578,7 @@ class NetworkSystem:
             ia, ip = self._mass_state_indices(pb)
             if ia.size == 0:
                 continue
-            aG = np.clip(X[ia], -0.01, 1.01)            # undershoot/overshoot admitidos pelos limites
+            aG = np.clip(X[ia], -0.01, 1.01)  # undershoot/overshoot admitidos pelos limites
             P = np.maximum(X[ip] * self.PR, 1e3)
             rhoL, rhoG, CL, CG = self.fluid.props(P)
             rows.append(np.concatenate([ia, ia, ip, ip]))
@@ -573,7 +606,8 @@ class NetworkSystem:
             for c in range(1, pb.scheme.N + 1):
                 a, b = pb.state_index(c, 0), pb.state_index(c, 1)
                 if a is not None and b is not None:
-                    ia.append(a); ip.append(b)
+                    ia.append(a)
+                    ip.append(b)
             cache[key] = (np.array(ia, dtype=int), np.array(ip, dtype=int))
         return cache[key]
 

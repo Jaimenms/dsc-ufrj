@@ -1,5 +1,6 @@
 """Layout nodal de 4 variáveis por nó (alphaG, PT, qL, qG), tipos de porta nas
 extremidades dos dutos e constantes físicas."""
+
 from __future__ import annotations
 
 from enum import Enum
@@ -9,9 +10,9 @@ SLOT_NAMES = ("alphaG", "PT", "qL", "qG")
 G = 9.80665
 
 # códigos legados das portas nas extremidades dos dutos (`PortKind.legacy`)
-BC_ABSENT = 1      # extremidade livre (estado)
-BC_DIRICHLET = 2   # valor imposto pelo vértice conectado
-BC_NEUMANN = 3     # gradiente nulo (copia o nó vizinho)
+BC_ABSENT = 1  # extremidade livre (estado)
+BC_DIRICHLET = 2  # valor imposto pelo vértice conectado
+BC_NEUMANN = 3  # gradiente nulo (copia o nó vizinho)
 
 
 class PortKind(str, Enum):

@@ -41,6 +41,7 @@
 
 # %%
 import numpy as np, matplotlib.pyplot as plt, time, warnings, os
+
 warnings.filterwarnings("ignore")
 from mfsim.fluid import Fluid
 from mfsim.cases.severe_slug import severe_slug_case, superficial_velocities, boe_criterion
@@ -52,42 +53,97 @@ from mfsim.plotting import surface
 
 RUN = False
 TF = 8000.0
-DATA = os.path.join(os.path.dirname(os.path.abspath("__file__")) if "__file__" in dir() else ".", "data", "severe_slug_run.npz")
+DATA = os.path.join(
+    os.path.dirname(os.path.abspath("__file__")) if "__file__" in dir() else ".", "data", "severe_slug_run.npz"
+)
 fluid = Fluid(rhoL0=900.0, rhoG0=1.2, muL=2e-3, muG=1.8e-5, gammaL=100.0, gammaG=1.05, P0=1e5, sigma=0.05)
-D = 0.05; A = np.pi * D**2 / 4; P_out = 4.0
+D = 0.05
+A = np.pi * D**2 / 4
+P_out = 4.0
 qL = 0.3 * 900 * A
 qG = 0.1 * fluid.rhoG((P_out + 1) * 1e5) * A
 import json
+
 meta = dict(n_down=15, n_riser=5, relax_time=0.05, switch_frac=0.5)
 if (not RUN) and os.path.exists(DATA):
     meta.update(json.loads(str(np.load(DATA)["meta"])))
 NDOWN, NRISER = meta["n_down"], meta["n_riser"]
-case = severe_slug_case(method="fv_upwind", tf=TF, dt_out=2.0, qL=qL, qG=qG, D=D, P_out_bar=P_out, L_h1=20.0, L_down=300.0,
-                        slope_down_deg=-3.0, H_riser=20.0, L_h2=5.0, n_h1=2, n_down=NDOWN, n_riser=NRISER, n_h2=2, regime=4,
-                        single_pipe=True, fluid=fluid, roughness=1e-5,
-                        extra={"regime_vertical": 2, "q_switch_L": 0.02 * qL, "q_switch_G": 0.02 * qG,
-                               "switch_frac": meta["switch_frac"], "relax_time": meta["relax_time"]})
-vSL, vSG = superficial_velocities(case); m = case.meta
+case = severe_slug_case(
+    method="fv_upwind",
+    tf=TF,
+    dt_out=2.0,
+    qL=qL,
+    qG=qG,
+    D=D,
+    P_out_bar=P_out,
+    L_h1=20.0,
+    L_down=300.0,
+    slope_down_deg=-3.0,
+    H_riser=20.0,
+    L_h2=5.0,
+    n_h1=2,
+    n_down=NDOWN,
+    n_riser=NRISER,
+    n_h2=2,
+    regime=4,
+    single_pipe=True,
+    fluid=fluid,
+    roughness=1e-5,
+    extra={
+        "regime_vertical": 2,
+        "q_switch_L": 0.02 * qL,
+        "q_switch_G": 0.02 * qG,
+        "switch_frac": meta["switch_frac"],
+        "relax_time": meta["relax_time"],
+    },
+)
+vSL, vSG = superficial_velocities(case)
+m = case.meta
 P_base = P_out * 1e5 + 900 * 9.81 * m["H_riser"]
 vSL_min, severe = boe_criterion(vSL, vSG, P_base, 900.0, 0.5, m["L_h1"] + m["L_down"])
-print(f"vSL = {vSL:.3f} m/s, vSG = {vSG:.3f} m/s (à pressão de saída) | critério de Bøe: vSL_min = {vSL_min:.3f} m/s -> severe: {severe}")
-print("(Bøe na forma de Taitel 1986 / Jansen 1996: vSL >= P vSG / (rhoL g (1 - alphaG) L), sem fator de inclinação; L = linha de entrada + descendente)")
+print(
+    f"vSL = {vSL:.3f} m/s, vSG = {vSG:.3f} m/s (à pressão de saída) | critério de Bøe: vSL_min = {vSL_min:.3f} m/s -> severe: {severe}"
+)
+print(
+    "(Bøe na forma de Taitel 1986 / Jansen 1996: vSL >= P vSG / (rhoL g (1 - alphaG) L), sem fator de inclinação; L = linha de entrada + descendente)"
+)
 model = build_model(case)
 
 # %%
 if (not RUN) and os.path.exists(DATA):
-    d = np.load(DATA); T, X = d["T"], d["X"]
+    d = np.load(DATA)
+    T, X = d["T"], d["X"]
     print("trajetória carregada:", DATA, "até t =", T[-1])
 else:
     X0 = initial_guess(model)
-    bdf = ImplicitBDF(model.rhs, S=model.jac_sparsity(), rtol=3e-3, atol=3e-5, bounds=state_bounds(model), min_step=1e-10, verbose=False)
+    bdf = ImplicitBDF(
+        model.rhs,
+        S=model.jac_sparsity(),
+        rtol=3e-3,
+        atol=3e-5,
+        bounds=state_bounds(model),
+        min_step=1e-10,
+        verbose=False,
+    )
     t0 = time.time()
     T, X, info = bdf.integrate(np.arange(0, TF + 1, 2.0), X0, first_step=1e-3)
     print(f"{info} | {time.time()-t0:.1f} s")
     os.makedirs(os.path.dirname(DATA), exist_ok=True)
-    np.savez(DATA, T=T, X=X, meta=json.dumps(dict(n_down=NDOWN, n_riser=NRISER, relax_time=meta["relax_time"], switch_frac=meta["switch_frac"])))
+    np.savez(
+        DATA,
+        T=T,
+        X=X,
+        meta=json.dumps(
+            dict(n_down=NDOWN, n_riser=NRISER, relax_time=meta["relax_time"], switch_frac=meta["switch_frac"])
+        ),
+    )
 res = Results(model, T, X)
-p = res.pipe(0); x = p["x"]; aG = p["out"]["alphaG"]; P = p["out"]["P_bar"]; qLo = p["out"]["qL"]; qGo = p["out"]["qG"]
+p = res.pipe(0)
+x = p["x"]
+aG = p["out"]["alphaG"]
+P = p["out"]["P_bar"]
+qLo = p["out"]["qL"]
+qGo = p["out"]["qG"]
 ib = int(np.argmin(np.abs(x - (m["L_h1"] + m["L_down"]))))
 
 # %% [markdown]
@@ -105,18 +161,34 @@ net = np.concatenate([[0.0], np.cumsum(0.5 * ((qLo[0, 1:] - qLo[-1, 1:]) + (qLo[
 fig, ax = plt.subplots(figsize=(8, 3.2))
 ax.plot(T, mass - mass[0], label="variação do estoque de líquido no duto")
 ax.plot(T, net, "--", label="integral de (entrada − saída)")
-ax.set_xlabel("Tempo (s)"); ax.set_ylabel("kg"); ax.legend(); ax.grid(alpha=0.3); plt.show()
-print(f"erro final de massa: {mass[-1]-mass[0]-net[-1]:.1f} kg (estoque inicial {mass[0]:.1f} kg, entrada acumulada {qL*T[-1]:.0f} kg)")
+ax.set_xlabel("Tempo (s)")
+ax.set_ylabel("kg")
+ax.legend()
+ax.grid(alpha=0.3)
+plt.show()
+print(
+    f"erro final de massa: {mass[-1]-mass[0]-net[-1]:.1f} kg (estoque inicial {mass[0]:.1f} kg, entrada acumulada {qL*T[-1]:.0f} kg)"
+)
 
 # %% [markdown]
 # ## Pressões e vazões de saída
 
 # %%
 fig, axes = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
-axes[0].plot(T, P[1], label="entrada da linha"); axes[0].plot(T, P[ib], label="base do riser")
-axes[0].set_ylabel("Pressão (bar)"); axes[0].legend(); axes[0].grid(alpha=0.3)
-axes[1].plot(T, qLo[-1]); axes[1].axhline(qL, color="k", ls="--", lw=0.8); axes[1].set_ylabel("Vazão de líquido na saída (kg/s)"); axes[1].grid(alpha=0.3)
-axes[2].plot(T, qGo[-1], color="C1"); axes[2].axhline(qG, color="k", ls="--", lw=0.8); axes[2].set_ylabel("Vazão de gás na saída (kg/s)"); axes[2].set_xlabel("Tempo (s)"); axes[2].grid(alpha=0.3)
+axes[0].plot(T, P[1], label="entrada da linha")
+axes[0].plot(T, P[ib], label="base do riser")
+axes[0].set_ylabel("Pressão (bar)")
+axes[0].legend()
+axes[0].grid(alpha=0.3)
+axes[1].plot(T, qLo[-1])
+axes[1].axhline(qL, color="k", ls="--", lw=0.8)
+axes[1].set_ylabel("Vazão de líquido na saída (kg/s)")
+axes[1].grid(alpha=0.3)
+axes[2].plot(T, qGo[-1], color="C1")
+axes[2].axhline(qG, color="k", ls="--", lw=0.8)
+axes[2].set_ylabel("Vazão de gás na saída (kg/s)")
+axes[2].set_xlabel("Tempo (s)")
+axes[2].grid(alpha=0.3)
 plt.show()
 
 # %% [markdown]
@@ -124,8 +196,10 @@ plt.show()
 
 # %%
 fig = plt.figure(figsize=(12, 5))
-ax = fig.add_subplot(1, 2, 1, projection="3d"); surface(ax, x, T, aG, zlabel="Fração de gás", title="duto completo")
-ax = fig.add_subplot(1, 2, 2, projection="3d"); sl = slice(max(ib - 6, 0), ib + NRISER + 1)
+ax = fig.add_subplot(1, 2, 1, projection="3d")
+surface(ax, x, T, aG, zlabel="Fração de gás", title="duto completo")
+ax = fig.add_subplot(1, 2, 2, projection="3d")
+sl = slice(max(ib - 6, 0), ib + NRISER + 1)
 surface(ax, x[sl], T, aG[sl], zlabel="Fração de gás", title="fim da linha + riser")
 plt.show()
 
@@ -135,7 +209,10 @@ for t in np.linspace(0, T[-1], 9):
     it = int(np.argmin(np.abs(T - t)))
     ax.plot(x, aG[:, it], label=f"t = {T[it]:.0f} s")
 ax.axvline(x[ib], color="k", lw=0.8, ls=":")
-ax.set_xlabel("Posição (m)"); ax.set_ylabel("Fração de gás"); ax.legend(fontsize=7); ax.grid(alpha=0.3)
+ax.set_xlabel("Posição (m)")
+ax.set_ylabel("Fração de gás")
+ax.legend(fontsize=7)
+ax.grid(alpha=0.3)
 ax.set_title("Perfis de fração de gás (linha pontilhada = base do riser)")
 plt.show()
 
@@ -148,19 +225,38 @@ plt.show()
 # recomeça.
 
 # %%
-sel = (T >= 2500) & (T <= 3600)      # janela com ~4 ciclos
+sel = (T >= 2500) & (T <= 3600)  # janela com ~4 ciclos
 fig, axes = plt.subplots(4, 1, figsize=(11, 10), sharex=True)
-axes[0].plot(T[sel], P[1][sel], label="entrada da linha"); axes[0].plot(T[sel], P[ib][sel], label="base do riser")
-axes[0].set_ylabel("Pressão (bar)"); axes[0].legend(); axes[0].grid(alpha=0.3)
-axes[1].plot(T[sel], qLo[-1][sel]); axes[1].axhline(qL, color="k", ls="--", lw=0.8); axes[1].set_ylabel("Líquido na saída (kg/s)"); axes[1].grid(alpha=0.3)
-axes[2].plot(T[sel], qGo[-1][sel], color="C1"); axes[2].axhline(qG, color="k", ls="--", lw=0.8); axes[2].set_ylabel("Gás na saída (kg/s)"); axes[2].grid(alpha=0.3)
-axes[3].plot(T[sel], aG[ib + 1][sel], label="base"); axes[3].plot(T[sel], aG[ib + NRISER // 2][sel], label="meio"); axes[3].plot(T[sel], aG[ib + NRISER][sel], label="topo")
-axes[3].set_ylabel("Fração de gás no riser"); axes[3].legend(); axes[3].set_xlabel("Tempo (s)"); axes[3].grid(alpha=0.3)
+axes[0].plot(T[sel], P[1][sel], label="entrada da linha")
+axes[0].plot(T[sel], P[ib][sel], label="base do riser")
+axes[0].set_ylabel("Pressão (bar)")
+axes[0].legend()
+axes[0].grid(alpha=0.3)
+axes[1].plot(T[sel], qLo[-1][sel])
+axes[1].axhline(qL, color="k", ls="--", lw=0.8)
+axes[1].set_ylabel("Líquido na saída (kg/s)")
+axes[1].grid(alpha=0.3)
+axes[2].plot(T[sel], qGo[-1][sel], color="C1")
+axes[2].axhline(qG, color="k", ls="--", lw=0.8)
+axes[2].set_ylabel("Gás na saída (kg/s)")
+axes[2].grid(alpha=0.3)
+axes[3].plot(T[sel], aG[ib + 1][sel], label="base")
+axes[3].plot(T[sel], aG[ib + NRISER // 2][sel], label="meio")
+axes[3].plot(T[sel], aG[ib + NRISER][sel], label="topo")
+axes[3].set_ylabel("Fração de gás no riser")
+axes[3].legend()
+axes[3].set_xlabel("Tempo (s)")
+axes[3].grid(alpha=0.3)
 plt.show()
-peaks = [i for i in range(1, T.size - 1) if qLo[-1, i] > 2.0 and qLo[-1, i] >= qLo[-1, i - 1] and qLo[-1, i] > qLo[-1, i + 1]]
+peaks = [
+    i for i in range(1, T.size - 1) if qLo[-1, i] > 2.0 and qLo[-1, i] >= qLo[-1, i - 1] and qLo[-1, i] > qLo[-1, i + 1]
+]
 if len(peaks) > 1:
-    tp = T[peaks]; print("instantes dos picos de líquido (s):", np.round(tp).astype(int).tolist())
-    print(f"período médio ≈ {np.mean(np.diff(tp)):.0f} s; pico máximo {qLo[-1].max():.1f} kg/s ({qLo[-1].max()/qL:.0f}x a alimentação)")
+    tp = T[peaks]
+    print("instantes dos picos de líquido (s):", np.round(tp).astype(int).tolist())
+    print(
+        f"período médio ≈ {np.mean(np.diff(tp)):.0f} s; pico máximo {qLo[-1].max():.1f} kg/s ({qLo[-1].max()/qL:.0f}x a alimentação)"
+    )
 
 # %% [markdown]
 # ## Simulação longa (8000 s, malha mais grossa)
@@ -175,27 +271,82 @@ if len(peaks) > 1:
 # %%
 DATA_LONG = os.path.join(os.path.dirname(DATA), "severe_slug_run_long.npz")
 if os.path.exists(DATA_LONG):
-    dl = np.load(DATA_LONG); Tl_, Xl_ = dl["T"], dl["X"]; ml = json.loads(str(dl["meta"]))
-    case_l = severe_slug_case(method="fv_upwind", tf=Tl_[-1], dt_out=2.0, qL=qL, qG=qG, D=D, P_out_bar=P_out, L_h1=20.0, L_down=300.0,
-                              slope_down_deg=-3.0, H_riser=20.0, L_h2=5.0, n_h1=2, n_down=ml["n_down"], n_riser=ml["n_riser"], n_h2=2,
-                              regime=4, single_pipe=True, fluid=fluid, roughness=1e-5,
-                              extra={"regime_vertical": 2, "q_switch_L": 0.02 * qL, "q_switch_G": 0.02 * qG,
-                                     "switch_frac": ml["switch_frac"], "relax_time": ml["relax_time"]})
-    model_l = build_model(case_l); res_l = Results(model_l, Tl_, Xl_); pl = res_l.pipe(0)
-    xl = pl["x"]; aGl = pl["out"]["alphaG"]; Pl = pl["out"]["P_bar"]; qLl = pl["out"]["qL"]
+    dl = np.load(DATA_LONG)
+    Tl_, Xl_ = dl["T"], dl["X"]
+    ml = json.loads(str(dl["meta"]))
+    case_l = severe_slug_case(
+        method="fv_upwind",
+        tf=Tl_[-1],
+        dt_out=2.0,
+        qL=qL,
+        qG=qG,
+        D=D,
+        P_out_bar=P_out,
+        L_h1=20.0,
+        L_down=300.0,
+        slope_down_deg=-3.0,
+        H_riser=20.0,
+        L_h2=5.0,
+        n_h1=2,
+        n_down=ml["n_down"],
+        n_riser=ml["n_riser"],
+        n_h2=2,
+        regime=4,
+        single_pipe=True,
+        fluid=fluid,
+        roughness=1e-5,
+        extra={
+            "regime_vertical": 2,
+            "q_switch_L": 0.02 * qL,
+            "q_switch_G": 0.02 * qG,
+            "switch_frac": ml["switch_frac"],
+            "relax_time": ml["relax_time"],
+        },
+    )
+    model_l = build_model(case_l)
+    res_l = Results(model_l, Tl_, Xl_)
+    pl = res_l.pipe(0)
+    xl = pl["x"]
+    aGl = pl["out"]["alphaG"]
+    Pl = pl["out"]["P_bar"]
+    qLl = pl["out"]["qL"]
     ibl = int(np.argmin(np.abs(xl - (m["L_h1"] + m["L_down"]))))
     hl = model_l.pipes[0].mesh["h"]
     mass_l = np.sum((1 - aGl[1:-1]) * fluid.rhoL(Pl[1:-1] * 1e5) * A * hl[:, None], axis=0)
-    net_l = np.concatenate([[0.0], np.cumsum(0.5 * ((qLl[0, 1:] - qLl[-1, 1:]) + (qLl[0, :-1] - qLl[-1, :-1])) * np.diff(Tl_))])
+    net_l = np.concatenate(
+        [[0.0], np.cumsum(0.5 * ((qLl[0, 1:] - qLl[-1, 1:]) + (qLl[0, :-1] - qLl[-1, :-1])) * np.diff(Tl_))]
+    )
     fig, axes = plt.subplots(4, 1, figsize=(11, 10), sharex=True)
-    axes[0].plot(Tl_, Pl[1], label="entrada da linha"); axes[0].plot(Tl_, Pl[ibl], label="base do riser"); axes[0].set_ylabel("Pressão (bar)"); axes[0].legend(); axes[0].grid(alpha=0.3)
-    axes[1].plot(Tl_, qLl[-1]); axes[1].axhline(qL, color="k", ls="--", lw=0.8); axes[1].set_ylabel("Líquido na saída (kg/s)"); axes[1].grid(alpha=0.3)
-    axes[2].plot(Tl_, aGl[ibl + 1], label="base"); axes[2].plot(Tl_, aGl[ibl + ml["n_riser"]], label="topo"); axes[2].set_ylabel("Fração de gás no riser"); axes[2].legend(); axes[2].grid(alpha=0.3)
-    axes[3].plot(Tl_, mass_l - mass_l[0] - net_l); axes[3].set_ylabel("Erro acumulado de massa (kg)"); axes[3].set_xlabel("Tempo (s)"); axes[3].grid(alpha=0.3)
+    axes[0].plot(Tl_, Pl[1], label="entrada da linha")
+    axes[0].plot(Tl_, Pl[ibl], label="base do riser")
+    axes[0].set_ylabel("Pressão (bar)")
+    axes[0].legend()
+    axes[0].grid(alpha=0.3)
+    axes[1].plot(Tl_, qLl[-1])
+    axes[1].axhline(qL, color="k", ls="--", lw=0.8)
+    axes[1].set_ylabel("Líquido na saída (kg/s)")
+    axes[1].grid(alpha=0.3)
+    axes[2].plot(Tl_, aGl[ibl + 1], label="base")
+    axes[2].plot(Tl_, aGl[ibl + ml["n_riser"]], label="topo")
+    axes[2].set_ylabel("Fração de gás no riser")
+    axes[2].legend()
+    axes[2].grid(alpha=0.3)
+    axes[3].plot(Tl_, mass_l - mass_l[0] - net_l)
+    axes[3].set_ylabel("Erro acumulado de massa (kg)")
+    axes[3].set_xlabel("Tempo (s)")
+    axes[3].grid(alpha=0.3)
     plt.show()
-    pk = [i for i in range(1, Tl_.size - 1) if qLl[-1, i] > 2.0 and qLl[-1, i] >= qLl[-1, i - 1] and qLl[-1, i] > qLl[-1, i + 1]]
+    pk = [
+        i
+        for i in range(1, Tl_.size - 1)
+        if qLl[-1, i] > 2.0 and qLl[-1, i] >= qLl[-1, i - 1] and qLl[-1, i] > qLl[-1, i + 1]
+    ]
     if len(pk) > 1:
-        print("picos (s):", np.round(Tl_[pk]).astype(int).tolist(), f"| período médio ≈ {np.mean(np.diff(Tl_[pk])):.0f} s | pico máximo {qLl[-1].max():.1f} kg/s")
+        print(
+            "picos (s):",
+            np.round(Tl_[pk]).astype(int).tolist(),
+            f"| período médio ≈ {np.mean(np.diff(Tl_[pk])):.0f} s | pico máximo {qLl[-1].max():.1f} kg/s",
+        )
     print(f"erro final de massa: {mass_l[-1]-mass_l[0]-net_l[-1]:.1f} kg em {qL*Tl_[-1]:.0f} kg alimentados")
 else:
     print("trajetória longa não encontrada")
@@ -281,20 +432,33 @@ def load_blocked_run(f):
     `mfsim.runs.load_run` (reconstrói o caso do `meta` com os defaults deste notebook, ou de
     `case_json` nas corridas novas) e os balanços de massa; era uma cópia desta lógica."""
     r = load_run(f)
-    return dict(meta=r.meta, case=r.case, model=r.model, res=r.res, T=r.T, p=r.pipe(0),
-                ib=r.ib,                                   # célula no início do joelho
-                balL=r.balance("L"), balG=r.balance("G"),
-                acc=r.acc,                                 # integral BDF-consistente dos fluxos de contorno
-                p_last=r.p_last,                           # duto que termina no separador (rede: o último)
-                aG_riser_base=r.aG_riser_base())
+    return dict(
+        meta=r.meta,
+        case=r.case,
+        model=r.model,
+        res=r.res,
+        T=r.T,
+        p=r.pipe(0),
+        ib=r.ib,  # célula no início do joelho
+        balL=r.balance("L"),
+        balG=r.balance("G"),
+        acc=r.acc,  # integral BDF-consistente dos fluxos de contorno
+        p_last=r.p_last,  # duto que termina no separador (rede: o último)
+        aG_riser_base=r.aG_riser_base(),
+    )
 
 
 runs = {}
-for tag, fname in (("primitivas", "severe_slug_blocked_primitive.npz"), ("conservativo", "severe_slug_blocked_conservative.npz")):
+for tag, fname in (
+    ("primitivas", "severe_slug_blocked_primitive.npz"),
+    ("conservativo", "severe_slug_blocked_conservative.npz"),
+):
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
-        print("trajetória não encontrada:", f); continue
-    runs[tag] = load_blocked_run(f); mb = runs[tag]["meta"]
+        print("trajetória não encontrada:", f)
+        continue
+    runs[tag] = load_blocked_run(f)
+    mb = runs[tag]["meta"]
     print(f"{tag:13s}: {mb['n_steps']} passos, {mb['n_rejected']} rejeitados, {mb['cpu']/60:.0f} min de CPU")
 
 # %% [markdown]
@@ -302,13 +466,21 @@ for tag, fname in (("primitivas", "severe_slug_blocked_primitive.npz"), ("conser
 
 # %%
 if runs:
-    r0 = next(iter(runs.values())); p0 = r0["p"]
+    r0 = next(iter(runs.values()))
+    p0 = r0["p"]
     fig, axes = plt.subplots(1, 2, figsize=(11, 3.4))
-    axes[0].plot(p0["x"], p0["out"]["alphaG"][:, 0]); axes[0].set_ylabel("Fração de gás"); axes[0].set_xlabel("Posição (m)")
-    axes[1].plot(p0["x"], p0["out"]["P_bar"][:, 0]); axes[1].set_ylabel("Pressão (bar)"); axes[1].set_xlabel("Posição (m)")
+    axes[0].plot(p0["x"], p0["out"]["alphaG"][:, 0])
+    axes[0].set_ylabel("Fração de gás")
+    axes[0].set_xlabel("Posição (m)")
+    axes[1].plot(p0["x"], p0["out"]["P_bar"][:, 0])
+    axes[1].set_ylabel("Pressão (bar)")
+    axes[1].set_xlabel("Posição (m)")
     for ax in axes:
-        ax.axvline(p0["x"][r0["ib"]], color="k", lw=0.8, ls=":"); ax.grid(alpha=0.3)
-    fig.suptitle("Perfis iniciais da partida bloqueada (linha pontilhada = base do riser)"); fig.tight_layout(); plt.show()
+        ax.axvline(p0["x"][r0["ib"]], color="k", lw=0.8, ls=":")
+        ax.grid(alpha=0.3)
+    fig.suptitle("Perfis iniciais da partida bloqueada (linha pontilhada = base do riser)")
+    fig.tight_layout()
+    plt.show()
 
 # %% [markdown]
 # ### Produção, pressão e balanço de massa nas duas formulações
@@ -324,26 +496,41 @@ if runs:
         axes[2].plot(T_, massL - massL[0], color=f"C{k}", label=f"{tag}: variação do estoque")
         axes[2].plot(T_, netL, "--", color=f"C{k}", label=f"{tag}: ∫(entrada − saída), trapézios nas saídas de 2 s")
         if r["acc"] is not None:
-            axes[2].plot(T_, r["acc"][0], ":", color=f"C{k}", lw=2, label=f"{tag}: ∫(entrada − saída) consistente com o BDF")
-            axes[3].plot(T_, massL - massL[0] - r["acc"][0], color=f"C{k}", label=f"{tag} (integral consistente com o BDF)")
+            axes[2].plot(
+                T_, r["acc"][0], ":", color=f"C{k}", lw=2, label=f"{tag}: ∫(entrada − saída) consistente com o BDF"
+            )
+            axes[3].plot(
+                T_, massL - massL[0] - r["acc"][0], color=f"C{k}", label=f"{tag} (integral consistente com o BDF)"
+            )
         else:
             axes[3].plot(T_, errL, color=f"C{k}", label=f"{tag} (trapézios)")
-    axes[0].axhline(qL, color="k", ls="--", lw=0.8); axes[0].set_ylabel("Líquido na saída (kg/s)")
+    axes[0].axhline(qL, color="k", ls="--", lw=0.8)
+    axes[0].set_ylabel("Líquido na saída (kg/s)")
     axes[1].set_ylabel("Pressão na base do riser (bar)")
     axes[2].set_ylabel("Massa de líquido (kg)")
-    axes[3].set_ylabel("Erro acumulado de massa (kg)"); axes[3].set_xlabel("Tempo (s)")
+    axes[3].set_ylabel("Erro acumulado de massa (kg)")
+    axes[3].set_xlabel("Tempo (s)")
     for ax in axes:
-        ax.grid(alpha=0.3); ax.legend(fontsize=8, loc="upper left")
+        ax.grid(alpha=0.3)
+        ax.legend(fontsize=8, loc="upper left")
     plt.show()
     for tag, r in runs.items():
         T_, q_ = r["T"], r["p"]["out"]["qL"][-1]
-        massL, netL, errL = r["balL"]; massG, netG, errG = r["balG"]
+        massL, netL, errL = r["balL"]
+        massG, netG, errG = r["balG"]
         nb_, per, qmax = cycle_stats(T_, r["p"]["out"]["P_bar"][1], q_)
-        print(f"{tag:13s}: {nb_} blowdowns, primeiro em {blowdowns(T_, r['p']['out']['P_bar'][1])[0]:.0f} s, período médio ≈ {per:.0f} s, pico máximo {qmax:.1f} kg/s")
-        print(f"   erro de massa (trapézios nas saídas de 2 s): líquido {errL[-1]:+.2f} kg ({100*errL[-1]/(qL*T_[-1]):+.2f} % do alimentado), gás {errG[-1]:+.4f} kg ({100*errG[-1]/(qG*T_[-1]):+.2f} %)")
+        print(
+            f"{tag:13s}: {nb_} blowdowns, primeiro em {blowdowns(T_, r['p']['out']['P_bar'][1])[0]:.0f} s, período médio ≈ {per:.0f} s, pico máximo {qmax:.1f} kg/s"
+        )
+        print(
+            f"   erro de massa (trapézios nas saídas de 2 s): líquido {errL[-1]:+.2f} kg ({100*errL[-1]/(qL*T_[-1]):+.2f} % do alimentado), gás {errG[-1]:+.4f} kg ({100*errG[-1]/(qG*T_[-1]):+.2f} %)"
+        )
         if r["acc"] is not None:
-            eL = massL[-1] - massL[0] - r["acc"][0, -1]; eG = massG[-1] - massG[0] - r["acc"][1, -1]
-            print(f"   erro de massa (integral consistente com o BDF):   líquido {eL:+.2e} kg ({100*eL/(qL*T_[-1]):+.2e} %), gás {eG:+.2e} kg ({100*eG/(qG*T_[-1]):+.2e} %)")
+            eL = massL[-1] - massL[0] - r["acc"][0, -1]
+            eG = massG[-1] - massG[0] - r["acc"][1, -1]
+            print(
+                f"   erro de massa (integral consistente com o BDF):   líquido {eL:+.2e} kg ({100*eL/(qL*T_[-1]):+.2e} %), gás {eG:+.2e} kg ({100*eG/(qG*T_[-1]):+.2e} %)"
+            )
 
 # %% [markdown]
 # ### Detalhe de um ciclo nas duas formulações
@@ -357,10 +544,16 @@ if len(runs) == 2:
         axes[0].plot(T_[sel], p_["out"]["qL"][-1][sel], color=f"C{k}", label=tag)
         axes[1].plot(T_[sel], p_["out"]["P_bar"][1][sel], color=f"C{k}", label=tag)
         axes[2].plot(T_[sel], p_["out"]["alphaG"][ib_ + 1][sel], color=f"C{k}", label=f"{tag}: base")
-        axes[2].plot(T_[sel], p_["out"]["alphaG"][ib_ + r["meta"]["n_riser"]][sel], "--", color=f"C{k}", label=f"{tag}: topo")
-    axes[0].set_ylabel("Líquido na saída (kg/s)"); axes[1].set_ylabel("Pressão na entrada (bar)"); axes[2].set_ylabel("Fração de gás no riser"); axes[2].set_xlabel("Tempo (s)")
+        axes[2].plot(
+            T_[sel], p_["out"]["alphaG"][ib_ + r["meta"]["n_riser"]][sel], "--", color=f"C{k}", label=f"{tag}: topo"
+        )
+    axes[0].set_ylabel("Líquido na saída (kg/s)")
+    axes[1].set_ylabel("Pressão na entrada (bar)")
+    axes[2].set_ylabel("Fração de gás no riser")
+    axes[2].set_xlabel("Tempo (s)")
     for ax in axes:
-        ax.grid(alpha=0.3); ax.legend(fontsize=8)
+        ax.grid(alpha=0.3)
+        ax.legend(fontsize=8)
     plt.show()
 
 
@@ -388,34 +581,55 @@ if len(runs) == 2:
 
 # %%
 runs_arc = {}
-for tag, fname in (("primitivas", "severe_slug_blocked_primitive_arc.npz"), ("conservativo", "severe_slug_blocked_conservative_arc.npz")):
+for tag, fname in (
+    ("primitivas", "severe_slug_blocked_primitive_arc.npz"),
+    ("conservativo", "severe_slug_blocked_conservative_arc.npz"),
+):
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
-        print("trajetória não encontrada:", f); continue
+        print("trajetória não encontrada:", f)
+        continue
     runs_arc[tag] = load_blocked_run(f)
     mb = runs_arc[tag]["meta"]
-    print(f"{tag:13s} (arco R = {mb['elbow_radius']} m, {mb['n_elbow']} elementos, Δ = {mb['vertical_blend']}°): "
-          f"{mb['n_steps']} passos, {mb['n_rejected']} rejeitados, {mb['cpu']/60:.0f} min de CPU")
+    print(
+        f"{tag:13s} (arco R = {mb['elbow_radius']} m, {mb['n_elbow']} elementos, Δ = {mb['vertical_blend']}°): "
+        f"{mb['n_steps']} passos, {mb['n_rejected']} rejeitados, {mb['cpu']/60:.0f} min de CPU"
+    )
 
 # %%
 if runs_arc:
-    r = next(iter(runs_arc.values())); case_a = r["case"]; model_a = r["model"]
+    r = next(iter(runs_arc.values()))
+    case_a = r["case"]
+    model_a = r["model"]
     from mfsim.geometry import pipe_mesh
+
     mesh_a = pipe_mesh(case_a.pipes[0].x, case_a.pipes[0].y, case_a.pipes[0].z, case_a.pipes[0].n_elements)
-    th_deg = np.rad2deg(mesh_a["theta"]); s_mid = 0.5 * (mesh_a["s"][1:] + mesh_a["s"][:-1])
+    th_deg = np.rad2deg(mesh_a["theta"])
+    s_mid = 0.5 * (mesh_a["s"][1:] + mesh_a["s"][:-1])
     w = model_a.pipes[0].model.vertical_weight(mesh_a["theta"])
     fig, axes = plt.subplots(1, 3, figsize=(13, 3.4))
-    axes[0].plot(mesh_a["xyz"][:, 1], mesh_a["xyz"][:, 2], ".-"); axes[0].set_xlabel("y (m)"); axes[0].set_ylabel("z (m)"); axes[0].set_title("traçado")
+    axes[0].plot(mesh_a["xyz"][:, 1], mesh_a["xyz"][:, 2], ".-")
+    axes[0].set_xlabel("y (m)")
+    axes[0].set_ylabel("z (m)")
+    axes[0].set_title("traçado")
     axes[0].set_xlim(mesh_a["xyz"][-1, 1] - 40, mesh_a["xyz"][-1, 1] + 5)
-    axes[1].step(s_mid, th_deg, where="mid"); axes[1].set_xlabel("s (m)"); axes[1].set_ylabel("inclinação (°)"); axes[1].set_title("ângulo por elemento")
+    axes[1].step(s_mid, th_deg, where="mid")
+    axes[1].set_xlabel("s (m)")
+    axes[1].set_ylabel("inclinação (°)")
+    axes[1].set_title("ângulo por elemento")
     axes[1].set_xlim(case_a.meta["s_elbow0"] - 30, case_a.meta["s_elbow0"] + 30)
     ang = np.linspace(0, 90, 181)
     axes[2].plot(ang, model_a.pipes[0].model.vertical_weight(np.deg2rad(ang)), label="rampa (Δ = 20°)")
-    axes[2].plot(ang, (ang > 45).astype(float), "--", label="chave dura"); axes[2].plot(th_deg, w, "o", ms=4, label="elementos do caso")
-    axes[2].set_xlabel("|θ| (°)"); axes[2].set_ylabel("peso do padrão vertical"); axes[2].legend(fontsize=8); axes[2].set_title("mistura por ângulo")
+    axes[2].plot(ang, (ang > 45).astype(float), "--", label="chave dura")
+    axes[2].plot(th_deg, w, "o", ms=4, label="elementos do caso")
+    axes[2].set_xlabel("|θ| (°)")
+    axes[2].set_ylabel("peso do padrão vertical")
+    axes[2].legend(fontsize=8)
+    axes[2].set_title("mistura por ângulo")
     for ax in axes:
         ax.grid(alpha=0.3)
-    fig.tight_layout(); plt.show()
+    fig.tight_layout()
+    plt.show()
 
 # %%
 if runs_arc:
@@ -430,18 +644,25 @@ if runs_arc:
         massL, netL, _ = r["balL"]
         if r["acc"] is not None:
             axes[2].plot(T_, massL - massL[0] - r["acc"][0], ls, color=f"C{k % 2}", label=lab)
-    axes[0].axhline(qL, color="k", ls="--", lw=0.8); axes[0].set_ylabel("Líquido na saída (kg/s)")
-    axes[1].set_ylabel("Pressão na entrada (bar)"); axes[2].set_ylabel("Erro acumulado de massa de líquido (kg)"); axes[2].set_xlabel("Tempo (s)")
+    axes[0].axhline(qL, color="k", ls="--", lw=0.8)
+    axes[0].set_ylabel("Líquido na saída (kg/s)")
+    axes[1].set_ylabel("Pressão na entrada (bar)")
+    axes[2].set_ylabel("Erro acumulado de massa de líquido (kg)")
+    axes[2].set_xlabel("Tempo (s)")
     for ax in axes:
-        ax.grid(alpha=0.3); ax.legend(fontsize=8, loc="upper left", ncol=2)
+        ax.grid(alpha=0.3)
+        ax.legend(fontsize=8, loc="upper left", ncol=2)
     plt.show()
     for tag, r in list(runs.items()) + list(runs_arc.items()):
         arc = r["meta"].get("n_elbow", 0) > 0
         T_, q_ = r["T"], r["p"]["out"]["qL"][-1]
         nb_, per, qmax = cycle_stats(T_, r["p"]["out"]["P_bar"][1], q_)
-        massL, _, _ = r["balL"]; eL = (massL[-1] - massL[0] - r["acc"][0, -1]) if r["acc"] is not None else np.nan
-        print(f"{tag:13s} {'arco + mistura ' if arc else 'joelho anguloso'}: {r['meta']['n_steps']:7d} passos | {nb_} blowdowns, período ≈ {per:.0f} s, "
-              f"pico máximo {qmax:.1f} kg/s, P_in {r['p']['out']['P_bar'][1].min():.2f}–{r['p']['out']['P_bar'][1].max():.2f} bar | erro de massa de líquido {eL:+.2e} kg")
+        massL, _, _ = r["balL"]
+        eL = (massL[-1] - massL[0] - r["acc"][0, -1]) if r["acc"] is not None else np.nan
+        print(
+            f"{tag:13s} {'arco + mistura ' if arc else 'joelho anguloso'}: {r['meta']['n_steps']:7d} passos | {nb_} blowdowns, período ≈ {per:.0f} s, "
+            f"pico máximo {qmax:.1f} kg/s, P_in {r['p']['out']['P_bar'][1].min():.2f}–{r['p']['out']['P_bar'][1].max():.2f} bar | erro de massa de líquido {eL:+.2e} kg"
+        )
 
 # %% [markdown]
 # ### Fração de gás junto ao joelho
@@ -452,16 +673,26 @@ if runs_arc:
 # %%
 if "conservativo" in runs_arc and "conservativo" in runs:
     fig, axes = plt.subplots(1, 2, figsize=(12, 3.8), sharey=True)
-    for ax, (lab, r) in zip(axes, (("joelho anguloso", runs["conservativo"]), ("arco + mistura", runs_arc["conservativo"]))):
-        T_, p_ = r["T"], r["p"]; x_ = p_["x"]; s0 = r["case"].meta["s_elbow0"]
+    for ax, (lab, r) in zip(
+        axes, (("joelho anguloso", runs["conservativo"]), ("arco + mistura", runs_arc["conservativo"]))
+    ):
+        T_, p_ = r["T"], r["p"]
+        x_ = p_["x"]
+        s0 = r["case"].meta["s_elbow0"]
         q_ = p_["out"]["qL"][-1]
         pk = [i for i in range(1, T_.size - 1) if q_[i] > 2.0 and q_[i] >= q_[i - 1] and q_[i] > q_[i + 1]]
         i0 = pk[5] if len(pk) > 6 else T_.size // 2
         for dt_ in (-60, -20, -5, 0, 10, 40):
             it = min(max(i0 + dt_ // 2, 0), T_.size - 1)
             ax.plot(x_ - s0, p_["out"]["alphaG"][:, it], label=f"t = {T_[it]:.0f} s")
-        ax.axvline(0, color="k", lw=0.8, ls=":"); ax.set_xlim(-60, 35); ax.set_xlabel("s − s_joelho (m)"); ax.set_title(lab); ax.grid(alpha=0.3); ax.legend(fontsize=7)
-    axes[0].set_ylabel("Fração de gás"); plt.show()
+        ax.axvline(0, color="k", lw=0.8, ls=":")
+        ax.set_xlim(-60, 35)
+        ax.set_xlabel("s − s_joelho (m)")
+        ax.set_title(lab)
+        ax.grid(alpha=0.3)
+        ax.legend(fontsize=7)
+    axes[0].set_ylabel("Fração de gás")
+    plt.show()
 
 # %% [markdown]
 # ## Malha não uniforme (refinamento no joelho)
@@ -503,12 +734,17 @@ if "conservativo" in runs_arc and "conservativo" in runs:
 
 # %%
 runs_mesh = {}
-for tag, fname in (("uniforme 15/5", "severe_slug_blocked_conservative_arc_av.npz"), ("graduada 15/5", "severe_slug_blocked_conservative_arc_graded_av.npz"),
-                   ("uniforme 30/10", "severe_slug_blocked_conservative_arc_fine_av.npz"), ("graduada 30/10", "severe_slug_blocked_conservative_arc_fine_graded_av.npz"),
-                   ("uniforme 15/5 + regularização", "severe_slug_blocked_conservative_arc_av_reg.npz")):
+for tag, fname in (
+    ("uniforme 15/5", "severe_slug_blocked_conservative_arc_av.npz"),
+    ("graduada 15/5", "severe_slug_blocked_conservative_arc_graded_av.npz"),
+    ("uniforme 30/10", "severe_slug_blocked_conservative_arc_fine_av.npz"),
+    ("graduada 30/10", "severe_slug_blocked_conservative_arc_fine_graded_av.npz"),
+    ("uniforme 15/5 + regularização", "severe_slug_blocked_conservative_arc_av_reg.npz"),
+):
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
-        print("trajetória não encontrada:", f); continue
+        print("trajetória não encontrada:", f)
+        continue
     runs_mesh[tag] = load_blocked_run(f)
 
 # %%
@@ -519,18 +755,27 @@ if runs_mesh:
         axes[0].plot(T_, p_["out"]["qL"][-1], lw=0.9, label=tag)
         axes[1].plot(T_, p_["out"]["P_bar"][1], lw=0.9, label=tag)
         axes[2].plot(T_, p_["out"]["alphaG"][r["ib"] + r["meta"]["n_elbow"] + 1], lw=0.9, label=tag)
-    axes[0].axhline(qL, color="k", ls="--", lw=0.8); axes[0].set_ylabel("Líquido na saída (kg/s)")
-    axes[1].set_ylabel("Pressão na entrada (bar)"); axes[2].set_ylabel("Fração de gás na base do riser"); axes[2].set_xlabel("Tempo (s)")
+    axes[0].axhline(qL, color="k", ls="--", lw=0.8)
+    axes[0].set_ylabel("Líquido na saída (kg/s)")
+    axes[1].set_ylabel("Pressão na entrada (bar)")
+    axes[2].set_ylabel("Fração de gás na base do riser")
+    axes[2].set_xlabel("Tempo (s)")
     for ax in axes:
-        ax.grid(alpha=0.3); ax.legend(fontsize=8, loc="upper right", ncol=2)
+        ax.grid(alpha=0.3)
+        ax.legend(fontsize=8, loc="upper right", ncol=2)
     plt.show()
-    print(f"{'malha':16s} {'passos':>8s} {'CPU':>7s} {'blowdowns':>9s} {'período':>8s} {'pico máx':>9s} {'P_in (bar)':>12s} {'erro massa L':>13s}")
+    print(
+        f"{'malha':16s} {'passos':>8s} {'CPU':>7s} {'blowdowns':>9s} {'período':>8s} {'pico máx':>9s} {'P_in (bar)':>12s} {'erro massa L':>13s}"
+    )
     for tag, r in runs_mesh.items():
         T_, q_ = r["T"], r["p"]["out"]["qL"][-1]
         nb_, per, qmax = cycle_stats(T_, r["p"]["out"]["P_bar"][1], q_)
-        massL, _, _ = r["balL"]; eL = (massL[-1] - massL[0] - r["acc"][0, -1]) if r["acc"] is not None else np.nan
+        massL, _, _ = r["balL"]
+        eL = (massL[-1] - massL[0] - r["acc"][0, -1]) if r["acc"] is not None else np.nan
         P1 = r["p"]["out"]["P_bar"][1][T_ > 100]
-        print(f"{tag:16s} {r['meta']['n_steps']:8d} {r['meta']['cpu']/60:5.0f} min {nb_:9d} {per:6.0f} s {qmax:6.1f} kg/s {P1.min():5.2f}–{P1.max():4.2f} {eL:+12.1e} kg")
+        print(
+            f"{tag:16s} {r['meta']['n_steps']:8d} {r['meta']['cpu']/60:5.0f} min {nb_:9d} {per:6.0f} s {qmax:6.1f} kg/s {P1.min():5.2f}–{P1.max():4.2f} {eL:+12.1e} kg"
+        )
 
 # %% [markdown]
 # ### Perfis junto ao joelho num instante do blowdown
@@ -542,15 +787,23 @@ if runs_mesh:
     for k, (tag, r) in enumerate(runs_mesh.items()):
         if "regulariza" in tag:
             continue
-        T_, p_ = r["T"], r["p"]; x_ = p_["x"]; s0 = r["case"].meta["s_elbow0"]
-        tb = blowdowns(T_, p_["out"]["P_bar"][1]); tb = tb[tb > 600]
+        T_, p_ = r["T"], r["p"]
+        x_ = p_["x"]
+        s0 = r["case"].meta["s_elbow0"]
+        tb = blowdowns(T_, p_["out"]["P_bar"][1])
+        tb = tb[tb > 600]
         if tb.size == 0:
             continue
         it = max(int(np.argmin(np.abs(T_ - tb[len(tb) // 2]))) - 3, 0)
         axes[0].plot(x_ - s0, p_["out"]["alphaG"][:, it], ".-", ms=3, label=f"{tag} (t = {T_[it]:.0f} s)")
         axes[1].plot(x_ - s0, p_["out"]["P_bar"][:, it], ".-", ms=3, label=tag)
     for ax, yl in zip(axes, ("Fração de gás", "Pressão (bar)")):
-        ax.axvline(0, color="k", lw=0.8, ls=":"); ax.set_xlim(-80, 40); ax.set_xlabel("s − s_joelho (m)"); ax.set_ylabel(yl); ax.grid(alpha=0.3); ax.legend(fontsize=7)
+        ax.axvline(0, color="k", lw=0.8, ls=":")
+        ax.set_xlim(-80, 40)
+        ax.set_xlabel("s − s_joelho (m)")
+        ax.set_ylabel(yl)
+        ax.grid(alpha=0.3)
+        ax.legend(fontsize=7)
     plt.show()
 
 # %% [markdown]
@@ -583,29 +836,44 @@ if runs_mesh:
 # %%
 from mfsim.models.base import PipeParams
 from mfsim.models.twofluid import TwoFluidModel
+
 rhoL_, rhoG_, _, _ = fluid.props(6e5)
-aG_grid = np.logspace(-3, np.log10(0.6), 40); slip_grid = np.linspace(0.0, 5.0, 41)
-variants = {"estratificado (linha, 8.6°)": dict(regime=4, theta=8.6),
-            "bolhas (riser, 90°)": dict(regime=4, regime_vertical=2, theta=90.0),
-            "estratificado + bolhas abaixo de 1 %": dict(regime=4, low_void_regime=2, theta=8.6),
-            "idem + pressão interfacial δ = 1.2": dict(regime=4, low_void_regime=2, interfacial_pressure=1.2, theta=8.6),
-            "bolhas 90° + massa virtual 0.5 (λ = 1)": dict(regime=4, regime_vertical=2, theta=90.0, virtual_mass=0.5),
-            "bolhas 90° + massa virtual 0.5 (λ = 2)": dict(regime=4, regime_vertical=2, theta=90.0, virtual_mass=0.5, vm_lambda=2.0),
-            "estrat. + bolhas < 1 % + massa virtual 0.5 (λ = 1)": dict(regime=4, low_void_regime=2, theta=8.6, virtual_mass=0.5),
-            "idem + Bestion δ = 1.2": dict(regime=4, low_void_regime=2, theta=8.6, virtual_mass=0.5, interfacial_pressure=1.2)}
+aG_grid = np.logspace(-3, np.log10(0.6), 40)
+slip_grid = np.linspace(0.0, 5.0, 41)
+variants = {
+    "estratificado (linha, 8.6°)": dict(regime=4, theta=8.6),
+    "bolhas (riser, 90°)": dict(regime=4, regime_vertical=2, theta=90.0),
+    "estratificado + bolhas abaixo de 1 %": dict(regime=4, low_void_regime=2, theta=8.6),
+    "idem + pressão interfacial δ = 1.2": dict(regime=4, low_void_regime=2, interfacial_pressure=1.2, theta=8.6),
+    "bolhas 90° + massa virtual 0.5 (λ = 1)": dict(regime=4, regime_vertical=2, theta=90.0, virtual_mass=0.5),
+    "bolhas 90° + massa virtual 0.5 (λ = 2)": dict(
+        regime=4, regime_vertical=2, theta=90.0, virtual_mass=0.5, vm_lambda=2.0
+    ),
+    "estrat. + bolhas < 1 % + massa virtual 0.5 (λ = 1)": dict(
+        regime=4, low_void_regime=2, theta=8.6, virtual_mass=0.5
+    ),
+    "idem + Bestion δ = 1.2": dict(regime=4, low_void_regime=2, theta=8.6, virtual_mass=0.5, interfacial_pressure=1.2),
+}
 fig, axes = plt.subplots(2, 4, figsize=(17, 7.2), sharey=True)
 axes = axes.ravel()
 for ax, (name, v) in zip(axes, variants.items()):
-    v = dict(v); theta = v.pop("theta")
-    m_ = TwoFluidModel(fluid, PipeParams(D=D, eps=1e-5, PR=1e6, vertical_angle=45.0, vertical_blend=20.0, low_void_alpha=0.01, **v))
+    v = dict(v)
+    theta = v.pop("theta")
+    m_ = TwoFluidModel(
+        fluid, PipeParams(D=D, eps=1e-5, PR=1e6, vertical_angle=45.0, vertical_blend=20.0, low_void_alpha=0.01, **v)
+    )
     Z = np.zeros((aG_grid.size, slip_grid.size))
     for i, aG_ in enumerate(aG_grid):
         vL_ = 0.5 / (rhoL_ * (1 - aG_) * A)
         y = np.array([[aG_, 0.6, 0.5, rhoG_ * aG_ * A * (vL_ + s_)] for s_ in slip_grid])
         Z[i] = np.abs(m_.eigenvalues(y, np.deg2rad(np.full(slip_grid.size, theta))).imag).max(axis=1)
     pc = ax.pcolormesh(slip_grid, aG_grid, Z, shading="nearest", vmin=0, vmax=5, cmap="magma_r")
-    ax.set_yscale("log"); ax.set_xlabel("escorregamento vG − vL (m/s)"); ax.set_title(name, fontsize=9)
-axes[0].set_ylabel("fração de gás"); axes[4].set_ylabel("fração de gás"); fig.colorbar(pc, ax=axes, label="max |Im λ| (m/s)", shrink=0.9)
+    ax.set_yscale("log")
+    ax.set_xlabel("escorregamento vG − vL (m/s)")
+    ax.set_title(name, fontsize=9)
+axes[0].set_ylabel("fração de gás")
+axes[4].set_ylabel("fração de gás")
+fig.colorbar(pc, ax=axes, label="max |Im λ| (m/s)", shrink=0.9)
 plt.show()
 
 # %% [markdown]
@@ -666,41 +934,54 @@ plt.show()
 
 # %%
 runs_phys = {}
-for tag, fname in (("referência (noslip)", "severe_slug_blocked_conservative_arc_tol_noslip.npz"),
-                   ("atrito interfacial × 0.5", "severe_slug_blocked_conservative_arc_tol_fi05.npz"),
-                   ("atrito interfacial × 2", "severe_slug_blocked_conservative_arc_tol_fi20.npz"),
-                   ("atrito interfacial Taitel–Dukler", "severe_slug_blocked_conservative_arc_tol_fitaitel.npz"),
-                   ("massa virtual 0.5 (λ = 1)", "severe_slug_blocked_conservative_arc_tol_vm05.npz"),
-                   ("massa virtual 0.5 + bolhas < 1 %", "severe_slug_blocked_conservative_arc_tol_vm05_lv.npz"),
-                   ("massa virtual 0.5 (λ = 2)", "severe_slug_blocked_conservative_arc_tol_vm05_lam2.npz"),
-                   ("bolhas < 1 % + Bestion δ = 1.2", "severe_slug_blocked_conservative_arc_tol_bestion.npz"),
-                   ("riser intermitente (regime_vertical = 3)", "severe_slug_blocked_conservative_arc_tol_int.npz"),
-                   ("riser intermitente + anular > 90 % + massa virtual + bolhas < 1 %", "severe_slug_blocked_conservative_arc_tol_int_hv_vm_lv.npz"),
-                   ("anular acima de 90 % de gás", "severe_slug_blocked_conservative_arc_tol_hv.npz"),
-                   ("anular > 90 % + massa virtual + bolhas < 1 %", "severe_slug_blocked_conservative_arc_tol_hv_vm_lv.npz"),
-                   ("γG = 1.0 (+ regras físicas)", "severe_slug_blocked_conservative_arc_tol_gammaG10.npz"),
-                   ("γG = 1.3 (+ regras físicas)", "severe_slug_blocked_conservative_arc_tol_gammaG13.npz"),
-                   ("volume a montante 0.1 m³ (+ regras físicas)", "severe_slug_blocked_conservative_arc_tol_vup01.npz"),
-                   ("volume a montante 0.5 m³ (+ regras físicas)", "severe_slug_blocked_conservative_arc_tol_vup05.npz"),
-                   ("volume a montante 2 m³ (+ regras físicas)", "severe_slug_blocked_conservative_arc_tol_vup20.npz"),
-                   ("malha fina graduada, noslip", "severe_slug_blocked_conservative_arc_fine_graded_noslip.npz"),
-                   ("malha fina graduada, massa virtual + bolhas < 1 %", "severe_slug_blocked_conservative_arc_fine_graded_vm.npz")):
+for tag, fname in (
+    ("referência (noslip)", "severe_slug_blocked_conservative_arc_tol_noslip.npz"),
+    ("atrito interfacial × 0.5", "severe_slug_blocked_conservative_arc_tol_fi05.npz"),
+    ("atrito interfacial × 2", "severe_slug_blocked_conservative_arc_tol_fi20.npz"),
+    ("atrito interfacial Taitel–Dukler", "severe_slug_blocked_conservative_arc_tol_fitaitel.npz"),
+    ("massa virtual 0.5 (λ = 1)", "severe_slug_blocked_conservative_arc_tol_vm05.npz"),
+    ("massa virtual 0.5 + bolhas < 1 %", "severe_slug_blocked_conservative_arc_tol_vm05_lv.npz"),
+    ("massa virtual 0.5 (λ = 2)", "severe_slug_blocked_conservative_arc_tol_vm05_lam2.npz"),
+    ("bolhas < 1 % + Bestion δ = 1.2", "severe_slug_blocked_conservative_arc_tol_bestion.npz"),
+    ("riser intermitente (regime_vertical = 3)", "severe_slug_blocked_conservative_arc_tol_int.npz"),
+    (
+        "riser intermitente + anular > 90 % + massa virtual + bolhas < 1 %",
+        "severe_slug_blocked_conservative_arc_tol_int_hv_vm_lv.npz",
+    ),
+    ("anular acima de 90 % de gás", "severe_slug_blocked_conservative_arc_tol_hv.npz"),
+    ("anular > 90 % + massa virtual + bolhas < 1 %", "severe_slug_blocked_conservative_arc_tol_hv_vm_lv.npz"),
+    ("γG = 1.0 (+ regras físicas)", "severe_slug_blocked_conservative_arc_tol_gammaG10.npz"),
+    ("γG = 1.3 (+ regras físicas)", "severe_slug_blocked_conservative_arc_tol_gammaG13.npz"),
+    ("volume a montante 0.1 m³ (+ regras físicas)", "severe_slug_blocked_conservative_arc_tol_vup01.npz"),
+    ("volume a montante 0.5 m³ (+ regras físicas)", "severe_slug_blocked_conservative_arc_tol_vup05.npz"),
+    ("volume a montante 2 m³ (+ regras físicas)", "severe_slug_blocked_conservative_arc_tol_vup20.npz"),
+    ("malha fina graduada, noslip", "severe_slug_blocked_conservative_arc_fine_graded_noslip.npz"),
+    ("malha fina graduada, massa virtual + bolhas < 1 %", "severe_slug_blocked_conservative_arc_fine_graded_vm.npz"),
+):
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
-        print("trajetória não encontrada:", f); continue
+        print("trajetória não encontrada:", f)
+        continue
     runs_phys[tag] = load_blocked_run(f)
 if runs_phys:
     fig, ax = plt.subplots(figsize=(11, 3.8))
     for tag, r in runs_phys.items():
         ax.plot(r["T"], r["p"]["out"]["P_bar"][1], lw=0.9, label=tag)
-    ax.set_ylabel("Pressão na entrada (bar)"); ax.set_xlabel("Tempo (s)"); ax.grid(alpha=0.3); ax.legend(fontsize=7, ncol=2)
+    ax.set_ylabel("Pressão na entrada (bar)")
+    ax.set_xlabel("Tempo (s)")
+    ax.grid(alpha=0.3)
+    ax.legend(fontsize=7, ncol=2)
     plt.show()
-    print(f"{'configuração':36s} {'passos':>8s} {'CPU':>6s} {'blowdowns':>9s} {'intervalo':>9s} {'pico máx':>9s} {'P_in (bar)':>12s}")
+    print(
+        f"{'configuração':36s} {'passos':>8s} {'CPU':>6s} {'blowdowns':>9s} {'intervalo':>9s} {'pico máx':>9s} {'P_in (bar)':>12s}"
+    )
     for tag, r in runs_phys.items():
         T_, q_ = r["T"], r["p"]["out"]["qL"][-1]
         nb_, per, qmax = cycle_stats(T_, r["p"]["out"]["P_bar"][1], q_)
         P1 = r["p"]["out"]["P_bar"][1][T_ > 100]
-        print(f"{tag:36s} {r['meta']['n_steps']:8d} {r['meta']['cpu']:5.0f} s {nb_:9d} {per:7.0f} s {qmax:6.1f} kg/s {P1.min():5.2f}–{P1.max():4.2f}")
+        print(
+            f"{tag:36s} {r['meta']['n_steps']:8d} {r['meta']['cpu']:5.0f} s {nb_:9d} {per:7.0f} s {qmax:6.1f} kg/s {P1.min():5.2f}–{P1.max():4.2f}"
+        )
 
 
 # %%
@@ -708,25 +989,58 @@ from mfsim.closures import ClosureInputs, annular, bubble
 from mfsim.geometry import stratified_level
 
 rhoL_f, rhoG_f = 900.0, 6.5
-print("Força líquida por metro sobre o filme (N/m; negativo = para baixo), αG = 0.95, riser vertical, peso do filme 0.87 N/m")
-print(f"{'vL (m/s)':>9s} {'vG (m/s)':>9s} {'anular: GammaL':>15s} {'resultante':>11s} {'bolhas: GammaL':>15s} {'resultante':>11s}")
+print(
+    "Força líquida por metro sobre o filme (N/m; negativo = para baixo), αG = 0.95, riser vertical, peso do filme 0.87 N/m"
+)
+print(
+    f"{'vL (m/s)':>9s} {'vG (m/s)':>9s} {'anular: GammaL':>15s} {'resultante':>11s} {'bolhas: GammaL':>15s} {'resultante':>11s}"
+)
 for vL_ in (-0.3, -0.1, 0.0):
     for vG_ in (1.0, 3.0, 6.0, 10.0):
-        aG_ = np.array([0.95]); hD_, beta_ = stratified_level(aG_)
-        inp_ = ClosureInputs(alphaG=aG_, alphaL=1 - aG_, vL=np.array([vL_]), vLS=np.array([vL_ * (1 - aG_[0])]), vG=np.array([vG_]), vGS=np.array([vG_ * aG_[0]]),
-                             AreaL=A * (1 - aG_), AreaG=A * aG_, D=np.array([D]), eps=np.array([1e-5]), theta=np.array([np.pi / 2]), rhoL=np.array([rhoL_f]),
-                             rhoG=np.array([rhoG_f]), muL=np.array([2e-3]), muG=np.array([1.8e-5]), CL=np.array([9e-6]), CG=np.array([1.2e-5]), sigma=np.array([0.05]), beta=beta_, hD=hD_)
+        aG_ = np.array([0.95])
+        hD_, beta_ = stratified_level(aG_)
+        inp_ = ClosureInputs(
+            alphaG=aG_,
+            alphaL=1 - aG_,
+            vL=np.array([vL_]),
+            vLS=np.array([vL_ * (1 - aG_[0])]),
+            vG=np.array([vG_]),
+            vGS=np.array([vG_ * aG_[0]]),
+            AreaL=A * (1 - aG_),
+            AreaG=A * aG_,
+            D=np.array([D]),
+            eps=np.array([1e-5]),
+            theta=np.array([np.pi / 2]),
+            rhoL=np.array([rhoL_f]),
+            rhoG=np.array([rhoG_f]),
+            muL=np.array([2e-3]),
+            muG=np.array([1.8e-5]),
+            CL=np.array([9e-6]),
+            CG=np.array([1.2e-5]),
+            sigma=np.array([0.05]),
+            beta=beta_,
+            hD=hD_,
+        )
         Sa_, Sb_ = annular(inp_), bubble(inp_)
         grav_ = -rhoL_f * (1 - aG_[0]) * A * 9.81
-        print(f"{vL_:+9.1f} {vG_:9.1f} {Sa_.GammaL[0]:+15.3f} {grav_ - Sa_.GammaL[0]:+11.3f} {Sb_.GammaL[0]:+15.1f} {grav_ - Sb_.GammaL[0]:+11.1f}")
+        print(
+            f"{vL_:+9.1f} {vG_:9.1f} {Sa_.GammaL[0]:+15.3f} {grav_ - Sa_.GammaL[0]:+11.3f} {Sb_.GammaL[0]:+15.1f} {grav_ - Sb_.GammaL[0]:+11.1f}"
+        )
 
 
 def film_stats(r):
     """Fração do tempo com riser > 90 % de gás e, nessas células, filme descendo / líquido subindo > 0.5 m/s."""
-    th_ = np.rad2deg(r["model"].pipes[0].scheme.theta_nodes); riser_ = np.flatnonzero(th_ > 80)
-    aG_ = r["p"]["out"]["alphaG"][riser_]; vL_ = r["p"]["out"]["velocidadeL"][riser_]; vG_ = r["p"]["out"]["velocidadeG"][riser_]
+    th_ = np.rad2deg(r["model"].pipes[0].scheme.theta_nodes)
+    riser_ = np.flatnonzero(th_ > 80)
+    aG_ = r["p"]["out"]["alphaG"][riser_]
+    vL_ = r["p"]["out"]["velocidadeL"][riser_]
+    vG_ = r["p"]["out"]["velocidadeG"][riser_]
     gf = aG_ > 0.9
-    return gf.mean(), (gf & (vL_ < -0.02) & (vG_ > 0.02)).sum() / max(1, gf.sum()), (gf & (vL_ > 0.5)).sum() / max(1, gf.sum())
+    return (
+        gf.mean(),
+        (gf & (vL_ < -0.02) & (vG_ > 0.02)).sum() / max(1, gf.sum()),
+        (gf & (vL_ > 0.5)).sum() / max(1, gf.sum()),
+    )
 
 
 print()
@@ -779,16 +1093,19 @@ for tag, r in runs_phys.items():
 
 # %%
 runs_fast = {}
-for tag, fname in (("referência (ν = 0.01)", "severe_slug_blocked_conservative_arc_av.npz"),
-                   ("ν = 0.05 + Newton 20", "severe_slug_blocked_conservative_arc_av05.npz"),
-                   ("+ atol 0.03 kg/s, 0.1 bar", "severe_slug_blocked_conservative_arc_fast1.npz"),
-                   ("+ atol 0.05 kg/s, 0.2 bar", "severe_slug_blocked_conservative_arc_fast2.npz"),
-                   ("atol 0.03/0.1, lado direito JAX", "severe_slug_blocked_conservative_arc_fast1_jax.npz"),
-                   ("malha fina 30/10 (ν = 0.01)", "severe_slug_blocked_conservative_arc_fine_av.npz"),
-                   ("malha fina, atol 0.03/0.1, JAX", "severe_slug_blocked_conservative_arc_fine_fast1_jax.npz")):
+for tag, fname in (
+    ("referência (ν = 0.01)", "severe_slug_blocked_conservative_arc_av.npz"),
+    ("ν = 0.05 + Newton 20", "severe_slug_blocked_conservative_arc_av05.npz"),
+    ("+ atol 0.03 kg/s, 0.1 bar", "severe_slug_blocked_conservative_arc_fast1.npz"),
+    ("+ atol 0.05 kg/s, 0.2 bar", "severe_slug_blocked_conservative_arc_fast2.npz"),
+    ("atol 0.03/0.1, lado direito JAX", "severe_slug_blocked_conservative_arc_fast1_jax.npz"),
+    ("malha fina 30/10 (ν = 0.01)", "severe_slug_blocked_conservative_arc_fine_av.npz"),
+    ("malha fina, atol 0.03/0.1, JAX", "severe_slug_blocked_conservative_arc_fine_fast1_jax.npz"),
+):
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
-        print("trajetória não encontrada:", f); continue
+        print("trajetória não encontrada:", f)
+        continue
     runs_fast[tag] = load_blocked_run(f)
 
 # %%
@@ -798,18 +1115,26 @@ if runs_fast:
         T_, p_ = r["T"], r["p"]
         axes[0].plot(T_, p_["out"]["qL"][-1], lw=0.9, label=tag)
         axes[1].plot(T_, p_["out"]["P_bar"][1], lw=0.9, label=tag)
-    axes[0].axhline(qL, color="k", ls="--", lw=0.8); axes[0].set_ylabel("Líquido na saída (kg/s)")
-    axes[1].set_ylabel("Pressão na entrada (bar)"); axes[1].set_xlabel("Tempo (s)")
+    axes[0].axhline(qL, color="k", ls="--", lw=0.8)
+    axes[0].set_ylabel("Líquido na saída (kg/s)")
+    axes[1].set_ylabel("Pressão na entrada (bar)")
+    axes[1].set_xlabel("Tempo (s)")
     for ax in axes:
-        ax.grid(alpha=0.3); ax.legend(fontsize=8, loc="upper right", ncol=2)
+        ax.grid(alpha=0.3)
+        ax.legend(fontsize=8, loc="upper right", ncol=2)
     plt.show()
-    print(f"{'configuração':30s} {'passos':>8s} {'CPU':>7s} {'blowdowns':>9s} {'período':>8s} {'pico máx':>9s} {'P_in (bar)':>12s} {'erro massa L':>13s}")
+    print(
+        f"{'configuração':30s} {'passos':>8s} {'CPU':>7s} {'blowdowns':>9s} {'período':>8s} {'pico máx':>9s} {'P_in (bar)':>12s} {'erro massa L':>13s}"
+    )
     for tag, r in runs_fast.items():
         T_, q_ = r["T"], r["p"]["out"]["qL"][-1]
         nb_, per, qmax = cycle_stats(T_, r["p"]["out"]["P_bar"][1], q_)
-        massL, _, _ = r["balL"]; eL = (massL[-1] - massL[0] - r["acc"][0, -1]) if r["acc"] is not None else np.nan
+        massL, _, _ = r["balL"]
+        eL = (massL[-1] - massL[0] - r["acc"][0, -1]) if r["acc"] is not None else np.nan
         P1 = r["p"]["out"]["P_bar"][1][T_ > 100]
-        print(f"{tag:30s} {r['meta']['n_steps']:8d} {r['meta']['cpu']/60:5.0f} min {nb_:9d} {per:6.0f} s {qmax:6.1f} kg/s {P1.min():5.2f}–{P1.max():4.2f} {eL:+12.1e} kg")
+        print(
+            f"{tag:30s} {r['meta']['n_steps']:8d} {r['meta']['cpu']/60:5.0f} min {nb_:9d} {per:6.0f} s {qmax:6.1f} kg/s {P1.min():5.2f}–{P1.max():4.2f} {eL:+12.1e} kg"
+        )
 
 
 # %% [markdown]
@@ -828,13 +1153,16 @@ if runs_fast:
 
 # %%
 runs_net = {}
-for tag, fname in (("duto único curvado", "severe_slug_blocked_conservative_arc_tol.npz"),
-                   ("rede, V = 0.05 m³", "severe_slug_blocked_network_v050.npz"),
-                   ("rede, V = 0.005 m³", "severe_slug_blocked_network_v005.npz"),
-                   ("rede, V = 0.002 m³", "severe_slug_blocked_network_v002.npz")):
+for tag, fname in (
+    ("duto único curvado", "severe_slug_blocked_conservative_arc_tol.npz"),
+    ("rede, V = 0.05 m³", "severe_slug_blocked_network_v050.npz"),
+    ("rede, V = 0.005 m³", "severe_slug_blocked_network_v005.npz"),
+    ("rede, V = 0.002 m³", "severe_slug_blocked_network_v002.npz"),
+):
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
-        print("trajetória não encontrada:", f); continue
+        print("trajetória não encontrada:", f)
+        continue
     runs_net[tag] = load_blocked_run(f)
 
 # %%
@@ -845,17 +1173,25 @@ if runs_net:
         axes[0].plot(T_, r["p_last"]["out"]["qL"][-1], lw=0.9, label=tag)
         axes[1].plot(T_, r["p"]["out"]["P_bar"][1], lw=0.9, label=tag)
         axes[2].plot(T_, r["aG_riser_base"], lw=0.9, label=tag)
-    axes[0].axhline(qL, color="k", ls="--", lw=0.8); axes[0].set_ylabel("Líquido na saída (kg/s)")
-    axes[1].set_ylabel("Pressão na entrada (bar)"); axes[2].set_ylabel("Fração de gás na base do riser"); axes[2].set_xlabel("Tempo (s)")
+    axes[0].axhline(qL, color="k", ls="--", lw=0.8)
+    axes[0].set_ylabel("Líquido na saída (kg/s)")
+    axes[1].set_ylabel("Pressão na entrada (bar)")
+    axes[2].set_ylabel("Fração de gás na base do riser")
+    axes[2].set_xlabel("Tempo (s)")
     for ax in axes:
-        ax.grid(alpha=0.3); ax.legend(fontsize=8, loc="upper right", ncol=2)
+        ax.grid(alpha=0.3)
+        ax.legend(fontsize=8, loc="upper right", ncol=2)
     plt.show()
-    print(f"{'configuração':22s} {'estados':>7s} {'passos':>8s} {'CPU':>6s} {'blowdowns':>9s} {'intervalo':>9s} {'pico máx':>9s} {'P_in (bar)':>12s}")
+    print(
+        f"{'configuração':22s} {'estados':>7s} {'passos':>8s} {'CPU':>6s} {'blowdowns':>9s} {'intervalo':>9s} {'pico máx':>9s} {'P_in (bar)':>12s}"
+    )
     for tag, r in runs_net.items():
         T_, q_ = r["T"], r["p_last"]["out"]["qL"][-1]
         nb_, per, qmax = cycle_stats(T_, r["p"]["out"]["P_bar"][1], q_)
         P1 = r["p"]["out"]["P_bar"][1][T_ > 100]
-        print(f"{tag:22s} {r['model'].n_states:7d} {r['meta']['n_steps']:8d} {r['meta']['cpu']:5.0f} s {nb_:9d} {per:7.0f} s {qmax:6.1f} kg/s {P1.min():5.2f}–{P1.max():4.2f}")
+        print(
+            f"{tag:22s} {r['model'].n_states:7d} {r['meta']['n_steps']:8d} {r['meta']['cpu']:5.0f} s {nb_:9d} {per:7.0f} s {qmax:6.1f} kg/s {P1.min():5.2f}–{P1.max():4.2f}"
+        )
 
 # %% [markdown]
 # ## Identificação automática do padrão de escoamento (regime 6)
@@ -918,27 +1254,40 @@ if runs_net:
 from mfsim.closures import identify_regime, equilibrium_fractions
 
 runs_ipe = {}
-for tag, fname in (("padrão fixo (estratificado + bolhas no riser)", "severe_slug_blocked_conservative_arc_tol.npz"),
-                   ("IPE suave (k = 20, bolhas < 1 %)", "severe_slug_blocked_regime6_smooth.npz"),
-                   ("IPE suave (k = 50, bolhas < 1 %)", "severe_slug_blocked_regime6_smooth_k50.npz"),
-                   ("IPE suave + critérios no estado local (k = 20)", "severe_slug_blocked_regime6_local.npz")):
+for tag, fname in (
+    ("padrão fixo (estratificado + bolhas no riser)", "severe_slug_blocked_conservative_arc_tol.npz"),
+    ("IPE suave (k = 20, bolhas < 1 %)", "severe_slug_blocked_regime6_smooth.npz"),
+    ("IPE suave (k = 50, bolhas < 1 %)", "severe_slug_blocked_regime6_smooth_k50.npz"),
+    ("IPE suave + critérios no estado local (k = 20)", "severe_slug_blocked_regime6_local.npz"),
+):
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
-        print("trajetória não encontrada:", f); continue
+        print("trajetória não encontrada:", f)
+        continue
     runs_ipe[tag] = load_blocked_run(f)
 
 
 def regime_map(r, step=2):
     """reg2 (1 anular, 2 bolhas, 3 intermitente, 4/5 estratificado) em cada nó e instante gravado."""
-    pb_ = r["model"].pipes[0]; sch_ = pb_.scheme; mod_ = pb_.model
-    T_ = r["T"][::step]; Ys = r["p"]["Y"][::step]
+    pb_ = r["model"].pipes[0]
+    sch_ = pb_.scheme
+    mod_ = pb_.model
+    T_ = r["T"][::step]
+    Ys = r["p"]["Y"][::step]
     reg = np.empty((Ys.shape[1], T_.size))
     for j, Y_ in enumerate(Ys):
         inp_, _, _ = mod_.local_state(Y_, sch_.theta_nodes)
         p_ = mod_.params
-        fl_, _ = identify_regime(inp_, k_switch=p_.k_switch, eq=equilibrium_fractions(inp_, smooth=p_.ipe_smooth), smooth=p_.ipe_smooth, local=p_.ipe_local)
+        fl_, _ = identify_regime(
+            inp_,
+            k_switch=p_.k_switch,
+            eq=equilibrium_fractions(inp_, smooth=p_.ipe_smooth),
+            smooth=p_.ipe_smooth,
+            local=p_.ipe_local,
+        )
         reg[:, j] = fl_.reg2
     return T_, sch_.x_nodes, reg
+
 
 # %%
 if runs_ipe:
@@ -949,32 +1298,44 @@ if runs_ipe:
         T_, p_ = r["T"], r["p"]
         axes[0].plot(T_, p_["out"]["qL"][-1], label=tag, **st)
         axes[1].plot(T_, p_["out"]["P_bar"][1], label=tag, **st)
-    axes[0].axhline(qL, color="k", ls="--", lw=0.8); axes[0].set_ylabel("Líquido na saída (kg/s)")
-    axes[1].set_ylabel("Pressão na entrada (bar)"); axes[1].set_xlabel("Tempo (s)")
+    axes[0].axhline(qL, color="k", ls="--", lw=0.8)
+    axes[0].set_ylabel("Líquido na saída (kg/s)")
+    axes[1].set_ylabel("Pressão na entrada (bar)")
+    axes[1].set_xlabel("Tempo (s)")
     for ax in axes:
-        ax.grid(alpha=0.3); ax.legend(fontsize=8, loc="upper right")
+        ax.grid(alpha=0.3)
+        ax.legend(fontsize=8, loc="upper right")
     plt.show()
-    print(f"{'configuração':46s} {'passos':>8s} {'CPU':>6s} {'blowdowns':>9s} {'intervalo':>9s} {'pico máx':>9s} {'P_in (bar)':>12s} {'erro massa L':>13s}")
+    print(
+        f"{'configuração':46s} {'passos':>8s} {'CPU':>6s} {'blowdowns':>9s} {'intervalo':>9s} {'pico máx':>9s} {'P_in (bar)':>12s} {'erro massa L':>13s}"
+    )
     for tag, r in runs_ipe.items():
         T_, q_ = r["T"], r["p"]["out"]["qL"][-1]
         nb_, per, qmax = cycle_stats(T_, r["p"]["out"]["P_bar"][1], q_)
-        massL, _, _ = r["balL"]; eL = (massL[-1] - massL[0] - r["acc"][0, -1]) if r["acc"] is not None else np.nan
+        massL, _, _ = r["balL"]
+        eL = (massL[-1] - massL[0] - r["acc"][0, -1]) if r["acc"] is not None else np.nan
         P1 = r["p"]["out"]["P_bar"][1][T_ > 100]
-        print(f"{tag:46s} {r['meta']['n_steps']:8d} {r['meta']['cpu']:5.0f} s {nb_:9d} {per:7.0f} s {qmax:6.1f} kg/s {P1.min():5.2f}–{P1.max():4.2f} {eL:+12.1e} kg")
+        print(
+            f"{tag:46s} {r['meta']['n_steps']:8d} {r['meta']['cpu']:5.0f} s {nb_:9d} {per:7.0f} s {qmax:6.1f} kg/s {P1.min():5.2f}–{P1.max():4.2f} {eL:+12.1e} kg"
+        )
 
 # %%
 from matplotlib.colors import ListedColormap, BoundaryNorm
+
 ipe_runs = [(t, r) for t, r in runs_ipe.items() if r["meta"].get("regime", 4) == 6]
 if ipe_runs:
-    cmap = ListedColormap(["#1f77b4", "#2ca02c", "#d62728", "#ff7f0e", "#9467bd"]); norm = BoundaryNorm([0.5, 1.5, 2.5, 3.5, 4.5, 5.5], cmap.N)
+    cmap = ListedColormap(["#1f77b4", "#2ca02c", "#d62728", "#ff7f0e", "#9467bd"])
+    norm = BoundaryNorm([0.5, 1.5, 2.5, 3.5, 4.5, 5.5], cmap.N)
     fig, axes = plt.subplots(len(ipe_runs), 1, figsize=(11, 3.2 * len(ipe_runs)), sharex=True, squeeze=False)
     for ax, (tag, r) in zip(axes[:, 0], ipe_runs):
         T_, x_, reg = regime_map(r)
         pc = ax.pcolormesh(T_, x_, reg, cmap=cmap, norm=norm, shading="nearest")
         ax.axhline(r["case"].meta["s_elbow0"], color="w", lw=0.8, ls="--")
-        ax.set_ylabel("posição ao longo do duto (m)"); ax.set_title(tag, fontsize=9)
+        ax.set_ylabel("posição ao longo do duto (m)")
+        ax.set_title(tag, fontsize=9)
     axes[-1, 0].set_xlabel("Tempo (s)")
-    cb = fig.colorbar(pc, ax=axes, ticks=[1, 2, 3, 4, 5], shrink=0.8); cb.ax.set_yticklabels(["anular", "bolhas", "intermitente", "estrat. liso", "estrat. ondulado"])
+    cb = fig.colorbar(pc, ax=axes, ticks=[1, 2, 3, 4, 5], shrink=0.8)
+    cb.ax.set_yticklabels(["anular", "bolhas", "intermitente", "estrat. liso", "estrat. ondulado"])
     plt.show()
 
 # %% [markdown]
@@ -1021,24 +1382,33 @@ if ipe_runs:
 
 # %%
 runs_ns = {}
-for tag, fname in (("referência (relaxação com fração real)", "severe_slug_blocked_conservative_arc_tol.npz"),
-                   ("alpha_face = muscl", "severe_slug_blocked_conservative_arc_tol_muscl.npz"),
-                   ("relax_target = noslip", "severe_slug_blocked_conservative_arc_tol_noslip.npz"),
-                   ("malha fina 30/10", "severe_slug_blocked_conservative_arc_fine_fast1_jax.npz")):
+for tag, fname in (
+    ("referência (relaxação com fração real)", "severe_slug_blocked_conservative_arc_tol.npz"),
+    ("alpha_face = muscl", "severe_slug_blocked_conservative_arc_tol_muscl.npz"),
+    ("relax_target = noslip", "severe_slug_blocked_conservative_arc_tol_noslip.npz"),
+    ("malha fina 30/10", "severe_slug_blocked_conservative_arc_fine_fast1_jax.npz"),
+):
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
-        print("trajetória não encontrada:", f); continue
+        print("trajetória não encontrada:", f)
+        continue
     runs_ns[tag] = load_blocked_run(f)
 
 
 def front_width(r):
     """Largura mediana (m) da transição 0.1-0.9 de alphaG no riser nos instantes com gás no riser."""
-    x_ = r["p"]["x"]; aG_ = r["p"]["out"]["alphaG"]; ib_ = r["ib"]; w = []
+    x_ = r["p"]["x"]
+    aG_ = r["p"]["out"]["alphaG"]
+    ib_ = r["ib"]
+    w = []
     for it in range(r["T"].size):
-        seg = aG_[ib_:, it]; xs = x_[ib_:]
+        seg = aG_[ib_:, it]
+        xs = x_[ib_:]
         if seg.max() > 0.5 and seg.min() < 0.05:
-            j1 = np.argmax(seg > 0.1); j9 = np.argmax(seg > 0.9) if (seg > 0.9).any() else len(seg) - 1
-            if j9 > j1: w.append(xs[j9] - xs[j1])
+            j1 = np.argmax(seg > 0.1)
+            j9 = np.argmax(seg > 0.9) if (seg > 0.9).any() else len(seg) - 1
+            if j9 > j1:
+                w.append(xs[j9] - xs[j1])
     return float(np.median(w)) if w else np.nan
 
 
@@ -1047,17 +1417,24 @@ if runs_ns:
     for tag, r in runs_ns.items():
         axes[0].plot(r["T"], r["p"]["out"]["qL"][-1], lw=0.9, label=tag)
         axes[1].plot(r["T"], r["p"]["out"]["P_bar"][1], lw=0.9, label=tag)
-    axes[0].axhline(qL, color="k", ls="--", lw=0.8); axes[0].set_ylabel("Líquido na saída (kg/s)")
-    axes[1].set_ylabel("Pressão na entrada (bar)"); axes[1].set_xlabel("Tempo (s)")
+    axes[0].axhline(qL, color="k", ls="--", lw=0.8)
+    axes[0].set_ylabel("Líquido na saída (kg/s)")
+    axes[1].set_ylabel("Pressão na entrada (bar)")
+    axes[1].set_xlabel("Tempo (s)")
     for ax in axes:
-        ax.grid(alpha=0.3); ax.legend(fontsize=8, loc="upper right")
+        ax.grid(alpha=0.3)
+        ax.legend(fontsize=8, loc="upper right")
     plt.show()
-    print(f"{'configuração':40s} {'passos':>8s} {'CPU':>6s} {'blowdowns':>9s} {'intervalo':>9s} {'pico máx':>9s} {'P_in (bar)':>12s} {'frente 0.1-0.9':>14s}")
+    print(
+        f"{'configuração':40s} {'passos':>8s} {'CPU':>6s} {'blowdowns':>9s} {'intervalo':>9s} {'pico máx':>9s} {'P_in (bar)':>12s} {'frente 0.1-0.9':>14s}"
+    )
     for tag, r in runs_ns.items():
         T_, q_ = r["T"], r["p"]["out"]["qL"][-1]
         nb_, per, qmax = cycle_stats(T_, r["p"]["out"]["P_bar"][1], q_)
         P1 = r["p"]["out"]["P_bar"][1][T_ > 100]
-        print(f"{tag:40s} {r['meta']['n_steps']:8d} {r['meta']['cpu']:5.0f} s {nb_:9d} {per:7.0f} s {qmax:6.1f} kg/s {P1.min():5.2f}–{P1.max():4.2f} {front_width(r):10.1f} m")
+        print(
+            f"{tag:40s} {r['meta']['n_steps']:8d} {r['meta']['cpu']:5.0f} s {nb_:9d} {per:7.0f} s {qmax:6.1f} kg/s {P1.min():5.2f}–{P1.max():4.2f} {front_width(r):10.1f} m"
+        )
 
 # %%
 from mfsim.core.slots import BC_ABSENT, BC_DIRICHLET, BC_NEUMANN
@@ -1071,7 +1448,9 @@ def column_case(which, closed=False, relax_target="raw", L_=20.0, N_=20, dP_=0.2
     """Coluna de L_ m entre dois vértices: B = líquido monofásico; Ap = dois fluidos cheia de líquido;
     A = tampão entre bolsões de gás (4 m, alphaG 0.7). Degrau de pressão inicial (pressões fixas nas
     extremidades, ou extremidades fechadas com degrau no meio)."""
-    P0_ = 5e5; xn = np.linspace(0, L_, N_ + 1); ic_ = np.zeros((N_ + 1, 4))
+    P0_ = 5e5
+    xn = np.linspace(0, L_, N_ + 1)
+    ic_ = np.zeros((N_ + 1, 4))
     ic_[:, 1] = (P0_ + dP_ * (xn < L_ / 2)) / 1e6 if closed else (P0_ + dP_ * (1 - xn / L_)) / 1e6
     if closed:
         verts = [BoundaryVertex("1", spec=specs(qL=0.0, qG=0.0)), BoundaryVertex("2", spec=specs(qL=0.0, qG=0.0))]
@@ -1079,26 +1458,98 @@ def column_case(which, closed=False, relax_target="raw", L_=20.0, N_=20, dP_=0.2
         verts = [BoundaryVertex("1", spec=specs(PT=(P0_ + dP_) / 1e6)), BoundaryVertex("2", spec=specs(PT=P0_ / 1e6))]
     if which == "B":
         mid, ex = 3, {"q_switch": 1e-3}
-        bci = (BC_ABSENT, BC_ABSENT, BC_DIRICHLET, BC_ABSENT) if closed else (BC_ABSENT, BC_DIRICHLET, BC_ABSENT, BC_ABSENT)
+        bci = (
+            (BC_ABSENT, BC_ABSENT, BC_DIRICHLET, BC_ABSENT)
+            if closed
+            else (BC_ABSENT, BC_DIRICHLET, BC_ABSENT, BC_ABSENT)
+        )
         bco = bci
     else:
         mid = 1
         if which == "A":
             ic_[:, 0] = np.where((xn < 4.0) | (xn > L_ - 4.0), 0.7, 0.0)
-        ex = {"regime_vertical": 0, "q_switch_L": 1e-3, "q_switch_G": 1e-5, "switch_frac": 0.5, "conservative": True, "relax_target": relax_target}
-        bci = (BC_NEUMANN, BC_ABSENT, BC_DIRICHLET, BC_DIRICHLET) if closed else (BC_NEUMANN, BC_DIRICHLET, BC_ABSENT, BC_ABSENT)
-        bco = (BC_ABSENT, BC_ABSENT, BC_DIRICHLET, BC_DIRICHLET) if closed else (BC_ABSENT, BC_DIRICHLET, BC_ABSENT, BC_ABSENT)
-    pipe_ = Pipe.legacy("1", "1", "2", [0.0, 0.0], [0.0, L_], [0.0, 0.0], [N_], D=D, roughness=1e-5, model=mid, regime=4, method="fv_upwind", bc_in=bci, bc_out=bco, ic=ic_, extra=ex)
-    return Network.build("coluna", fluid, verts, [pipe_], t0=0.0, tf=tf_, dt_out=dt_, PR=1e6, integrator="implicit", quadrature_order=2, max_step=np.inf, atol=1e-6, rtol=3e-3)
+        ex = {
+            "regime_vertical": 0,
+            "q_switch_L": 1e-3,
+            "q_switch_G": 1e-5,
+            "switch_frac": 0.5,
+            "conservative": True,
+            "relax_target": relax_target,
+        }
+        bci = (
+            (BC_NEUMANN, BC_ABSENT, BC_DIRICHLET, BC_DIRICHLET)
+            if closed
+            else (BC_NEUMANN, BC_DIRICHLET, BC_ABSENT, BC_ABSENT)
+        )
+        bco = (
+            (BC_ABSENT, BC_ABSENT, BC_DIRICHLET, BC_DIRICHLET)
+            if closed
+            else (BC_ABSENT, BC_DIRICHLET, BC_ABSENT, BC_ABSENT)
+        )
+    pipe_ = Pipe.legacy(
+        "1",
+        "1",
+        "2",
+        [0.0, 0.0],
+        [0.0, L_],
+        [0.0, 0.0],
+        [N_],
+        D=D,
+        roughness=1e-5,
+        model=mid,
+        regime=4,
+        method="fv_upwind",
+        bc_in=bci,
+        bc_out=bco,
+        ic=ic_,
+        extra=ex,
+    )
+    return Network.build(
+        "coluna",
+        fluid,
+        verts,
+        [pipe_],
+        t0=0.0,
+        tf=tf_,
+        dt_out=dt_,
+        PR=1e6,
+        integrator="implicit",
+        quadrature_order=2,
+        max_step=np.inf,
+        atol=1e-6,
+        rtol=3e-3,
+    )
 
 
 def run_column(case_):
-    m_ = build_model(case_); X0_ = m_.initial_state(); rhs_, jac_ = build_jax_rhs(m_)
-    lo_, hi_ = state_bounds(m_); kw_ = dict(transform=m_.transform, inverse=m_.inverse_transform, transform_jac=m_.transform_jacobian) if m_.conservative else {}
-    bdf_ = ImplicitBDF(rhs_, S=m_.jac_sparsity(), rtol=3e-3, atol=1e-3 * np.ones(X0_.size), bounds=(lo_, hi_), jac_fun=jac_, min_step=1e-9, verbose=False, max_order=2, max_newton=20, newton_tol=1e-3, **kw_)
+    m_ = build_model(case_)
+    X0_ = m_.initial_state()
+    rhs_, jac_ = build_jax_rhs(m_)
+    lo_, hi_ = state_bounds(m_)
+    kw_ = (
+        dict(transform=m_.transform, inverse=m_.inverse_transform, transform_jac=m_.transform_jacobian)
+        if m_.conservative
+        else {}
+    )
+    bdf_ = ImplicitBDF(
+        rhs_,
+        S=m_.jac_sparsity(),
+        rtol=3e-3,
+        atol=1e-3 * np.ones(X0_.size),
+        bounds=(lo_, hi_),
+        jac_fun=jac_,
+        min_step=1e-9,
+        verbose=False,
+        max_order=2,
+        max_newton=20,
+        newton_tol=1e-3,
+        **kw_,
+    )
     bdf_.slow_exit = False
-    st = case_.time; T_, X_, info_ = bdf_.integrate(np.arange(0, st.tf + 0.5 * st.dt_out, st.dt_out), X0_, first_step=1e-4)
-    X_ = np.asarray(X_); X_ = X_.T if X_.shape[0] != T_.size else X_
+    st = case_.time
+    T_, X_, info_ = bdf_.integrate(np.arange(0, st.tf + 0.5 * st.dt_out, st.dt_out), X0_, first_step=1e-4)
+    X_ = np.asarray(X_)
+    X_ = X_.T if X_.shape[0] != T_.size else X_
     N_ = m_.pipes[0].scheme.N
     q_mid = np.array([m_.assemble(0.0, X_[i])[1][0][N_ // 2, 2] for i in range(T_.size)])
     return T_, q_mid, info_
@@ -1106,8 +1557,13 @@ def run_column(case_):
 
 def decay_rate(T_, q_, t_skip=0.3):
     from scipy.signal import find_peaks
-    sel = T_ > t_skip; qq = q_[sel] - q_[sel].mean(); tt = T_[sel]
-    f_ = np.fft.rfftfreq(qq.size, T_[1] - T_[0]); s_ = np.abs(np.fft.rfft(qq * np.hanning(qq.size))); f_dom = f_[np.argmax(s_[1:]) + 1]
+
+    sel = T_ > t_skip
+    qq = q_[sel] - q_[sel].mean()
+    tt = T_[sel]
+    f_ = np.fft.rfftfreq(qq.size, T_[1] - T_[0])
+    s_ = np.abs(np.fft.rfft(qq * np.hanning(qq.size)))
+    f_dom = f_[np.argmax(s_[1:]) + 1]
     pk, _ = find_peaks(np.abs(qq), distance=max(1, int(0.5 / f_dom / (T_[1] - T_[0]))))
     rate = -np.polyfit(tt[pk], np.log(np.abs(qq[pk])), 1)[0] if pk.size > 4 else np.nan
     return f_dom, rate
@@ -1115,16 +1571,26 @@ def decay_rate(T_, q_, t_skip=0.3):
 
 fig, axes = plt.subplots(1, 2, figsize=(12, 3.8))
 rows = []
-for which, closed, rt, lab in (("B", False, "raw", "monofásico, pressões fixas"), ("Ap", False, "raw", "2 fluidos cheio de líquido, alvo com fração real"),
-                               ("Ap", False, "noslip", "2 fluidos cheio de líquido, alvo sem escorregamento "),
-                               ("B", True, "raw", "monofásico, fechado"), ("Ap", True, "raw", "2 fluidos, fechado, fração real"), ("Ap", True, "noslip", "2 fluidos, fechado, sem escorregamento ")):
+for which, closed, rt, lab in (
+    ("B", False, "raw", "monofásico, pressões fixas"),
+    ("Ap", False, "raw", "2 fluidos cheio de líquido, alvo com fração real"),
+    ("Ap", False, "noslip", "2 fluidos cheio de líquido, alvo sem escorregamento "),
+    ("B", True, "raw", "monofásico, fechado"),
+    ("Ap", True, "raw", "2 fluidos, fechado, fração real"),
+    ("Ap", True, "noslip", "2 fluidos, fechado, sem escorregamento "),
+):
     T_, q_, info_ = run_column(column_case(which, closed=closed, relax_target=rt))
-    ax = axes[1 if closed else 0]; ax.plot(T_, q_, lw=0.9, label=lab)
+    ax = axes[1 if closed else 0]
+    ax.plot(T_, q_, lw=0.9, label=lab)
     f_dom, rate = decay_rate(T_, q_) if closed else (np.nan, np.nan)
     rows.append((lab, info_["n_steps"], q_[-1], f_dom, rate))
-axes[0].set_title("degrau de 0.2 bar entre pressões fixas: vazão no meio da coluna"); axes[1].set_title("extremidades fechadas: modo acústico c/2L")
+axes[0].set_title("degrau de 0.2 bar entre pressões fixas: vazão no meio da coluna")
+axes[1].set_title("extremidades fechadas: modo acústico c/2L")
 for ax in axes:
-    ax.set_xlabel("Tempo (s)"); ax.set_ylabel("qL (kg/s)"); ax.grid(alpha=0.3); ax.legend(fontsize=7)
+    ax.set_xlabel("Tempo (s)")
+    ax.set_ylabel("qL (kg/s)")
+    ax.grid(alpha=0.3)
+    ax.legend(fontsize=7)
 plt.show()
 print(f"{'caso':52s} {'passos':>6s} {'q final':>8s} {'f (Hz)':>7s} {'decaimento (1/s)':>17s}")
 for lab, n_, qf, f_dom, rate in rows:
@@ -1175,48 +1641,70 @@ for lab, n_, qf, f_dom, rate in rows:
 
 # %%
 from mfsim.cases.severe_slug import boe_criterion
+
 runs_boe = {}
-for tag, fname in (("caso base, bolhas no riser", "severe_slug_blocked_conservative_arc_tol_noslip.npz"),
-                   ("caso base, intermitente no riser", "severe_slug_blocked_conservative_arc_tol_int.npz"),
-                   ("vSL = 1.2, bolhas", "severe_slug_blocked_conservative_arc_tol_v12_bub.npz"),
-                   ("vSL = 1.2, intermitente", "severe_slug_blocked_conservative_arc_tol_v12_int.npz"),
-                   ("vSL = 1.6, bolhas", "severe_slug_blocked_conservative_arc_tol_v16_bub.npz"),
-                   ("vSL = 1.6, intermitente", "severe_slug_blocked_conservative_arc_tol_v16_int.npz"),
-                   ("L = 1000 m, 2 bar, bolhas", "severe_slug_blocked_conservative_arc_boe_bub.npz"),
-                   ("L = 1000 m, 2 bar, bolhas, sobrepressão 0.1 bar", "severe_slug_blocked_conservative_arc_boe_bub_dp01.npz"),
-                   ("L = 1000 m, 2 bar, bolhas + regras físicas", "severe_slug_blocked_conservative_arc_boe_bub_rules.npz"),
-                   ("L = 1000 m, 2 bar, intermitente + regras físicas", "severe_slug_blocked_conservative_arc_boe_int_rules.npz"),
-                   ("L = 1000 m, 2 bar, vSL = 0.5, regras", "severe_slug_blocked_conservative_arc_scan_P2_v05.npz"),
-                   ("L = 1000 m, 2 bar, vSL = 0.8, regras", "severe_slug_blocked_conservative_arc_scan_P2_v08.npz"),
-                   ("L = 1000 m, 4 bar, vSL = 0.5, regras", "severe_slug_blocked_conservative_arc_scan_P4_v05.npz"),
-                   ("L = 1000 m, 4 bar, vSL = 0.8, regras", "severe_slug_blocked_conservative_arc_scan_P4_v08.npz"),
-                   ("L = 1000 m, 2 bar, vSL = 0.15, regras", "severe_slug_blocked_conservative_arc_scan_P2_v015.npz"),
-                   ("L = 1000 m, 2 bar, vSL = 0.3, regras", "severe_slug_blocked_conservative_arc_scan_P2_v03.npz"),
-                   ("L = 1000 m, 4 bar, vSL = 0.3, regras", "severe_slug_blocked_conservative_arc_scan_P4_v03.npz"),
-                   ("L = 1000 m, 2 bar, vSG = 0.05, regras", "severe_slug_blocked_conservative_arc_scan_P2_g005.npz"),
-                   ("L = 1000 m, 2 bar, vSG = 0.2, regras", "severe_slug_blocked_conservative_arc_scan_P2_g02.npz"),
-                   ("L = 1000 m, 2 bar, 2 m³ a montante (vértice), regras", "severe_slug_blocked_conservative_arc_boe_vup20.npz"),
-                   ("L = 1000 m, 2 bar, vSG = 0.2, intermitente + regras", "severe_slug_blocked_conservative_arc_scan_P2_g02_int.npz"),
-                   ("caso base + 200 m de linha de entrada, regras", "severe_slug_blocked_conservative_arc_tol_lh1_200.npz"),
-                   ("caso base + 500 m de linha de entrada, regras", "severe_slug_blocked_conservative_arc_tol_lh1_500.npz"),
-                   ("L = 1000 m, 2 bar, γG = 1.3, regras", "severe_slug_blocked_conservative_arc_scan_P2_v03_gammaG13.npz")):
+for tag, fname in (
+    ("caso base, bolhas no riser", "severe_slug_blocked_conservative_arc_tol_noslip.npz"),
+    ("caso base, intermitente no riser", "severe_slug_blocked_conservative_arc_tol_int.npz"),
+    ("vSL = 1.2, bolhas", "severe_slug_blocked_conservative_arc_tol_v12_bub.npz"),
+    ("vSL = 1.2, intermitente", "severe_slug_blocked_conservative_arc_tol_v12_int.npz"),
+    ("vSL = 1.6, bolhas", "severe_slug_blocked_conservative_arc_tol_v16_bub.npz"),
+    ("vSL = 1.6, intermitente", "severe_slug_blocked_conservative_arc_tol_v16_int.npz"),
+    ("L = 1000 m, 2 bar, bolhas", "severe_slug_blocked_conservative_arc_boe_bub.npz"),
+    ("L = 1000 m, 2 bar, bolhas, sobrepressão 0.1 bar", "severe_slug_blocked_conservative_arc_boe_bub_dp01.npz"),
+    ("L = 1000 m, 2 bar, bolhas + regras físicas", "severe_slug_blocked_conservative_arc_boe_bub_rules.npz"),
+    ("L = 1000 m, 2 bar, intermitente + regras físicas", "severe_slug_blocked_conservative_arc_boe_int_rules.npz"),
+    ("L = 1000 m, 2 bar, vSL = 0.5, regras", "severe_slug_blocked_conservative_arc_scan_P2_v05.npz"),
+    ("L = 1000 m, 2 bar, vSL = 0.8, regras", "severe_slug_blocked_conservative_arc_scan_P2_v08.npz"),
+    ("L = 1000 m, 4 bar, vSL = 0.5, regras", "severe_slug_blocked_conservative_arc_scan_P4_v05.npz"),
+    ("L = 1000 m, 4 bar, vSL = 0.8, regras", "severe_slug_blocked_conservative_arc_scan_P4_v08.npz"),
+    ("L = 1000 m, 2 bar, vSL = 0.15, regras", "severe_slug_blocked_conservative_arc_scan_P2_v015.npz"),
+    ("L = 1000 m, 2 bar, vSL = 0.3, regras", "severe_slug_blocked_conservative_arc_scan_P2_v03.npz"),
+    ("L = 1000 m, 4 bar, vSL = 0.3, regras", "severe_slug_blocked_conservative_arc_scan_P4_v03.npz"),
+    ("L = 1000 m, 2 bar, vSG = 0.05, regras", "severe_slug_blocked_conservative_arc_scan_P2_g005.npz"),
+    ("L = 1000 m, 2 bar, vSG = 0.2, regras", "severe_slug_blocked_conservative_arc_scan_P2_g02.npz"),
+    ("L = 1000 m, 2 bar, 2 m³ a montante (vértice), regras", "severe_slug_blocked_conservative_arc_boe_vup20.npz"),
+    ("L = 1000 m, 2 bar, vSG = 0.2, intermitente + regras", "severe_slug_blocked_conservative_arc_scan_P2_g02_int.npz"),
+    ("caso base + 200 m de linha de entrada, regras", "severe_slug_blocked_conservative_arc_tol_lh1_200.npz"),
+    ("caso base + 500 m de linha de entrada, regras", "severe_slug_blocked_conservative_arc_tol_lh1_500.npz"),
+    ("L = 1000 m, 2 bar, γG = 1.3, regras", "severe_slug_blocked_conservative_arc_scan_P2_v03_gammaG13.npz"),
+):
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
-        print("trajetória não encontrada:", f); continue
-    r_ = load_blocked_run(f); mb = r_["meta"]      # P_in pelo Results (o índice do estado muda com vértice a montante)
-    T_ = r_["T"]; P1 = r_["p"]["out"]["P_bar"][1]; sel = T_ > 300
+        print("trajetória não encontrada:", f)
+        continue
+    r_ = load_blocked_run(f)
+    mb = r_["meta"]  # P_in pelo Results (o índice do estado muda com vértice a montante)
+    T_ = r_["T"]
+    P1 = r_["p"]["out"]["P_bar"][1]
+    sel = T_ > 300
     P_base = mb.get("P_out", 4.0) * 1e5 + fluid.rhoL0 * 9.81 * mb.get("H_riser", 20.0)
     # a alimentação de gás é definida a P_out + 1 bar (severe_D.py); vSG à pressão do separador
     vSG_ = mb.get("vSG", 0.1) * fluid.rhoG((mb.get("P_out", 4.0) + 1.0) * 1e5) / fluid.rhoG(mb.get("P_out", 4.0) * 1e5)
-    vmin, severe = boe_criterion(mb.get("vSL", 0.3), vSG_, P_base, fluid.rhoL0, 0.5, mb.get("L_h1", 20.0) + mb.get("L_down", 300.0))   # L de gás = linha de entrada + descendente
+    vmin, severe = boe_criterion(
+        mb.get("vSL", 0.3), vSG_, P_base, fluid.rhoL0, 0.5, mb.get("L_h1", 20.0) + mb.get("L_down", 300.0)
+    )  # L de gás = linha de entrada + descendente
     amp = P1[sel].max() - P1[sel].min()
-    tb = blowdowns(T_[sel], P1[sel]) if amp > 0.3 else np.array([])      # sem oscilação de pressão não há blowdown
+    tb = blowdowns(T_[sel], P1[sel]) if amp > 0.3 else np.array([])  # sem oscilação de pressão não há blowdown
     per = float(np.mean(np.diff(tb))) if tb.size > 1 else np.nan
-    runs_boe[tag] = dict(vSL=mb.get("vSL", 0.3), L=mb.get("L_down", 300.0), P=mb.get("P_out", 4.0), vmin=vmin, n_steps=mb["n_steps"], amp=P1[sel].max() - P1[sel].min(), nb=tb.size, per=per)
+    runs_boe[tag] = dict(
+        vSL=mb.get("vSL", 0.3),
+        L=mb.get("L_down", 300.0),
+        P=mb.get("P_out", 4.0),
+        vmin=vmin,
+        n_steps=mb["n_steps"],
+        amp=P1[sel].max() - P1[sel].min(),
+        nb=tb.size,
+        per=per,
+    )
 if runs_boe:
-    print(f"{'caso':34s} {'vSL':>5s} {'L (m)':>6s} {'P_out':>6s} {'vSL_mín Bøe':>12s} {'passos':>7s} {'ΔP_in (t>300 s)':>16s} {'blowdowns':>9s} {'intervalo':>9s}")
+    print(
+        f"{'caso':34s} {'vSL':>5s} {'L (m)':>6s} {'P_out':>6s} {'vSL_mín Bøe':>12s} {'passos':>7s} {'ΔP_in (t>300 s)':>16s} {'blowdowns':>9s} {'intervalo':>9s}"
+    )
     for tag, r in runs_boe.items():
-        print(f"{tag:34s} {r['vSL']:5.2f} {r['L']:6.0f} {r['P']:6.1f} {r['vmin']:12.3f} {r['n_steps']:7d} {r['amp']:12.2f} bar {r['nb']:9d} {r['per']:7.0f} s")
+        print(
+            f"{tag:34s} {r['vSL']:5.2f} {r['L']:6.0f} {r['P']:6.1f} {r['vmin']:12.3f} {r['n_steps']:7d} {r['amp']:12.2f} bar {r['nb']:9d} {r['per']:7.0f} s"
+        )
 
 # %% [markdown]
 # ### Validação com dados de laboratório (item 8)
@@ -1228,28 +1716,58 @@ if runs_boe:
 # de Mendelson). Ver o README (secção "Validação com dados de laboratório") para as fontes e os achados.
 
 # %%
-LAB_REF = {"jansen": dict(periodo=46.6, P_min=111.0, P_max=133.0, nome="Jansen 1996 (1\", riser 3 m; U_LS 0.096, U_GSO 0.075)"),
-           "fabre2": dict(periodo=137.0, P_min=126.0, P_max=235.0, nome="Fabre 1990 caso 2 (2\", riser 13.5 m; vSL 0.13, vSG0 0.20)"),
-           "fabre1": dict(periodo=70.0, P_min=128.0, P_max=210.0, nome="Fabre 1990 caso 1 (2\", riser 13.5 m; vSL 0.13, vSG0 0.45)"),
-           "teng1": dict(periodo=79.0, P_min=121.0, P_max=222.0, nome="Tengesdal 2002 teste 1 (3\", riser 14.6 m, óleo; vSL 0.32, vSG 0.35)")}
+LAB_REF = {
+    "jansen": dict(periodo=46.6, P_min=111.0, P_max=133.0, nome='Jansen 1996 (1", riser 3 m; U_LS 0.096, U_GSO 0.075)'),
+    "fabre2": dict(
+        periodo=137.0, P_min=126.0, P_max=235.0, nome='Fabre 1990 caso 2 (2", riser 13.5 m; vSL 0.13, vSG0 0.20)'
+    ),
+    "fabre1": dict(
+        periodo=70.0, P_min=128.0, P_max=210.0, nome='Fabre 1990 caso 1 (2", riser 13.5 m; vSL 0.13, vSG0 0.45)'
+    ),
+    "teng1": dict(
+        periodo=79.0,
+        P_min=121.0,
+        P_max=222.0,
+        nome='Tengesdal 2002 teste 1 (3", riser 14.6 m, óleo; vSL 0.32, vSG 0.35)',
+    ),
+}
 runs_lab = {}
 for key in LAB_REF:
     for closure in ("tese", "fisico"):
         f = os.path.join(os.path.dirname(DATA), f"severe_slug_lab_{key}_{closure}.npz")
         if not os.path.exists(f):
             continue
-        r_ = load_blocked_run(f); mb = r_["meta"]
-        T_ = r_["T"]; P1 = r_["p"]["out"]["P_bar"][1] * 100.0; q_ = r_["p_last"]["out"]["qL"][-1]
-        sel = T_ > 0.2 * T_[-1]; per_ref = LAB_REF[key]["periodo"]
+        r_ = load_blocked_run(f)
+        mb = r_["meta"]
+        T_ = r_["T"]
+        P1 = r_["p"]["out"]["P_bar"][1] * 100.0
+        q_ = r_["p_last"]["out"]["qL"][-1]
+        sel = T_ > 0.2 * T_[-1]
+        per_ref = LAB_REF[key]["periodo"]
         amp = P1[sel].max() - P1[sel].min()
         tb = blowdowns(T_[sel], P1[sel], min_gap=0.3 * per_ref) if amp > 5.0 else np.array([])
         per = float(np.mean(np.diff(tb))) if tb.size > 1 else np.nan
-        runs_lab[(key, closure)] = dict(T=T_, P=P1, q=q_, per=per, nb=tb.size, P_min=P1[sel].min(), P_max=P1[sel].max(), q_max=q_[sel].max(), n_steps=mb.get("n_steps"), parcial=bool(mb.get("parcial", False)))
+        runs_lab[(key, closure)] = dict(
+            T=T_,
+            P=P1,
+            q=q_,
+            per=per,
+            nb=tb.size,
+            P_min=P1[sel].min(),
+            P_max=P1[sel].max(),
+            q_max=q_[sel].max(),
+            n_steps=mb.get("n_steps"),
+            parcial=bool(mb.get("parcial", False)),
+        )
 if runs_lab:
-    print(f"{'caso':62s} {'bolhas':7s} {'período (exp)':>16s} {'P_in kPa (exp)':>22s} {'pico qL':>8s} {'blowdowns':>9s} {'passos':>7s}")
+    print(
+        f"{'caso':62s} {'bolhas':7s} {'período (exp)':>16s} {'P_in kPa (exp)':>22s} {'pico qL':>8s} {'blowdowns':>9s} {'passos':>7s}"
+    )
     for (key, closure), r in runs_lab.items():
         ref = LAB_REF[key]
-        print(f"{ref['nome']:62s} {closure:7s} {r['per']:6.1f} s ({ref['periodo']:5.1f}) {r['P_min']:6.1f}-{r['P_max']:6.1f} ({ref['P_min']:.0f}-{ref['P_max']:.0f}) {r['q_max']:8.2f} {r['nb']:9d} {str(r['n_steps']):>7s}{' (parcial)' if r['parcial'] else ''}")
+        print(
+            f"{ref['nome']:62s} {closure:7s} {r['per']:6.1f} s ({ref['periodo']:5.1f}) {r['P_min']:6.1f}-{r['P_max']:6.1f} ({ref['P_min']:.0f}-{ref['P_max']:.0f}) {r['q_max']:8.2f} {r['nb']:9d} {str(r['n_steps']):>7s}{' (parcial)' if r['parcial'] else ''}"
+        )
 else:
     print("sem trajetórias de laboratório em notebooks/data (severe_slug_lab_*.npz)")
 
@@ -1260,11 +1778,18 @@ if runs_lab:
     for ax, key in zip(axs[:, 0], keys):
         for closure, c in (("tese", "C1"), ("fisico", "C0")):
             if (key, closure) in runs_lab:
-                r = runs_lab[(key, closure)]; ax.plot(r["T"], r["P"], c, lw=1, label=f"bolhas: {closure}")
-        ax.axhline(LAB_REF[key]["P_min"], ls=":", c="k"); ax.axhline(LAB_REF[key]["P_max"], ls=":", c="k")
-        ax.set_title(f"{LAB_REF[key]['nome']} — período medido {LAB_REF[key]['periodo']} s (pontilhado: pressões mín/máx medidas)", fontsize=9)
-        ax.set_ylabel("P entrada (kPa)"); ax.legend(fontsize=8, loc="upper right")
-    axs[-1, 0].set_xlabel("t (s)"); fig.tight_layout()
+                r = runs_lab[(key, closure)]
+                ax.plot(r["T"], r["P"], c, lw=1, label=f"bolhas: {closure}")
+        ax.axhline(LAB_REF[key]["P_min"], ls=":", c="k")
+        ax.axhline(LAB_REF[key]["P_max"], ls=":", c="k")
+        ax.set_title(
+            f"{LAB_REF[key]['nome']} — período medido {LAB_REF[key]['periodo']} s (pontilhado: pressões mín/máx medidas)",
+            fontsize=9,
+        )
+        ax.set_ylabel("P entrada (kPa)")
+        ax.legend(fontsize=8, loc="upper right")
+    axs[-1, 0].set_xlabel("t (s)")
+    fig.tight_layout()
 
 # %% [markdown]
 # ### Arraste de gotas: é relevante?
@@ -1275,25 +1800,41 @@ if runs_lab:
 # gás do blowdown dos casos de linha longa (vSG ≈ 28 m/s no topo); o líquido produzido
 # nesses instantes é 1–5 % do total. Não se justifica um campo de gotas para estes casos.
 
+
 # %%
 def ishii_E(vSL, vSG, rhoL, rhoG, muL, sigma, D_):
-    We = rhoG * vSG**2 * D_ / sigma * np.cbrt(np.abs(rhoL - rhoG) / rhoG); ReL = rhoL * np.abs(vSL) * D_ / muL
+    We = rhoG * vSG**2 * D_ / sigma * np.cbrt(np.abs(rhoL - rhoG) / rhoG)
+    ReL = rhoL * np.abs(vSL) * D_ / muL
     return np.tanh(7.25e-7 * np.maximum(We, 0) ** 1.25 * np.maximum(ReL, 1e-9) ** 0.25)
 
 
 runs_ent = {}
-for tag, fname in (("caso base, regras físicas", "severe_slug_blocked_conservative_arc_tol_hv_vm_lv.npz"),
-                   ("caso base + 500 m de linha de entrada", "severe_slug_blocked_conservative_arc_tol_lh1_500.npz"),
-                   ("linha de 1000 m, 2 bar, bolhas + regras", "severe_slug_blocked_conservative_arc_boe_bub_rules.npz"),
-                   ("linha de 1000 m, 2 bar, vSG = 0.29", "severe_slug_blocked_conservative_arc_scan_P2_g02.npz")):
+for tag, fname in (
+    ("caso base, regras físicas", "severe_slug_blocked_conservative_arc_tol_hv_vm_lv.npz"),
+    ("caso base + 500 m de linha de entrada", "severe_slug_blocked_conservative_arc_tol_lh1_500.npz"),
+    ("linha de 1000 m, 2 bar, bolhas + regras", "severe_slug_blocked_conservative_arc_boe_bub_rules.npz"),
+    ("linha de 1000 m, 2 bar, vSG = 0.29", "severe_slug_blocked_conservative_arc_scan_P2_g02.npz"),
+):
     f = os.path.join(os.path.dirname(DATA), fname)
     if not os.path.exists(f):
-        print("trajetória não encontrada:", f); continue
+        print("trajetória não encontrada:", f)
+        continue
     runs_ent[tag] = load_blocked_run(f)
-print(f"{'caso':42s} {'riser > 90 % gás':>16s} {'E > 0.1':>8s} {'E máx':>6s} {'vSG máx':>8s} {'produção com E_topo > 0.1':>26s}")
+print(
+    f"{'caso':42s} {'riser > 90 % gás':>16s} {'E > 0.1':>8s} {'E máx':>6s} {'vSG máx':>8s} {'produção com E_topo > 0.1':>26s}"
+)
 for tag, r in runs_ent.items():
-    th_ = np.rad2deg(r["model"].pipes[0].scheme.theta_nodes); riser_ = np.flatnonzero(th_ > 80); T_ = r["T"]
-    aG_ = r["p"]["out"]["alphaG"][riser_]; vSL_ = r["p"]["out"]["velocidadeSL"][riser_]; vSG_ = r["p"]["out"]["velocidadeSG"][riser_]; P_ = r["p"]["out"]["P_bar"][riser_] * 1e5
-    E_ = ishii_E(vSL_, vSG_, fluid.rhoL0, fluid.rhoG(P_), fluid.muL, fluid.sigma, D); ann_ = aG_ > 0.9
-    qo = r["p"]["out"]["qL"][-1]; frac = np.trapezoid(np.where(E_[-1] > 0.1, qo, 0), T_) / np.trapezoid(qo, T_)
-    print(f"{tag:42s} {ann_.mean():16.1%} {np.mean(E_[ann_] > 0.1) if ann_.any() else 0:8.1%} {E_.max():6.2f} {vSG_.max():6.1f} m/s {frac:26.1%}")
+    th_ = np.rad2deg(r["model"].pipes[0].scheme.theta_nodes)
+    riser_ = np.flatnonzero(th_ > 80)
+    T_ = r["T"]
+    aG_ = r["p"]["out"]["alphaG"][riser_]
+    vSL_ = r["p"]["out"]["velocidadeSL"][riser_]
+    vSG_ = r["p"]["out"]["velocidadeSG"][riser_]
+    P_ = r["p"]["out"]["P_bar"][riser_] * 1e5
+    E_ = ishii_E(vSL_, vSG_, fluid.rhoL0, fluid.rhoG(P_), fluid.muL, fluid.sigma, D)
+    ann_ = aG_ > 0.9
+    qo = r["p"]["out"]["qL"][-1]
+    frac = np.trapezoid(np.where(E_[-1] > 0.1, qo, 0), T_) / np.trapezoid(qo, T_)
+    print(
+        f"{tag:42s} {ann_.mean():16.1%} {np.mean(E_[ann_] > 0.1) if ann_.any() else 0:8.1%} {E_.max():6.2f} {vSG_.max():6.1f} m/s {frac:26.1%}"
+    )

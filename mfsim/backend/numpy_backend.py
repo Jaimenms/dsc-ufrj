@@ -1,4 +1,5 @@
 """Backend numpy: execução imediata com a semântica exata do código numpy anterior."""
+
 from __future__ import annotations
 
 from dataclasses import fields
@@ -49,7 +50,7 @@ class NumpyBackend(Backend):
         return np.sqrt(x)
 
     def safe_pow(self, x, p):
-        return x ** p
+        return x**p
 
     def sigmoid(self, z):
         return 1.0 / (1.0 + np.exp(np.clip(-z, -700.0, 700.0)))

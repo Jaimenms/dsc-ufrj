@@ -22,8 +22,10 @@ def test_graded_mesh_lengths_and_ratio():
 
 def test_steady_state_on_graded_mesh_matches_uniform():
     case, raw = load_chapter10_case("10.1.1")
-    c_u = copy.deepcopy(case).set_method("fv_upwind"); c_u.pipes[0].ic = None
-    c_g = copy.deepcopy(c_u); c_g.pipes[0].grading = [0.25] * len(c_g.pipes[0].n_elements)
+    c_u = copy.deepcopy(case).set_method("fv_upwind")
+    c_u.pipes[0].ic = None
+    c_g = copy.deepcopy(c_u)
+    c_g.pipes[0].grading = [0.25] * len(c_g.pipes[0].n_elements)
     m_u, X_u, _ = steady_state(c_u, X0="auto", verbose=False)
     m_g, X_g, _ = steady_state(c_g, X0="auto", verbose=False)
     pu, pg = m_u.pipes[0], m_g.pipes[0]
@@ -34,5 +36,5 @@ def test_steady_state_on_graded_mesh_matches_uniform():
     xu, xg = pu.scheme.x_cells, pg.scheme.x_cells
     N_u, N_g = pu.scheme.N, pg.scheme.N
     for slot, tol in ((0, 1e-2), (1, 1e-3)):
-        ref = np.interp(xg, xu, Yu[0][1:N_u + 1, slot])
-        assert np.max(np.abs(Yg[0][1:N_g + 1, slot] - ref)) < tol * np.max(np.abs(ref))
+        ref = np.interp(xg, xu, Yu[0][1 : N_u + 1, slot])
+        assert np.max(np.abs(Yg[0][1 : N_g + 1, slot] - ref)) < tol * np.max(np.abs(ref))

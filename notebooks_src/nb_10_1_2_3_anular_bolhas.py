@@ -26,7 +26,8 @@ compare_states(res, raw)
 
 # %%
 fig = pipe_profiles(res, keys=("P_bar", "alphaG"), it=0, legacy=legacy_pipe_dict(raw, 0))
-fig.suptitle("Figura 10.10 - Condições iniciais (anular)", y=1.03); plt.show()
+fig.suptitle("Figura 10.10 - Condições iniciais (anular)", y=1.03)
+plt.show()
 show_pipe(res, raw, 0)
 
 # %% [markdown]
@@ -37,22 +38,30 @@ show_pipe(res, raw, 0)
 import copy
 from mfsim.simulation import steady_state, simulate
 from mfsim.plotting import compare_runs
+
+
 def mesh_runs(case, meshes, method, q0):
     out = {}
     for nel in meshes:
-        c = copy.deepcopy(case); c.pipes[0].n_elements = np.array([nel]); c.set_method(method)
+        c = copy.deepcopy(case)
+        c.pipes[0].n_elements = np.array([nel])
+        c.set_method(method)
         nn = nel + 1
         c.pipes[0].ic = np.stack([np.full(nn, q0[0]), np.full(nn, 1.0), np.full(nn, q0[1]), np.full(nn, q0[2])], axis=1)
         steady_state(c, verbose=False)
         out[f"{nel} elem."] = simulate(c, integrator="implicit", rtol=1e-4, atol=1e-6, progress=False)
     return out
+
+
 legacy = legacy_pipe_dict(raw, 0)
 for method, figname in [("galerkin", "10.12"), ("fd_central", "10.13")]:
     runs = mesh_runs(case, [10, 25, 50, 100], method, (0.94, 0.5, 5.0))
     fig, axes = plt.subplots(2, 2, figsize=(11, 7))
     for ax, key in zip(axes.ravel(), ["alphaG", "P_bar", "qL", "qG"]):
         compare_runs(runs, key=key, node=-1 if key != "P_bar" else 0, ax=ax, legacy=legacy if key != "P_bar" else None)
-    fig.suptitle(f"Figura {figname} - Sensibilidade de malha, anular ({method})", y=1.02); fig.tight_layout(); plt.show()
+    fig.suptitle(f"Figura {figname} - Sensibilidade de malha, anular ({method})", y=1.02)
+    fig.tight_layout()
+    plt.show()
 
 # %% [markdown]
 # ## Bolhas (10.1.3)
@@ -62,7 +71,8 @@ describe("10.1.3")
 case, raw, res = run_case("10.1.3")
 compare_states(res, raw)
 fig = pipe_profiles(res, keys=("P_bar", "alphaG"), it=0, legacy=legacy_pipe_dict(raw, 0))
-fig.suptitle("Figura 10.15 - Condições iniciais (bolhas)", y=1.03); plt.show()
+fig.suptitle("Figura 10.15 - Condições iniciais (bolhas)", y=1.03)
+plt.show()
 show_pipe(res, raw, 0)
 
 
@@ -77,4 +87,5 @@ show_pipe(res, raw, 0)
 
 # %%
 from mfsim.notebook_utils import jax_comparison
+
 res_jax = jax_comparison(case, res, rtol=1e-4, atol=1e-6)

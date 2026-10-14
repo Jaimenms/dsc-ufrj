@@ -31,3 +31,13 @@ markers = [
     "nightly: lento; corre com -m nightly",
     "data: precisa dos npz de notebooks/data",
 ]
+
+[dependency-groups]
+dev = [
+    "black>=26.10.1",
+]
+
+[tool.black]
+line-length = 120
+target-version = ["py312"]
+extend-exclude = "archive|legacy|notebooks/"

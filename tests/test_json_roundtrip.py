@@ -2,6 +2,7 @@
 iniciais) -> Network, e o registo legado (struct `dados`) <-> grafo, dão o mesmo modelo:
 mesmo número de estados, mesmo estado inicial e rhs bit-idêntico (nos 11 casos do capítulo
 10 e nas corridas de intermitência severa gravadas)."""
+
 import json
 
 import numpy as np
@@ -27,14 +28,24 @@ def test_chapter10_legacy_and_json_roundtrip(key, tmp_path):
 
 
 @pytest.mark.data
-@pytest.mark.parametrize("name", ["severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys", "severe_slug_blocked_regime6_local",
-                                  "severe_slug_blocked_network_v005", "severe_slug_lab_fabre2_fisico", "severe_slug_blocked_conservative_arc_boe_vup20"])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys",
+        "severe_slug_blocked_regime6_local",
+        "severe_slug_blocked_network_v005",
+        "severe_slug_lab_fabre2_fisico",
+        "severe_slug_blocked_conservative_arc_boe_vup20",
+    ],
+)
 def test_severe_slug_runs_roundtrip(name, tmp_path, data_dir):
     from mfsim.runs import load_run
+
     path = data_dir / f"{name}.npz"
     if not path.exists():
         pytest.skip(name)
-    run = load_run(str(path)); net = run.case
+    run = load_run(str(path))
+    net = run.case
     _assert_same(net, Network.from_legacy_case(net.to_legacy_case()), X=run.X[:, 0])
     jpath = tmp_path / f"{name}.json"
     case_to_json(net, str(jpath))
@@ -57,6 +68,7 @@ def test_json_is_self_contained(tmp_path):
 def test_chapter10_json_files_match_mf2(key):
     """Os JSON exportados em cases/chapter10 constroem o mesmo modelo que os .mf2."""
     from mfsim.cases.chapter10 import load_chapter10_json
+
     net, raw = load_chapter10_case(key)
     net_j, raw_j = load_chapter10_json(key)
     _assert_same(net, net_j)
@@ -80,6 +92,7 @@ def test_severe_json_cases_match_runs(data_dir):
     import os
     from mfsim.cases.severe_slug import CASES_DIR, REFERENCE_RUNS
     from mfsim.runs import load_run
+
     n = 0
     for run_name, name in REFERENCE_RUNS.items():
         path = os.path.join(CASES_DIR, f"{name}.json")
@@ -87,6 +100,7 @@ def test_severe_json_cases_match_runs(data_dir):
             continue
         run = load_run(str(data_dir / f"{run_name}.npz"))
         net_j = case_from_json(path)
-        _assert_same(run.case, net_j, X=run.X[:, 0]); n += 1
+        _assert_same(run.case, net_j, X=run.X[:, 0])
+        n += 1
         assert net_j.integration.integrator == "implicit" and net_j.integration.tol_range is not None
     assert n >= 5

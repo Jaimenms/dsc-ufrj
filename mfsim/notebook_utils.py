@@ -101,14 +101,18 @@ def plot_vertices(res, raw=None, indices=None):
     fig, axes = plt.subplots(1, 3, figsize=(12, 3.2))
     for idx in indices:
         v = res.vertex(idx)
-        for ax, (kk, lk) in zip(axes, (("pressao", "pressao"), ("vazaoMassaL", "vazaoMassaL"), ("vazaoMassaG", "vazaoMassaG"))):
-            line, = ax.plot(res.T, v[kk], label=f"vértice {idx}")
+        for ax, (kk, lk) in zip(
+            axes, (("pressao", "pressao"), ("vazaoMassaL", "vazaoMassaL"), ("vazaoMassaG", "vazaoMassaG"))
+        ):
+            (line,) = ax.plot(res.T, v[kk], label=f"vértice {idx}")
             if leg is not None:
                 lv = leg[model.vpos[idx]]
                 if lk in lv:
                     ax.plot(T, np.asarray(lv[lk], float).ravel(), "--", color=line.get_color(), alpha=0.7)
     for ax, kk in zip(axes, ("Pressão (bar)", "Vazão de líquido (kg/s)", "Vazão de gás (kg/s)")):
-        ax.set_ylabel(kk); ax.set_xlabel("Tempo (s)"); ax.grid(alpha=0.3)
+        ax.set_ylabel(kk)
+        ax.set_xlabel("Tempo (s)")
+        ax.grid(alpha=0.3)
     axes[0].legend(fontsize=7)
     fig.tight_layout()
     plt.show()
@@ -121,11 +125,13 @@ def jax_comparison(case, res_numpy=None, label="", **simulate_kw):
     da versão JAX."""
     from .compiled import get_jax
     from .simulation import build_model
+
     model = build_model(case)
     t0 = time.time()
     rhs_j, jac_j = get_jax(model)
     x0 = model.initial_state()
-    rhs_j(model.t0, x0); jac_j(model.t0, x0)
+    rhs_j(model.t0, x0)
+    jac_j(model.t0, x0)
     t_compile = time.time() - t0
     kw = dict(integrator="implicit", max_step=np.inf, progress=False)
     kw.update(simulate_kw)

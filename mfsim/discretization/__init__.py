@@ -33,7 +33,21 @@ SCHEMES = {
     "fv_upwind_cons": StaggeredTwoFluidConsFV,
 }
 
-__all__ = ["SCHEMES", "PipeScheme", "NodalScheme", "GalerkinScheme", "PetrovGalerkinScheme",
-           "FDCentralScheme", "FDUpwindScheme", "StaggeredFVBase", "StaggeredTwoFluidFV",
-           "StaggeredDriftFluxFV", "StaggeredSinglePhaseFV", "StaggeredTwoFluidConsFV",
-           "StaggeredFVScheme", "StaggeredFVConsScheme", "staggered_scheme", "solve_pressure"]
+__all__ = [
+    "SCHEMES",
+    "PipeScheme",
+    "NodalScheme",
+    "GalerkinScheme",
+    "PetrovGalerkinScheme",
+    "FDCentralScheme",
+    "FDUpwindScheme",
+    "StaggeredFVBase",
+    "StaggeredTwoFluidFV",
+    "StaggeredDriftFluxFV",
+    "StaggeredSinglePhaseFV",
+    "StaggeredTwoFluidConsFV",
+    "StaggeredFVScheme",
+    "StaggeredFVConsScheme",
+    "staggered_scheme",
+    "solve_pressure",
+]

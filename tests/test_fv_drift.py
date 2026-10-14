@@ -24,7 +24,7 @@ def test_drift_fv_steady_state_stable():
     model, X, info = steady_state(case, verbose=False, update_case=False)
     assert np.max(np.abs(model.rhs(0.0, X))) < 1e-8
     pb = model.pipes[0]
-    assert tuple(pb.scheme.cell_slots) == (0, 1)        # hold-up e pressão são estados de célula
+    assert tuple(pb.scheme.cell_slots) == (0, 1)  # hold-up e pressão são estados de célula
     n = X.size
     J = np.zeros((n, n))
     for j in range(n):
@@ -34,17 +34,18 @@ def test_drift_fv_steady_state_stable():
         xm[j] -= h
         J[:, j] = (model.rhs(0.0, xp) - model.rhs(0.0, xm)) / (2 * h)
     ev = np.linalg.eigvals(J)
-    assert np.max(ev.real) < 0.0                        # sem modos crescentes (o sinal do coeficiente da restrição)
+    assert np.max(ev.real) < 0.0  # sem modos crescentes (o sinal do coeficiente da restrição)
     # hold-up das células próximo do hold-up da correlação no esquema nodal
     E, Ys, _, _ = model.assemble(0.0, X)
     HG_cells = Ys[0][1:-1, 0]
     assert np.all((HG_cells > 0.2) & (HG_cells < 0.8))
-    assert HG_cells[-1] > HG_cells[0]                   # mais gás no topo (expansão)
+    assert HG_cells[-1] > HG_cells[0]  # mais gás no topo (expansão)
 
 
 def test_drift_fv_jax_matches_numpy():
     jax = pytest.importorskip("jax")
     from mfsim.compiled import build_jax_rhs
+
     case = _fv_case("fd")
     model, X, info = steady_state(case, verbose=False, update_case=False)
     rhs_j, jac_j = build_jax_rhs(model)
@@ -64,10 +65,21 @@ def test_drift_fv_transient_conserves_mass_and_matches_nodal():
     model, X0, info = steady_state(case, verbose=False, update_case=False)
     lo, hi = state_bounds(model)
     kw_t = dict(transform=model.transform, inverse=model.inverse_transform, transform_jac=model.transform_jacobian)
-    bdf = ImplicitBDF(model.rhs, S=model.jac_sparsity(), rtol=1e-3, atol=1e-6 * np.ones(X0.size), bounds=(lo, hi),
-                      min_step=1e-9, verbose=False, max_order=2, max_newton=20, newton_tol=1e-3, **kw_t)
+    bdf = ImplicitBDF(
+        model.rhs,
+        S=model.jac_sparsity(),
+        rtol=1e-3,
+        atol=1e-6 * np.ones(X0.size),
+        bounds=(lo, hi),
+        min_step=1e-9,
+        verbose=False,
+        max_order=2,
+        max_newton=20,
+        newton_tol=1e-3,
+        **kw_t,
+    )
     bdf.accum = model.boundary_net_fluxes
-    t_eval = np.arange(0.0, 300.1, 5.0)                 # fechamento do choke em 60-90 s
+    t_eval = np.arange(0.0, 300.1, 5.0)  # fechamento do choke em 60-90 s
     T, X, info = bdf.integrate(t_eval, X0, first_step=1e-3, breakpoints=model.spec_breakpoints())
     assert info["success"]
     # balanço exato por fase (estoque das células vs integral BDF-consistente dos fluxos de contorno)
@@ -87,6 +99,7 @@ def test_drift_fv_transient_conserves_mass_and_matches_nodal():
     assert abs(stock[1][1] - stock[0][1] - acc[1, -1]) < 1e-6 * stock[0][1]
     # resposta ao fechamento do choke comparável à do esquema nodal da tese
     from mfsim.simulation import simulate
+
     res_n = simulate(copy.deepcopy(case_n), progress=False, t_eval=t_eval)
     qn = res_n.pipe(0)["out"]["qL"][-1]
     E, Ys, _, _ = model.assemble(T[-1], X[-1])

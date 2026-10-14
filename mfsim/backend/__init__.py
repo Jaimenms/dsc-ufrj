@@ -10,6 +10,7 @@ sem escrita in-place (só `bk.set/add`); `if` em Python só sobre configuração
 valores (usar `xp.where`); formas estáticas; `np.` só em constantes de construção; NaN
 tratado com `where` em último; float64.
 """
+
 from .base import Backend
 from .numpy_backend import NUMPY, NumpyBackend
 
@@ -24,5 +25,6 @@ def get_backend(name="numpy") -> Backend:
         return name
     if name == "jax":
         from .jax_backend import JAX
+
         return JAX
     raise ValueError(f"backend desconhecido: {name}")

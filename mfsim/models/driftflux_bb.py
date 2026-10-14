@@ -46,9 +46,11 @@ def beggs_brill(P, qL, qG, D, eps, theta, fluid, regime=6, bk=NUMPY):
     lambdaL = vSL / (vm + 1e-9)
     lambdaG = vSG / (vm + 1e-9)
     ix = lambdaL > 1
-    lambdaL = xp.where(ix, 1.0, lambdaL); lambdaG = xp.where(ix, 0.0, lambdaG)
+    lambdaL = xp.where(ix, 1.0, lambdaL)
+    lambdaG = xp.where(ix, 0.0, lambdaG)
     ix = lambdaG > 1
-    lambdaG = xp.where(ix, 1.0, lambdaG); lambdaL = xp.where(ix, 0.0, lambdaL)
+    lambdaG = xp.where(ix, 1.0, lambdaG)
+    lambdaL = xp.where(ix, 0.0, lambdaL)
     rhoN = rhoL * lambdaL + rhoG * lambdaG
     muN = fluid.muL * lambdaL + fluid.muG * lambdaG
     NFR = vm**2 / (g * D)
@@ -73,7 +75,8 @@ def beggs_brill(P, qL, qG, D, eps, theta, fluid, regime=6, bk=NUMPY):
     fInt = xp.clip((1 - tB) * tA * tC * (1 - tE) + tB * tF * (1 - tE), 0, 1)
     fDis = xp.clip((1 - tB) * (1 - tC) + tB * (1 - tF), 0, 1)
     if regime != 6:
-        z = xp.zeros_like(lambdaL); o = xp.ones_like(lambdaL)
+        z = xp.zeros_like(lambdaL)
+        o = xp.ones_like(lambdaL)
         fEst, fTra, fInt, fDis = z, z, z, z
         if regime == 1:
             fTra = o
@@ -114,9 +117,11 @@ def beggs_brill(P, qL, qG, D, eps, theta, fluid, regime=6, bk=NUMPY):
     HL = xp.clip(xp.nan_to_num(xp.where(xp.isnan(HL), lambdaL, HL)), 1e-9, 1 - 1e-9)
     HG = 1 - HL
     ix1 = HG < 1e-6
-    HG = xp.where(ix1, 1e-6, HG); HL = xp.where(ix1, 1 - 1e-6, HL)
+    HG = xp.where(ix1, 1e-6, HG)
+    HL = xp.where(ix1, 1 - 1e-6, HL)
     ix2 = HL < 1e-6
-    HL = xp.where(ix2, 1e-6, HL); HG = xp.where(ix2, 1 - 1e-6, HG)
+    HL = xp.where(ix2, 1e-6, HL)
+    HG = xp.where(ix2, 1 - 1e-6, HG)
 
     vL = direction * vSL / HL
     vG = direction * vSG / HG
@@ -139,17 +144,32 @@ def beggs_brill(P, qL, qG, D, eps, theta, fluid, regime=6, bk=NUMPY):
     ftp = f * xp.exp(S)
     tension = direction * (ftp * rhoS * vm**2) / 8.0
     vM = (HL * rhoL * vL + HG * rhoG * vG) / (HL * rhoL + HG * rhoG)
-    return dict(tension=tension, rhoS=rhoS, vM=vM, HL=HL, HG=HG, rhoL=rhoL, rhoG=rhoG,
-                vL=vL, vG=vG, vm=vm, flTra=fTra, flEst=fEst, flInt=fInt, flDis=fDis,
-                NFR=NFR, NLV=NLV, NRE=NRE, lambdaL=lambdaL)
+    return dict(
+        tension=tension,
+        rhoS=rhoS,
+        vM=vM,
+        HL=HL,
+        HG=HG,
+        rhoL=rhoL,
+        rhoG=rhoG,
+        vL=vL,
+        vG=vG,
+        vm=vm,
+        flTra=fTra,
+        flEst=fEst,
+        flInt=fInt,
+        flDis=fDis,
+        NFR=NFR,
+        NLV=NLV,
+        NRE=NRE,
+        lambdaL=lambdaL,
+    )
 
 
 class BeggsBrillModel(PipeModel):
     name = "beggs_brill"
     slots = (SLOT_P, SLOT_QL, SLOT_QG)
-    A_pattern = np.array([[1, 2, 3],
-                          [4, 5, 6],
-                          [7, 8, 9]])
+    A_pattern = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
     B_pattern = np.array([10, 11, 12])
     nF = 12
 
@@ -183,6 +203,7 @@ class BeggsBrillModel(PipeModel):
             def gfun(P_, qL_, qG_):
                 b = beggs_brill(P_, qL_, qG_, p.D, p.eps, th, fl, p.regime, bk=bk)
                 return b["rhoS"] * b["vM"], b["rhoS"] * b["vM"] ** 2, b["HG"]
+
             o, z = xp.ones_like(P), xp.zeros_like(P)
             _, (dMomdP, dVeldP, daGdP) = bk.jvp(gfun, (P, qL, qG), (o, z, z))
             _, (dMomdqL, dVeldqL, daGdqL) = bk.jvp(gfun, (P, qL, qG), (z, o, z))
@@ -211,12 +232,22 @@ class BeggsBrillModel(PipeModel):
         Area = xp.pi * p.D**2 / 4.0
         sgn = xp.sign(bb["vM"])
         z = xp.zeros(n)
-        MA = xp.stack([xp.stack([p.PR * (alphaL * cL - rhoL * daGdP), -rhoL * daGdqL, -rhoL * daGdqG], axis=1),
-                       xp.stack([p.PR * (alphaG * cG + rhoG * daGdP), rhoG * daGdqL, rhoG * daGdqG], axis=1),
-                       xp.stack([p.PR * dMomdP, dMomdqL, dMomdqG], axis=1)], axis=1)
-        MB = xp.stack([xp.stack([z, xp.full(n, 1.0 / Area), z], axis=1),
-                       xp.stack([z, z, xp.full(n, 1.0 / Area)], axis=1),
-                       xp.stack([p.PR * (1.0 + sgn * dVeldP), sgn * dVeldqL, sgn * dVeldqG], axis=1)], axis=1)
+        MA = xp.stack(
+            [
+                xp.stack([p.PR * (alphaL * cL - rhoL * daGdP), -rhoL * daGdqL, -rhoL * daGdqG], axis=1),
+                xp.stack([p.PR * (alphaG * cG + rhoG * daGdP), rhoG * daGdqL, rhoG * daGdqG], axis=1),
+                xp.stack([p.PR * dMomdP, dMomdqL, dMomdqG], axis=1),
+            ],
+            axis=1,
+        )
+        MB = xp.stack(
+            [
+                xp.stack([z, xp.full(n, 1.0 / Area), z], axis=1),
+                xp.stack([z, z, xp.full(n, 1.0 / Area)], axis=1),
+                xp.stack([p.PR * (1.0 + sgn * dVeldP), sgn * dVeldqL, sgn * dVeldqG], axis=1),
+            ],
+            axis=1,
+        )
         MC = xp.stack([z, z, xp.pi * p.D * bb["tension"] / Area + bb["rhoS"] * G * xp.sin(th)], axis=1)
         # inversa robusta: pontos com matriz singular (fase gás extinta, derivadas
         # do hold-up nulas) recebem regularização pela pseudo-inversa
@@ -227,13 +258,29 @@ class BeggsBrillModel(PipeModel):
         if not outputs:
             return F
         out = dict(
-            inclinacao=th, diametro=np.full(n, p.D), hD=np.zeros(n), alfaL=alphaL, alfaG=alphaG,
-            pressao=P / 1e5, vazaoMassaL=qL, vazaoMassaG=qG, vazaoVolL=qL / rhoL, vazaoVolG=qG / rhoG,
-            vazaoMassa=qL + qG, vazaoVol=qL / rhoL + qG / rhoG,
-            velocidadeL=bb["vL"], velocidadeG=bb["vG"],
-            velocidadeSL=qL / rhoL / Area, velocidadeSG=qG / rhoG / Area,
-            velocidadeI=bb["vL"] - bb["vG"], densidadeL=rhoL, densidadeG=rhoG,
-            flTra=bb["flTra"], flEst=bb["flEst"], flInt=bb["flInt"], flDis=bb["flDis"],
+            inclinacao=th,
+            diametro=np.full(n, p.D),
+            hD=np.zeros(n),
+            alfaL=alphaL,
+            alfaG=alphaG,
+            pressao=P / 1e5,
+            vazaoMassaL=qL,
+            vazaoMassaG=qG,
+            vazaoVolL=qL / rhoL,
+            vazaoVolG=qG / rhoG,
+            vazaoMassa=qL + qG,
+            vazaoVol=qL / rhoL + qG / rhoG,
+            velocidadeL=bb["vL"],
+            velocidadeG=bb["vG"],
+            velocidadeSL=qL / rhoL / Area,
+            velocidadeSG=qG / rhoG / Area,
+            velocidadeI=bb["vL"] - bb["vG"],
+            densidadeL=rhoL,
+            densidadeG=rhoG,
+            flTra=bb["flTra"],
+            flEst=bb["flEst"],
+            flInt=bb["flInt"],
+            flDis=bb["flDis"],
             tensao=bb["tension"],
         )
         return F, out
@@ -260,6 +307,7 @@ class BeggsBrillModel(PipeModel):
 
         def hg(P_, qL_, qG_):
             return beggs_brill(P_, qL_, qG_, p.D, p.eps, th, fl, p.regime, bk=bk)["HG"]
+
         bb = beggs_brill(P, qL, qG, p.D, p.eps, th, fl, p.regime, bk=bk)
         HG = bb["HG"]
         if self.exact_derivatives:
@@ -284,5 +332,17 @@ class BeggsBrillModel(PipeModel):
         rhoL, rhoG, CL, CG = fl.props(P)
         HL = bb["HL"]
         inp = SimpleNamespace(rhoL=rhoL, rhoG=rhoG, CL=CL, CG=CG, alphaG=HG, alphaL=HL)
-        return dict(Area=Area, P=P, inp=inp, HG=HG, HL=HL, rhoS=bb["rhoS"], vM=bb["vM"], tension=bb["tension"],
-                    dHGdP=dHGdP, dHGdqL=dHGdqL, dHGdqG=dHGdqG, C_mix=HL * CL + HG * CG)
+        return dict(
+            Area=Area,
+            P=P,
+            inp=inp,
+            HG=HG,
+            HL=HL,
+            rhoS=bb["rhoS"],
+            vM=bb["vM"],
+            tension=bb["tension"],
+            dHGdP=dHGdP,
+            dHGdqL=dHGdqL,
+            dHGdqG=dHGdqG,
+            C_mix=HL * CL + HG * CG,
+        )

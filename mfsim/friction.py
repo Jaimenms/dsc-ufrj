@@ -13,7 +13,7 @@ V_EPS = 1e-4
 
 def vabs(v, bk=NUMPY):
     """|v| regularizado: sqrt(v^2 + V_EPS^2)."""
-    return bk.xp.sqrt(v ** 2 + V_EPS**2)
+    return bk.xp.sqrt(v**2 + V_EPS**2)
 
 
 def fanning(v, rho, mu, D, eps, correlation="churchill", bk=NUMPY):

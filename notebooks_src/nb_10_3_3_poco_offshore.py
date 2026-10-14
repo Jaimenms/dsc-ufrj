@@ -41,4 +41,5 @@ plot_vertices(res, raw, indices=[1, 2, 3, 4, 5, 6, 7, 8])
 
 # %%
 from mfsim.notebook_utils import jax_comparison
+
 res_jax = jax_comparison(case, res, rtol=1e-4, atol=1e-6)

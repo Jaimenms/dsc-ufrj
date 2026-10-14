@@ -1,4 +1,5 @@
 """Interface do backend (classe base abstrata) partilhada por numpy e JAX."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -9,7 +10,7 @@ class Backend(ABC):
     name: str = "base"
     is_jax: bool = False
     has_ad: bool = False
-    xp = None                       # numpy | jax.numpy
+    xp = None  # numpy | jax.numpy
 
     # --- construção / conversão -------------------------------------------
     @abstractmethod

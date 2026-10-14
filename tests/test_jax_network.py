@@ -18,8 +18,9 @@ SCHEMES = ["galerkin", "petrov_galerkin", "fd_central", "fd_upwind"]
 @pytest.mark.parametrize("cid", CASES)
 def test_jax_network_matches_numpy(cid):
     from mfsim.compiled import build_jax_rhs
+
     case, raw = load_chapter10_case(cid)
-    case.set_options(bb_derivatives="fd")      # equivalência exata com o numpy (que usa diferenças finitas na tese)
+    case.set_options(bb_derivatives="fd")  # equivalência exata com o numpy (que usa diferenças finitas na tese)
     model = build_model(case)
     rhs_j, jac_j = build_jax_rhs(model)
     X0 = model.initial_state()
@@ -35,6 +36,7 @@ def test_jax_network_matches_numpy(cid):
 @pytest.mark.parametrize("method", SCHEMES)
 def test_jax_schemes_match_numpy(method):
     from mfsim.compiled import build_jax_rhs
+
     case, raw = load_chapter10_case("10.1.1")
     c = copy.deepcopy(case)
     c.set_method(method)
@@ -51,6 +53,7 @@ def test_beggs_brill_exact_derivatives_close_to_fd(cid):
     """As derivadas internas exatas (jvp) do Beggs & Brill concordam com as diferenças
     finitas de 1e-3 da tese dentro do erro de truncamento destas (~1e-3 relativo)."""
     from mfsim.compiled import build_jax_rhs
+
     out = {}
     x = None
     for mode in ("fd", "exact"):
@@ -61,7 +64,7 @@ def test_beggs_brill_exact_derivatives_close_to_fd(cid):
         if x is None:
             rng = np.random.default_rng(3)
             X0 = model.initial_state()
-            x = X0 * (1 + 0.05 * rng.standard_normal(X0.size))      # o MESMO estado perturbado nos dois modos
+            x = X0 * (1 + 0.05 * rng.standard_normal(X0.size))  # o MESMO estado perturbado nos dois modos
         out[mode] = rhs_j(case.time.t0 + 1.0, x)
     scale = np.max(np.abs(out["fd"]))
     assert scale > 0

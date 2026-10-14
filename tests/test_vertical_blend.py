@@ -11,7 +11,9 @@ from mfsim.models.twofluid import TwoFluidModel
 
 def _model(blend):
     fluid = Fluid(rhoL0=900.0, rhoG0=1.2, muL=2e-3, muG=1.8e-5, gammaL=100.0, gammaG=1.05, P0=1e5, sigma=0.05)
-    params = PipeParams(D=0.05, eps=1e-5, PR=1e6, regime=4, regime_vertical=2, vertical_angle=45.0, vertical_blend=blend)
+    params = PipeParams(
+        D=0.05, eps=1e-5, PR=1e6, regime=4, regime_vertical=2, vertical_angle=45.0, vertical_blend=blend
+    )
     return TwoFluidModel(fluid, params)
 
 
@@ -36,18 +38,39 @@ def test_hard_switch_jumps_and_blend_is_continuous():
 
 
 def test_elbow_arc_geometry():
-    case = severe_slug_case(method="fv_upwind", tf=10, qL=0.5, qG=0.001, D=0.05, P_out_bar=4.0, L_h1=20.0, L_down=300.0,
-                            slope_down_deg=-3.0, H_riser=20.0, L_h2=5.0, n_h1=2, n_down=15, n_riser=5, n_h2=2, regime=4,
-                            single_pipe=True, start="blocked", elbow_radius=5.0, n_elbow=4, extra={"regime_vertical": 2})
+    case = severe_slug_case(
+        method="fv_upwind",
+        tf=10,
+        qL=0.5,
+        qG=0.001,
+        D=0.05,
+        P_out_bar=4.0,
+        L_h1=20.0,
+        L_down=300.0,
+        slope_down_deg=-3.0,
+        H_riser=20.0,
+        L_h2=5.0,
+        n_h1=2,
+        n_down=15,
+        n_riser=5,
+        n_h2=2,
+        regime=4,
+        single_pipe=True,
+        start="blocked",
+        elbow_radius=5.0,
+        n_elbow=4,
+        extra={"regime_vertical": 2},
+    )
     pipe = case.pipes[0]
     mesh = pipe_mesh(pipe.x, pipe.y, pipe.z, pipe.n_elements)
     th = np.rad2deg(mesh["theta"])
     # ângulos do arco crescem de -3° a 90° de forma monótona e o riser continua vertical
-    arc = th[2 + 15: 2 + 15 + 4]
+    arc = th[2 + 15 : 2 + 15 + 4]
     assert np.all(np.diff(arc) > 0) and arc[0] > -3.0 and arc[-1] < 90.0
-    assert np.allclose(th[2 + 15 + 4: 2 + 15 + 4 + 5], 90.0)
+    assert np.allclose(th[2 + 15 + 4 : 2 + 15 + 4 + 5], 90.0)
     # topo do riser na mesma cota e saída na mesma posição horizontal do caso sem arco
-    z = mesh["xyz"][:, 2]; y = mesh["xyz"][:, 1]
+    z = mesh["xyz"][:, 2]
+    y = mesh["xyz"][:, 1]
     assert abs(z[-1] - (300.0 * np.sin(np.deg2rad(-3.0)) + 20.0)) < 1e-9
     assert abs(y[-1] - (20.0 + 300.0 * np.cos(np.deg2rad(-3.0)) + 5.0)) < 1e-9
     # CI bloqueada: bolsão antes do arco, líquido no arco e no riser

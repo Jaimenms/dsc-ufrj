@@ -28,8 +28,13 @@ def jacobian_eigenvalues(model, X, t=0.0):
 def stability_report(model, X, t=0.0, tol=1e-9):
     ev = jacobian_eigenvalues(model, X, t)
     unstable = ev[ev.real > tol]
-    return dict(eigenvalues=ev, n_unstable=int(unstable.size), max_real=float(ev.real.max()),
-                dominant=unstable[:5], period=(2 * np.pi / abs(unstable[0].imag) if unstable.size and unstable[0].imag != 0 else None))
+    return dict(
+        eigenvalues=ev,
+        n_unstable=int(unstable.size),
+        max_real=float(ev.real.max()),
+        dominant=unstable[:5],
+        period=(2 * np.pi / abs(unstable[0].imag) if unstable.size and unstable[0].imag != 0 else None),
+    )
 
 
 def mass_balance(res, k=0, phase="L"):
@@ -44,7 +49,7 @@ def mass_balance(res, k=0, phase="L"):
     pb = model.pipes[k]
     p = res.pipe(k)
     T = res.T
-    Y = p["Y"]                                    # (nt, n_nodes, 4), primitivas
+    Y = p["Y"]  # (nt, n_nodes, 4), primitivas
     sch = pb.scheme
     A = np.pi * pb.pipe.D**2 / 4
     h = pb.mesh["h"]
@@ -80,7 +85,8 @@ def blowdowns(T, P_in, min_gap=200.0):
     30 % da faixa, separados por pelo menos `min_gap` s (um blowdown tem mínimos
     secundários nos segundos seguintes). Mais robusto do que contar picos de vazão.
     (Era `blowdowns` no notebook nb_severe_slug e em scratch/cycle_stats.py.)"""
-    T = np.asarray(T, float); P_in = np.asarray(P_in, float)
+    T = np.asarray(T, float)
+    P_in = np.asarray(P_in, float)
     lvl = P_in.min() + 0.3 * (P_in.max() - P_in.min())
     low = P_in < lvl
     out = []
@@ -103,13 +109,19 @@ def cycle_signature(T, P_in, q_out, min_gap=200.0, t_skip=0.0):
     """Assinatura de um ciclo de intermitência severa (para comparações tolerantes ao
     caos): instante do primeiro blowdown, intervalo médio, número de blowdowns, P_in
     mínima e máxima, pico de q_out depois de t_skip. P_in em bar, q_out em kg/s."""
-    T = np.asarray(T, float); P_in = np.asarray(P_in, float); q_out = np.asarray(q_out, float)
+    T = np.asarray(T, float)
+    P_in = np.asarray(P_in, float)
+    q_out = np.asarray(q_out, float)
     tb = blowdowns(T, P_in, min_gap)
     sel = T >= t_skip
-    return dict(t_first=float(tb[0]) if tb.size else np.nan,
-                interval=float(np.mean(np.diff(tb))) if tb.size > 1 else np.nan,
-                n_blowdowns=int(tb.size), P_min=float(P_in[sel].min()), P_max=float(P_in[sel].max()),
-                q_peak=float(q_out[sel].max()))
+    return dict(
+        t_first=float(tb[0]) if tb.size else np.nan,
+        interval=float(np.mean(np.diff(tb))) if tb.size > 1 else np.nan,
+        n_blowdowns=int(tb.size),
+        P_min=float(P_in[sel].min()),
+        P_max=float(P_in[sel].max()),
+        q_peak=float(q_out[sel].max()),
+    )
 
 
 def gas_front_widths(x, aG, ib):
@@ -143,14 +155,23 @@ def cycle_stats(run, t_skip=100.0, min_gap=200.0):
     per = float(np.mean(np.diff(tb))) if tb.size > 1 else np.nan
     sel = T > t_skip
     widths = gas_front_widths(x, aG, run.ib)
-    return dict(blowdowns=tb, interval=per, q_peak=float(q[sel].max()), q_mean=float(q[sel].mean()),
-                P_min=float(P1[sel].min()), P_max=float(P1[sel].max()),
-                front_width=float(np.median(widths)) if widths.size else np.nan,
-                n_steps=run.meta.get("n_steps", run.info.get("n_steps")), cpu=run.meta.get("cpu", run.info.get("cpu")))
+    return dict(
+        blowdowns=tb,
+        interval=per,
+        q_peak=float(q[sel].max()),
+        q_mean=float(q[sel].mean()),
+        P_min=float(P1[sel].min()),
+        P_max=float(P1[sel].max()),
+        front_width=float(np.median(widths)) if widths.size else np.nan,
+        n_steps=run.meta.get("n_steps", run.info.get("n_steps")),
+        cpu=run.meta.get("cpu", run.info.get("cpu")),
+    )
 
 
-CYCLE_STATS_HEADER = (f"{'trajetória':48s} {'passos':>7s} {'CPU':>6s} {'blowdowns':>24s} {'interv.':>7s} {'pico':>6s} "
-                      f"{'P_in':>11s} {'prod.':>6s} {'frente':>6s}")
+CYCLE_STATS_HEADER = (
+    f"{'trajetória':48s} {'passos':>7s} {'CPU':>6s} {'blowdowns':>24s} {'interv.':>7s} {'pico':>6s} "
+    f"{'P_in':>11s} {'prod.':>6s} {'frente':>6s}"
+)
 
 
 def format_cycle_stats(name, st):
@@ -159,5 +180,7 @@ def format_cycle_stats(name, st):
     n_steps = int(st["n_steps"]) if st["n_steps"] is not None else -1
     cpu = float(st["cpu"]) if st["cpu"] is not None else np.nan
     tb = np.asarray(st["blowdowns"], float)
-    return (f"{short:48s} {n_steps:7d} {cpu:5.0f}s {str(tb.round(0).astype(int).tolist()):>24s} {st['interval']:6.0f}s "
-            f"{st['q_peak']:5.2f} {st['P_min']:5.2f}-{st['P_max']:4.2f} {st['q_mean']:6.3f} {st['front_width']:5.1f}m")
+    return (
+        f"{short:48s} {n_steps:7d} {cpu:5.0f}s {str(tb.round(0).astype(int).tolist()):>24s} {st['interval']:6.0f}s "
+        f"{st['q_peak']:5.2f} {st['P_min']:5.2f}-{st['P_max']:4.2f} {st['q_mean']:6.3f} {st['front_width']:5.1f}m"
+    )

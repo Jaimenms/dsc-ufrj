@@ -24,57 +24,110 @@ class CaseInfo:
 
 CHAPTER10 = {
     "10.1.1": CaseInfo(
-        "10.1.1", "CASO10-1-1.mf2", "10.1.1", "Escoamento horizontal estratificado",
+        "10.1.1",
+        "CASO10-1-1.mf2",
+        "10.1.1",
+        "Escoamento horizontal estratificado",
         "Duto horizontal de 1000 m, D=0.1 m, 50 elementos, Galerkin, modelo a 4 equações com "
         "padrão estratificado fixo. qL=0.5 kg/s; qG sobe de 0.1 para 0.13 kg/s entre 150 e 180 s. "
-        "Pressão de saída 100 bar.", "Figs. 10.2-10.8, Tabela 10.1"),
+        "Pressão de saída 100 bar.",
+        "Figs. 10.2-10.8, Tabela 10.1",
+    ),
     "10.1.2": CaseInfo(
-        "10.1.2", "CASO10-1-2.mf2", "10.1.2", "Escoamento horizontal anular",
+        "10.1.2",
+        "CASO10-1-2.mf2",
+        "10.1.2",
+        "Escoamento horizontal anular",
         "Mesmo duto com padrão anular fixo. qL=0.5 kg/s; qG sobe de 5.0 para 5.5 kg/s entre 150 e 180 s.",
-        "Figs. 10.10-10.13"),
+        "Figs. 10.10-10.13",
+    ),
     "10.1.3": CaseInfo(
-        "10.1.3", "CASO10-1-3.mf2", "10.1.3", "Escoamento horizontal padrão bolhas",
+        "10.1.3",
+        "CASO10-1-3.mf2",
+        "10.1.3",
+        "Escoamento horizontal padrão bolhas",
         "Mesmo duto com padrão bolhas fixo. qG=0.1 kg/s; qL sobe de 50 para 55 kg/s entre 150 e 180 s.",
-        "Figs. 10.15-10.16"),
+        "Figs. 10.15-10.16",
+    ),
     "10.1.4": CaseInfo(
-        "10.1.4", "CASO10-1-4.mf2", "10.1.4", "Escoamento horizontal via modelo a 3 equações",
-        "Cenário de 10.1.1 com o modelo de mistura (Beggs & Brill).", "Fig. 10.17"),
+        "10.1.4",
+        "CASO10-1-4.mf2",
+        "10.1.4",
+        "Escoamento horizontal via modelo a 3 equações",
+        "Cenário de 10.1.1 com o modelo de mistura (Beggs & Brill).",
+        "Fig. 10.17",
+    ),
     "10.2.1A": CaseInfo(
-        "10.2.1A", "CASO10-2-1.mf2", "10.2.1", "Dois trechos em série (formulação A: conexão)",
+        "10.2.1A",
+        "CASO10-2-1.mf2",
+        "10.2.1",
+        "Dois trechos em série (formulação A: conexão)",
         "Dois dutos de 500 m (25 elementos cada) ligados por especificação de conexão; "
-        "cenário de 10.1.1; diferenças finitas centrais.", "Figs. 10.20-10.24, Tabelas 10.2-10.3"),
+        "cenário de 10.1.1; diferenças finitas centrais.",
+        "Figs. 10.20-10.24, Tabelas 10.2-10.3",
+    ),
     "10.2.1B": CaseInfo(
-        "10.2.1B", "CASO10-2-1b.mf2", "10.2.1", "Dois trechos em série (formulação B: vértice dinâmico)",
-        "Dois dutos de 500 m acoplados por vértice dinâmico (tipo A).", "Figs. 10.20-10.24"),
+        "10.2.1B",
+        "CASO10-2-1b.mf2",
+        "10.2.1",
+        "Dois trechos em série (formulação B: vértice dinâmico)",
+        "Dois dutos de 500 m acoplados por vértice dinâmico (tipo A).",
+        "Figs. 10.20-10.24",
+    ),
     "10.2.2": CaseInfo(
-        "10.2.2", "CASO10-2-2.mf2", "10.2.2", "Rede com ciclo",
+        "10.2.2",
+        "CASO10-2-2.mf2",
+        "10.2.2",
+        "Rede com ciclo",
         "Cinco dutos de 200 m (10 elementos) formando um ciclo; dutos 4 e 5 com D=0.05 m; "
-        "vértices dinâmicos nas junções.", "Figs. 10.26-10.30"),
+        "vértices dinâmicos nas junções.",
+        "Figs. 10.26-10.30",
+    ),
     "10.3.1": CaseInfo(
-        "10.3.1", "CASO10-3-1.mf2", "10.3.1", "Poço simples",
+        "10.3.1",
+        "CASO10-3-1.mf2",
+        "10.3.1",
+        "Poço simples",
         "Poço vertical de 2048 m (5 in), modelo a 3 equações (intermitente), reservatório "
         "(170 bar, IPL 0.71, IPG 0.042 kg/s/bar) e choke (Cv=30) com rampa 100%->25% (60-90 s) "
-        "e 25%->100% (500-530 s).", "Figs. 10.32-10.34"),
+        "e 25%->100% (500-530 s).",
+        "Figs. 10.32-10.34",
+    ),
     "10.3.2a": CaseInfo(
-        "10.3.2a", "CASO10-3-2.mf2", "10.3.2", "Poço com gas lift - cenário 1 (sem intermitência)",
-        "Choke de gás 100%->75% entre 100 e 150 s.", "Figs. 10.36-10.40"),
+        "10.3.2a",
+        "CASO10-3-2.mf2",
+        "10.3.2",
+        "Poço com gas lift - cenário 1 (sem intermitência)",
+        "Choke de gás 100%->75% entre 100 e 150 s.",
+        "Figs. 10.36-10.40",
+    ),
     "10.3.2b": CaseInfo(
-        "10.3.2b", "CASO10-3-2b.mf2", "10.3.2", "Poço com gas lift - cenário 2 (com intermitência)",
-        "Choke de gás 75%->15% entre 100 e 150 s.", "Figs. 10.41-10.46"),
+        "10.3.2b",
+        "CASO10-3-2b.mf2",
+        "10.3.2",
+        "Poço com gas lift - cenário 2 (com intermitência)",
+        "Choke de gás 75%->15% entre 100 e 150 s.",
+        "Figs. 10.41-10.46",
+    ),
     "10.3.3": CaseInfo(
-        "10.3.3", "CASO10-3-3b.mf2", "10.3.3", "Poço offshore",
+        "10.3.3",
+        "CASO10-3-3b.mf2",
+        "10.3.3",
+        "Poço offshore",
         "Poço + linha de produção (3500 m horizontal + trecho descendente) + riser de 1500 m, "
         "gas lift com linha de gás e anular; choke de gás 100%->80% entre 100 e 200 s.",
-        "Figs. 10.48-10.54"),
+        "Figs. 10.48-10.54",
+    ),
 }
 
 
 def load_chapter10_case(key, **kw):
     """Retorna (network, legacy_raw) do caso `key` (ex.: '10.1.1')."""
     from ..network.graph import Choke
+
     info = CHAPTER10[key]
     if key == "10.3.2a":
-        kw = dict(kw, ic_from="file")   # o arquivo original não monta (válvula de retenção em vértice estático)
+        kw = dict(kw, ic_from="file")  # o arquivo original não monta (válvula de retenção em vértice estático)
     net, raw = load_case(info.file, **kw)
     net.name = f"{info.section} {info.title}"
     if key == "10.3.2a":
@@ -89,7 +142,9 @@ def load_chapter10_case(key, **kw):
     return net, raw
 
 
-CASES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "cases", "chapter10")
+CASES_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "cases", "chapter10"
+)
 
 
 def chapter10_json_path(key):
@@ -101,6 +156,7 @@ def load_chapter10_json(key):
     (network, raw) como `load_chapter10_case` (raw = dados do .mf2 para comparação)."""
     from ..io.spec import case_from_json
     from ..io_legacy import load_mf2
+
     path = chapter10_json_path(key)
     if not os.path.exists(path):
         raise FileNotFoundError(f"{path}: exportar com `uv run python -m mfsim.io.legacy_mf2`")

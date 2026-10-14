@@ -1,5 +1,6 @@
 """Os dados de entrada versionados como binários (.mf2 legados, PDF) e os dados fora do git
 (notebooks/data, scratch) continuam iguais ao MANIFEST.sha256."""
+
 import sys
 from pathlib import Path
 
@@ -16,12 +17,14 @@ def _expected():
     out = {}
     for line in p.read_text().splitlines():
         if line.strip():
-            h, rel = line.split("  ", 1); out[rel] = h
+            h, rel = line.split("  ", 1)
+            out[rel] = h
     return out
 
 
 def test_tracked_inputs_unchanged():
     from manifest import sha256_of
+
     exp = _expected()
     tracked = {k: v for k, v in exp.items() if k.startswith("legacy/mfsim23/Files/") or k.endswith(".pdf")}
     assert tracked, "manifesto sem entradas legadas"
@@ -33,6 +36,7 @@ def test_tracked_inputs_unchanged():
 @pytest.mark.data
 def test_untracked_data_unchanged():
     from manifest import sha256_of
+
     exp = _expected()
     data = {k: v for k, v in exp.items() if k.startswith("notebooks/data/")}
     present = [rel for rel in data if (ROOT / rel).exists()]

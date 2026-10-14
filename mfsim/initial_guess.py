@@ -32,11 +32,26 @@ def _equilibrium_alpha(model, P, qL, qG, theta):
     vGS = qG / rhoG / A * np.ones(n)
     hD, beta = stratified_level(np.full(n, 0.5))
     inp = ClosureInputs(
-        alphaG=np.full(n, 0.5), alphaL=np.full(n, 0.5), vL=vLS * 2, vLS=vLS, vG=vGS * 2, vGS=vGS,
-        AreaL=np.full(n, A / 2), AreaG=np.full(n, A / 2), D=np.full(n, p.D), eps=np.full(n, p.eps),
-        theta=theta * np.ones(n), rhoL=rhoL * np.ones(n), rhoG=rhoG * np.ones(n),
-        muL=np.full(n, fl.muL), muG=np.full(n, fl.muG), CL=CL * np.ones(n), CG=CG * np.ones(n),
-        sigma=np.full(n, fl.sigma), beta=beta, hD=hD,
+        alphaG=np.full(n, 0.5),
+        alphaL=np.full(n, 0.5),
+        vL=vLS * 2,
+        vLS=vLS,
+        vG=vGS * 2,
+        vGS=vGS,
+        AreaL=np.full(n, A / 2),
+        AreaG=np.full(n, A / 2),
+        D=np.full(n, p.D),
+        eps=np.full(n, p.eps),
+        theta=theta * np.ones(n),
+        rhoL=rhoL * np.ones(n),
+        rhoG=rhoG * np.ones(n),
+        muL=np.full(n, fl.muL),
+        muG=np.full(n, fl.muG),
+        CL=CL * np.ones(n),
+        CG=CG * np.ones(n),
+        sigma=np.full(n, fl.sigma),
+        beta=beta,
+        hD=hD,
     )
     hD_est, hD_anu, aG_est, aG_anu, aG_bol = equilibrium_fractions(inp)
     if p.regime == REGIME_ANNULAR:
@@ -60,9 +75,14 @@ def initial_guess(network, t=None):
     P_specs = [E[i, SLOT_P] for i in range(network.NV) if E[i, SLOT_P] != UNSPECIFIED and E[i, SLOT_P] > 0]
     PT_ref = float(np.mean(P_specs)) if P_specs else network.fluid.P0 / PR
     # pressões nos vértices: especificadas ou propagadas de jusante para montante
-    PT_vertex = {i: (E[i, SLOT_P] if (E[i, SLOT_P] != UNSPECIFIED and E[i, SLOT_P] > 0
-                                      and network.vertices[i].kind != "tank") else None)
-                 for i in range(network.NV)}
+    PT_vertex = {
+        i: (
+            E[i, SLOT_P]
+            if (E[i, SLOT_P] != UNSPECIFIED and E[i, SLOT_P] > 0 and network.vertices[i].kind != "tank")
+            else None
+        )
+        for i in range(network.NV)
+    }
     # vazões por duto: da especificação do vértice de origem ou herdadas de montante
     q_pipe = {}
     for _ in range(len(network.pipes) + 1):
@@ -120,15 +140,17 @@ def initial_guess(network, t=None):
             Y[:, SLOT_QG] = qG
         if hasattr(pb.scheme, "from_primitive"):
             Y = pb.scheme.from_primitive(Y)
-        X[pb.offset:pb.offset + pb.n_states] = Y.ravel()[pb.free]
+        X[pb.offset : pb.offset + pb.n_states] = Y.ravel()[pb.free]
     for k, vi in enumerate(network.vA):
         v = network.vertices[vi]
         iH, iP = network.vertex_A_index(v.id)
         aG, PT = [], []
         for kp in network.pipes_in[vi] + network.pipes_out[vi]:
             pb = network.pipes[kp]
-            seg = X[pb.offset:pb.offset + pb.n_states]
-            Y = pb.base_Y().ravel(); Y[pb.free] = seg; Y = Y.reshape(pb.n_nodes, 4)
+            seg = X[pb.offset : pb.offset + pb.n_states]
+            Y = pb.base_Y().ravel()
+            Y[pb.free] = seg
+            Y = Y.reshape(pb.n_nodes, 4)
             if hasattr(pb.scheme, "to_primitive"):
                 Y = pb.scheme.to_primitive(Y)
             node = pb.outlet_P_node if kp in network.pipes_in[vi] else pb.inlet_P_node

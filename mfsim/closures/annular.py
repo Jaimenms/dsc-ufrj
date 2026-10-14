@@ -30,7 +30,8 @@ def annular(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     # Kowalski (1987) para o filme de líquido
     Re_L_safe = xp.where(Re_L == 0, 1e-30, Re_L)
     f_L = xp.where(
-        Re_L == 0, 0.0,
+        Re_L == 0,
+        0.0,
         xp.maximum(24.0 / Re_L_safe, 0.263 / (1.0 - aG) * xp.sqrt(DL / Re_L_safe / D)),
     )
     f_I = interfacial_factor_stratified(f_G, inp.vGS, hL / D, bk=bk)
@@ -49,7 +50,17 @@ def annular(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
 
     z = xp.zeros(n)
     return ClosureTerms(
-        GammaL=GammaL, GammaG=GammaG, dPL=z, dPG=z,
-        ddPLdP=z, ddPGdP=z, ddPLdalphaG=z, ddPGdalphaG=z,
-        dPI=z, hL=hL, beta=beta, tauG=tauG, tauL=tauL,
+        GammaL=GammaL,
+        GammaG=GammaG,
+        dPL=z,
+        dPG=z,
+        ddPLdP=z,
+        ddPGdP=z,
+        ddPLdalphaG=z,
+        ddPGdalphaG=z,
+        dPI=z,
+        hL=hL,
+        beta=beta,
+        tauG=tauG,
+        tauL=tauL,
     )

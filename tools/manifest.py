@@ -9,6 +9,7 @@ uso: uv run python tools/manifest.py --write        # (re)gera os dois ficheiros
      uv run python tools/manifest.py --check        # verifica; sai com 1 se algum ficheiro mudou
      uv run python tools/manifest.py --check --strict   # também falha se faltar algum ficheiro
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,6 +53,7 @@ def npz_summary(path: Path) -> dict:
     out = {}
     try:
         import numpy as np
+
         with np.load(path, allow_pickle=False) as z:
             out["keys"] = sorted(z.files)
             for key in ("T", "X"):
@@ -93,7 +95,8 @@ def write():
 
 def check(strict=False) -> int:
     if not MANIFEST_SHA.exists():
-        print("sem MANIFEST.sha256 (correr --write)"); return 2
+        print("sem MANIFEST.sha256 (correr --write)")
+        return 2
     expected = {}
     for line in MANIFEST_SHA.read_text().splitlines():
         if line.strip():
@@ -103,22 +106,29 @@ def check(strict=False) -> int:
     for rel, h in expected.items():
         p = ROOT / rel
         if not p.exists():
-            missing.append(rel); continue
+            missing.append(rel)
+            continue
         if sha256_of(p) != h:
             changed.append(rel)
     new = [p.relative_to(ROOT).as_posix() for p in collect() if p.relative_to(ROOT).as_posix() not in expected]
-    for rel in changed: print("ALTERADO:", rel)
-    for rel in missing: print("em falta:", rel)
-    for rel in new: print("novo (fora do manifesto):", rel)
+    for rel in changed:
+        print("ALTERADO:", rel)
+    for rel in missing:
+        print("em falta:", rel)
+    for rel in new:
+        print("novo (fora do manifesto):", rel)
     ok = not changed and not (strict and missing)
-    print(f"verificados {len(expected)}: {len(changed)} alterados, {len(missing)} em falta, {len(new)} novos -> {'OK' if ok else 'FALHA'}")
+    print(
+        f"verificados {len(expected)}: {len(changed)} alterados, {len(missing)} em falta, {len(new)} novos -> {'OK' if ok else 'FALHA'}"
+    )
     return 0 if ok else 1
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     g = ap.add_mutually_exclusive_group(required=True)
-    g.add_argument("--write", action="store_true"); g.add_argument("--check", action="store_true")
+    g.add_argument("--write", action="store_true")
+    g.add_argument("--check", action="store_true")
     ap.add_argument("--strict", action="store_true")
     a = ap.parse_args()
     sys.exit(write() or 0 if a.write else check(a.strict))

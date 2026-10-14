@@ -98,14 +98,16 @@ class StaggeredFVBase(PipeScheme):
         super().__init__(model, mesh, settings)
         self.bc_in = tuple(self.settings.get("bc_in", (1, 1, 2, 2)))
         self.bc_out = tuple(self.settings.get("bc_out", (1, 2, 1, 1)))
-        self.order = int(self.settings.get("fv_order", 1))     # 1 = upwind, 2 = MUSCL/minmod
-        self.alpha_face = self.settings.get("alpha_face", "upwind")  # upwind | central | muscl (reconstrução TVD/minmod)
-        self.q_switch = float(self.settings.get("q_switch", 1e-3))   # kg/s, largura do chaveamento upwind
+        self.order = int(self.settings.get("fv_order", 1))  # 1 = upwind, 2 = MUSCL/minmod
+        self.alpha_face = self.settings.get(
+            "alpha_face", "upwind"
+        )  # upwind | central | muscl (reconstrução TVD/minmod)
+        self.q_switch = float(self.settings.get("q_switch", 1e-3))  # kg/s, largura do chaveamento upwind
         self.q_switch_L = float(self.settings.get("q_switch_L", self.q_switch))
         self.q_switch_G = float(self.settings.get("q_switch_G", 1e-2 * self.q_switch))
         self.switch_frac = float(self.settings.get("switch_frac", 0.2))
         self.alpha_band = float(self.settings.get("alpha_band", 0.02))  # faixa de transição junto aos limites de alpha
-        self.relax_time = float(self.settings.get("relax_time", 0.05))   # s, relaxação da fase que desaparece
+        self.relax_time = float(self.settings.get("relax_time", 0.05))  # s, relaxação da fase que desaparece
         # resíduo de massa conservativo (massas por volume): só nos modelos bifásicos; nos
         # monofásicos a equação da pressão já é o balanço de massa da única fase
         self.conservative = bool(self.settings.get("conservative", False)) and self.two_phase
@@ -114,8 +116,8 @@ class StaggeredFVBase(PipeScheme):
         # modo conservativo: banda (em alpha) do limitador de fluxo da fase que some
         # na célula doadora (positividade exata das massas sem perder conservação)
         self.flux_band = float(self.settings.get("flux_band", 1e-3))
-        self.flux_eps = float(self.settings.get("flux_eps", 0.05))      # largura do chaveamento doador (x q_switch)
-        self.flux_limit = bool(self.settings.get("flux_limit", True))   # liga o limitador de fluxo (modo conservativo)
+        self.flux_eps = float(self.settings.get("flux_eps", 0.05))  # largura do chaveamento doador (x q_switch)
+        self.flux_limit = bool(self.settings.get("flux_limit", True))  # liga o limitador de fluxo (modo conservativo)
         # viscosidade artificial linear nas equações de momento, nu = art_visc * c * h
         # (c = velocidade do som da fase, h = tamanho da célula): amortece os modos
         # acústicos na escala da malha (tampões de líquido entre bolsões de gás
@@ -140,9 +142,9 @@ class StaggeredFVBase(PipeScheme):
         h = self.h
         # centros das células e faces
         s = np.asarray(mesh["s"], float)
-        self.x_faces = s                                  # N+1 faces
-        self.x_cells = 0.5 * (s[:-1] + s[1:])             # N células
-        self.dx_faces = np.empty(N + 1)                   # distância entre centros vizinhos à face
+        self.x_faces = s  # N+1 faces
+        self.x_cells = 0.5 * (s[:-1] + s[1:])  # N células
+        self.dx_faces = np.empty(N + 1)  # distância entre centros vizinhos à face
         self.dx_faces[0] = 0.5 * h[0]
         self.dx_faces[-1] = 0.5 * h[-1]
         self.dx_faces[1:-1] = 0.5 * (h[:-1] + h[1:])
@@ -210,9 +212,9 @@ class StaggeredFVBase(PipeScheme):
     def state_mask(self):
         mask = np.zeros((self.n_nodes, 4), dtype=bool)
         for s in self.cell_slots:
-            mask[1:self.N + 1, s] = True
+            mask[1 : self.N + 1, s] = True
         for s, _ in self.phases:
-            mask[0:self.N + 1, s] = True
+            mask[0 : self.N + 1, s] = True
             if self.bc_in[s] != BC_ABSENT:
                 mask[0, s] = False
             if self.bc_out[s] != BC_ABSENT:
@@ -234,7 +236,7 @@ class StaggeredFVBase(PipeScheme):
         N = self.N
         for s, _ in self.phases:
             if self.bc_out[s] == BC_DIRICHLET:
-                Y = bk.set(Y, (N, s), Y[N + 1, s])        # valor imposto no nó de contorno -> face N
+                Y = bk.set(Y, (N, s), Y[N + 1, s])  # valor imposto no nó de contorno -> face N
             elif self.bc_out[s] == BC_NEUMANN:
                 Y = bk.set(Y, (N, s), Y[N - 1, s])
                 Y = bk.set(Y, (N + 1, s), Y[N, s])
@@ -257,8 +259,8 @@ class StaggeredFVBase(PipeScheme):
         floor = {"L": self.q_switch_L, "G": self.q_switch_G}.get(phase, self.q_switch)
         aq = xp.abs(q)
         if aq.shape[0] > 2:
-            local = bk.set(aq, slice(1, None), xp.maximum(aq[1:], aq[:-1]))          # vizinho à esquerda
-            local = bk.set(local, slice(None, -1), xp.maximum(local[:-1], aq[1:]))   # vizinho à direita
+            local = bk.set(aq, slice(1, None), xp.maximum(aq[1:], aq[:-1]))  # vizinho à esquerda
+            local = bk.set(local, slice(None, -1), xp.maximum(local[:-1], aq[1:]))  # vizinho à direita
         else:
             local = aq
         eps = (self.switch_frac if frac is None else frac) * local + floor * floor_scale
@@ -315,7 +317,7 @@ class StaggeredFVBase(PipeScheme):
         """Idem a partir do arranjo nodal completo Y (n_nodes x 4) do duto."""
         Y = self.bk.asarray(Y)
         N = self.N
-        return self.mass_fluxes(Y[0:N + 2, SLOT_ALPHA], Y[0:N + 1, SLOT_QL], Y[0:N + 1, SLOT_QG])
+        return self.mass_fluxes(Y[0 : N + 2, SLOT_ALPHA], Y[0 : N + 1, SLOT_QL], Y[0 : N + 1, SLOT_QG])
 
     def boundary_fluxes(self, Y):
         """Nos dutos conservativos, os fluxos limitados das equações de massa (para que o
@@ -339,25 +341,25 @@ class StaggeredFVBase(PipeScheme):
         # para avaliar propriedades nas células, as vazões "de célula" são médias das faces
         Ycc = Yc
         for s, _ in self.phases:
-            Ycc = bk.set(Ycc, (slice(1, N + 1), s), 0.5 * (Y[0:N, s] + Y[1:N + 1, s]))
+            Ycc = bk.set(Ycc, (slice(1, N + 1), s), 0.5 * (Y[0:N, s] + Y[1 : N + 1, s]))
         # faces: média das células vizinhas para alphaG, PT; vazões das faces
-        aG_f = 0.5 * (Yc[0:N + 1, SLOT_ALPHA] + Yc[1:N + 2, SLOT_ALPHA])
-        P_f = 0.5 * (Yc[0:N + 1, SLOT_P] + Yc[1:N + 2, SLOT_P])
+        aG_f = 0.5 * (Yc[0 : N + 1, SLOT_ALPHA] + Yc[1 : N + 2, SLOT_ALPHA])
+        P_f = 0.5 * (Yc[0 : N + 1, SLOT_P] + Yc[1 : N + 2, SLOT_P])
         # faces de contorno com alphaG imposto pelo vértice (Dirichlet): a fração da
         # face é a do lado doador (célula em saída, vértice em entrada), não a média —
         # o conteúdo do vértice só entra no duto quando o escoamento entra
         if SLOT_ALPHA in self.cell_slots:
             qm = Y[:, SLOT_QL] + Y[:, SLOT_QG]
             if self.bc_in[SLOT_ALPHA] == BC_DIRICHLET:
-                w = self._switch(qm[0:1], "L", frac=0.02, floor_scale=0.05)[0]   # ~1 se entra (q > 0)
+                w = self._switch(qm[0:1], "L", frac=0.02, floor_scale=0.05)[0]  # ~1 se entra (q > 0)
                 aG_f = bk.set(aG_f, 0, w * Yc[0, SLOT_ALPHA] + (1.0 - w) * Yc[1, SLOT_ALPHA])
             if self.bc_out[SLOT_ALPHA] == BC_DIRICHLET:
-                w = self._switch(qm[N:N + 1], "L", frac=0.02, floor_scale=0.05)[0]  # ~1 se sai (q > 0)
+                w = self._switch(qm[N : N + 1], "L", frac=0.02, floor_scale=0.05)[0]  # ~1 se sai (q > 0)
                 aG_f = bk.set(aG_f, N, w * Yc[N, SLOT_ALPHA] + (1.0 - w) * Yc[N + 1, SLOT_ALPHA])
         if SLOT_ALPHA not in model.slots:
             # modelos sem a fração de área como estado: coluna constante do fantasma de entrada
             aG_f = Yc[0, SLOT_ALPHA] * xp.ones(N + 1)
-        Yf = xp.stack([aG_f, P_f, Y[0:N + 1, SLOT_QL], Y[0:N + 1, SLOT_QG]], axis=1)
+        Yf = xp.stack([aG_f, P_f, Y[0 : N + 1, SLOT_QL], Y[0 : N + 1, SLOT_QG]], axis=1)
         return Yc, Ycc, Yf
 
     def _momentum(self, qf, rho_f, alpha_f, Pc, dPc, Gamma_f, Area, phase=None, comp_c=None):
@@ -378,7 +380,7 @@ class StaggeredFVBase(PipeScheme):
         qc = xp.concatenate([qf[:1], 0.5 * (qf[:-1] + qf[1:]), qf[-1:]])
         # velocidade donor no centro i: face i-1 se qc >= 0, senão face i
         # (chaveamento suavizado para manter o lado direito contínuo)
-        w = self._switch(qc[1:N + 1], phase)
+        w = self._switch(qc[1 : N + 1], phase)
         if self.order == 2:
             # correção MUSCL (minmod) sobre a velocidade donor
             dv = vf[1:] - vf[:-1]
@@ -396,7 +398,7 @@ class StaggeredFVBase(PipeScheme):
         if self.art_visc > 0 and comp_c is not None:
             # difusão de q entre faces vizinhas através da célula k (0-based, entre as
             # faces k e k+1): F_k = nu_k (q_{k+1} - q_k)/h_k, nu_k = art_visc c_k h_k
-            c_c = 1.0 / xp.sqrt(xp.maximum(comp_c[1:N + 1], 1e-300))      # velocidade do som nas células 1..N
+            c_c = 1.0 / xp.sqrt(xp.maximum(comp_c[1 : N + 1], 1e-300))  # velocidade do som nas células 1..N
             F = self.art_visc * c_c * (qf[1:] - qf[:-1])
             dq = bk.add(dq, slice(1, N), (F[1:] - F[:-1]) / dxf[1:N])
         return dq, dmom
@@ -413,13 +415,13 @@ class StaggeredFVBase(PipeScheme):
         h = self._h_x
         dqL = (qL[1:] - qL[:-1]) / h
         dqG = (qG[1:] - qG[:-1]) / h
-        rhoL, rhoG, CL, CG = ic.rhoL[1:N + 1], ic.rhoG[1:N + 1], ic.CL[1:N + 1], ic.CG[1:N + 1]
+        rhoL, rhoG, CL, CG = ic.rhoL[1 : N + 1], ic.rhoG[1 : N + 1], ic.CL[1 : N + 1], ic.CG[1 : N + 1]
         # coeficientes de massa com a fração de gás REAL (não cortada em alpha_min):
         # quando alphaG -> 0 a compressibilidade do gás desaparece (rG -> 0) e a
         # acumulação de líquido vai para a pressão (compressibilidade do líquido);
         # assim a fração de gás não ultrapassa os limites e a massa é conservada
         fl = model.fluid
-        aGr = xp.clip(Y[1:N + 1, SLOT_ALPHA], 0.0, 1.0)
+        aGr = xp.clip(Y[1 : N + 1, SLOT_ALPHA], 0.0, 1.0)
         aLr = 1.0 - aGr
         auxr = aLr / fl.gammaL + aGr / fl.gammaG
         rL = (aLr / fl.gammaL) / auxr
@@ -439,7 +441,7 @@ class StaggeredFVBase(PipeScheme):
             # guarda de consistência muito fina junto a 0 e 1 (banda limit_band):
             # anula a derivada para fora do intervalo físico; a perda de massa é
             # desprezível porque a relaxação já anula o fluxo da fase ausente
-            aG = Y[1:N + 1, SLOT_ALPHA]
+            aG = Y[1 : N + 1, SLOT_ALPHA]
             d = self.limit_band
             r_lo = xp.clip(aG / d, 0.0, 1.0)
             r_hi = xp.clip((1.0 - aG) / d, 0.0, 1.0)
@@ -497,8 +499,8 @@ class StaggeredTwoFluidFV(StaggeredFVBase):
         ic, iff = tc["inp"], tf["inp"]
         Sc, Sf = tc["S"], tf["S"]
 
-        qL = Y[0:N + 1, SLOT_QL]
-        qG = Y[0:N + 1, SLOT_QG]
+        qL = Y[0 : N + 1, SLOT_QL]
+        qG = Y[0 : N + 1, SLOT_QG]
         daG, dPT = self._mass_rates(Y, Yc, qL, qG, tc)
 
         # --- momento
@@ -553,7 +555,7 @@ class StaggeredTwoFluidFV(StaggeredFVBase):
         tau = self.relax_time
         if tau > 0:
             dband = self.alpha_band
-            aG_f = iff.alphaG                                   # valor cortado (fechamentos)
+            aG_f = iff.alphaG  # valor cortado (fechamentos)
             # fração REAL da célula doadora (upwind pelo sentido da vazão de cada fase):
             # uma célula sem gás não pode ser drenada de gás
             # (chaveamento bem mais abrupto aqui: a mistura suave "vazaria" parte da
@@ -565,7 +567,7 @@ class StaggeredTwoFluidFV(StaggeredFVBase):
             aL_raw = 1.0 - (wLs * aG_c_raw[:-1] + (1.0 - wLs) * aG_c_raw[1:])
             # pesos pela fração REAL da célula doadora: o fluxo da fase ausente na
             # célula a montante é relaxado para o valor sem escorregamento (-> 0)
-            wG = xp.clip(aG_raw / dband, 0.0, 1.0)          # 1 longe do limite
+            wG = xp.clip(aG_raw / dband, 0.0, 1.0)  # 1 longe do limite
             wL = xp.clip(aL_raw / dband, 0.0, 1.0)
             vL_f = qL / (iff.rhoL * (1.0 - aG_f) * Area)
             vG_f = qG / (iff.rhoG * aG_f * Area)
@@ -603,11 +605,11 @@ class StaggeredDriftFluxFV(StaggeredFVBase):
         Y = np.asarray(Y, float).copy()
         if self.ic_holdup == "correlation":
             N = self.N
-            Yc = Y[0:N + 2].copy()
+            Yc = Y[0 : N + 2].copy()
             for s_, _ in self.phases:
-                Yc[1:N + 1, s_] = 0.5 * (Y[0:N, s_] + Y[1:N + 1, s_])
+                Yc[1 : N + 1, s_] = 0.5 * (Y[0:N, s_] + Y[1 : N + 1, s_])
             tc = self.model.conservative_terms(Yc, self.theta_nodes)
-            Y[0:N + 2, SLOT_ALPHA] = self.bk.to_numpy(tc["HG"])
+            Y[0 : N + 2, SLOT_ALPHA] = self.bk.to_numpy(tc["HG"])
         return Y
 
     def _rhs_phases(self, Y, Yc, Yf, tc, tf):
@@ -615,25 +617,27 @@ class StaggeredDriftFluxFV(StaggeredFVBase):
         N = self.N
         p = self.model.params
         Area = tc["Area"]
-        qL = Y[0:N + 1, SLOT_QL]
-        qG = Y[0:N + 1, SLOT_QG]
+        qL = Y[0 : N + 1, SLOT_QL]
+        qG = Y[0 : N + 1, SLOT_QG]
         qM = qL + qG
         # --- massas (iguais ao modelo a dois fluidos)
         daG, dPT = self._mass_rates(Y, Yc, qL, qG, tc)
-        daG_c, dPT_c = self._mass_primitive(Y, qL, qG, tc, limit=False)     # taxas primitivas (restrição)
+        daG_c, dPT_c = self._mass_primitive(Y, qL, qG, tc, limit=False)  # taxas primitivas (restrição)
         # --- momento da mistura nas faces
         ones_f = xp.ones(N + 1)
         Gamma_f = xp.pi * p.D * tf["tension"]
-        dqM, _ = self._momentum(qM, tf["rhoS"], ones_f, tc["P"], xp.zeros(N + 2), Gamma_f, Area, None, comp_c=tc["C_mix"])
+        dqM, _ = self._momentum(
+            qM, tf["rhoS"], ones_f, tc["P"], xp.zeros(N + 2), Gamma_f, Area, None, comp_c=tc["C_mix"]
+        )
         # --- divisão entre as fases: restrição de escorregamento diferenciada
         HG_c = xp.clip(Yc[:, SLOT_ALPHA], 0.0, 1.0)
-        w = self._switch(qM, None)                                   # peso doador pela vazão da mistura
+        w = self._switch(qM, None)  # peso doador pela vazão da mistura
         HG_f = w * HG_c[:-1] + (1.0 - w) * HG_c[1:]
-        dHG_c = xp.concatenate([xp.zeros(1), daG_c, xp.zeros(1)])   # fantasmas: taxa nula
+        dHG_c = xp.concatenate([xp.zeros(1), daG_c, xp.zeros(1)])  # fantasmas: taxa nula
         dPT_cf = xp.concatenate([xp.zeros(1), dPT_c, xp.zeros(1)])
         dHG_f = w * dHG_c[:-1] + (1.0 - w) * dHG_c[1:]
         dP_f = 0.5 * (dPT_cf[:-1] + dPT_cf[1:]) * p.PR
-        den = tf["dHGdqG"] - tf["dHGdqL"]                            # > 0 (mais gás -> mais HG; mais líquido -> menos HG)
+        den = tf["dHGdqG"] - tf["dHGdqL"]  # > 0 (mais gás -> mais HG; mais líquido -> menos HG)
         den = xp.maximum(den, self.drift_den_min)
         g = tf["HG"] - HG_f
         dqG = (dHG_f - tf["dHGdP"] * dP_f - tf["dHGdqL"] * dqM - g / self.drift_relax) / den
@@ -654,17 +658,21 @@ class StaggeredSinglePhaseFV(StaggeredFVBase):
         slot_q = self.phases[0][0]
         Area = tc["Area"]
         h = self._h_x
-        q = Y[0:N + 1, slot_q]
+        q = Y[0 : N + 1, slot_q]
         dq_dx = (q[1:] - q[:-1]) / h
-        C = tc["C"][1:N + 1]
+        C = tc["C"][1 : N + 1]
         dPT = -(1.0 / Area / C / p.PR) * dq_dx
         ones_f = xp.ones(N + 1)
         dq, _ = self._momentum(q, tf["rho"], ones_f, tc["P"], xp.zeros(N + 2), tf["Gamma"], Area)
         return self._pack(None, dPT, {slot_q: dq})
 
 
-_STAGGERED_BY_MODEL = {"twofluid": StaggeredTwoFluidFV, "beggs_brill": StaggeredDriftFluxFV,
-                       "liquid": StaggeredSinglePhaseFV, "gas": StaggeredSinglePhaseFV}
+_STAGGERED_BY_MODEL = {
+    "twofluid": StaggeredTwoFluidFV,
+    "beggs_brill": StaggeredDriftFluxFV,
+    "liquid": StaggeredSinglePhaseFV,
+    "gas": StaggeredSinglePhaseFV,
+}
 
 
 def staggered_scheme(model, mesh, settings=None):
@@ -684,21 +692,21 @@ def _mass_map(scheme, Y, direction):
     fl = scheme.model.fluid
     PR = scheme.model.params.PR
     if direction == "to_mass":
-        P = np.maximum(Y[1:N + 1, 1] * PR, 1e3)
+        P = np.maximum(Y[1 : N + 1, 1] * PR, 1e3)
         # sem corte em [0, 1] (cópia: a coluna é sobrescrita logo abaixo): T é suave e
         # invertível também num pequeno undershoot/overshoot de alphaG, desde que
         # alphaG > -gammaG/gammaL (ali o determinante de dT/dx se anula)
-        aG = Y[1:N + 1, 0].copy()
+        aG = Y[1 : N + 1, 0].copy()
         rhoL, rhoG, _, _ = fl.props(P)
-        Y[1:N + 1, 0] = rhoG * aG
-        Y[1:N + 1, 1] = rhoL * (1.0 - aG)
+        Y[1 : N + 1, 0] = rhoG * aG
+        Y[1 : N + 1, 1] = rhoL * (1.0 - aG)
     else:
-        mG = Y[1:N + 1, 0]
-        mL = Y[1:N + 1, 1]
+        mG = Y[1 : N + 1, 0]
+        mL = Y[1 : N + 1, 1]
         P = solve_pressure(fl, mL, mG, P0=None, clip=False, bk=NUMPY)
         rhoL, rhoG, _, _ = fl.props(P)
-        Y[1:N + 1, 0] = mG / rhoG
-        Y[1:N + 1, 1] = P / PR
+        Y[1 : N + 1, 0] = mG / rhoG
+        Y[1 : N + 1, 1] = P / PR
     return Y
 
 
@@ -737,8 +745,8 @@ class StaggeredTwoFluidConsFV(StaggeredTwoFluidFV):
         Y = bk.asarray(Y)
         N = self.N
         PR = self.model.params.PR
-        mG = Y[1:N + 1, 0]
-        mL = Y[1:N + 1, 1]
+        mG = Y[1 : N + 1, 0]
+        mL = Y[1 : N + 1, 1]
         P = self._solve_P(mL, mG)
         rhoL, rhoG, _, _ = self.model.fluid.props(P)
         aG = xp.clip(xp.maximum(mG, 0.0) / rhoG, 0.0, 1.0)
@@ -751,8 +759,8 @@ class StaggeredTwoFluidConsFV(StaggeredTwoFluidFV):
         Yp = bk.asarray(Yp)
         N = self.N
         PR = self.model.params.PR
-        P = xp.maximum(Yp[1:N + 1, 1] * PR, 1e3)
-        aG = xp.clip(Yp[1:N + 1, 0], 0.0, 1.0)
+        P = xp.maximum(Yp[1 : N + 1, 1] * PR, 1e3)
+        aG = xp.clip(Yp[1 : N + 1, 0], 0.0, 1.0)
         rhoL, rhoG, _, _ = self.model.fluid.props(P)
         Y = bk.set(Yp, (slice(1, N + 1), 0), rhoG * aG)
         return bk.set(Y, (slice(1, N + 1), 1), rhoL * (1.0 - aG))
@@ -779,13 +787,13 @@ class StaggeredTwoFluidConsFV(StaggeredTwoFluidFV):
             raise NotImplementedError("fv_upwind_cons só está implementado para o modelo a dois fluidos")
         bk = self.bk
         Y = bk.asarray(Y)
-        Yp = self.to_primitive(Y)          # células em variáveis primitivas (contornos já preenchidos)
-        dY = super().rhs(Yp)               # momento (+ relaxação) com as variáveis primitivas
+        Yp = self.to_primitive(Y)  # células em variáveis primitivas (contornos já preenchidos)
+        dY = super().rhs(Yp)  # momento (+ relaxação) com as variáveis primitivas
         # substitui as equações de massa pela forma conservativa
         N = self.N
         Area = self.xp.pi * self.model.params.D**2 / 4.0
-        qL = Y[0:N + 1, SLOT_QL]
-        qG = Y[0:N + 1, SLOT_QG]
+        qL = Y[0 : N + 1, SLOT_QL]
+        qG = Y[0 : N + 1, SLOT_QG]
         dY = bk.set(dY, (slice(1, N + 1), 0), -(qG[1:] - qG[:-1]) / (Area * self._h_x))
         return bk.set(dY, (slice(1, N + 1), 1), -(qL[1:] - qL[:-1]) / (Area * self._h_x))
 

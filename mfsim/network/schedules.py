@@ -1,5 +1,6 @@
 """Especificações no tempo (schedules): constante, linear por partes (a TimeTable legada) e
 rampa. Conversão de e para a forma legada (escalar | (t, v)) e JSON."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -7,7 +8,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-UNSPECIFIED = -1.0      # valor de uma especificação ausente (sentinela legada do struct `dados`)
+UNSPECIFIED = -1.0  # valor de uma especificação ausente (sentinela legada do struct `dados`)
 
 
 class Schedule(ABC):

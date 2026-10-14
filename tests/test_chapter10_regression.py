@@ -13,8 +13,9 @@ def _run(key, tol):
     case, raw = load_chapter10_case(key)
     model = build_model(case)
     Tl, Xl = legacy_states(raw)
-    T, X, info = integrate_implicit(model, Xl[:, 0], Tl, rtol=1e-4, atol=1e-6,
-                                    bounds=state_bounds(model), progress=False)
+    T, X, info = integrate_implicit(
+        model, Xl[:, 0], Tl, rtol=1e-4, atol=1e-6, bounds=state_bounds(model), progress=False
+    )
     for pb in model.pipes:
         slots = pb.free % 4
         seg = slice(pb.offset, pb.offset + pb.n_states)
@@ -44,11 +45,14 @@ def test_staggered_steady_state_unique():
     """O esquema de volumes finitos converge para o mesmo estado estacionário em malhas diferentes."""
     import copy
     from mfsim.simulation import steady_state
+
     case, raw = load_chapter10_case("10.1.1")
     vals = []
     for nel in (10, 50):
         c = copy.deepcopy(case)
-        c.pipes[0].n_elements = np.array([nel]); c.pipes[0].ic = None; c.set_method("fv_upwind")
+        c.pipes[0].n_elements = np.array([nel])
+        c.pipes[0].ic = None
+        c.set_method("fv_upwind")
         model, X, info = steady_state(c, X0="auto", verbose=False)
         assert info["converged"]
         E, Ys, _, _ = model.assemble(0.0, X)

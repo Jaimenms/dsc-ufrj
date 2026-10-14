@@ -119,12 +119,12 @@ class GalerkinScheme(NodalScheme):
         super().__init__(model, mesh, settings)
         nq = int(self.settings.get("n_quad", 3))
         a, w = leggauss(nq)
-        self.xi = 0.5 + 0.5 * a      # coordenada local em [0, 1]
-        self.wq = 0.5 * w            # pesos normalizados (soma 1)
+        self.xi = 0.5 + 0.5 * a  # coordenada local em [0, 1]
+        self.wq = 0.5 * w  # pesos normalizados (soma 1)
         self.M = _mass_matrix(self.h)
         self.Minv = np.linalg.inv(self.M)
-        self._phi_right = self.xi          # phi do nó direito
-        self._phi_left = 1.0 - self.xi     # phi do nó esquerdo
+        self._phi_right = self.xi  # phi do nó direito
+        self._phi_left = 1.0 - self.xi  # phi do nó esquerdo
         self._thq = np.repeat(self.theta_elem, self.xi.size)
         self._to_backend()
 
@@ -155,10 +155,10 @@ class GalerkinScheme(NodalScheme):
         A = A.reshape(N, nq, nv, nv)
         B = B.reshape(N, nq, nv)
         ys = self._slot_values(Y)
-        dy = ys[1:] - ys[:-1]                                   # (N, nv)
-        Ady = xp.einsum("eqij,ej->eqi", A, dy)                  # (N, nq, nv)
+        dy = ys[1:] - ys[:-1]  # (N, nv)
+        Ady = xp.einsum("eqij,ej->eqi", A, dy)  # (N, nq, nv)
         hB = self._h_x[:, None, None] * B
-        integrand = Ady + hB                                    # (N, nq, nv)
+        integrand = Ady + hB  # (N, nq, nv)
         R_left = xp.einsum("q,eqi->ei", self._wq_x * self._phi_l_x, integrand)
         R_right = xp.einsum("q,eqi->ei", self._wq_x * self._phi_r_x, integrand)
         R = bk.add(bk.add(xp.zeros((N + 1, nv)), slice(None, -1), R_left), slice(1, None), R_right)

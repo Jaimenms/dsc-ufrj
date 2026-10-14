@@ -23,6 +23,7 @@ from .network.system import NetworkSystem
 class CompiledNetwork:
     def __init__(self, model: NetworkSystem):
         import jax
+
         self.model = model
         self.backend = get_backend("jax")
         self.system = NetworkSystem(model.network, scheme_settings=model.scheme_settings, bk=self.backend)

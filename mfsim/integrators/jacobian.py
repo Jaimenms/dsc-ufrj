@@ -19,7 +19,7 @@ def color_groups(S):
     colors = -np.ones(n, dtype=int)
     order = np.argsort(-np.diff(C.indptr))  # maior grau primeiro
     for i in order:
-        neigh = C.indices[C.indptr[i]:C.indptr[i + 1]]
+        neigh = C.indices[C.indptr[i] : C.indptr[i + 1]]
         used = set(colors[neigh][colors[neigh] >= 0].tolist())
         c = 0
         while c in used:
@@ -48,9 +48,9 @@ def colored_jacobian(fun, x, f0=None, S=None, groups=None, rel=1e-7, abs_=1e-9):
         h = rel * np.abs(x[g]) + abs_
         xp = x.copy()
         xp[g] += h
-        df = (fun(xp) - f0)
+        df = fun(xp) - f0
         for j, hj in zip(g, h):
-            r = S.indices[S.indptr[j]:S.indptr[j + 1]]
+            r = S.indices[S.indptr[j] : S.indptr[j + 1]]
             rows.append(r)
             cols.append(np.full(r.size, j))
             vals.append(df[r] / hj)

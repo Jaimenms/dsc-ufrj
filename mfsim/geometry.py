@@ -6,12 +6,26 @@ import numpy as np
 
 # Polinômios (calcula_nivel_estratificado.m) usados como estimativa inicial
 _P_H = np.array(
-    [0.00000000000197, -3.66048527474641, 9.15121318685793, -8.89104962298284,
-     4.18536124761860, -1.75567780293538, 0.98531913309307]
+    [
+        0.00000000000197,
+        -3.66048527474641,
+        9.15121318685793,
+        -8.89104962298284,
+        4.18536124761860,
+        -1.75567780293538,
+        0.98531913309307,
+    ]
 )
 _P_BETA = 1.0e2 * np.array(
-    [0.00000000000056, -0.67451330764088, 1.68628326909991, -1.58733054088785,
-     0.69471254223251, -0.17280444315654, 0.05824216671205]
+    [
+        0.00000000000056,
+        -0.67451330764088,
+        1.68628326909991,
+        -1.58733054088785,
+        0.69471254223251,
+        -0.17280444315654,
+        0.05824216671205,
+    ]
 )
 
 
@@ -28,6 +42,7 @@ def stratified_level(alphaG, tol=1e-9, max_iter=100, bk=None):
     todos os pontos com `while_loop` e o mesmo critério.
     """
     from .backend import NUMPY
+
     bk = bk or NUMPY
     xp = bk.xp
     if not bk.is_jax:
@@ -121,7 +136,7 @@ def pipe_mesh(x, y, z, n_elements, grading=None):
         if n == 1 or abs(g - 1.0) < 1e-12:
             h_list.append(np.full(n, dL[i] / n))
         else:
-            q = g ** (1.0 / (n - 1))                         # razão entre elementos consecutivos
+            q = g ** (1.0 / (n - 1))  # razão entre elementos consecutivos
             h1 = dL[i] * (1.0 - q) / (1.0 - q**n)
             h_list.append(h1 * q ** np.arange(n))
     h = np.concatenate(h_list)

@@ -22,9 +22,26 @@ from .jacobian import color_groups, colored_jacobian
 
 
 class ImplicitBDF:
-    def __init__(self, fun, S=None, rtol=1e-4, atol=1e-6, max_step=np.inf, min_step=1e-8,
-                 newton_tol=1e-3, max_newton=12, max_order=2, bounds=None, verbose=False,
-                 jac_reuse=20, fixed_step=None, transform=None, inverse=None, transform_jac=None, jac_fun=None):
+    def __init__(
+        self,
+        fun,
+        S=None,
+        rtol=1e-4,
+        atol=1e-6,
+        max_step=np.inf,
+        min_step=1e-8,
+        newton_tol=1e-3,
+        max_newton=12,
+        max_order=2,
+        bounds=None,
+        verbose=False,
+        jac_reuse=20,
+        fixed_step=None,
+        transform=None,
+        inverse=None,
+        transform_jac=None,
+        jac_fun=None,
+    ):
         """fixed_step: se dado, integra com passo fixo (Euler implícito se
         max_order=1) sem controle de erro; o passo só é reduzido temporariamente
         quando o Newton falha.
@@ -42,14 +59,16 @@ class ImplicitBDF:
         self.transform = transform
         self.inverse = inverse
         self.transform_jac = transform_jac
-        self.slow_exit = True    # recálculo da Jacobiana dentro do Newton quando a convergência é lenta (necessário nos casos de rede com eventos, ex. gas lift; os scripts do severe slug desligam)
-        self.predict_space = "x"     # preditor e erro local em x (primitivas) ou "T" (conservadas)
-        self.error_space = None       # espaço da estimativa de erro local (None: o mesmo do preditor)
-        self.accum = None             # g(t, x) opcional, integrado com a recorrência BDF (ver integrate)
+        self.slow_exit = True  # recálculo da Jacobiana dentro do Newton quando a convergência é lenta (necessário nos casos de rede com eventos, ex. gas lift; os scripts do severe slug desligam)
+        self.predict_space = "x"  # preditor e erro local em x (primitivas) ou "T" (conservadas)
+        self.error_space = None  # espaço da estimativa de erro local (None: o mesmo do preditor)
+        self.accum = None  # g(t, x) opcional, integrado com a recorrência BDF (ver integrate)
         self._hist_w = (1.0, 0.0)
         self._last_err_vec = None
-        self.jt_refresh = "call"     # dT/dx reavaliada: a cada Newton ("call"), a cada iteração ("iter") ou só com J ("jac")
-        self.fd_rel, self.fd_abs = 1e-7, 1e-9   # passo das diferenças finitas da Jacobiana colorida
+        self.jt_refresh = (
+            "call"  # dT/dx reavaliada: a cada Newton ("call"), a cada iteração ("iter") ou só com J ("jac")
+        )
+        self.fd_rel, self.fd_abs = 1e-7, 1e-9  # passo das diferenças finitas da Jacobiana colorida
         self.S = S
         self.rtol, self.atol = rtol, atol
         self.max_step, self.min_step = max_step, min_step
@@ -59,8 +78,8 @@ class ImplicitBDF:
         self.bounds = bounds
         self.verbose = verbose
         self.jac_reuse = jac_reuse
-        self.jac_fun = jac_fun          # opcional: jac_fun(t, x) -> Jacobiana densa/esparsa de f (ex.: JAX)
-        self.cooldown_steps = 3    # passos sem crescimento do passo após uma rejeição
+        self.jac_fun = jac_fun  # opcional: jac_fun(t, x) -> Jacobiana densa/esparsa de f (ex.: JAX)
+        self.cooldown_steps = 3  # passos sem crescimento do passo após uma rejeição
         self.groups = color_groups(S) if S is not None else None
         self.n_rhs = 0
         self.n_jac = 0
@@ -88,21 +107,33 @@ class ImplicitBDF:
             self._JT = sp.csc_matrix(self.transform_jac(x))
         elif self.transform is not None:
             # Jacobiana (bloco-diagonal) do mapa conservativo
-            self._JT = colored_jacobian(self.transform, x, f0=self.transform(x), S=self.S, groups=self.groups) \
-                if self.S is not None else sp.csc_matrix(np.column_stack(
-                    [(self.transform(x + np.eye(n)[j] * (1e-7 * abs(x[j]) + 1e-9)) - self.transform(x)) / (1e-7 * abs(x[j]) + 1e-9)
-                     for j in range(n)]))
+            self._JT = (
+                colored_jacobian(self.transform, x, f0=self.transform(x), S=self.S, groups=self.groups)
+                if self.S is not None
+                else sp.csc_matrix(
+                    np.column_stack(
+                        [
+                            (self.transform(x + np.eye(n)[j] * (1e-7 * abs(x[j]) + 1e-9)) - self.transform(x))
+                            / (1e-7 * abs(x[j]) + 1e-9)
+                            for j in range(n)
+                        ]
+                    )
+                )
+            )
         if self.jac_fun is not None:
             self._J = sp.csc_matrix(self.jac_fun(t, x))
         elif self.S is None:
             J = np.empty((n, n))
             for j in range(n):
                 h = 1e-7 * abs(x[j]) + 1e-9
-                xp = x.copy(); xp[j] += h
+                xp = x.copy()
+                xp[j] += h
                 J[:, j] = (self._f(t, xp) - f0) / h
             self._J = sp.csc_matrix(J)
         else:
-            self._J = colored_jacobian(lambda y: self._f(t, y), x, f0=f0, S=self.S, groups=self.groups, rel=self.fd_rel, abs_=self.fd_abs)
+            self._J = colored_jacobian(
+                lambda y: self._f(t, y), x, f0=f0, S=self.S, groups=self.groups, rel=self.fd_rel, abs_=self.fd_abs
+            )
         self.n_jac += 1
         self._jac_age = 0
         self._LU = None
@@ -137,7 +168,7 @@ class ImplicitBDF:
         err_prev = np.inf
         n_grow = 0
         n_refresh = 0
-        self._err_hist = []          # diagnóstico: erro (RMS escalado) por iteração
+        self._err_hist = []  # diagnóstico: erro (RMS escalado) por iteração
         self._last_dx = None
         for it in range(self.max_newton):
             try:
@@ -159,7 +190,7 @@ class ImplicitBDF:
             err = np.sqrt(np.mean((dx / scale) ** 2))
             self._err_hist.append(float(err))
             self._last_dx = dx
-            self._last_dx_scaled = dx / scale      # diagnóstico: componentes que dominam a última atualização de Newton
+            self._last_dx_scaled = dx / scale  # diagnóstico: componentes que dominam a última atualização de Newton
             # divergência: atualização enorme ou crescendo
             if err > 1e6:
                 self._fail_reason = "huge"
@@ -228,7 +259,7 @@ class ImplicitBDF:
         # conservação de massa de forma exata (fluxos de contorno vs estoque)
         acc_hist = [np.zeros(np.asarray(self.accum(t, x), float).shape)] if self.accum is not None else None
         out_acc = [acc_hist[0].copy()] if acc_hist is not None else None
-        self._out, self._t_eval = out, t_eval      # referências vivas: trajetória parcial acessível se a integração falhar
+        self._out, self._t_eval = out, t_eval  # referências vivas: trajetória parcial acessível se a integração falhar
         h = first_step or min(1e-2 * (t_eval[1] - t_eval[0]) if t_eval.size > 1 else 1e-2, self.max_step)
         if self.fixed_step:
             h = min(h, self.fixed_step)
@@ -270,12 +301,12 @@ class ImplicitBDF:
                     pred_ = self._Tinv(Tx + rr * (Tx - Txm1))
                 else:
                     pred_ = x + rr * (x - xm1)
-                w1, w2 = (1 + rr) ** 2 / (1 + 2 * rr), -rr**2 / (1 + 2 * rr)
+                w1, w2 = (1 + rr) ** 2 / (1 + 2 * rr), -(rr**2) / (1 + 2 * rr)
                 self._hist_w = (w1, w2)
                 return pred_, w1 * Tx + w2 * Txm1, (1 + rr) / (1 + 2 * rr), rr
 
             if at_bound:
-                order = 1   # histórico do BDF2 inconsistente com estados projetados nos limites
+                order = 1  # histórico do BDF2 inconsistente com estados projetados nos limites
             pred, c_hist, gcoef, r = predict(order)
             self._slow = False
             x_new, ok, nit = self._newton(t_new, h, pred, c_hist, gcoef)
@@ -303,7 +334,7 @@ class ImplicitBDF:
                 n_fail_row += 1
                 cooldown = self.cooldown_steps
                 if n_fail_row >= 2:
-                    order = 1      # recua para BDF1 (mais robusto) após falhas seguidas
+                    order = 1  # recua para BDF1 (mais robusto) após falhas seguidas
                 if h < self.min_step:
                     raise RuntimeError(f"passo mínimo atingido em t={t:.4g}")
                 continue
@@ -321,9 +352,9 @@ class ImplicitBDF:
             else:
                 err_est = (r / (1 + 2 * r)) * (xe - pe) if len(hist) >= 2 else 0.5 * (xe - pe)
             err = np.sqrt(np.mean((err_est / scale) ** 2))
-            self._last_err_vec = err_est / scale        # diagnóstico
+            self._last_err_vec = err_est / scale  # diagnóstico
             if self.fixed_step:
-                err = 0.5   # sem controle de erro em passo fixo
+                err = 0.5  # sem controle de erro em passo fixo
             if err > 1.0:
                 h *= max(0.2, 0.9 * err ** (-1.0 / (order + 1)))
                 self.n_rejected += 1
@@ -336,18 +367,26 @@ class ImplicitBDF:
                 continue
             # aceita
             n_fail_row = 0
-            at_bound = self._clipped or (self.bounds is not None and bool(np.any((x_new <= self.bounds[0]) | (x_new >= self.bounds[1]))))
+            at_bound = self._clipped or (
+                self.bounds is not None and bool(np.any((x_new <= self.bounds[0]) | (x_new >= self.bounds[1])))
+            )
             if acc_hist is not None:
                 w1, w2 = self._hist_w
-                acc_new = w1 * acc_hist[-1] + (w2 * acc_hist[-2] if w2 != 0.0 else 0.0) + gcoef * h * np.asarray(self.accum(t_new, x_new), float)
+                acc_new = (
+                    w1 * acc_hist[-1]
+                    + (w2 * acc_hist[-2] if w2 != 0.0 else 0.0)
+                    + gcoef * h * np.asarray(self.accum(t_new, x_new), float)
+                )
                 acc_hist.append(acc_new)
                 if len(acc_hist) > 3:
                     acc_hist.pop(0)
             t, x = t_new, x_new
             f0 = self._f(t, x)
-            hist.append(x.copy()); t_hist.append(t)
+            hist.append(x.copy())
+            t_hist.append(t)
             if len(hist) > 3:
-                hist.pop(0); t_hist.pop(0)
+                hist.pop(0)
+                t_hist.pop(0)
             self.n_steps += 1
             self._jac_age += 1
             if self._jac_age >= self.jac_reuse or nit > 4:
@@ -381,27 +420,54 @@ class ImplicitBDF:
             if self.fixed_step:
                 h = min(self.fixed_step, h)
             if self.verbose and self.n_steps % 50 == 0:
-                print(f"  t={t:10.3f} h={h:9.3e} ord={order} steps={self.n_steps} rej={self.n_rejected} "
-                      f"rhs={self.n_rhs} jac={self.n_jac} ({time.time()-t_start:.1f}s)")
+                print(
+                    f"  t={t:10.3f} h={h:9.3e} ord={order} steps={self.n_steps} rej={self.n_rejected} "
+                    f"rhs={self.n_rhs} jac={self.n_jac} ({time.time()-t_start:.1f}s)"
+                )
                 if h < 1e-3 and self._last_err_vec is not None:
                     # diagnóstico de passo rastejante: componentes que dominam o erro local e a última atualização de Newton
-                    ev = np.abs(self._last_err_vec); top = np.argsort(ev)[-5:][::-1]
-                    print("    erro local dominante (índice: erro/escala, x):", ", ".join(f"{int(i)}: {ev[i]:.2f}, {x[i]:.4g}" for i in top))
+                    ev = np.abs(self._last_err_vec)
+                    top = np.argsort(ev)[-5:][::-1]
+                    print(
+                        "    erro local dominante (índice: erro/escala, x):",
+                        ", ".join(f"{int(i)}: {ev[i]:.2f}, {x[i]:.4g}" for i in top),
+                    )
                     dxs = getattr(self, "_last_dx_scaled", None)
                     if dxs is not None:
-                        ad = np.abs(dxs); topn = np.argsort(ad)[-5:][::-1]
-                        print(f"    último Newton ({getattr(self, '_fail_reason', '?')}, {len(self._err_hist)} it, erros {np.round(self._err_hist[-4:], 3).tolist()}): dx/escala dominante:",
-                              ", ".join(f"{int(i)}: {ad[i]:.2f}" for i in topn))
+                        ad = np.abs(dxs)
+                        topn = np.argsort(ad)[-5:][::-1]
+                        print(
+                            f"    último Newton ({getattr(self, '_fail_reason', '?')}, {len(self._err_hist)} it, erros {np.round(self._err_hist[-4:], 3).tolist()}): dx/escala dominante:",
+                            ", ".join(f"{int(i)}: {ad[i]:.2f}" for i in topn),
+                        )
         X = np.array(out).T
-        info = dict(success=True, n_steps=self.n_steps, n_rejected=self.n_rejected, n_rhs=self.n_rhs,
-                    n_jac=self.n_jac, cpu=time.time() - t_start)
+        info = dict(
+            success=True,
+            n_steps=self.n_steps,
+            n_rejected=self.n_rejected,
+            n_rhs=self.n_rhs,
+            n_jac=self.n_jac,
+            cpu=time.time() - t_start,
+        )
         if out_acc is not None:
-            info["accum"] = np.array(out_acc).T          # (m, nt): integral BDF-consistente de g
+            info["accum"] = np.array(out_acc).T  # (m, nt): integral BDF-consistente de g
         return t_eval, X, info
 
 
-def integrate_implicit(model, X0, t_eval, rtol=1e-4, atol=1e-6, max_step=np.inf, bounds=None,
-                       verbose=False, progress=True, jax=False, tol_range=None, **kw):
+def integrate_implicit(
+    model,
+    X0,
+    t_eval,
+    rtol=1e-4,
+    atol=1e-6,
+    max_step=np.inf,
+    bounds=None,
+    verbose=False,
+    progress=True,
+    jax=False,
+    tol_range=None,
+    **kw,
+):
     """Integra o modelo com o BDF implícito; jax=True usa o lado direito compilado e a
     Jacobiana exata (mfsim.compiled) em vez de diferenças finitas coloridas.
 
@@ -418,12 +484,14 @@ def integrate_implicit(model, X0, t_eval, rtol=1e-4, atol=1e-6, max_step=np.inf,
     fun = model.rhs
     if jax:
         from ..compiled import get_jax
+
         fun, jac_fun = get_jax(model)
         kw.setdefault("jac_fun", jac_fun)
-    bdf = ImplicitBDF(fun, S=S, rtol=rtol, atol=atol, max_step=max_step, bounds=bounds,
-                      verbose=verbose, **kw)
+    bdf = ImplicitBDF(fun, S=S, rtol=rtol, atol=atol, max_step=max_step, bounds=bounds, verbose=verbose, **kw)
     T, X, info = bdf.integrate(t_eval, X0, breakpoints=model.spec_breakpoints())
     if progress:
-        print(f"[implicit BDF] steps={info['n_steps']} rejected={info['n_rejected']} rhs={info['n_rhs']} "
-              f"jac={info['n_jac']} | {info['cpu']:.1f}s")
+        print(
+            f"[implicit BDF] steps={info['n_steps']} rejected={info['n_rejected']} rhs={info['n_rhs']} "
+            f"jac={info['n_jac']} | {info['cpu']:.1f}s"
+        )
     return T, X, info

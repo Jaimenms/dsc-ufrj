@@ -15,8 +15,7 @@ from .base import G, PipeModel, SLOT_P, SLOT_QG, SLOT_QL
 
 
 class _SinglePhase(PipeModel):
-    A_pattern = np.array([[0, 1],
-                          [2, 3]])
+    A_pattern = np.array([[0, 1], [2, 3]])
     B_pattern = np.array([0, 4])
     nF = 4
     phase = "L"
@@ -43,22 +42,32 @@ class _SinglePhase(PipeModel):
         f, Re = fanning(v, rho, mu, p.D, p.eps, bk=bk)
         tau = f * rho * v * vabs(v, bk) / 2.0
         Gamma = Per * tau
-        F = xp.stack([
-            (1.0 / Area / C / p.PR),
-            Area * (1.0 - C * v * xp.abs(v)) * p.PR,
-            2.0 * xp.abs(v),
-            Gamma + G * Area * rho * xp.sin(th),
-        ])
+        F = xp.stack(
+            [
+                (1.0 / Area / C / p.PR),
+                Area * (1.0 - C * v * xp.abs(v)) * p.PR,
+                2.0 * xp.abs(v),
+                Gamma + G * Area * rho * xp.sin(th),
+            ]
+        )
         if not outputs:
             return F
         key = self.phase
         out = {
-            "inclinacao": th, "diametro": np.full(n, p.D), "pressao": PT * p.PR / 1e5,
-            f"vazaoMassa{key}": q, f"vazaoVol{key}": q / rho, f"velocidade{key}": v,
-            f"velSom{key}": 1 / np.sqrt(C), f"carga{key}": F[3] / Area * 100 / 1e5,
-            f"densidade{key}": rho, f"viscosidade{key}": np.full(n, mu),
-            "alfaL": np.full(n, 1.0 if key == "L" else 0.0), "alfaG": np.full(n, 0.0 if key == "L" else 1.0),
-            f"Gamma{key}": Gamma, f"tau{key}": tau,
+            "inclinacao": th,
+            "diametro": np.full(n, p.D),
+            "pressao": PT * p.PR / 1e5,
+            f"vazaoMassa{key}": q,
+            f"vazaoVol{key}": q / rho,
+            f"velocidade{key}": v,
+            f"velSom{key}": 1 / np.sqrt(C),
+            f"carga{key}": F[3] / Area * 100 / 1e5,
+            f"densidade{key}": rho,
+            f"viscosidade{key}": np.full(n, mu),
+            "alfaL": np.full(n, 1.0 if key == "L" else 0.0),
+            "alfaG": np.full(n, 0.0 if key == "L" else 1.0),
+            f"Gamma{key}": Gamma,
+            f"tau{key}": tau,
         }
         return F, out
 

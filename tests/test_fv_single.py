@@ -35,16 +35,50 @@ def _case(phase="L", order=1, tf=20.0):
     ic[:, 1] = (P_in - 0.1e5 * s / L) / PR
     ic[:, slot] = q0
     bc_in = (BC_ABSENT, BC_DIRICHLET, BC_ABSENT, BC_ABSENT)
-    bc_out = (BC_ABSENT, BC_ABSENT, BC_DIRICHLET, BC_ABSENT) if phase == "L" else (BC_ABSENT, BC_ABSENT, BC_ABSENT, BC_DIRICHLET)
-    pipe = Pipe.legacy("1", "1", "2", [0.0, 0.0], [0.0, L], [0.0, 10.0], [N], D=D, roughness=1e-5, model=model, regime=4, method="fv_upwind",
-                       bc_in=bc_in, bc_out=bc_out, ic=ic, extra={"fv_order": order, "q_switch": 1e-2 * q0})
-    return Network.build(f"single_{phase}", fluid, vertices, [pipe], t0=0.0, tf=tf, dt_out=1.0, PR=PR, integrator="implicit",
-                         quadrature_order=2, max_step=np.inf, atol=1e-6, rtol=1e-4)
+    bc_out = (
+        (BC_ABSENT, BC_ABSENT, BC_DIRICHLET, BC_ABSENT)
+        if phase == "L"
+        else (BC_ABSENT, BC_ABSENT, BC_ABSENT, BC_DIRICHLET)
+    )
+    pipe = Pipe.legacy(
+        "1",
+        "1",
+        "2",
+        [0.0, 0.0],
+        [0.0, L],
+        [0.0, 10.0],
+        [N],
+        D=D,
+        roughness=1e-5,
+        model=model,
+        regime=4,
+        method="fv_upwind",
+        bc_in=bc_in,
+        bc_out=bc_out,
+        ic=ic,
+        extra={"fv_order": order, "q_switch": 1e-2 * q0},
+    )
+    return Network.build(
+        f"single_{phase}",
+        fluid,
+        vertices,
+        [pipe],
+        t0=0.0,
+        tf=tf,
+        dt_out=1.0,
+        PR=PR,
+        integrator="implicit",
+        quadrature_order=2,
+        max_step=np.inf,
+        atol=1e-6,
+        rtol=1e-4,
+    )
 
 
 @pytest.mark.parametrize("phase, order", [("L", 1), ("G", 1), ("L", 2)])
 def test_single_phase_fv_jax_matches_numpy(phase, order):
     from mfsim.compiled import build_jax_rhs
+
     model = build_model(_case(phase, order))
     assert model.pipes[0].scheme.name == "fv_upwind" and not model.conservative
     rhs_j, jac_j = build_jax_rhs(model)

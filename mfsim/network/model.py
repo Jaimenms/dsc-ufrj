@@ -16,7 +16,10 @@ from .system import NetworkSystem, PipeBlock  # noqa: F401  (PipeBlock: compatib
 
 def with_method(network: Network, method: str) -> Network:
     """Cópia rasa do grafo com o esquema `method` em todos os dutos (opções mantidas)."""
-    edges = [replace(e, scheme=SchemeSpec(type=method, options=e.scheme.options)) if isinstance(e, Pipe) else e for e in network.edges]
+    edges = [
+        replace(e, scheme=SchemeSpec(type=method, options=e.scheme.options)) if isinstance(e, Pipe) else e
+        for e in network.edges
+    ]
     return replace(network, edges=edges)
 
 

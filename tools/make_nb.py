@@ -28,8 +28,9 @@ def convert(src: Path, dst: Path):
             cells.append(new_markdown_cell("\n".join(lines)))
         else:
             cells.append(new_code_cell(body))
-    nb = new_notebook(cells=cells, metadata={"kernelspec": {"name": "python3", "display_name": "Python 3",
-                                                           "language": "python"}})
+    nb = new_notebook(
+        cells=cells, metadata={"kernelspec": {"name": "python3", "display_name": "Python 3", "language": "python"}}
+    )
     dst.parent.mkdir(parents=True, exist_ok=True)
     nbformat.write(nb, dst)
     return dst
@@ -41,7 +42,17 @@ if __name__ == "__main__":
     convert(src, dst)
     print("notebook:", dst)
     if "--execute" in sys.argv:
-        cmd = ["uv", "run", "jupyter", "nbconvert", "--to", "notebook", "--execute", "--inplace",
-               "--ExecutePreprocessor.timeout=3600", str(dst)]
+        cmd = [
+            "uv",
+            "run",
+            "jupyter",
+            "nbconvert",
+            "--to",
+            "notebook",
+            "--execute",
+            "--inplace",
+            "--ExecutePreprocessor.timeout=3600",
+            str(dst),
+        ]
         subprocess.run(cmd, check=True)
         print("executado:", dst)

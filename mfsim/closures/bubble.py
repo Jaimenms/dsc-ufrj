@@ -6,7 +6,6 @@ from ..backend import NUMPY
 from ..friction import fanning, vabs
 from .common import ClosureInputs, ClosureTerms, G_CLOSURE
 
-
 SLIP_MAX = 3.0  # m/s
 
 
@@ -33,8 +32,11 @@ def bubble(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     arg = xp.abs(2.0 * f_M * vM**3 / D)
     small = arg == 0
     arg_safe = xp.where(small, 1.0, arg)
-    dbmax = xp.where(small, xp.inf, (0.725 + 4.15 * bk.safe_sqrt(ratio)) * (inp.sigma / rhoL) ** (3.0 / 5.0)
-                     * arg_safe ** (-2.0 / 5.0))
+    dbmax = xp.where(
+        small,
+        xp.inf,
+        (0.725 + 4.15 * bk.safe_sqrt(ratio)) * (inp.sigma / rhoL) ** (3.0 / 5.0) * arg_safe ** (-2.0 / 5.0),
+    )
     db = xp.sqrt(16.0 * inp.sigma / G_CLOSURE / (rhoL - rhoG))
     db = xp.minimum(db, dbmax)
     # velocidade terminal: tese (modelo_bolhas.m, sem g e sigma/rhoL) ou Mendelson / Fan & Tsuchiya
@@ -50,7 +52,7 @@ def bubble(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     # Drew & Passman (1999); escorregamento limitado (salvaguarda para fase gás
     # quase extinta, em que vG = qG/(rhoG alphaG A) cresce sem limite)
     slip = xp.clip(inp.vG - inp.vL, -SLIP_MAX, SLIP_MAX)
-    dPL = 0.25 * rhoL * slip ** 2
+    dPL = 0.25 * rhoL * slip**2
     dPG = xp.zeros(n)
     ddPLdP = dPL / rhoL * inp.CL
     z = xp.zeros(n)
@@ -74,7 +76,17 @@ def bubble(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     GammaG = PerI * tauIG + PerG * tauG
 
     return ClosureTerms(
-        GammaL=GammaL, GammaG=GammaG, dPL=dPL, dPG=dPG,
-        ddPLdP=ddPLdP, ddPGdP=z, ddPLdalphaG=z, ddPGdalphaG=z,
-        dPI=z, hL=hL, beta=beta, tauG=tauG * xp.ones(n), tauL=tauL,
+        GammaL=GammaL,
+        GammaG=GammaG,
+        dPL=dPL,
+        dPG=dPG,
+        ddPLdP=ddPLdP,
+        ddPGdP=z,
+        ddPLdalphaG=z,
+        ddPGdalphaG=z,
+        dPI=z,
+        hL=hL,
+        beta=beta,
+        tauG=tauG * xp.ones(n),
+        tauL=tauL,
     )

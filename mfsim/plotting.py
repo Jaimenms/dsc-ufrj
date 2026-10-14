@@ -58,8 +58,9 @@ def pipe_profiles(res, k=0, keys=("P_bar", "alphaG"), it=0, legacy=None, figsize
     return fig
 
 
-def pipe_timeseries(res, k=0, keys=("alphaG", "P_bar", "qL", "qG"), nodes=None, legacy=None,
-                    figsize=(11, 7), labels=None):
+def pipe_timeseries(
+    res, k=0, keys=("alphaG", "P_bar", "qL", "qG"), nodes=None, legacy=None, figsize=(11, 7), labels=None
+):
     """Séries temporais em alguns nós (comparação Python x MATLAB)."""
     p = res.pipe(k)
     n = p["x"].size
@@ -101,6 +102,7 @@ def compare_runs(runs, k=0, key="alphaG", node=-1, ax=None, title=None, legacy=N
 def legacy_pipe_dict(raw, k=0):
     """Extrai de `saidas.tubo{k}` um dict compatível com os gráficos acima."""
     from .io_legacy import legacy_pipe_outputs, legacy_states
+
     out = legacy_pipe_outputs(raw, k)
     T, X = legacy_states(raw)
     eixos = raw.get("eixos", {})
@@ -131,6 +133,7 @@ def eigenvalue_plot(ev, ax=None, title=""):
     ax.set_title(title, fontsize=10)
     ax.grid(alpha=0.3)
     n_pos = int(np.sum(ev.real > 0))
-    ax.text(0.02, 0.95, f"{ev.size} autovalores, {n_pos} com parte real > 0", transform=ax.transAxes,
-            fontsize=8, va="top")
+    ax.text(
+        0.02, 0.95, f"{ev.size} autovalores, {n_pos} com parte real > 0", transform=ax.transAxes, fontsize=8, va="top"
+    )
     return ax

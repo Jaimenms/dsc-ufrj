@@ -6,6 +6,7 @@ integration, initial_state. Unidades SI; pressões nas especificações como "P"
 "PT" (P/PR, para round-trip exato dos casos legados); arrays de condição inicial num
 ficheiro npz ao lado (`"ic": {"arrays": {"file": ..., "key": ...}}`) ou receita.
 """
+
 from __future__ import annotations
 
 import json
@@ -17,7 +18,17 @@ import numpy as np
 from ..core.options import IntegrationSpec, ModelSpec, ReferenceSpec, SchemeSpec, TimeSpec
 from ..core.slots import PortKind, SLOT_NAMES
 from ..fluid import Fluid
-from ..network.graph import (BoundaryVertex, CheckValve, Choke, Connector, JunctionVertex, Network, Pipe, Reservoir, TankVertex)
+from ..network.graph import (
+    BoundaryVertex,
+    CheckValve,
+    Choke,
+    Connector,
+    JunctionVertex,
+    Network,
+    Pipe,
+    Reservoir,
+    TankVertex,
+)
 from ..network.schedules import Schedule
 
 SCHEMA = "mfsim-case/1"
@@ -69,9 +80,10 @@ def _spec_to_json(spec, PR):
 def _spec_from_json(d, PR):
     out = {}
     for k, v in (d or {}).items():
-        if k == "P":                      # pressão em Pa -> PT adimensional
+        if k == "P":  # pressão em Pa -> PT adimensional
             sch = Schedule.from_json(v)
             from ..network.schedules import Constant
+
             if not isinstance(sch, Constant):
                 raise ValueError("especificação P variável: use PT (P/PR) ou tabela em PT")
             out["PT"] = Constant(sch.value / PR)
@@ -99,7 +111,13 @@ def _vertex_from_json(d, PR):
     kind = d.get("kind", "boundary")
     if kind == "tank":
         ic = d.get("ic") or {}
-        return TankVertex(id=str(d["id"]), volume=float(d.get("volume", 1e-3)), spec=_spec_from_json(d.get("spec"), PR), HG0=ic.get("HG"), PT0=ic.get("PT"))
+        return TankVertex(
+            id=str(d["id"]),
+            volume=float(d.get("volume", 1e-3)),
+            spec=_spec_from_json(d.get("spec"), PR),
+            HG0=ic.get("HG"),
+            PT0=ic.get("PT"),
+        )
     if kind == "junction":
         return JunctionVertex(id=str(d["id"]), spec=_spec_from_json(d.get("spec"), PR) if d.get("spec") else {})
     return BoundaryVertex(id=str(d["id"]), spec=_spec_from_json(d.get("spec"), PR))
@@ -116,9 +134,21 @@ def _pipe_to_json(p, ic_store):
         if p.grading is not None and float(p.grading[i]) != 1.0:
             s["grading"] = float(p.grading[i])
         segs.append(s)
-    d = {"id": p.id, "type": "pipe", "from": p.v_from, "to": p.v_to, "D": p.D, "roughness": p.roughness,
-         "geometry": {"points": pts, "segments": segs}, "model": p.model.to_json(), "scheme": p.scheme.to_json(),
-         "ports": {"in": {n: k.value for n, k in zip(SLOT_NAMES, p.ports_in)}, "out": {n: k.value for n, k in zip(SLOT_NAMES, p.ports_out)}}}
+    d = {
+        "id": p.id,
+        "type": "pipe",
+        "from": p.v_from,
+        "to": p.v_to,
+        "D": p.D,
+        "roughness": p.roughness,
+        "geometry": {"points": pts, "segments": segs},
+        "model": p.model.to_json(),
+        "scheme": p.scheme.to_json(),
+        "ports": {
+            "in": {n: k.value for n, k in zip(SLOT_NAMES, p.ports_in)},
+            "out": {n: k.value for n, k in zip(SLOT_NAMES, p.ports_out)},
+        },
+    }
     if p.ic_recipe is not None:
         d["ic"] = dict(p.ic_recipe)
     elif p.ic is not None:
@@ -139,15 +169,30 @@ def _pipe_from_json(d, ic_arrays):
     pin = tuple(PortKind((ports.get("in") or {}).get(n, k.value)) for n, k in zip(SLOT_NAMES, Pipe.ports_in))
     pout = tuple(PortKind((ports.get("out") or {}).get(n, k.value)) for n, k in zip(SLOT_NAMES, Pipe.ports_out))
     ic_d = d.get("ic") or {}
-    ic = None; recipe = None
+    ic = None
+    recipe = None
     if "arrays" in ic_d:
         key = ic_d["arrays"].get("key", d["id"])
         ic = np.asarray(ic_arrays[key], float)
     elif ic_d:
         recipe = dict(ic_d)
-    return Pipe(id=str(d["id"]), v_from=str(d["from"]), v_to=str(d["to"]), points=points, n_elements=n_el, grading=grading,
-                D=float(d.get("D", 0.1)), roughness=float(d.get("roughness", 1e-3)), model=ModelSpec.from_json(d.get("model") or {}),
-                scheme=SchemeSpec.from_json(d.get("scheme") or {}), ports_in=pin, ports_out=pout, ic=ic, ic_recipe=recipe, point_names=names)
+    return Pipe(
+        id=str(d["id"]),
+        v_from=str(d["from"]),
+        v_to=str(d["to"]),
+        points=points,
+        n_elements=n_el,
+        grading=grading,
+        D=float(d.get("D", 0.1)),
+        roughness=float(d.get("roughness", 1e-3)),
+        model=ModelSpec.from_json(d.get("model") or {}),
+        scheme=SchemeSpec.from_json(d.get("scheme") or {}),
+        ports_in=pin,
+        ports_out=pout,
+        ic=ic,
+        ic_recipe=recipe,
+        point_names=names,
+    )
 
 
 def _edge_to_json(e):
@@ -176,12 +221,20 @@ def _edge_from_json(d, ic_arrays):
     if t == "connector":
         return Connector(**base)
     if t == "choke":
-        pid = dict(d.get("pid") or {}); pid.setdefault("pv_type", 1)
-        return Choke(**base, CV=float(d.get("CV", 1000.0)), opening=Schedule.from_json(d.get("opening", 1.0)),
-                     mode=Schedule.from_json(d["mode"]) if "mode" in d else None,
-                     setpoint=Schedule.from_json(d["setpoint"]) if "setpoint" in d else None, pid=pid)
+        pid = dict(d.get("pid") or {})
+        pid.setdefault("pv_type", 1)
+        return Choke(
+            **base,
+            CV=float(d.get("CV", 1000.0)),
+            opening=Schedule.from_json(d.get("opening", 1.0)),
+            mode=Schedule.from_json(d["mode"]) if "mode" in d else None,
+            setpoint=Schedule.from_json(d["setpoint"]) if "setpoint" in d else None,
+            pid=pid,
+        )
     if t == "reservoir":
-        return Reservoir(**base, IPL=float(d.get("IPL", 10.0)), IPG=float(d.get("IPG", 2.0)), P=float(d.get("P_bar", 100.0)))
+        return Reservoir(
+            **base, IPL=float(d.get("IPL", 10.0)), IPG=float(d.get("IPG", 2.0)), P=float(d.get("P_bar", 100.0))
+        )
     if t == "check_valve":
         return CheckValve(**base, CV=float(d.get("CV", 1000.0)), dP_min=float(d.get("dP_min_bar", 0.0)))
     raise ValueError(f"tipo de aresta desconhecido: {t}")
@@ -198,11 +251,18 @@ def network_to_json(net: Network, ic_file=None):
         d["description"] = net.description
     if net.meta:
         d["meta"] = _jsonable(net.meta)
-    d["fluid"] = dict(type="polytropic", **{k: float(getattr(net.fluid, k)) for k in ("rhoL0", "rhoG0", "muL", "muG", "gammaL", "gammaG", "P0", "sigma")})
+    d["fluid"] = dict(
+        type="polytropic",
+        **{
+            k: float(getattr(net.fluid, k)) for k in ("rhoL0", "rhoG0", "muL", "muG", "gammaL", "gammaG", "P0", "sigma")
+        },
+    )
     d["reference"] = net.reference.to_json()
     d["time"] = net.time.to_json()
-    d["network"] = {"vertices": [_vertex_to_json(v, PR) for v in net.vertices],
-                    "edges": [_pipe_to_json(e, ic_store) if isinstance(e, Pipe) else _edge_to_json(e) for e in net.edges]}
+    d["network"] = {
+        "vertices": [_vertex_to_json(v, PR) for v in net.vertices],
+        "edges": [_pipe_to_json(e, ic_store) if isinstance(e, Pipe) else _edge_to_json(e) for e in net.edges],
+    }
     if ic_store:
         for e in d["network"]["edges"]:
             if e.get("ic", {}).get("arrays") is not None:
@@ -224,13 +284,21 @@ def network_from_json(d, ic_arrays=None, base_dir=None) -> Network:
             with np.load(os.path.join(base_dir, f), allow_pickle=False) as z:
                 for k in z.files:
                     ic_arrays[k] = z[k]
-    fl = dict(d["fluid"]); fl.pop("type", None)
+    fl = dict(d["fluid"])
+    fl.pop("type", None)
     fluid = Fluid(**fl)
     ref = ReferenceSpec.from_json(d.get("reference") or {})
-    net = Network(name=d.get("name", "case"), description=d.get("description", ""), fluid=fluid, time=TimeSpec.from_json(d.get("time") or {}),
-                  reference=ref, integration=IntegrationSpec.from_json(d.get("integration") or {}),
-                  vertices=[_vertex_from_json(v, ref.PR) for v in d["network"]["vertices"]],
-                  edges=[_edge_from_json(e, ic_arrays) for e in d["network"]["edges"]], meta=dict(d.get("meta") or {}))
+    net = Network(
+        name=d.get("name", "case"),
+        description=d.get("description", ""),
+        fluid=fluid,
+        time=TimeSpec.from_json(d.get("time") or {}),
+        reference=ref,
+        integration=IntegrationSpec.from_json(d.get("integration") or {}),
+        vertices=[_vertex_from_json(v, ref.PR) for v in d["network"]["vertices"]],
+        edges=[_edge_from_json(e, ic_arrays) for e in d["network"]["edges"]],
+        meta=dict(d.get("meta") or {}),
+    )
     return net.validate()
 
 

@@ -33,10 +33,7 @@ from .base import G, PipeModel, PipeParams
 class TwoFluidModel(PipeModel):
     name = "twofluid"
     slots = (0, 1, 2, 3)
-    A_pattern = np.array([[0, 0, 1, 2],
-                          [0, 0, 3, 4],
-                          [5, 6, 7, 0],
-                          [8, 9, 0, 10]])
+    A_pattern = np.array([[0, 0, 1, 2], [0, 0, 3, 4], [5, 6, 7, 0], [8, 9, 0, 10]])
     B_pattern = np.array([0, 0, 11, 12])
     nF = 12
 
@@ -61,12 +58,28 @@ class TwoFluidModel(PipeModel):
         vL = vLS / aL
         vG = vGS / aG
         inp = ClosureInputs(
-            alphaG=aG, alphaL=aL, vL=vL, vLS=vLS, vG=vG, vGS=vGS,
-            AreaL=AreaL, AreaG=AreaG, D=D, eps=p.eps * ones,
+            alphaG=aG,
+            alphaL=aL,
+            vL=vL,
+            vLS=vLS,
+            vG=vG,
+            vGS=vGS,
+            AreaL=AreaL,
+            AreaG=AreaG,
+            D=D,
+            eps=p.eps * ones,
             theta=xp.asarray(theta, dtype=float) * ones,
-            rhoL=rhoL, rhoG=rhoG, muL=self.fluid.muL * ones, muG=self.fluid.muG * ones,
-            CL=CL, CG=CG, sigma=self.fluid.sigma * ones, beta=beta, hD=hD,
-            fi_mult=p.fi_mult * ones, fi_vgt=p.fi_vgt * ones,
+            rhoL=rhoL,
+            rhoG=rhoG,
+            muL=self.fluid.muL * ones,
+            muG=self.fluid.muG * ones,
+            CL=CL,
+            CG=CG,
+            sigma=self.fluid.sigma * ones,
+            beta=beta,
+            hD=hD,
+            fi_mult=p.fi_mult * ones,
+            fi_vgt=p.fi_vgt * ones,
             bubble_drag=(1.0 if p.bubble_drag == "fisico" else 0.0) * ones,
         )
         return inp, P, Area
@@ -82,8 +95,10 @@ class TwoFluidModel(PipeModel):
         # com mistura por ângulo/fração os pesos pequenos também contam (sem o corte
         # de 0.1, que criaria um salto na borda da faixa de transição)
         p = self.params
-        blended = ((p.regime != REGIME_AUTO and ((p.regime_vertical and p.vertical_blend > 0) or p.low_void_regime or p.high_void_regime))
-                   or (p.regime == REGIME_AUTO and (p.low_void_regime or p.ipe_smooth or p.ipe_local)))
+        blended = (
+            p.regime != REGIME_AUTO
+            and ((p.regime_vertical and p.vertical_blend > 0) or p.low_void_regime or p.high_void_regime)
+        ) or (p.regime == REGIME_AUTO and (p.low_void_regime or p.ipe_smooth or p.ipe_local))
         return 1e-6 if blended else 0.1
 
     @staticmethod
@@ -162,9 +177,23 @@ class TwoFluidModel(PipeModel):
         ddP_daG = p.interfacial_pressure * rhoG * rhoL * dg_daG * slip**2
         # d/dP: rhoG, rhoL e den dependem de P (CL = drhoL/dP, CG = drhoG/dP)
         dden_dP = aG * CL + aL * CG
-        ddP_dP = p.interfacial_pressure * slip**2 * aG * aL * ((CG * rhoL + rhoG * CL) * den - rhoG * rhoL * dden_dP) / den**2
-        return replace(S, dPL=S.dPL + dP, dPG=S.dPG + dP, ddPLdalphaG=S.ddPLdalphaG + ddP_daG,
-                       ddPGdalphaG=S.ddPGdalphaG + ddP_daG, ddPLdP=S.ddPLdP + ddP_dP, ddPGdP=S.ddPGdP + ddP_dP)
+        ddP_dP = (
+            p.interfacial_pressure
+            * slip**2
+            * aG
+            * aL
+            * ((CG * rhoL + rhoG * CL) * den - rhoG * rhoL * dden_dP)
+            / den**2
+        )
+        return replace(
+            S,
+            dPL=S.dPL + dP,
+            dPG=S.dPG + dP,
+            ddPLdalphaG=S.ddPLdalphaG + ddP_daG,
+            ddPGdalphaG=S.ddPGdalphaG + ddP_daG,
+            ddPLdP=S.ddPLdP + ddP_dP,
+            ddPGdP=S.ddPGdP + ddP_dP,
+        )
 
     def vertical_weight(self, theta):
         """Peso (0..1) do padrão vertical em função do ângulo de inclinação (rad)."""
@@ -201,20 +230,22 @@ class TwoFluidModel(PipeModel):
             vL2, vG2 = vL * vL, vG * vG
             cL, cG = 2.0 * vL, 2.0 * vG
 
-        F = xp.stack([
-            -rG / (Area * rhoL),
-            rL / (Area * rhoG),
-            rL2 / (Area * p.PR * CL),
-            rG2 / (Area * p.PR * CG),
-            -Area * (S.dPL - aL * S.ddPLdalphaG - vL2 * rhoL),
-            p.PR * AreaL * (1.0 - vL2 * CL + S.ddPLdP),
-            cL,
-            Area * (S.dPG + aG * S.ddPGdalphaG - vG2 * rhoG),
-            p.PR * AreaG * (1.0 - vG2 * CG + S.ddPGdP),
-            cG,
-            S.GammaL + G * AreaL * rhoL * sin_t,
-            S.GammaG + G * AreaG * rhoG * sin_t,
-        ])
+        F = xp.stack(
+            [
+                -rG / (Area * rhoL),
+                rL / (Area * rhoG),
+                rL2 / (Area * p.PR * CL),
+                rG2 / (Area * p.PR * CG),
+                -Area * (S.dPL - aL * S.ddPLdalphaG - vL2 * rhoL),
+                p.PR * AreaL * (1.0 - vL2 * CL + S.ddPLdP),
+                cL,
+                Area * (S.dPG + aG * S.ddPGdalphaG - vG2 * rhoG),
+                p.PR * AreaG * (1.0 - vG2 * CG + S.ddPGdP),
+                cG,
+                S.GammaL + G * AreaL * rhoL * sin_t,
+                S.GammaG + G * AreaG * rhoG * sin_t,
+            ]
+        )
         if not outputs:
             return F
         out = self._outputs(y, inp, S, flags, eq, F, Area)
@@ -225,19 +256,40 @@ class TwoFluidModel(PipeModel):
         p = self.params
         rhoL, rhoG = inp.rhoL, inp.rhoG
         out = dict(
-            inclinacao=inp.theta, diametro=inp.D, hD=inp.hD,
-            alfaL=1 - aG0, alfaG=aG0, pressao=PT * p.PR / 1e5,
-            vazaoMassaL=qL, vazaoMassaG=qG, vazaoVolL=qL / rhoL, vazaoVolG=qG / rhoG,
-            vazaoMassa=qL + qG, vazaoVol=qL / rhoL + qG / rhoG,
-            velocidadeL=inp.vL, velocidadeG=inp.vG, velocidadeSL=inp.vLS, velocidadeSG=inp.vGS,
+            inclinacao=inp.theta,
+            diametro=inp.D,
+            hD=inp.hD,
+            alfaL=1 - aG0,
+            alfaG=aG0,
+            pressao=PT * p.PR / 1e5,
+            vazaoMassaL=qL,
+            vazaoMassaG=qG,
+            vazaoVolL=qL / rhoL,
+            vazaoVolG=qG / rhoG,
+            vazaoMassa=qL + qG,
+            vazaoVol=qL / rhoL + qG / rhoG,
+            velocidadeL=inp.vL,
+            velocidadeG=inp.vG,
+            velocidadeSL=inp.vLS,
+            velocidadeSG=inp.vGS,
             velocidadeI=inp.vG - inp.vL,
-            velSomL=1 / np.sqrt(inp.CL), velSomG=1 / np.sqrt(inp.CG),
+            velSomL=1 / np.sqrt(inp.CL),
+            velSomG=1 / np.sqrt(inp.CG),
             velSomM=np.sqrt((inp.alphaL / rhoL + aG0 / rhoG) / (inp.alphaL * inp.CL / rhoL + aG0 * inp.CG / rhoG)),
-            dpresL=S.dPL, dpresG=S.dPG,
-            cargaL=F[10] / inp.AreaL * 100 / 1e5, cargaG=F[11] / inp.AreaG * 100 / 1e5,
-            densidadeL=rhoL, densidadeG=rhoG, viscosidadeL=inp.muL, viscosidadeG=inp.muG,
-            reg1=flags.reg1, reg2=flags.reg2,
-            GammaL=S.GammaL, GammaG=S.GammaG, tauL=S.tauL, tauG=S.tauG,
+            dpresL=S.dPL,
+            dpresG=S.dPG,
+            cargaL=F[10] / inp.AreaL * 100 / 1e5,
+            cargaG=F[11] / inp.AreaG * 100 / 1e5,
+            densidadeL=rhoL,
+            densidadeG=rhoG,
+            viscosidadeL=inp.muL,
+            viscosidadeG=inp.muG,
+            reg1=flags.reg1,
+            reg2=flags.reg2,
+            GammaL=S.GammaL,
+            GammaG=S.GammaG,
+            tauL=S.tauL,
+            tauG=S.tauG,
         )
         for i in range(12):
             out[f"F{i+1}"] = F[i]
@@ -260,7 +312,9 @@ class TwoFluidModel(PipeModel):
         A = np.nan_to_num(A)
         C_vm = self.params.virtual_mass if virtual_mass is None else virtual_mass
         if C_vm > 0:
-            A = self._quasi_linear_virtual_mass(y, theta, A, C_vm, self.params.vm_lambda if vm_lambda is None else vm_lambda)
+            A = self._quasi_linear_virtual_mass(
+                y, theta, A, C_vm, self.params.vm_lambda if vm_lambda is None else vm_lambda
+            )
         ev = np.linalg.eigvals(A)
         order = np.argsort(ev.real, axis=1)
         return np.take_along_axis(ev, order, axis=1)
@@ -278,18 +332,27 @@ class TwoFluidModel(PipeModel):
         vL, vG = inp.vL, inp.vG
         n = aG.size
         # linhas convectivas d(q v)/dx em (alphaG, PT, qL, qG)
-        convL = np.stack([-Area * vL**2 * rhoL * (-1.0), -vL**2 * CL * p.PR * Area * aL, 2.0 * vL, np.zeros(n)], axis=1)
-        convG = np.stack([-Area * vG**2 * rhoG, -vG**2 * CG * p.PR * Area * aG, np.zeros(n), 2.0 * vG], axis=1)
-        FL_row = A[:, 2, :] - convL          # forças = -(FL_row . dy/dx) - B
+        convL = np.stack(
+            [-Area * vL**2 * rhoL * (-1.0), -(vL**2) * CL * p.PR * Area * aL, 2.0 * vL, np.zeros(n)], axis=1
+        )
+        convG = np.stack([-Area * vG**2 * rhoG, -(vG**2) * CG * p.PR * Area * aG, np.zeros(n), 2.0 * vG], axis=1)
+        FL_row = A[:, 2, :] - convL  # forças = -(FL_row . dy/dx) - B
         FG_row = A[:, 3, :] - convG
         IL = rhoL * aL * Area
         IG = rhoG * aG * Area
         K = C_vm * np.asarray(flags.Bub, float) * aG * rhoL * Area
         if lam != 2.0:
             # termos objetivos: dvG/dx e dvL/dx em (alphaG, PT, qL, qG)
-            dvG = np.stack([-vG * Area * rhoG, -vG * Area * aG * CG * p.PR, np.zeros(n), np.ones(n)], axis=1) / IG[:, None]
-            dvL = np.stack([vL * Area * rhoL, -vL * Area * aL * CL * p.PR, np.ones(n), np.zeros(n)], axis=1) / IL[:, None]
-            extra = (K * (vG - vL))[:, None] * ((lam - 2.0) * dvG + (1.0 - lam) * dvL)   # força sobre o gás = -extra . dy/dx
+            dvG = (
+                np.stack([-vG * Area * rhoG, -vG * Area * aG * CG * p.PR, np.zeros(n), np.ones(n)], axis=1)
+                / IG[:, None]
+            )
+            dvL = (
+                np.stack([vL * Area * rhoL, -vL * Area * aL * CL * p.PR, np.ones(n), np.zeros(n)], axis=1) / IL[:, None]
+            )
+            extra = (K * (vG - vL))[:, None] * (
+                (lam - 2.0) * dvG + (1.0 - lam) * dvL
+            )  # força sobre o gás = -extra . dy/dx
             FG_row = FG_row + extra
             FL_row = FL_row - extra
         det = IG * IL + K * (IG + IL)
@@ -314,7 +377,14 @@ class TwoFluidModel(PipeModel):
         aG, aL = inp.alphaG, inp.alphaL
         auxr = aL / fl.gammaL + aG / fl.gammaG
         return dict(
-            inp=inp, S=S, flags=flags, Area=Area, P=P, vm_weight=flags.Bub,
-            rL=(aL / fl.gammaL) / auxr, rG=(aG / fl.gammaG) / auxr,
-            rL2=(1.0 / fl.gammaL) / auxr, rG2=(1.0 / fl.gammaG) / auxr,
+            inp=inp,
+            S=S,
+            flags=flags,
+            Area=Area,
+            P=P,
+            vm_weight=flags.Bub,
+            rL=(aL / fl.gammaL) / auxr,
+            rG=(aG / fl.gammaG) / auxr,
+            rL2=(1.0 / fl.gammaL) / auxr,
+            rG2=(1.0 / fl.gammaG) / auxr,
         )

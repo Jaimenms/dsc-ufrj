@@ -75,7 +75,17 @@ def stratified(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     GammaG = PerI * tauIG + PerG * tauG
 
     return ClosureTerms(
-        GammaL=GammaL, GammaG=GammaG, dPL=dPL, dPG=dPG,
-        ddPLdP=ddPLdP, ddPGdP=ddPGdP, ddPLdalphaG=ddPLdaG, ddPGdalphaG=ddPGdaG,
-        dPI=dPI, hL=hL, beta=beta, tauG=tauG, tauL=tauL,
+        GammaL=GammaL,
+        GammaG=GammaG,
+        dPL=dPL,
+        dPG=dPG,
+        ddPLdP=ddPLdP,
+        ddPGdP=ddPGdP,
+        ddPLdalphaG=ddPLdaG,
+        ddPGdalphaG=ddPGdaG,
+        dPI=dPI,
+        hL=hL,
+        beta=beta,
+        tauG=tauG,
+        tauL=tauL,
     )

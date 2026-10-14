@@ -21,6 +21,7 @@ diretamente ou pela junção de um choke. Cada porta tem no máximo um escritor 
 dos acoplamentos para o mesmo vértice somam-se num só passo); conflitos levantam
 ValueError na construção, nunca sobrescrita silenciosa.
 """
+
 from __future__ import annotations
 
 import heapq
@@ -40,10 +41,10 @@ def legacy_index(vid):
 class Step(ABC):
     """Um passo do plano: lê portas/estados e escreve portas de E (função pura em `bk`)."""
 
-    weight = 0            # ordem legada entre classes (desempate)
-    order = 0             # ordem da aresta no grafo (desempate)
-    reads = ()            # portas (vi, slot) de E lidas
-    writes = ()           # portas (vi, slot) escritas
+    weight = 0  # ordem legada entre classes (desempate)
+    order = 0  # ordem da aresta no grafo (desempate)
+    reads = ()  # portas (vi, slot) de E lidas
+    writes = ()  # portas (vi, slot) escritas
 
     @abstractmethod
     def __call__(self, x, E, opt_t, info, bk):
@@ -84,7 +85,18 @@ class ChokeStep(Step):
     weight = 1
 
     def __init__(self, order, edge, J, v, src, iL, iG, j, fluid, PR):
-        self.order, self.edge, self.J, self.v, self.src, self.iL, self.iG, self.j, self.fluid, self.PR = order, edge, J, v, src, iL, iG, j, fluid, PR
+        self.order, self.edge, self.J, self.v, self.src, self.iL, self.iG, self.j, self.fluid, self.PR = (
+            order,
+            edge,
+            J,
+            v,
+            src,
+            iL,
+            iG,
+            j,
+            fluid,
+            PR,
+        )
         self.reads = src.reads
         self.writes = ((J, SLOT_P),)
 
@@ -95,8 +107,17 @@ class ChokeStep(Step):
         opening = opt_t[self.j]
         ZP, dP = valve_upstream_pressure(P_down, qL, qG, opening, self.edge.CV, self.fluid, self.PR, bk=bk)
         if info is not None:
-            info["valves"].append(dict(vertex=legacy_index(self.edge.v_to), Ab=opening, ZP=ZP * self.PR / 1e5, dP=dP,
-                                       qL=qL, qG=qG, P_down=P_down * self.PR / 1e5))
+            info["valves"].append(
+                dict(
+                    vertex=legacy_index(self.edge.v_to),
+                    Ab=opening,
+                    ZP=ZP * self.PR / 1e5,
+                    dP=dP,
+                    qL=qL,
+                    qG=qG,
+                    P_down=P_down * self.PR / 1e5,
+                )
+            )
         return bk.set(E, (self.J, SLOT_P), ZP)
 
 
@@ -114,7 +135,9 @@ class ReservoirStep(Step):
         P = self.src(x, E)
         ZL, ZG, dP = reservoir_flows(P, self.edge.IPL, self.edge.IPG, self.edge.P, self.PR, bk=bk)
         if info is not None:
-            info["reservoirs"].append(dict(vertex=legacy_index(self.edge.v_from), ZL=ZL, ZG=ZG, dP=dP, P=P * self.PR / 1e5))
+            info["reservoirs"].append(
+                dict(vertex=legacy_index(self.edge.v_from), ZL=ZL, ZG=ZG, dP=dP, P=P * self.PR / 1e5)
+            )
         E = bk.set(E, (self.J, SLOT_QL), ZL)
         return bk.set(E, (self.J, SLOT_QG), ZG)
 
@@ -125,15 +148,28 @@ class CheckValveStep(Step):
     weight = 3
 
     def __init__(self, order, edge, tank, iH, iP, src, fluid, PR):
-        self.order, self.edge, self.tank, self.iH, self.iP, self.src, self.fluid, self.PR = order, edge, tank, iH, iP, src, fluid, PR
+        self.order, self.edge, self.tank, self.iH, self.iP, self.src, self.fluid, self.PR = (
+            order,
+            edge,
+            tank,
+            iH,
+            iP,
+            src,
+            fluid,
+            PR,
+        )
         self.reads = src.reads
         self.writes = ((tank, SLOT_QL), (tank, SLOT_QG))
 
     def __call__(self, x, E, opt_t, info, bk):
         P_down = self.src(x, E)
-        qL, qG, dP = check_valve_flows(x[self.iP], P_down, x[self.iH], self.edge.CV, self.edge.dP_min, self.fluid, self.PR, bk=bk)
+        qL, qG, dP = check_valve_flows(
+            x[self.iP], P_down, x[self.iH], self.edge.CV, self.edge.dP_min, self.fluid, self.PR, bk=bk
+        )
         if info is not None:
-            info["check_valves"].append(dict(vertex=legacy_index(self.edge.v_from), ZP=x[self.iP] * self.PR / 1e5, dP=dP, qL=qL, qG=qG))
+            info["check_valves"].append(
+                dict(vertex=legacy_index(self.edge.v_from), ZP=x[self.iP] * self.PR / 1e5, dP=dP, qL=qL, qG=qG)
+            )
         E = bk.set(E, (self.tank, SLOT_QL), -qL)
         return bk.set(E, (self.tank, SLOT_QG), -qG)
 
@@ -145,7 +181,7 @@ class ConnectorFlows(Step):
     weight = 4
 
     def __init__(self, order, vd, pairs):
-        self.order, self.vd, self.pairs = order, vd, tuple(pairs)      # pairs: (iL, iG) por duto, já na ordem legada
+        self.order, self.vd, self.pairs = order, vd, tuple(pairs)  # pairs: (iL, iG) por duto, já na ordem legada
         self.writes = ((vd, SLOT_QL), (vd, SLOT_QG))
 
     def __call__(self, x, E, opt_t, info, bk):
@@ -167,7 +203,7 @@ def build_plan(system):
     net, vpos, pipes = system.network, system.vpos, system.pipes
     fluid, PR = system.fluid, system.PR
     pipes_in, pipes_out = system.pipes_in, system.pipes_out
-    arriving, leaving = system.arriving, system.leaving          # através das junções de chokes/reservatórios
+    arriving, leaving = system.arriving, system.leaving  # através das junções de chokes/reservatórios
 
     def pressure_source(vi):
         idx = None
@@ -197,15 +233,31 @@ def build_plan(system):
         elif isinstance(e, Choke):
             J, v = vpos[e.v_from], vpos[e.v_to]
             if len(pipes_in[J]) != 1:
-                raise ValueError(f"choke {e.id}: a junção {e.v_from} deve receber exatamente um duto (recebe {len(pipes_in[J])})")
+                raise ValueError(
+                    f"choke {e.id}: a junção {e.v_from} deve receber exatamente um duto (recebe {len(pipes_in[J])})"
+                )
             pb = pipes[pipes_in[J][0]]
-            steps.append(ChokeStep(order, e, J, v, pressure_source(v), pb.state_index(pb.outlet_q_node, SLOT_QL),
-                                   pb.state_index(pb.outlet_q_node, SLOT_QG), len(chokes), fluid, PR))
+            steps.append(
+                ChokeStep(
+                    order,
+                    e,
+                    J,
+                    v,
+                    pressure_source(v),
+                    pb.state_index(pb.outlet_q_node, SLOT_QL),
+                    pb.state_index(pb.outlet_q_node, SLOT_QG),
+                    len(chokes),
+                    fluid,
+                    PR,
+                )
+            )
             chokes.append(e)
         elif isinstance(e, Reservoir):
             J = vpos[e.v_to]
             if len(pipes_out[J]) != 1:
-                raise ValueError(f"reservatório {e.id}: da junção {e.v_to} deve partir exatamente um duto (partem {len(pipes_out[J])})")
+                raise ValueError(
+                    f"reservatório {e.id}: da junção {e.v_to} deve partir exatamente um duto (partem {len(pipes_out[J])})"
+                )
             steps.append(ReservoirStep(order, e, J, pressure_source(J), PR))
         elif isinstance(e, CheckValve):
             tank = vpos[e.v_from]
@@ -218,7 +270,9 @@ def build_plan(system):
     for st in steps:
         for port in st.writes:
             if port in writers:
-                raise ValueError(f"porta {port} escrita por dois passos: {type(writers[port]).__name__} e {type(st).__name__}")
+                raise ValueError(
+                    f"porta {port} escrita por dois passos: {type(writers[port]).__name__} e {type(st).__name__}"
+                )
             writers[port] = st
     # ordenação topológica (Kahn) com prioridade (classe legada, ordem da aresta)
     deps = {id(st): {id(writers[p]) for p in st.reads if p in writers and writers[p] is not st} for st in steps}

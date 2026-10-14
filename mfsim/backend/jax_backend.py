@@ -1,5 +1,6 @@
 """Backend JAX: float64, cache persistente de compilação, pytrees para as dataclasses de
 arrays, e as mesmas primitivas do numpy em forma traçável."""
+
 from __future__ import annotations
 
 import contextlib
@@ -97,7 +98,7 @@ class JaxBackend(Backend):
         try:
             jax.tree_util.register_dataclass(cls, data_fields=names, meta_fields=[])
         except ValueError:
-            pass            # já registada
+            pass  # já registada
         return cls
 
 
@@ -108,6 +109,7 @@ JAX = JaxBackend()
 def _register_containers():
     from ..closures.common import ClosureInputs, ClosureTerms
     from ..closures.regime import RegimeFlags
+
     for cls in (ClosureInputs, ClosureTerms, RegimeFlags):
         JAX.register_container(cls)
 

@@ -20,10 +20,22 @@ from .regime import (
 )
 
 __all__ = [
-    "ClosureInputs", "ClosureTerms", "G",
-    "stratified", "annular", "bubble", "intermittent",
-    "RegimeFlags", "blend_closures", "equilibrium_fractions",
-    "fixed_regime", "identify_regime",
-    "REGIME_ANNULAR", "REGIME_AUTO", "REGIME_BUBBLE", "REGIME_INTERMITTENT",
-    "REGIME_STRAT_SMOOTH", "REGIME_STRAT_WAVY",
+    "ClosureInputs",
+    "ClosureTerms",
+    "G",
+    "stratified",
+    "annular",
+    "bubble",
+    "intermittent",
+    "RegimeFlags",
+    "blend_closures",
+    "equilibrium_fractions",
+    "fixed_regime",
+    "identify_regime",
+    "REGIME_ANNULAR",
+    "REGIME_AUTO",
+    "REGIME_BUBBLE",
+    "REGIME_INTERMITTENT",
+    "REGIME_STRAT_SMOOTH",
+    "REGIME_STRAT_WAVY",
 ]

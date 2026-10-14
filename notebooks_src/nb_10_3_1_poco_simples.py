@@ -47,6 +47,7 @@ plot_vertices(res, raw)
 
 # %%
 from mfsim.notebook_utils import jax_comparison
+
 res_jax = jax_comparison(case, res, rtol=1e-4, atol=1e-6)
 
 # %% [markdown]
@@ -74,14 +75,21 @@ res_fv = simulate(case_fv, progress=False, integrator="implicit", rtol=1e-3, ato
 print(f"volume finito: {res_fv.info.get('n_steps')} passos em {time.time() - t0_:.1f} s")
 p_n, p_f = res.pipe(0), res_fv.pipe(0)
 fig, axes = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
-for p_, lab, st in ((p_n, "nodal (diferenças centrais, tese)", dict(lw=1.2)), (p_f, "volume finito escalonado de deriva", dict(lw=1.0, ls="--"))):
-    top = -1 if p_ is p_n else -2            # no escalonado o último nó é o fantasma da válvula
+for p_, lab, st in (
+    (p_n, "nodal (diferenças centrais, tese)", dict(lw=1.2)),
+    (p_f, "volume finito escalonado de deriva", dict(lw=1.0, ls="--")),
+):
+    top = -1 if p_ is p_n else -2  # no escalonado o último nó é o fantasma da válvula
     axes[0].plot(res.T if p_ is p_n else res_fv.T, p_["out"]["qL"][-1], label=lab, **st)
     axes[1].plot(res.T if p_ is p_n else res_fv.T, p_["out"]["P_bar"][0 if p_ is p_n else 1], label=lab, **st)
     axes[2].plot(res.T if p_ is p_n else res_fv.T, p_["out"]["P_bar"][top], label=lab, **st)
-axes[0].set_ylabel("líquido no topo (kg/s)"); axes[1].set_ylabel("pressão de fundo (bar)"); axes[2].set_ylabel("pressão no topo (bar)"); axes[2].set_xlabel("Tempo (s)")
+axes[0].set_ylabel("líquido no topo (kg/s)")
+axes[1].set_ylabel("pressão de fundo (bar)")
+axes[2].set_ylabel("pressão no topo (bar)")
+axes[2].set_xlabel("Tempo (s)")
 for ax in axes:
-    ax.grid(alpha=0.3); ax.legend(fontsize=8)
+    ax.grid(alpha=0.3)
+    ax.legend(fontsize=8)
 plt.show()
 
 # %% [markdown]
