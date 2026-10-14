@@ -88,6 +88,7 @@ por fases, cada uma fechada com a suíte de regressão bit a bit verde:
 | 2 | backend único (`mfsim/backend`): fluido, fechamentos, identificação de padrão, modelos, discretizações, rede numa só implementação; `mfsim/compiled.py`; `jax_physics`/`jax_schemes`/`jaxrhs` apagados; numpy bit-idêntico, JAX paridade 1e−14, desempenho ≤ 1.1× | feito (tag `v2-backend`) |
 | 3 | `mfsim run\|steady\|stats\|export-case\|nb`, corridas npz v2, `tools/` e `archive/scratch_2026-10` (nada apagado) | feito |
 | 4 | notebooks pelo carregador único e API pública, re-executados; outputs de texto iguais (numpy) ou explicados (células JAX) | feito (tag `v4-notebooks`) |
+| noturna | referência 3000 s JAX, gas lift 2000 s, validação de laboratório (Fabre 2, Jansen), 9 notebooks re-executados contra os outputs de texto | verde 14/14 em 2026-10-14 |
 | 5 | remoção da compatibilidade: `jaxrhs` e módulos JAX duplicados apagados, documentação dividida em `docs/` | feito em parte: o `NetworkModel` ainda consome o `Case` legado (`network/data.py`), convertido bit a bit do grafo por `Network.to_legacy_case`; a montagem da rede diretamente sobre o grafo (resolução de portas, `NetworkSystem`) fica como trabalho seguinte |
 
 ## Pendências do modelo físico (status)
