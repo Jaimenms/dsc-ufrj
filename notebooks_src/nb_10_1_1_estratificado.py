@@ -16,7 +16,7 @@
 import copy, time
 import numpy as np
 import matplotlib.pyplot as plt
-from mfsim.cases import load_chapter10_case, CHAPTER10
+from mfsim.cases import chapter10_case, chapter10_info, legacy_results
 from mfsim.network.graph import ports
 from mfsim.simulation import simulate, steady_state, build_model
 from mfsim.plotting import (
@@ -30,8 +30,8 @@ from mfsim.plotting import (
 from mfsim.io_legacy import legacy_states
 from mfsim.integrators.jacobian import colored_jacobian
 
-info = CHAPTER10["10.1.1"]
-case, raw = load_chapter10_case("10.1.1")
+info = chapter10_info("10.1.1")
+case, raw = chapter10_case("10.1.1"), legacy_results("10.1.1")
 legacy = legacy_pipe_dict(raw, 0)
 print(info.title)
 print(info.description)

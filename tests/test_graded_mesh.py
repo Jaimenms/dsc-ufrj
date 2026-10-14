@@ -4,7 +4,7 @@ import copy
 
 import numpy as np
 
-from mfsim.cases import load_chapter10_case
+from mfsim.cases import chapter10_case
 from mfsim.geometry import pipe_mesh
 from mfsim.simulation import steady_state
 
@@ -21,7 +21,7 @@ def test_graded_mesh_lengths_and_ratio():
 
 
 def test_steady_state_on_graded_mesh_matches_uniform():
-    case, raw = load_chapter10_case("10.1.1")
+    case = chapter10_case("10.1.1")
     c_u = copy.deepcopy(case).set_method("fv_upwind")
     c_u.pipes[0].ic = None
     c_g = copy.deepcopy(c_u)

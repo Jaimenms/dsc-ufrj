@@ -7,14 +7,14 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .cases import CHAPTER10, load_chapter10_case
+from .cases import chapter10_case, chapter10_info, legacy_results
 from .io_legacy import legacy_states
 from .plotting import legacy_pipe_dict, pipe_surfaces, pipe_timeseries
 from .simulation import build_model, simulate
 
 
 def describe(key):
-    info = CHAPTER10[key]
+    info = chapter10_info(key)
     print(f"{info.section} {info.title}\n{info.description}\nFiguras da tese: {info.figures}")
     return info
 
@@ -25,7 +25,7 @@ def run_case(key, integrator="implicit", rtol=1e-4, atol=1e-6, method=None, ic="
     Retorna (case, raw, res). O estado inicial é o gravado no .mf2 (ic="legacy")
     para que a comparação com o MATLAB seja direta.
     """
-    case, raw = load_chapter10_case(key)
+    case, raw = chapter10_case(key), legacy_results(key)
     if method is not None:
         case.set_method(method)
     t0 = time.time()

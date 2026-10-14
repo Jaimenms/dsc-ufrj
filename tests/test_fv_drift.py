@@ -8,13 +8,13 @@ import copy
 import numpy as np
 import pytest
 
-from mfsim.cases import load_chapter10_case
+from mfsim.cases import chapter10_case
 from mfsim.simulation import build_model, state_bounds, steady_state
 from mfsim.integrators.implicit import ImplicitBDF
 
 
 def _fv_case(bb_derivatives="fd"):
-    case, raw = load_chapter10_case("10.3.1")
+    case = chapter10_case("10.3.1")
     case.set_method("fv_upwind").set_options(conservative=True, q_switch=0.05, bb_derivatives=bb_derivatives)
     return case
 
@@ -60,7 +60,7 @@ def test_drift_fv_jax_matches_numpy():
 
 
 def test_drift_fv_transient_conserves_mass_and_matches_nodal():
-    case_n, raw = load_chapter10_case("10.3.1")
+    case_n = chapter10_case("10.3.1")
     case = _fv_case()
     model, X0, info = steady_state(case, verbose=False, update_case=False)
     lo, hi = state_bounds(model)

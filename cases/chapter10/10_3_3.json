@@ -7,7 +7,7 @@
    "section": "10.3.3",
    "title": "Poço offshore",
    "figures": "Figs. 10.48-10.54",
-   "note": "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (inclui as correções de load_chapter10_case)"
+   "note": "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (network_from_mf2: correções e composição do 10.3.2a)"
   },
   "description": "Poço + linha de produção (3500 m horizontal + trecho descendente) + riser de 1500 m, gas lift com linha de gás e anular; choke de gás 100%->80% entre 100 e 200 s."
  },

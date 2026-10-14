@@ -21,7 +21,7 @@
 import numpy as np, matplotlib.pyplot as plt, time, warnings
 
 warnings.filterwarnings("ignore")
-from mfsim.cases import load_chapter10_case
+from mfsim.cases import chapter10_case
 from mfsim.simulation import build_model, state_bounds
 from mfsim.integrators.implicit import ImplicitBDF
 from mfsim.results import Results
@@ -30,7 +30,7 @@ from mfsim.network.schedules import PiecewiseLinear
 
 
 def run_gas_lift(opening, tf=16000.0, rtol=1e-3, order=2):
-    case, raw = load_chapter10_case("10.3.2b")
+    case = chapter10_case("10.3.2b")
     case.set_time(tf=tf)
     for v in case.edges_of(Choke):
         if v.v_to == "6":  # choke de gás
@@ -125,7 +125,7 @@ from mfsim.compiled import get_jax
 
 
 def run_gas_lift_jax(opening, tf=16000.0, rtol=1e-3, order=2):
-    case, raw = load_chapter10_case("10.3.2b")
+    case = chapter10_case("10.3.2b")
     case.set_time(tf=tf)
     for v in case.edges_of(Choke):
         if v.v_to == "6":

@@ -6,7 +6,7 @@ import copy
 import numpy as np
 import pytest
 
-from mfsim.cases import load_chapter10_case
+from mfsim.cases import chapter10_case
 from mfsim.simulation import build_model
 
 jax = pytest.importorskip("jax")
@@ -19,7 +19,7 @@ SCHEMES = ["galerkin", "petrov_galerkin", "fd_central", "fd_upwind"]
 def test_jax_network_matches_numpy(cid):
     from mfsim.compiled import build_jax_rhs
 
-    case, raw = load_chapter10_case(cid)
+    case = chapter10_case(cid)
     case.set_options(bb_derivatives="fd")  # equivalência exata com o numpy (que usa diferenças finitas na tese)
     model = build_model(case)
     rhs_j, jac_j = build_jax_rhs(model)
@@ -37,7 +37,7 @@ def test_jax_network_matches_numpy(cid):
 def test_jax_schemes_match_numpy(method):
     from mfsim.compiled import build_jax_rhs
 
-    case, raw = load_chapter10_case("10.1.1")
+    case = chapter10_case("10.1.1")
     c = copy.deepcopy(case)
     c.set_method(method)
     model = build_model(c)
@@ -57,7 +57,7 @@ def test_beggs_brill_exact_derivatives_close_to_fd(cid):
     out = {}
     x = None
     for mode in ("fd", "exact"):
-        case, raw = load_chapter10_case(cid)
+        case = chapter10_case(cid)
         case.set_options(bb_derivatives=mode)
         model = build_model(case)
         rhs_j, _ = build_jax_rhs(model)

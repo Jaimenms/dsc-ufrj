@@ -7,7 +7,7 @@ from mfsim.network.schedules import Constant
 
 import numpy as np
 
-from mfsim.cases import load_chapter10_case
+from mfsim.cases import chapter10_case
 from mfsim.integrators.implicit import ImplicitBDF
 from mfsim.simulation import build_model, state_bounds, steady_state
 
@@ -27,7 +27,7 @@ def _mass_per_cell(model, X):
 
 
 def test_conservative_mode_balances_mass_each_step():
-    case, raw = load_chapter10_case("10.1.1")
+    case = chapter10_case("10.1.1")
     c = copy.deepcopy(case)
     c.set_method("fv_upwind").set_options(conservative=True)
     c.pipes[0].ic = None
@@ -69,7 +69,7 @@ def test_conservative_mode_balances_mass_each_step():
 def test_conservative_mode_global_balance_adaptive_bdf2():
     """Com passos adaptativos e BDF2, a variação do estoque de cada fase no duto é
     igual à integral BDF-consistente dos fluxos de contorno (acumulador do integrador)."""
-    case, raw = load_chapter10_case("10.1.1")
+    case = chapter10_case("10.1.1")
     c = copy.deepcopy(case)
     c.set_method("fv_upwind").set_options(conservative=True)
     c.pipes[0].ic = None

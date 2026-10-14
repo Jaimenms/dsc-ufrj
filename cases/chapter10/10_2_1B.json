@@ -7,7 +7,7 @@
    "section": "10.2.1",
    "title": "Dois trechos em série (formulação B: vértice dinâmico)",
    "figures": "Figs. 10.20-10.24",
-   "note": "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (inclui as correções de load_chapter10_case)"
+   "note": "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (network_from_mf2: correções e composição do 10.3.2a)"
   },
   "description": "Dois dutos de 500 m acoplados por vértice dinâmico (tipo A)."
  },

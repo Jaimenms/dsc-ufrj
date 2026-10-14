@@ -9,7 +9,7 @@ from mfsim.network.graph import ports
 import numpy as np
 import pytest
 
-from mfsim.cases import CHAPTER10, load_chapter10_case
+from mfsim.cases import chapter10_keys, chapter10_case, legacy_results
 from mfsim.notebook_utils import run_case
 from mfsim.simulation import simulate, steady_state
 
@@ -18,7 +18,7 @@ NB_KW = {"10.3.2a": dict(rtol=1e-3, atol=1e-5), "10.3.2b": dict(rtol=1e-3, atol=
 pytestmark = pytest.mark.golden
 
 
-@pytest.mark.parametrize("key", list(CHAPTER10))
+@pytest.mark.parametrize("key", chapter10_keys())
 def test_trajectory(key, golden):
     g = golden("chapter10.npz")
     case, raw, res = run_case(key, **NB_KW.get(key, {}))
@@ -29,7 +29,7 @@ def test_trajectory(key, golden):
 
 def test_variant_10_1_1_steady_auto(golden):
     g = golden("variants.npz")
-    case, raw = load_chapter10_case("10.1.1")
+    case, raw = chapter10_case("10.1.1"), legacy_results("10.1.1")
     case_ss = copy.deepcopy(case)
     case_ss.pipes[0].ports_in = ports((3, 1, 2, 2))
     case_ss.pipes[0].ic = None
@@ -45,7 +45,7 @@ def test_variant_10_1_1_steady_auto(golden):
 @pytest.mark.parametrize("method,nel", [("galerkin", 5), ("galerkin", 25), ("fd_central", 5), ("fd_central", 25)])
 def test_variant_10_1_1_mesh_study(method, nel, golden):
     g = golden("variants.npz")
-    case, raw = load_chapter10_case("10.1.1")
+    case, raw = chapter10_case("10.1.1"), legacy_results("10.1.1")
     c = copy.deepcopy(case)
     c.pipes[0].ports_in = ports((3, 1, 2, 2))
     c.pipes[0].n_elements = np.array([nel])
@@ -59,7 +59,7 @@ def test_variant_10_1_1_mesh_study(method, nel, golden):
 
 def test_variant_10_1_4_steady(golden):
     g = golden("variants.npz")
-    case, raw = load_chapter10_case("10.1.4")
+    case, raw = chapter10_case("10.1.4"), legacy_results("10.1.4")
     case_ss = copy.deepcopy(case)
     n = case_ss.pipes[0].n_elements[0] + 1
     case_ss.pipes[0].ic = np.stack([np.full(n, 0.3), np.full(n, 1.0), np.full(n, 0.5), np.full(n, 0.1)], axis=1)
@@ -71,7 +71,7 @@ def test_variant_10_1_4_steady(golden):
 
 def test_variant_10_3_1_fv_drift(golden):
     g = golden("variants.npz")
-    case, raw = load_chapter10_case("10.3.1")
+    case, raw = chapter10_case("10.3.1"), legacy_results("10.3.1")
     case_fv = copy.deepcopy(case).set_method("fv_upwind").set_options(conservative=True, q_switch=0.05)
     steady_state(case_fv, verbose=False, update_case=True)
     r = simulate(case_fv, progress=False, integrator="implicit", rtol=1e-3, atol=1e-6)

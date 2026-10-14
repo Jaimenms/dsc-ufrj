@@ -3,14 +3,14 @@
 import numpy as np
 import pytest
 
-from mfsim.cases import load_chapter10_case
+from mfsim.cases import chapter10_case, legacy_results
 from mfsim.io_legacy import legacy_states
 from mfsim.simulation import build_model, state_bounds
 from mfsim.integrators import integrate_implicit
 
 
 def _run(key, tol):
-    case, raw = load_chapter10_case(key)
+    case, raw = chapter10_case(key), legacy_results(key)
     model = build_model(case)
     Tl, Xl = legacy_states(raw)
     T, X, info = integrate_implicit(
@@ -34,7 +34,7 @@ def test_two_fluid_cases(key, tol):
 
 def test_steady_residual_is_zero_at_legacy_state():
     for key in ("10.1.1", "10.2.2", "10.3.3"):
-        case, raw = load_chapter10_case(key)
+        case, raw = chapter10_case(key), legacy_results(key)
         model = build_model(case)
         Tl, Xl = legacy_states(raw)
         r = model.rhs(Tl[0], Xl[:, 0])
@@ -46,7 +46,7 @@ def test_staggered_steady_state_unique():
     import copy
     from mfsim.simulation import steady_state
 
-    case, raw = load_chapter10_case("10.1.1")
+    case, raw = chapter10_case("10.1.1"), legacy_results("10.1.1")
     vals = []
     for nel in (10, 50):
         c = copy.deepcopy(case)

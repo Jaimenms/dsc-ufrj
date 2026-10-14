@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from mfsim.analysis import mass_balance
-from mfsim.cases import load_chapter10_case
+from mfsim.cases import chapter10_case
 from mfsim.results import Results
 from mfsim.simulation import build_model
 
@@ -39,7 +39,7 @@ def _check_results(g, prefix, res, idx):
 def test_results_chapter10(key, golden):
     g = golden("results.npz")
     gc = golden("chapter10.npz")
-    case, raw = load_chapter10_case(key)
+    case = chapter10_case(key)
     model = build_model(case)
     T, X = gc[f"{key}/T"], gc[f"{key}/X"]
     res = Results(model, T, X)

@@ -1,5 +1,5 @@
-"""Casos de simulação (capítulo 10 da tese e estudos de severe slug)."""
+"""Casos de simulação: capítulo 10 da tese (JSON em `cases/chapter10`) e gerador de severe slug."""
 
-from .chapter10 import CHAPTER10, load_chapter10_case
+from .chapter10 import CaseInfo, chapter10_case, chapter10_info, chapter10_json_path, chapter10_keys, legacy_results
 
-__all__ = ["CHAPTER10", "load_chapter10_case"]
+__all__ = ["CaseInfo", "chapter10_case", "chapter10_info", "chapter10_json_path", "chapter10_keys", "legacy_results"]

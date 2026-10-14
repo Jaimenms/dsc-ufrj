@@ -77,7 +77,7 @@ uv run mfsim convert-runs antiga.npz --out-dir runs/                       # cor
 | `mfsim/simulation.py`, `results.py` | `build_model`, `simulate`, `steady_state`; `Results` com as saídas da tese por duto e por vértice |
 | `mfsim/io/`, `mfsim/initial/` | casos em JSON (`spec.py`; `$extends`/`$ref`/`$include` em `extends.py`; schema e `validate.py`), conversão dos `.mf2` (`legacy_mf2.py`), registo legado (`legacy_case.py`, só formato de entrada), dialeto das corridas antigas (`legacy_runs.py`, só para `convert-runs`); receitas de condição inicial (bloqueada, linha fechada) |
 | `mfsim/runs.py`, `analysis.py`, `cli.py` | corridas gravadas v2 (`load_run`, `save_run`, `Run.case`/`network`/`res`); assinaturas de ciclo e análises (varredura, riser, laboratório); `mfsim run\|steady\|stats\|scan\|riser\|val\|export-case\|validate\|convert-runs\|nb` |
-| `mfsim/cases/`, `io_legacy.py` | casos do capítulo 10 (dos `.mf2`) e gerador do caso de severe slug (`generate`, presets de laboratório) |
+| `mfsim/cases/`, `io_legacy.py` | acesso aos casos do capítulo 10 pelos JSON (`chapter10_case`, `chapter10_info`; `legacy_results` lê o `.mf2` só para comparar com o MATLAB) e gerador paramétrico do severe slug (`severe_slug_case`, `generate`) |
 | `mfsim/plotting.py`, `notebook_utils.py` | figuras no estilo da tese e apoio aos notebooks |
 | `cases/` | JSON: `examples/hello_world`, `chapter10/` (11 casos da tese), `severe_slug/` (referência, variantes como `$extends`, laboratório) |
 | `tools/`, `tests/`, `notebooks_src/` | `golden_generate` (referências de regressão), `manifest`, `make_nb`, `severe_run`/`save_run_data` (dialeto antigo); testes com `tests/golden/` (nível A = bit a bit, B = tolerância, C = assinaturas de ciclo; `CHANGELOG.md`); fontes dos 9 notebooks |

@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from mfsim.cases import CHAPTER10, load_chapter10_case
+from mfsim.cases import chapter10_keys, chapter10_case
 from mfsim.io.spec import case_from_json
 from mfsim.simulation import build_model
 
@@ -66,10 +66,10 @@ def _check(g, prefix, model, t, case=None):
         g.assert_equal(f"{prefix}/transform_jac", model.transform_jacobian(X0).toarray())
 
 
-@pytest.mark.parametrize("key", sorted(CHAPTER10))
+@pytest.mark.parametrize("key", chapter10_keys())
 def test_chapter10_network_assembly(key, golden):
     g = golden("network.npz")
-    case, _ = load_chapter10_case(key)
+    case = chapter10_case(key)
     _check(g, f"ch10/{key}", build_model(case), case.time.t0 + 1.0, case)
 
 
@@ -79,7 +79,7 @@ def test_chapter10_network_assembly(key, golden):
 )
 def test_chapter10_scheme_variants(key, method, golden):
     g = golden("network.npz")
-    case, _ = load_chapter10_case(key)
+    case = chapter10_case(key)
     c = copy.deepcopy(case).set_method(method)
     if method == "fv_upwind":
         c.set_options(conservative=True)

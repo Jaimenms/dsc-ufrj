@@ -7,7 +7,7 @@
    "section": "10.2.2",
    "title": "Rede com ciclo",
    "figures": "Figs. 10.26-10.30",
-   "note": "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (inclui as correções de load_chapter10_case)"
+   "note": "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (network_from_mf2: correções e composição do 10.3.2a)"
   },
   "description": "Cinco dutos de 200 m (10 elementos) formando um ciclo; dutos 4 e 5 com D=0.05 m; vértices dinâmicos nas junções."
  },

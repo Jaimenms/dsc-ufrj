@@ -76,11 +76,11 @@ def provenance():
 # ----------------------------------------------------------------------------- grupos
 def gen_chapter10():
     """Trajetórias completas dos casos do capítulo 10 como os notebooks as correm."""
-    from mfsim.cases import CHAPTER10
+    from mfsim.cases import chapter10_keys
     from mfsim.notebook_utils import run_case
 
     out = {}
-    for key in CHAPTER10:
+    for key in chapter10_keys():
         t0 = time.time()
         case, raw, res = run_case(key, **NB_KW.get(key, {}))
         out[f"{key}/T"] = res.T
@@ -93,12 +93,12 @@ def gen_chapter10():
 def gen_variants():
     """Cálculos secundários dos notebooks: estacionário automático, estudo de esquemas, 10.1.4
     com estacionário consistente, 10.3.1 em volumes finitos (modelo de deriva)."""
-    from mfsim.cases import load_chapter10_case
+    from mfsim.cases import chapter10_case, legacy_results
     from mfsim.network.graph import ports
     from mfsim.simulation import simulate, steady_state
 
     out = {}
-    case, raw = load_chapter10_case("10.1.1")
+    case, raw = chapter10_case("10.1.1"), legacy_results("10.1.1")
     case_ss = copy.deepcopy(case)
     case_ss.pipes[0].ports_in = ports((3, 1, 2, 2))
     case_ss.pipes[0].ic = None
@@ -120,7 +120,7 @@ def gen_variants():
             r = simulate(c, integrator="implicit", rtol=1e-4, atol=1e-6, max_step=np.inf, progress=False)
             out[f"10.1.1_mesh{nel}_{method}/T"] = r.T
             out[f"10.1.1_mesh{nel}_{method}/X"] = r.X
-    case, raw = load_chapter10_case("10.1.4")
+    case, raw = chapter10_case("10.1.4"), legacy_results("10.1.4")
     case_ss = copy.deepcopy(case)
     n = case_ss.pipes[0].n_elements[0] + 1
     case_ss.pipes[0].ic = np.stack([np.full(n, 0.3), np.full(n, 1.0), np.full(n, 0.5), np.full(n, 0.1)], axis=1)
@@ -128,7 +128,7 @@ def gen_variants():
     r = simulate(case_ss, integrator="implicit", rtol=1e-4, atol=1e-6, max_step=np.inf, progress=False)
     out["10.1.4_steady/T"] = r.T
     out["10.1.4_steady/X"] = r.X
-    case, raw = load_chapter10_case("10.3.1")
+    case, raw = chapter10_case("10.3.1"), legacy_results("10.3.1")
     case_fv = copy.deepcopy(case)
     case_fv.set_method("fv_upwind").set_options(conservative=True, q_switch=0.05)
     steady_state(case_fv, verbose=False, update_case=True)
@@ -224,14 +224,14 @@ def gen_results():
     """Pós-processamento (Results, mass_balance) em 3 instantes para 4 casos, a partir das
     trajetórias golden (capítulo 10) e da referência numpy 150 s."""
     from mfsim.analysis import mass_balance
-    from mfsim.cases import load_chapter10_case
+    from mfsim.cases import chapter10_case, legacy_results
     from mfsim.results import Results
     from mfsim.simulation import build_model
 
     out = {}
     g = np.load(GOLDEN / "chapter10.npz")
     for key in ("10.1.1", "10.3.1", "10.3.2b"):
-        case, raw = load_chapter10_case(key)
+        case, raw = chapter10_case(key), legacy_results(key)
         model = build_model(case)
         T, X = g[f"{key}/T"], g[f"{key}/X"]
         idx = np.array([0, T.size // 2, T.size - 1])
@@ -383,7 +383,7 @@ def gen_runs_meta():
 
 def gen_nightly():
     """Nível noturno: referência 3000 s em JAX e gas lift 2000 s (duas aberturas)."""
-    from mfsim.cases import load_chapter10_case
+    from mfsim.cases import chapter10_case, legacy_results
     from mfsim.integrators.implicit import ImplicitBDF
     from mfsim.network.graph import Choke
     from mfsim.network.schedules import PiecewiseLinear
@@ -400,7 +400,7 @@ def gen_nightly():
     print(f"  referência JAX 3000 s: {info['n_steps']} passos {time.time()-t0:.1f} s")
     for opening in (0.12, 0.10):
         tf = 2000.0
-        case, raw = load_chapter10_case("10.3.2b")
+        case, raw = chapter10_case("10.3.2b"), legacy_results("10.3.2b")
         case.set_time(tf=tf)
         for v in case.edges_of(Choke):
             if v.v_to == "6":
@@ -505,18 +505,18 @@ def gen_network():
     """Montagem da rede: todos os casos do capítulo 10 (com variantes de esquema no 10.1.1 e 10.3.1),
     os casos JSON do severe slug e duas corridas em rede."""
     import copy
-    from mfsim.cases import CHAPTER10, load_chapter10_case
+    from mfsim.cases import chapter10_keys, chapter10_case, legacy_results
     from mfsim.io.spec import case_from_json
     from mfsim.simulation import build_model
 
     out = {}
-    for key in CHAPTER10:
-        case, _ = load_chapter10_case(key)
+    for key in chapter10_keys():
+        case = chapter10_case(key)
         t = case.time.t0 + 1.0
         out.update(_network_arrays(f"ch10/{key}", build_model(case), t))
     for key, methods in (("10.1.1", ("fd_central", "fd_upwind", "petrov_galerkin")), ("10.3.1", ("fv_upwind",))):
         for m in methods:
-            case, _ = load_chapter10_case(key)
+            case = chapter10_case(key)
             c = copy.deepcopy(case)
             c.set_method(m)
             if m == "fv_upwind":

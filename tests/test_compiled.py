@@ -8,7 +8,7 @@ import copy
 import numpy as np
 import pytest
 
-from mfsim.cases import load_chapter10_case
+from mfsim.cases import chapter10_case
 from mfsim.cases.severe_slug import severe_slug_case
 from mfsim.fluid import Fluid
 from mfsim.simulation import build_model
@@ -58,11 +58,11 @@ def _severe(method="fv_upwind", **extra):
 
 
 MATRIX = {
-    "10.1.1": lambda: load_chapter10_case("10.1.1")[0],
-    "10.1.4": lambda: load_chapter10_case("10.1.4")[0],
-    "10.2.2": lambda: load_chapter10_case("10.2.2")[0],
-    "10.3.2b": lambda: load_chapter10_case("10.3.2b")[0],
-    "10.3.3": lambda: load_chapter10_case("10.3.3")[0],
+    "10.1.1": lambda: chapter10_case("10.1.1"),
+    "10.1.4": lambda: chapter10_case("10.1.4"),
+    "10.2.2": lambda: chapter10_case("10.2.2"),
+    "10.3.2b": lambda: chapter10_case("10.3.2b"),
+    "10.3.3": lambda: chapter10_case("10.3.3"),
     "severe_cons": lambda: _severe(conservative=True, art_visc=0.05),
     "severe_prim_muscl": lambda: _severe(conservative=False, fv_order=2, alpha_face="muscl"),
     "severe_fv_cons_scheme": lambda: _severe(method="fv_upwind_cons", art_visc=0.05),
@@ -96,7 +96,7 @@ def test_compiled_matches_numpy_and_traces(key):
 
 def test_specifications_info_numpy_only():
     """Os diagnósticos dos elementos (válvulas, reservatório, retenção) continuam no lado numpy."""
-    case, _ = load_chapter10_case("10.3.3")
+    case = chapter10_case("10.3.3")
     model = build_model(case)
     E, info = model.specifications(case.time.t0 + 1.0, model.initial_state())
     assert info["valves"] or info["reservoirs"] or info["check_valves"]

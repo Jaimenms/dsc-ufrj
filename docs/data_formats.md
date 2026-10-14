@@ -50,9 +50,13 @@ integration.integrator=radau --set network.edges.1.D=0.06` (qualquer campo, por 
 segmento sobre uma lista é o `id` do elemento ou, se nenhum coincidir, o índice), também em
 `mfsim steady` e em `case_from_json(..., overrides=[...])`; `tests/test_extends.py`.
 
-- `cases/chapter10/*.json`: os 11 casos da tese exportados dos .mf2 por
-  `uv run python -m mfsim.io.legacy_mf2` (com a composição do 10.3.2a e as correções de
-  `load_chapter10_case`; `meta.provenance`); `load_chapter10_json(chave)` lê-os.
+- `cases/chapter10/*.json`: os 11 casos da tese, exportados dos .mf2 por
+  `uv run mfsim export-case --chapter10` (`mfsim.io.legacy_mf2.network_from_mf2`: condição
+  inicial de `estados.X[:, 0]`, `LEGACY_OVERRIDES`, composição do 10.3.2a; registado em
+  `meta.provenance`). São a **fonte** dos casos: a descrição (secção, título, figuras,
+  descrição) vive em `meta` e a exportação preserva-a. `mfsim.cases.chapter10_keys()`,
+  `chapter10_case(chave)` e `chapter10_info(chave)` leem-nos; `legacy_results(chave)` carrega
+  o .mf2 indicado em `meta.provenance.source` só para comparar com os resultados do MATLAB.
 - `cases/severe_slug/*.json`: referência (config recomendada com arrasto físico de
   bolhas), variantes e os casos de laboratório, exportados das corridas gravadas
   (`uv run python -m mfsim.cases.severe_slug --export-runs`); casos novos por
@@ -136,7 +140,7 @@ tese reportavam (`NetworkSystem.report_row`).
 
 ## O grafo de ponta a ponta e o registo legado
 
-`load_chapter10_case`, `load_case` (`.mf2`), `case_from_json`, `severe_slug_case` e
+`chapter10_case`, `load_case` (`.mf2`), `case_from_json`, `severe_slug_case` e
 `mfsim.runs.load_run(...).case` devolvem um `Network`; `build_model`, `simulate`,
 `steady_state`, `save_run` e a linha de comando consomem-no diretamente.
 Edição conveniente no dialeto legado (o que os notebooks e testes faziam no `Case`):

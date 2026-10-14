@@ -8,7 +8,7 @@ import json
 import numpy as np
 import pytest
 
-from mfsim.cases import CHAPTER10, load_chapter10_case
+from mfsim.cases import chapter10_keys, chapter10_case
 from mfsim.io import case_from_json, case_to_json
 from mfsim.network.graph import Network
 
@@ -16,9 +16,9 @@ from mfsim.network.graph import Network
 from conftest import assert_same_model as _assert_same
 
 
-@pytest.mark.parametrize("key", list(CHAPTER10))
+@pytest.mark.parametrize("key", chapter10_keys())
 def test_chapter10_legacy_and_json_roundtrip(key, tmp_path):
-    net, raw = load_chapter10_case(key)
+    net = chapter10_case(key)
     _assert_same(net, Network.from_legacy_case(net.to_legacy_case()))
     path = tmp_path / f"{key}.json"
     case_to_json(net, str(path))
@@ -55,7 +55,7 @@ def test_severe_slug_runs_roundtrip(name, tmp_path, data_dir):
 def test_json_is_self_contained(tmp_path):
     """O JSON gravado não depende do Python que o gerou: valores explícitos de modelo, esquema,
     portas e integração para cada duto; as junções levam as especificações herdadas."""
-    net, raw = load_chapter10_case("10.3.2b")
+    net = chapter10_case("10.3.2b")
     d = case_to_json(net, str(tmp_path / "c.json"))
     pipe = next(e for e in d["network"]["edges"] if e["type"] == "pipe")
     assert set(pipe) >= {"id", "from", "to", "D", "roughness", "geometry", "model", "scheme", "ports", "ic"}
@@ -64,20 +64,20 @@ def test_json_is_self_contained(tmp_path):
     assert any(v["kind"] == "junction" and v.get("spec") for v in d["network"]["vertices"])
 
 
-@pytest.mark.parametrize("key", list(CHAPTER10))
+@pytest.mark.parametrize("key", chapter10_keys())
 def test_chapter10_json_files_match_mf2(key):
-    """Os JSON exportados em cases/chapter10 constroem o mesmo modelo que os .mf2."""
-    from mfsim.cases.chapter10 import load_chapter10_json
+    """Os JSON exportados em cases/chapter10 (a fonte dos casos) constroem o mesmo modelo que
+    os .mf2 originais lidos com as correções do exportador."""
+    from mfsim.io.legacy_mf2 import network_from_mf2
 
-    net, raw = load_chapter10_case(key)
-    net_j, raw_j = load_chapter10_json(key)
-    _assert_same(net, net_j)
+    net_m, raw = network_from_mf2(key)
+    _assert_same(net_m, chapter10_case(key))
 
 
 def test_network_editing_helpers():
     """`set_method`/`set_options`/`set_time` reconstroem as especificações sem alterar o resto
     (a identidade de `from_legacy(to_legacy())` é o que permite editar no dialeto legado)."""
-    net, raw = load_chapter10_case("10.1.1")
+    net = chapter10_case("10.1.1")
     before = net.pipes[0].model
     net2 = Network.from_legacy_case(net.to_legacy_case()).set_options(k_switch=net.pipes[0].model.regime.k_switch)
     assert net2.pipes[0].model == before and net2.pipes[0].scheme == net.pipes[0].scheme

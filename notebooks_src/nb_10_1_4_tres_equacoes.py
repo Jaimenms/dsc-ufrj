@@ -18,12 +18,12 @@
 # %%
 import copy, numpy as np, matplotlib.pyplot as plt
 from mfsim.notebook_utils import describe, run_case, compare_states, show_pipe
-from mfsim.cases import load_chapter10_case
+from mfsim.cases import chapter10_case, legacy_results
 from mfsim.simulation import steady_state, simulate
 from mfsim.plotting import pipe_surfaces, pipe_timeseries, legacy_pipe_dict
 
 describe("10.1.4")
-case, raw = load_chapter10_case("10.1.4")
+case, raw = chapter10_case("10.1.4"), legacy_results("10.1.4")
 print("regime do duto:", case.pipes[0].regime, "(6 = identificação automática)")
 
 # %% [markdown]

@@ -8,7 +8,7 @@ import copy
 import numpy as np
 import pytest
 
-from mfsim.cases import load_chapter10_case
+from mfsim.cases import chapter10_case
 from mfsim.cases.severe_slug import severe_slug_case
 from mfsim.closures import ClosureInputs, equilibrium_fractions, identify_regime, intermittent, annular
 from mfsim.fluid import Fluid
@@ -160,7 +160,7 @@ def test_regime_auto_nodal_schemes():
     """Regime 6 nos esquemas nodais da tese (10.1.1 com identificação automática)."""
     from mfsim.compiled import build_jax_rhs
 
-    case, raw = load_chapter10_case("10.1.1")
+    case = chapter10_case("10.1.1")
     c = copy.deepcopy(case)
     c.set_options(regime=6)
     model = build_model(c)
