@@ -1,5 +1,5 @@
 """Resumo das corridas de validação com dados de laboratório (item 8): período, pressões e picos
-contra os valores publicados. uso: uv run python scratch/val_summary.py [tags...]  (tags em scratch/severe_D_<tag>.npz
+contra os valores publicados. uso: uv run python tools/val_summary.py [tags...]  (tags em runs/<tag>.npz ou archive/scratch_2026-10/npz/severe_D_<tag>.npz,
 ou nomes em notebooks/data/)"""
 import numpy as np, json, sys, re, warnings
 warnings.filterwarnings("ignore")
@@ -7,6 +7,7 @@ from mfsim.cases.severe_slug import severe_slug_case, boe_criterion
 from mfsim.simulation import build_model
 from mfsim.results import Results
 from mfsim.fluid import Fluid
+from mfsim.runs import case_from_severe_opts, flows_from_severe_opts, load_run
 
 # referências experimentais: período (s), pressão na linha mín-máx (kPa abs), fonte
 REF = {
@@ -17,18 +18,21 @@ REF = {
 }
 
 def rebuild(opts, T, tf):
-    fluid = Fluid(rhoL0=opts.get("rhoL", 900.0), rhoG0=opts.get("rhoG0", 1.2), muL=opts.get("muL", 2e-3), muG=opts.get("muG", 1.8e-5), gammaL=opts.get("gammaL", 1000.0), gammaG=opts.get("gammaG", 1.05), P0=opts.get("P0", 1e5), sigma=opts.get("sigma", 0.05))
-    D = opts.get("D", 0.05); A = np.pi*D**2/4; P_out = opts.get("P_out", 4.0)
-    qL = opts.get("vSL", 0.3)*fluid.rhoL0*A; qG = opts.get("vSG", 0.1)*fluid.rhoG(opts.get("P_gas_ref", P_out + 1.0)*1e5)*A
-    reg = opts.get("regime", 4)
-    case = severe_slug_case(method="fv_upwind", tf=tf, dt_out=opts.get("dt_out", 2.0), qL=qL, qG=qG, D=D, P_out_bar=P_out, L_h1=opts.get("L_h1", 20.0), L_down=opts.get("L_down", 300.0),
-                            slope_down_deg=opts.get("slope", -3.0), H_riser=opts.get("H", 20.0), L_h2=opts.get("L_h2", 5.0), n_h1=opts.get("n_h1", 2), n_down=opts["n_down"], n_riser=opts["n_riser"], n_h2=opts.get("n_h2", 2),
-                            regime=reg, single_pipe=True, fluid=fluid, roughness=opts.get("roughness", 1e-5), start=opts.get("start", "blocked"), t_ramp=opts.get("t_ramp", 100.0), dP_margin_bar=opts.get("dP_margin", 0.3),
-                            extra={k: v for k, v in {"regime_vertical": opts.get("rv", 0 if reg == 6 else 2), "k_switch": opts.get("k_switch"), "ipe_smooth": opts.get("ipe_smooth"), "ipe_local": opts.get("ipe_local"),
-                                                     "relax_target": opts.get("relax_target"), "virtual_mass": opts.get("virtual_mass"), "bubble_drag": opts.get("bubble_drag"), "q_switch_L": 0.02*qL, "q_switch_G": 0.02*qG, "switch_frac": opts.get("switch_frac"),
-                                                     "relax_time": opts.get("relax"), "conservative": opts.get("conservative"), "vertical_blend": opts.get("vblend"), "art_visc": opts.get("art_visc"),
-                                                     "low_void_regime": opts.get("low_void"), "high_void_regime": opts.get("high_void")}.items() if v is not None})
-    return case, fluid, A, qL, qG
+    """Caso do dialeto do driver (mfsim.runs.case_from_severe_opts) e (fluido, A, qL, qG)."""
+    case = case_from_severe_opts(opts, tf=tf)
+    qL, qG, A, _ = flows_from_severe_opts(opts, case.fluid)
+    return case, case.fluid, A, qL, qG
+
+
+def load_opts(tag):
+    """Corrida (`load_run`) e opções no dialeto do driver: as próprias nos ficheiros do driver,
+    ou o `meta` das corridas gravadas traduzido (H, low_void, ...)."""
+    run = load_run(tag)
+    if run.opts is not None:
+        return run, dict(run.opts)
+    opts = dict(run.meta); opts.setdefault("H", opts.get("H_riser", 20.0)); opts.setdefault("low_void", opts.get("low_void_regime")); opts.setdefault("high_void", opts.get("high_void_regime")); opts.setdefault("vblend", opts.get("vertical_blend")); opts.setdefault("relax", opts.get("relax_time"))
+    return run, opts
+
 
 def blowdowns(T_, P_in, min_gap):
     lvl = P_in.min() + 0.3*(P_in.max() - P_in.min()); low = P_in < lvl; out = []; i = 0
@@ -43,11 +47,8 @@ def blowdowns(T_, P_in, min_gap):
     return np.array(out)
 
 def summarize(tag):
-    try:
-        d = np.load(f"scratch/severe_D_{tag}.npz"); opts = json.loads(str(d["opts"]))
-    except FileNotFoundError:
-        d = np.load(f"notebooks/data/{tag}.npz"); opts = json.loads(str(d["meta"])); opts.setdefault("H", opts.get("H_riser", 20.0)); opts.setdefault("low_void", opts.get("low_void_regime")); opts.setdefault("high_void", opts.get("high_void_regime")); opts.setdefault("vblend", opts.get("vertical_blend")); opts.setdefault("relax", opts.get("relax_time"))
-    T = d["T"]; case, fluid, A, qL, qG = rebuild(opts, T, T[-1]); model = build_model(case); r = Results(model, T, d["X"]); p = r.pipe(0)
+    run, opts = load_opts(tag)
+    T = run.T; case, fluid, A, qL, qG = rebuild(opts, T, T[-1]); model = build_model(case); r = Results(model, T, run.X); p = r.pipe(0)
     P1 = p["out"]["P_bar"][1]*100.0; q = p["out"]["qL"][-1]; x = p["x"]; aG = p["out"]["alphaG"]
     key = next((k for k in REF if k in tag), None); ref = REF.get(key, {})
     per_ref = ref.get("periodo", 100.0)

@@ -10,12 +10,11 @@ __pycache__/
 notebooks/data/*.npz
 legacy/DSc_JAIME_v92.DOC
 
-# saídas de corridas e diagnósticos (scratch é arquivada fora do pacote)
-scratch/*.npz
-scratch/*.log
-scratch/*.txt
-scratch/*.png
-scratch/*.npy
-scratch/nblogs/
+# saídas de corridas e diagnósticos; dados da antiga scratch arquivados (fixados pelo manifesto)
 runs/
+archive/scratch_2026-10/npz/
+archive/scratch_2026-10/logs/
+archive/scratch_2026-10/nblogs/
+archive/scratch_2026-10/cmp/
+archive/scratch_2026-10/cmp2/
 archive/**/*.tar.gz

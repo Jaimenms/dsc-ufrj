@@ -1,4 +1,4 @@
-import numpy as np, time, sys, traceback
+import numpy as np, time, sys, traceback, os
 from mfsim.io_legacy import load_case, legacy_states
 from mfsim.simulation import build_model, state_bounds
 from mfsim.integrators import integrate_implicit
@@ -30,6 +30,6 @@ for f in files:
         if model.vA:
             seg = slice(model.n_pipe_states, None)
             print("  vertA maxdiff:", np.max(np.abs(X[seg]-Xl[seg]), axis=1))
-        np.save(f"scratch/X_{f}_implicit.npy", X)
+        os.makedirs("runs", exist_ok=True); np.save(f"runs/X_{f}_implicit.npy", X)
     except Exception as e:
         traceback.print_exc()

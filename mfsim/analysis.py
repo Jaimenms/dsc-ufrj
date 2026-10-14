@@ -110,3 +110,54 @@ def cycle_signature(T, P_in, q_out, min_gap=200.0, t_skip=0.0):
                 interval=float(np.mean(np.diff(tb))) if tb.size > 1 else np.nan,
                 n_blowdowns=int(tb.size), P_min=float(P_in[sel].min()), P_max=float(P_in[sel].max()),
                 q_peak=float(q_out[sel].max()))
+
+
+def gas_front_widths(x, aG, ib):
+    """Largura (m) da frente de gás no riser em cada instante em que há gás acima da base
+    (fração > 0.5 em algum ponto e < 0.05 noutro): distância entre os pontos em que a
+    fração cruza 0.1 e 0.9. (Era parte de scratch/cycle_stats.py.)"""
+    widths = []
+    xs = x[ib:]
+    for it in range(aG.shape[1]):
+        seg = aG[ib:, it]
+        if seg.max() > 0.5 and seg.min() < 0.05:
+            j1 = np.argmax(seg > 0.1)
+            j9 = np.argmax(seg > 0.9) if (seg > 0.9).any() else len(seg) - 1
+            if j9 > j1:
+                widths.append(xs[j9] - xs[j1])
+    return np.array(widths)
+
+
+def cycle_stats(run, t_skip=100.0, min_gap=200.0):
+    """Estatísticas de ciclo de uma corrida gravada do severe slug (partida bloqueada, duto
+    único): instantes dos blowdowns, intervalo médio, pico e média da vazão de líquido na
+    saída, faixa da pressão de entrada (bar) depois de `t_skip`, largura mediana da frente
+    de gás no riser, passos e CPU do integrador. (Era scratch/cycle_stats.py.)"""
+    p = run.pipe(0)
+    T = run.T
+    P1 = p["out"]["P_bar"][1]
+    q = p["out"]["qL"][-1]
+    aG = p["out"]["alphaG"]
+    x = p["x"]
+    tb = blowdowns(T, P1, min_gap)
+    per = float(np.mean(np.diff(tb))) if tb.size > 1 else np.nan
+    sel = T > t_skip
+    widths = gas_front_widths(x, aG, run.ib)
+    return dict(blowdowns=tb, interval=per, q_peak=float(q[sel].max()), q_mean=float(q[sel].mean()),
+                P_min=float(P1[sel].min()), P_max=float(P1[sel].max()),
+                front_width=float(np.median(widths)) if widths.size else np.nan,
+                n_steps=run.meta.get("n_steps", run.info.get("n_steps")), cpu=run.meta.get("cpu", run.info.get("cpu")))
+
+
+CYCLE_STATS_HEADER = (f"{'trajetória':48s} {'passos':>7s} {'CPU':>6s} {'blowdowns':>24s} {'interv.':>7s} {'pico':>6s} "
+                      f"{'P_in':>11s} {'prod.':>6s} {'frente':>6s}")
+
+
+def format_cycle_stats(name, st):
+    """Linha da tabela de `cycle_stats` (formato de scratch/cycle_stats.py)."""
+    short = name.replace("severe_slug_blocked_", "")
+    n_steps = int(st["n_steps"]) if st["n_steps"] is not None else -1
+    cpu = float(st["cpu"]) if st["cpu"] is not None else np.nan
+    tb = np.asarray(st["blowdowns"], float)
+    return (f"{short:48s} {n_steps:7d} {cpu:5.0f}s {str(tb.round(0).astype(int).tolist()):>24s} {st['interval']:6.0f}s "
+            f"{st['q_peak']:5.2f} {st['P_min']:5.2f}-{st['P_max']:4.2f} {st['q_mean']:6.3f} {st['front_width']:5.1f}m")

@@ -16,8 +16,30 @@ uv run jupyter lab notebooks # notebooks de reprodução das figuras
 Os notebooks são gerados a partir de `notebooks_src/*.py` (marcadores `# %%`):
 
 ```bash
-uv run python tools/make_nb.py notebooks_src/nb_10_1_1_estratificado.py --execute
+uv run python tools/make_nb.py notebooks_src/nb_10_1_1_estratificado.py --execute   # ou: uv run mfsim nb ...
 ```
+
+Linha de comando (`mfsim/cli.py`; os casos são ficheiros JSON `mfsim-case/1`, ver a secção
+"Casos em JSON"):
+
+```bash
+uv run mfsim run cases/severe_slug/reference.json --backend jax --tf 150 --out runs/ref150.npz
+uv run mfsim run cases/severe_slug/lab_jansen.json --backend jax        # validação de laboratório (shut_in, slow)
+uv run mfsim steady cases/chapter10/10_1_1.json --out /tmp/10_1_1_ss.json
+uv run mfsim stats severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys   # ciclos de uma corrida gravada
+uv run mfsim export-case --chapter10            # .mf2 -> cases/chapter10/*.json
+uv run mfsim export-case --severe --out novo.json --param D=0.05 --param start=blocked
+```
+
+`mfsim run` grava a corrida em npz v2 (`T`, `X`, `acc`, `meta`, `info_json`,
+`provenance_json` e o caso completo em `case_json`; `mfsim.runs.load_run` lê qualquer
+corrida — `runs/`, `notebooks/data/`, arquivo — e reconstrói caso, modelo e resultados);
+uma falha do integrador grava a trajetória parcial. As ferramentas de análise e
+diagnóstico ficam em `tools/` (`severe_run.py` é o antigo driver `scratch/severe_D.py`
+com as mesmas opções; `cycle_stats`, `scan_summary`, `val_summary`, `riser_cc`,
+`verify_jax`, `diag_*`); a antiga `scratch/` está arquivada em
+`archive/scratch_2026-10/` (índice em `INDEX.md`, nada apagado; os dados fora do git
+são fixados por `MANIFEST.sha256`, `uv run python tools/manifest.py --check`).
 
 ## Estrutura
 
@@ -35,7 +57,8 @@ uv run python tools/make_nb.py notebooks_src/nb_10_1_1_estratificado.py --execut
 | `mfsim/core/` | slots do estado, `PortKind` (livre/Dirichlet/Neumann), dataclasses de opções (modelo, esquema, tempo, referência, integração) |
 | `mfsim/io/`, `mfsim/initial/` | casos em JSON (`mfsim-case/1`, `$ref`/`$include`), conversão dos `.mf2`; receitas de condição inicial (bloqueada, linha fechada) |
 | `mfsim/runs.py`, `mfsim/analysis.py` | carregador único das corridas gravadas (`load_run`, `case_from_meta`, `integrate_run`), assinaturas de ciclo |
-| `cases/`, `tools/`, `tests/golden/` | casos JSON (capítulo 10, severe slug), ferramentas (`make_nb`, `golden_generate`, `manifest`), referências de regressão (nível A = bit a bit) |
+| `mfsim/cli.py` | `mfsim run\|steady\|stats\|export-case\|nb` |
+| `cases/`, `tools/`, `tests/golden/`, `archive/` | casos JSON (capítulo 10, severe slug), ferramentas (`make_nb`, `golden_generate`, `manifest`, `severe_run`, análises), referências de regressão (nível A = bit a bit), arquivo da antiga `scratch/` |
 | `mfsim/integrators/` | BDF implícito próprio (ordem 1–2, passo adaptativo, Newton modificado, Jacobiana colorida) e invólucro do `solve_ivp` |
 | `mfsim/steady.py`, `mfsim/initial_guess.py` | estado estacionário (Newton + pseudo-transiente) e estimativa inicial |
 | `mfsim/io_legacy.py` | leitura dos `.mf2` originais (entrada e resultados do MATLAB) |
@@ -250,7 +273,7 @@ acústico do tampão e do bolsão), Newton com ≈ 6 iterações por não-suavid
 fechamentos (Jacobiana nova a cada passo não muda nada). GPU não ajuda (100–200
 estados, custo dominado por latência de chamadas numpy, não por vazão);
 paralelismo só entre simulações. Alavancas que funcionaram, medidas em janelas
-de reinício na fase cara (`scratch/restart_ring.py`, `scratch/restart_probe.py`)
+de reinício na fase cara (`archive/scratch_2026-10/py/restart_ring.py`, `archive/scratch_2026-10/py/restart_probe.py`)
 e confirmadas em simulações completas de 3000 s (mesmo ciclo, balanço exato):
 
 | configuração (malha grossa, arco, conservativa) | passos | CPU |
@@ -353,7 +376,7 @@ Dirichlet) ou copiada da célula vizinha quando é "ausente"; o fluxo de massa n
 face de contorno usa o fantasma como doador quando ele é imposto, e as faces de
 contorno com fração imposta usam o estado do lado doador (célula em saída,
 vértice em entrada) para os fechamentos, em vez da média. Demonstração em
-`tests/test_reversal.py` (`scratch/reversal_demo.py`): duto entre dois vértices
+`tests/test_reversal.py` (`archive/scratch_2026-10/py/reversal_demo.py`): duto entre dois vértices
 de pressão, diferença de pressão que troca de sinal em 60–100 s, separador com
 αG = 0 — com a fração imposta, a inversão enche o duto com o líquido do separador
 (frente nítida, balanço fechado); com a fração livre, o que volta tem a
@@ -593,7 +616,7 @@ faces só entra no momento. A difusão da frente vem da dinâmica do momento
 de α.
 
 **Arrasto espúrio nas células cheias de líquido** (experimento
-`scratch/plug_ring.py`, seção correspondente no `nb_severe_slug`): uma coluna de
+`archive/scratch_2026-10/py/plug_ring.py`, seção correspondente no `nb_severe_slug`): uma coluna de
 20 m do modelo a dois fluidos cheia de líquido, com fechamento estratificado e um
 degrau de 0.2 bar entre pressões fixas, trava em 0.49 kg/s, enquanto o líquido
 monofásico acelera a 3.6 kg/s em 3 s. O balanço de momento mostra GammaL =
@@ -654,7 +677,7 @@ formulação adotada (`StaggeredFVScheme._rhs_drift`, numpy e JAX):
   cortada e a derivada automática é zero, o que derrubava o coeficiente no piso
   e fazia o lado direito explodir).
 
-Verificação no poço 10.3.1 (`tests/test_fv_drift.py`, `scratch/well_fv.py`,
+Verificação no poço 10.3.1 (`tests/test_fv_drift.py`, `archive/scratch_2026-10/py/well_fv.py`,
 figura `notebooks/figs_well_fv.png`): estacionário com resíduo 1e−11 e todos os
 autovalores da Jacobiana negativos (a primeira versão, com o sinal do coeficiente
 trocado, tinha autovalores +4400 e parava em 3 ms); transiente de fechamento e
@@ -796,7 +819,7 @@ acima de 90 %, massa virtual, bolhas abaixo de 1 %) é a mais barata de todas e
 passa a ser a recomendada; os fechamentos prescritos "estratificado na linha,
 bolhas no riser" subestimam o intervalo em ~7 %. Dados em
 `notebooks/data/severe_slug_blocked_conservative_arc_tol_{hv,hv_vm_lv}.npz`;
-diagnóstico `scratch/riser_cc.py`.
+diagnóstico `tools/riser_cc.py`.
 
 ## Fechamento do riser no blowdown: intermitente contra bolhas (item 5)
 
@@ -907,7 +930,7 @@ com vSG à pressão do separador, αG = 0.5 e L = linha de entrada + descendente
 (coluna recalculada em 2026-10-13: a versão anterior de `boe_criterion` dividia L
 por sin|θ|, o que não consta das fontes e dava valores 19× maiores, como o 1.03 m/s
 do caso base); "linha" é o padrão que a
-identificação da tese atribui ao estado médio da linha (`scratch/scan_summary.py`).
+identificação da tese atribui ao estado médio da linha (`tools/scan_summary.py`).
 
 | P_out (bar) | vSL (m/s) | vSG (m/s) | Bøe mín | linha | ΔP_in | blowdowns | intervalo | pico |
 |---|---|---|---|---|---|---|---|---|
@@ -1000,7 +1023,7 @@ Fontes com geometria, vazões e ciclo medidos (PDFs obtidos em 2026-10-13):
 | Tengesdal (2002), tese TUSSP, instalação grande | ar–óleo (SG 0.856, 18.9 cSt a 40 °C), 3", linha 19.8 m (+ tanques até 85 m efetivos) a −1°, riser 14.6 m | teste 1: vSL 0.32 / vSG 0.35 m/s → 79 s, ΔP 101 kPa (121–222); teste 2: vSL 0.2 / vSG 0.68 → 66 s, 101 kPa |
 | Sancho (IST, 2015), tabela 5 de Malekzadeh et al. (2012) | ar–água, 2", linha 100 m a −2°, riser 15.5 m | 38 casos com período e tipo, mas sem as vazões na versão obtida (não usada) |
 
-Casos montados com `severe_slug_case` (`scratch/val_launch3.sh`; opções novas do
+Casos montados com `severe_slug_case` (`archive/scratch_2026-10/sh/val_launch3.sh`; hoje `mfsim run cases/severe_slug/lab_*.json --backend jax`; opções novas do
 `severe_D.py`: `rhoG0`, `P0`, `sigma`, `muG`, `P_gas_ref` = pressão em que vSG é
 dada, `dt_out`, `L_h2`, `roughness`, `bubble_drag`, `t_ramp`), partida de linha
 fechada (`start="shut_in"`, rampa de 20 s; a partida bloqueada com 0.05 bar de
@@ -1008,8 +1031,8 @@ sobrepressão dá um blowdown inicial violento a escala de laboratório), padrã
 fixo, `noslip`, anular > 90 %, massa virtual 0.5, bolhas < 1 %, `tol_range` 0.01,
 JAX. O volume de gás a montante é representado por linha horizontal de entrada
 (`L_h1`; o estratificado guarda ≈ 35 % de gás nela: 15 m ≈ 5 m de gás no caso
-Jansen, contra 10 m da bancada). Resumo pelo `scratch/val_summary.py` e figuras
-pelo `scratch/val_plot.py`.
+Jansen, contra 10 m da bancada). Resumo pelo `tools/val_summary.py` e figuras
+pelo `tools/val_plot.py`.
 
 **Achado 1 — fechamento de bolhas da tese.** Na primeira corrida (Jansen, fechamentos
 da tese, partida bloqueada) o modelo dá período 75 s contra 46.6 s medidos e
@@ -1061,7 +1084,7 @@ pressão — não voltou a aparecer com γL = 100. O integrador ganhou um diagn�
 do passo rastejante (componentes dominantes do erro local e da última atualização
 de Newton quando h < 10⁻³ s) e o `severe_D.py` grava a trajetória parcial em falha.
 
-**Resultados** (`scratch/val_summary.py`; período = média entre mínimos de P_in abaixo
+**Resultados** (`tools/val_summary.py`; período = média entre mínimos de P_in abaixo
 de 30 % da faixa; pressão na entrada da linha, kPa abs; "medido" = fonte acima).
 Partida de linha fechada e γL = 100 salvo indicação; "tese"/"físico" = fechamento de bolhas.
 

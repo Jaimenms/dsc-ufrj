@@ -79,3 +79,18 @@ def test_specifications_info_numpy_only():
     for grp in info.values():
         for d in grp:
             assert all(np.isfinite(float(v)) for v in d.values() if not isinstance(v, (int, np.integer)))
+
+
+@pytest.mark.data
+@pytest.mark.parametrize("name", ["severe_slug_lab_jansen_fisico", "severe_slug_lab_fabre2_fisico"])
+def test_lab_shut_in_jacobian_finite(name, data_dir):
+    """Casos de laboratório com partida de linha fechada (fases paradas, arrasto físico de
+    bolhas): a Jacobiana compilada é finita no estado inicial (regressão encontrada na
+    noturna: NaN pelo diâmetro de bolha infinito)."""
+    from mfsim.runs import case_from_meta, load_run
+    run = load_run(str(data_dir / f"{name}.npz"))
+    model = build_model(case_from_meta(run.meta, tf=10.0))
+    cn = CompiledNetwork(model)
+    X0 = model.initial_state()
+    assert np.all(np.isfinite(cn.rhs(0.0, X0)))
+    assert np.all(np.isfinite(cn.jac(0.0, X0)))

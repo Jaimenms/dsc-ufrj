@@ -23,7 +23,7 @@ if opts.get("steady"):
     for mode in ("numpy", "jax"):
         c = copy.deepcopy(case0)
         if mode == "jax":
-            from mfsim.jaxrhs import get_jax
+            from mfsim.compiled import get_jax
             get_jax(build_model(c))      # compilação fora da cronometragem
         t0 = time.time()
         model, X, info = steady_state(c, X0=opts.get("X0"), verbose=False, jax=(mode == "jax"))
@@ -33,7 +33,7 @@ if opts.get("steady"):
 for mode in ("numpy", "jax"):
     case = copy.deepcopy(case0)
     if mode == "jax":
-        from mfsim.jaxrhs import get_jax
+        from mfsim.compiled import get_jax
         m = build_model(case); t0 = time.time(); rhs_j, jac_j = get_jax(m); x0 = m.initial_state(); rhs_j(0.0, x0); jac_j(0.0, x0)
         out["jax_compile"] = time.time() - t0
     t0 = time.time()

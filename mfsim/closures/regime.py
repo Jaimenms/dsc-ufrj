@@ -368,8 +368,11 @@ def identify_regime(inp: ClosureInputs, k_switch=1e6, eq=None, smooth=False, loc
     rhoM = aL_bol * rhoL + aG_bol * rhoG
     f_M, _ = fanning(vM, rhoM, muL, D, eps, bk=bk)
     vM_s = xp.where(vM == 0, 1e-30, vM)
-    dmax = (0.725 + 4.15 * bk.safe_sqrt(xp.abs(vGS / vM_s))) * (sigma / rhoL) ** (3.0 / 5.0) * \
-        xp.abs(2.0 * f_M * vM**3 / D) ** (-2.0 / 5.0)
+    # mistura parada: dmax infinito sem formar o produto (tangente 0 * inf = NaN em AD)
+    arg = xp.abs(2.0 * f_M * vM**3 / D)
+    small = arg == 0
+    dmax = xp.where(small, xp.inf, (0.725 + 4.15 * bk.safe_sqrt(xp.abs(vGS / vM_s))) * (sigma / rhoL) ** (3.0 / 5.0)
+                    * xp.where(small, 1.0, arg) ** (-2.0 / 5.0))
     ddef = 2.0 * xp.sqrt(0.4 * sigma / xp.abs(rhoL - rhoG) / G)
     dmigr = (3.0 / 8.0) * rhoL / xp.abs(rhoL - rhoG) * f_M * vM**2 / G / cos_t
 

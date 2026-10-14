@@ -1,11 +1,12 @@
 """Compara a rede de 4 dutos (vértices dinâmicos) com o duto único curvado no severe slug."""
-import numpy as np, warnings, json, sys
+import numpy as np, warnings, json, sys, os
 warnings.filterwarnings("ignore")
 from mfsim.cases.severe_slug import severe_slug_case
 from mfsim.simulation import build_model
 from mfsim.results import Results
 from mfsim.analysis import mass_balance
 from mfsim.fluid import Fluid
+from mfsim.runs import load_run
 fluid = Fluid(rhoL0=900.0, rhoG0=1.2, muL=2e-3, muG=1.8e-5, gammaL=100.0, gammaG=1.05, P0=1e5, sigma=0.05)
 D=0.05; A=np.pi*D**2/4; qL=0.3*900*A; qG=0.1*fluid.rhoG(5e5)*A
 def mk(single, vol=0.05):
@@ -25,7 +26,7 @@ def blowdowns(T, P, min_gap=60.0):
     return np.array(out)
 rows = []
 for tag, single, vol in [(sys.argv[1], True, 0.05)] + [(t, False, v) for t, v in zip(sys.argv[2::2], map(float, sys.argv[3::2]))]:
-    d = np.load(f"scratch/severe_D_{tag}.npz"); T, X = d["T"], d["X"]; opts = json.loads(str(d["opts"]))
+    run_ = load_run(tag); T, X = run_.T, run_.X; opts = run_.meta
     model = build_model(mk(single, vol)); res = Results(model, T, X)
     p_in = res.pipe(0)["out"]["P_bar"][1]; p_last = res.pipe(len(model.pipes) - 1)
     q_out = p_last["out"]["qL"][-1]
@@ -41,7 +42,7 @@ for tag, single, vol in [(sys.argv[1], True, 0.05)] + [(t, False, v) for t, v in
     for vi in model.vA:
         iH, iP = model.vertex_A_index(model.vertices[vi].index); v = model.vertices[vi]
         rhoL = fluid.rhoL(np.maximum(X[iP] * model.PR, 1e3)); mass += v.volume * (1 - X[iH]) * rhoL
-    accum = d["acc"] if "acc" in d.files else None
+    accum = run_.acc
     npipes = len(model.pipes)
     if accum is not None and accum.shape[0] >= 2 * npipes + 2 * len(model.vA):
         # entrada - saída do sistema = soma dos acumuladores dos dutos + dos vértices (BDF-consistente)
@@ -53,4 +54,4 @@ for tag, single, vol in [(sys.argv[1], True, 0.05)] + [(t, False, v) for t, v in
     info = dict(tag=tag, rede=not single, vol=vol if not single else None, passos=opts.get("n_steps"), blowdowns=int(tb.size), periodo=float(per), pico=float(q_out[T > 100].max()),
                 P_min=float(p_in[T > 100].min()), P_max=float(p_in[T > 100].max()), erro_massa=float(mass[-1] - mass[0] - netL[-1]))
     rows.append(info); print(json.dumps(info))
-    np.savez(f"scratch/cmpnet_{tag}.npz", T=T, p_in=p_in, q_out=q_out, aG_base=aG_base, mass=mass - mass[0])
+    os.makedirs("runs", exist_ok=True); np.savez(f"runs/cmpnet_{tag}.npz", T=T, p_in=p_in, q_out=q_out, aG_base=aG_base, mass=mass - mass[0])

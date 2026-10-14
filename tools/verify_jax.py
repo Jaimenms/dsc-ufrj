@@ -4,7 +4,7 @@ warnings.filterwarnings("ignore")
 from mfsim.cases import load_chapter10_case
 from mfsim.cases.severe_slug import severe_slug_case
 from mfsim.simulation import build_model
-from mfsim.jaxrhs import build_jax_rhs
+from mfsim.compiled import build_jax_rhs
 from mfsim.fluid import Fluid
 from mfsim.integrators.jacobian import colored_jacobian, color_groups
 

@@ -1,0 +1,4 @@
+trajetória                                        passos    CPU                blowdowns interv.   pico        P_in  prod. frente
+conservative_arc_tol_hv_vm_lv_bd_phys              15602    89s    [42, 782, 1624, 2438]    799s  6.53  4.00-5.85  0.509   2.9m
+conservative_arc                                  112474  1341s [40, 686, 1402, 2116, 2832]    698s  6.78  4.19-5.86  0.504   2.9m
+conservative_arc_av                                85653  1210s [78, 714, 1448, 2184, 2918]    710s  6.65  4.19-5.86  0.519   2.9m

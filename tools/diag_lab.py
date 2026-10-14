@@ -1,14 +1,14 @@
 """Saída densa do estado de um caso de laboratório (opções JSON como severe_D.py) entre t0 e t0+dur: variação máxima
 por nó e variável entre saídas consecutivas e estado final; tolera falha (usa o que foi integrado).
-uso: uv run python -u scratch/diag_lab.py '{json}' t0 dur dt"""
+uso: uv run python -u tools/diag_lab.py '{json}' t0 dur dt"""
 import numpy as np, warnings, time, sys, json
-warnings.filterwarnings("ignore"); sys.path.insert(0, "scratch")
-from val_summary import rebuild
+warnings.filterwarnings("ignore")
+from mfsim.runs import case_from_severe_opts
 from mfsim.simulation import build_model, state_bounds
-from mfsim.jaxrhs import build_jax_rhs
+from mfsim.compiled import build_jax_rhs
 from mfsim.integrators.implicit import ImplicitBDF
 opts = json.loads(sys.argv[1]); t0, dur, dt = float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4])
-case, fluid, A, qL, qG = rebuild(opts, None, t0 + dur); model = build_model(case); X0 = model.initial_state(); rhs_j, jac_j = build_jax_rhs(model)
+case = case_from_severe_opts(opts, tf=t0 + dur); model = build_model(case); X0 = model.initial_state(); rhs_j, jac_j = build_jax_rhs(model)
 lo, hi = state_bounds(model); atol = opts.get("tol_range", 0.01)*model.state_scales(X0)
 kw_t = dict(transform=model.transform, inverse=model.inverse_transform, transform_jac=model.transform_jacobian)
 bdf = ImplicitBDF(rhs_j, S=model.jac_sparsity(), rtol=opts.get("rtol", 3e-3), atol=atol, bounds=(lo, hi), jac_fun=jac_j, min_step=1e-9, verbose=False, max_order=2, max_newton=opts.get("max_newton", 20), newton_tol=1e-3, **kw_t)
@@ -18,7 +18,7 @@ tw = time.time()
 try:
     T, X, info = bdf.integrate(t_eval, X0, first_step=1e-3); print("integração:", {k: info[k] for k in ("n_steps", "n_rejected")}, f"{time.time()-tw:.0f}s", flush=True)
 except Exception as e:
-    print("FAIL", e, bdf.n_steps, flush=True); T, X = np.asarray(bdf.T_out), np.asarray(bdf.X_out)
+    print("FAIL", e, bdf.n_steps, flush=True); X = np.array(bdf._out).T; T = np.asarray(bdf._t_eval)[:X.shape[1]]
 X = np.asarray(X); X = X.T if X.shape[0] != T.size else X
 pb = model.pipes[0]; sch = pb.scheme
 sel = T >= t0 - 1e-9

@@ -24,7 +24,11 @@ PATTERNS = [
     "legacy/mfsim23/Files/*.mf2",
     "legacy/*.pdf",
     "legacy/*.DOC",
-    "scratch/*.npz",
+    "archive/scratch_2026-10/npz/*.npz",
+    "archive/scratch_2026-10/logs/*",
+    "archive/scratch_2026-10/nblogs/*",
+    "archive/scratch_2026-10/cmp/*",
+    "archive/scratch_2026-10/cmp2/*",
     "archive/**/*.tar.gz",
     "tests/golden/**/*.npz",
 ]

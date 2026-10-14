@@ -1,13 +1,13 @@
 """Saída densa do estado do severe slug (opções JSON como severe_D.py) entre t0 e t0+dur:
 por nó e variável, a maior variação entre saídas consecutivas e os nós com fração extrema;
 imprime também as células onde a relaxação da fase ausente está ativa.
-uso: uv run python -u scratch/diag_state.py '{json}' t0 dur dt"""
+uso: uv run python -u tools/diag_state.py '{json}' t0 dur dt"""
 import numpy as np, warnings, time, sys, json
 warnings.filterwarnings("ignore")
 from mfsim.cases.severe_slug import severe_slug_case
 from mfsim.simulation import build_model, state_bounds
 from mfsim.fluid import Fluid
-from mfsim.jaxrhs import build_jax_rhs
+from mfsim.compiled import build_jax_rhs
 from mfsim.integrators.implicit import ImplicitBDF
 opts = json.loads(sys.argv[1]); t0, dur, dt = float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4])
 fluid = Fluid(rhoL0=900.0, rhoG0=1.2, muL=2e-3, muG=1.8e-5, gammaL=opts.get("gammaL", 100.0), gammaG=1.05, P0=1e5, sigma=0.05)
@@ -33,7 +33,7 @@ tw = time.time()
 try:
     T, X, info = bdf.integrate(t_eval, X0, first_step=1e-3); print("integração:", {k: info[k] for k in ("n_steps", "n_rejected")}, f"{time.time()-tw:.0f}s", flush=True)
 except Exception as e:
-    print("FAIL", e, bdf.n_steps, flush=True); T, X = bdf.T_out, bdf.X_out
+    print("FAIL", e, bdf.n_steps, flush=True); X = np.array(bdf._out).T; T = np.asarray(bdf._t_eval)[:X.shape[1]]
 X = np.asarray(X); X = X.T if X.shape[0] != T.size else X
 pb = model.pipes[0]; sch = pb.scheme; N = sch.N
 sel = T >= t0 - 1e-9

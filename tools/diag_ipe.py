@@ -1,13 +1,13 @@
 """Diagnóstico do IPE em dinâmica: integra o severe slug (opções JSON como severe_D.py) até t0,
 depois com saída densa (dt) até t0+dur; imprime por nó o número de mudanças grandes dos pesos,
 mudanças de hD_est e o passo médio, e a série temporal no nó mais ativo.
-uso: uv run python -u scratch/diag_ipe.py '{json}' t0 dur dt"""
+uso: uv run python -u tools/diag_ipe.py '{json}' t0 dur dt"""
 import numpy as np, warnings, time, sys, json
 warnings.filterwarnings("ignore")
 from mfsim.cases.severe_slug import severe_slug_case
 from mfsim.simulation import build_model, state_bounds
 from mfsim.fluid import Fluid
-from mfsim.jaxrhs import build_jax_rhs
+from mfsim.compiled import build_jax_rhs
 from mfsim.integrators.implicit import ImplicitBDF
 from mfsim.closures import identify_regime, equilibrium_fractions
 opts = json.loads(sys.argv[1]); t0, dur, dt = float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4])

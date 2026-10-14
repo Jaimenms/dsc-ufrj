@@ -136,3 +136,34 @@ def test_beggs_brill_exact_derivatives_jax():
     # não contam
     scale = np.maximum(np.max(np.abs(F_fd), axis=1, keepdims=True), 1e-6 * np.max(np.abs(F_fd)))
     assert np.max(np.abs(F_ex - F_fd) / scale) < 2e-2
+
+
+@pytest.mark.parametrize("phys", [0.0, 1.0])
+def test_closure_tangents_finite_at_rest(phys):
+    """Tangentes (jvp) finitas com as duas fases paradas e frações nos limites (estado de
+    partida de linha fechada): o diâmetro máximo de bolha infinito (vM = 0) não pode
+    contaminar a Jacobiana (0 * inf)."""
+    n = 6
+    aG = np.array([0.5, 0.255, 0.01, 0.01, 0.99, 1e-3]); A = np.pi * 0.0254**2 / 4
+    z = np.zeros(n)
+    hD, beta = stratified_level(aG)
+    inp = ClosureInputs(alphaG=aG, alphaL=1 - aG, vL=z, vLS=z, vG=z, vGS=z, AreaL=A * (1 - aG), AreaG=A * aG,
+                        D=np.full(n, 0.0254), eps=np.full(n, 1e-5), theta=np.array([0.0, 0.3, np.pi / 2, np.pi / 2, np.pi / 2, -0.02]),
+                        rhoL=np.full(n, 998.0), rhoG=np.full(n, 1.2), muL=np.full(n, 1e-3), muG=np.full(n, 1.8e-5),
+                        CL=np.full(n, 998.0 / (100 * 1.013e5)), CG=np.full(n, 1.2 / 1.013e5), sigma=np.full(n, 0.072), beta=beta, hD=hD,
+                        fi_mult=np.ones(n), fi_vgt=np.full(n, 5.5), bubble_drag=np.full(n, phys))
+    inpj = _to_jax(inp)
+    for func in (bubble, stratified, annular, intermittent):
+        for fld in ("vLS", "vGS", "alphaG"):
+            def f(a):
+                kw = {fld: a}
+                if fld == "vLS":
+                    kw["vL"] = a / inpj.alphaL
+                elif fld == "vGS":
+                    kw["vG"] = a / inpj.alphaG
+                else:
+                    kw["alphaL"] = 1 - a
+                return func(inpj.replace(**kw), bk=JAX)
+            out, tang = jax.jvp(f, (getattr(inpj, fld),), (JAX.xp.ones(n),))
+            for nm in ("GammaL", "GammaG", "dPL", "dPG"):
+                assert np.all(np.isfinite(np.asarray(getattr(tang, nm)))), f"{func.__name__}.{nm} d/d{fld} não finito"

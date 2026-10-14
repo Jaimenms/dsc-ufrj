@@ -42,8 +42,8 @@
   "gaslift_12/X": "902c797a6f49240cb806a73b2c02e9dfb0966c53beb33926732fcf6d21b3b68d",
   "gaslift_12/n_steps": "30ef1162352fc32e8ebd0a49392a3bf50a1a046254cc9b6441e95af366d41e7c",
   "reference_jax_3000s/T": "ed2d752b15708d09b7333c0913b0de9b1d2a5f5030b7527273e367d1f130a0e2",
-  "reference_jax_3000s/X": "2fc8ce5b6f38744a96f79814abc9bdcfd4a434e046572c47f8854e10eaabe8a4",
-  "reference_jax_3000s/n_steps": "d9ad5b759db68b531b94d74d2c69dc88b79f831edbfd27175d6e0fe61ced745a"
+  "reference_jax_3000s/X": "fe39ea3173044fc894a18c2d3b222024fbf7a2e6186bd0198f851a149bdde978",
+  "reference_jax_3000s/n_steps": "53d8d780ef8962dfc32d474dde60d1caf3890da3ceb152e3da2963ecfd8b7c42"
  },
  "results.npz": {
   "10.1.1/mass_balance_G": "3622e6bbb7d72bd12ed76754aa29cb45bb69eb787ce9b60b284b44aca2fc0cd6",
@@ -828,8 +828,8 @@
  },
  "severe.npz": {
   "lab_jansen_jax_10s/T": "f1e92d38f27676b3d092d0f9833800012d3620c554b48ef464f3b2e545bfbdd7",
-  "lab_jansen_jax_10s/X": "3b6204f628799f1315bdb360530a2578b780c35c8781f670d7a1f0a629f853af",
-  "lab_jansen_jax_10s/n_steps": "13b6aa9f09df3c569d1a795ba4f3c71479cd88dddc6cdc5fc1f4d7928c196109",
+  "lab_jansen_jax_10s/X": "ab838dda999ea79d7264b8df70da731277571af3a927f3158ac9814a0f27ad34",
+  "lab_jansen_jax_10s/n_steps": "5b45550409780908d313269bde4fd49ed930e79900cbb71b1fc6cf92cd1facd8",
   "reference_jax_150s/T": "27c9f8189248a83ee431db0b2c8e366d90bdf6055d135104807e6507d4afaed9",
   "reference_jax_150s/X": "b7952ef9c47cd05c96675f105caa48ba912a3cdc36c2999ba320b1bacde8d61b",
   "reference_jax_150s/acc": "d18618e803afbe3250728f2645eb6610dd8f6a5c2938b9091044b0ba6bf90f37",

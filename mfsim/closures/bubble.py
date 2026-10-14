@@ -25,10 +25,16 @@ def bubble(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     f_M, _ = fanning(vM, rhoL, inp.muL, D, inp.eps, bk=bk)
     f_G = 0.0
 
-    # diâmetro máximo de bolha (Hinze / Calderbank) e diâmetro de equilíbrio
+    # diâmetro máximo de bolha (Hinze / Calderbank) e diâmetro de equilíbrio.
+    # Com a mistura parada (vM = 0) a dissipação é nula e dbmax é infinito: o `where`
+    # devolve inf sem formar o produto (cujo tangente seria 0 * inf = NaN na
+    # diferenciação automática); db = min(db, dbmax) não muda de valor
     ratio = xp.abs(inp.vGS / xp.where(vM == 0, 1e-30, vM))
-    dbmax = (0.725 + 4.15 * bk.safe_sqrt(ratio)) * (inp.sigma / rhoL) ** (3.0 / 5.0) * \
-        bk.safe_pow(xp.abs(2.0 * f_M * vM**3 / D), -2.0 / 5.0)
+    arg = xp.abs(2.0 * f_M * vM**3 / D)
+    small = arg == 0
+    arg_safe = xp.where(small, 1.0, arg)
+    dbmax = xp.where(small, xp.inf, (0.725 + 4.15 * bk.safe_sqrt(ratio)) * (inp.sigma / rhoL) ** (3.0 / 5.0)
+                     * arg_safe ** (-2.0 / 5.0))
     db = xp.sqrt(16.0 * inp.sigma / G_CLOSURE / (rhoL - rhoG))
     db = xp.minimum(db, dbmax)
     # velocidade terminal: tese (modelo_bolhas.m, sem g e sigma/rhoL) ou Mendelson / Fan & Tsuchiya
