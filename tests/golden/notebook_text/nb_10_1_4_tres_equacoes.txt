@@ -1,0 +1,18 @@
+### célula 1
+10.1.4 Escoamento horizontal via modelo a 3 equações
+Cenário de 10.1.1 com o modelo de mistura (Beggs & Brill).
+Figuras da tese: Fig. 10.17
+regime do duto: 6 (6 = identificação automática)
+
+### célula 3
+resíduo |dX/dt| no estado gravado, por variável: {'PT': '2.89e-13', 'qL': '7.64e-02', 'qG': '7.17e-03'}
+
+### célula 5
+estado estacionário: convergiu = True  resíduo = 5.60e-10
+
+### célula 5
+[implicit BDF] steps=290 rejected=15 rhs=9001 jac=146 | 8.0s
+pressão de entrada (bar): 100.107126193036  fração de gás média: 0.0
+
+### célula 7
+JAX: 1.92 s (290 passos; compilação 0.61 s, uma vez por modelo) | numpy: 7.99 s (290 passos) | diferença máxima relativa dos estados 1.7e-05

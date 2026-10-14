@@ -1,7 +1,7 @@
 """Converte scripts .py com marcadores `# %%` / `# %% [markdown]` em notebooks
 .ipynb e (opcionalmente) executa-os com nbconvert.
 
-uso: uv run python scratch/make_nb.py notebooks_src/xxx.py [--execute]
+uso: uv run python tools/make_nb.py notebooks_src/xxx.py [--execute]
 """
 
 import re

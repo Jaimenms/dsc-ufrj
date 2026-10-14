@@ -1,0 +1,19 @@
+### célula 1
+abertura 12%: 2897 passos, 543 rejeitados, 77.0 s de CPU
+
+### célula 1
+abertura 10%: 3561 passos, 684 rejeitados, 82.6 s de CPU
+
+### célula 3
+abertura 12%: produção média 6.86 kg/s, mín 0.68, máx 23.74, desvio padrão 4.78
+
+### célula 3
+abertura 10%: produção média 6.04 kg/s, mín 0.27, máx 23.81, desvio padrão 4.99
+
+### célula 7
+abertura 12%: período estimado ≈ 3850 s (autocorrelação 0.61)
+abertura 10%: período estimado ≈ 4350 s (autocorrelação 0.60)
+
+### célula 9
+abertura 12% (JAX): 2842 passos, 527 rejeitados, 7.8 s de CPU (compilação 0.5 s)
+diferença máxima relativa dos estados numpy x JAX: 3.3e-01

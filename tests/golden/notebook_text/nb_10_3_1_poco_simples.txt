@@ -1,0 +1,18 @@
+### célula 1
+10.3.1 Poço simples
+Poço vertical de 2048 m (5 in), modelo a 3 equações (intermitente), reservatório (170 bar, IPL 0.71, IPG 0.042 kg/s/bar) e choke (Cv=30) com rampa 100%->25% (60-90 s) e 25%->100% (500-530 s).
+Figuras da tese: Figs. 10.32-10.34
+
+### célula 1
+[implicit BDF] steps=481 rejected=32 rhs=6629 jac=198 | 3.1s
+tempo de CPU: 3.09 s
+duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
+   1 beggs_brill  PT        5.38e-03       1.36e+00   3.94e-03
+   1 beggs_brill  qL        1.34e+00       1.88e+01   7.12e-02
+   1 beggs_brill  qG        1.36e-01       9.69e-01   1.40e-01
+
+### célula 7
+JAX: 0.88 s (418 passos; compilação 0.64 s, uma vez por modelo) | numpy: 3.09 s (481 passos) | diferença máxima relativa dos estados 1.0e-01
+
+### célula 9
+volume finito: 333 passos em 2.7 s

@@ -16,7 +16,7 @@ uv run jupyter lab notebooks # notebooks de reprodução das figuras
 Os notebooks são gerados a partir de `notebooks_src/*.py` (marcadores `# %%`):
 
 ```bash
-uv run python scratch/make_nb.py notebooks_src/nb_10_1_1_estratificado.py --execute
+uv run python tools/make_nb.py notebooks_src/nb_10_1_1_estratificado.py --execute
 ```
 
 ## Estrutura

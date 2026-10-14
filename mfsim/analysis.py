@@ -73,3 +73,40 @@ def mass_balance(res, k=0, phase="L"):
     dT = np.diff(T)
     net = np.concatenate([[0.0], np.cumsum(0.5 * ((qin[1:] - qout[1:]) + (qin[:-1] - qout[:-1])) * dT)])
     return mass, net, (mass - mass[0]) - net
+
+
+def blowdowns(T, P_in, min_gap=200.0):
+    """Instantes dos blowdowns de uma série de pressão na entrada: mínimos locais abaixo de
+    30 % da faixa, separados por pelo menos `min_gap` s (um blowdown tem mínimos
+    secundários nos segundos seguintes). Mais robusto do que contar picos de vazão.
+    (Era `blowdowns` no notebook nb_severe_slug e em scratch/cycle_stats.py.)"""
+    T = np.asarray(T, float); P_in = np.asarray(P_in, float)
+    lvl = P_in.min() + 0.3 * (P_in.max() - P_in.min())
+    low = P_in < lvl
+    out = []
+    i = 0
+    while i < T.size:
+        if low[i]:
+            j = i
+            while j < T.size and low[j]:
+                j += 1
+            k = i + int(np.argmin(P_in[i:j]))
+            if not out or T[k] - out[-1] > min_gap:
+                out.append(T[k])
+            i = j
+        else:
+            i += 1
+    return np.array(out)
+
+
+def cycle_signature(T, P_in, q_out, min_gap=200.0, t_skip=0.0):
+    """Assinatura de um ciclo de intermitência severa (para comparações tolerantes ao
+    caos): instante do primeiro blowdown, intervalo médio, número de blowdowns, P_in
+    mínima e máxima, pico de q_out depois de t_skip. P_in em bar, q_out em kg/s."""
+    T = np.asarray(T, float); P_in = np.asarray(P_in, float); q_out = np.asarray(q_out, float)
+    tb = blowdowns(T, P_in, min_gap)
+    sel = T >= t_skip
+    return dict(t_first=float(tb[0]) if tb.size else np.nan,
+                interval=float(np.mean(np.diff(tb))) if tb.size > 1 else np.nan,
+                n_blowdowns=int(tb.size), P_min=float(P_in[sel].min()), P_max=float(P_in[sel].max()),
+                q_peak=float(q_out[sel].max()))

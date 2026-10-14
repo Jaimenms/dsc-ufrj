@@ -22,3 +22,9 @@ packages = ["mfsim"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not nightly'"
+markers = [
+    "golden: compara com tests/golden",
+    "nightly: lento; corre com -m nightly",
+    "data: precisa dos npz de notebooks/data",
+]

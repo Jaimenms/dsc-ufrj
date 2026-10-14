@@ -1,0 +1,7571 @@
+{
+ "root": "doutorado",
+ "patterns": [
+  "notebooks/data/*.npz",
+  "legacy/mfsim23/Files/*.mf2",
+  "legacy/*.pdf",
+  "legacy/*.DOC",
+  "scratch/*.npz",
+  "archive/**/*.tar.gz",
+  "tests/golden/**/*.npz"
+ ],
+ "files": {
+  "legacy/DSc_JAIME_v92.DOC": {
+   "size": 11495936,
+   "sha256": "3792181d808efbce3848487fa576c39f9e4e7f167e091b78786b0692ffd1223f"
+  },
+  "legacy/DSc_JAIME_v92.pdf": {
+   "size": 7597527,
+   "sha256": "76b89ff28ed8edd13d48e4e41d0dacce13675431efe1005354c3f4fc1ff90633"
+  },
+  "legacy/mfsim23/Files/CASO10-1-1.mf2": {
+   "size": 4634439,
+   "sha256": "a284975f15b2d6e5161dd367cd5f317c80ef37ae053637fe63c0b02bf09e474f"
+  },
+  "legacy/mfsim23/Files/CASO10-1-2.mf2": {
+   "size": 2030738,
+   "sha256": "45c781ebd9edd4554731a6ce73a1cc61b6b2274f959767ba4fc2789037cce040"
+  },
+  "legacy/mfsim23/Files/CASO10-1-3.mf2": {
+   "size": 3168641,
+   "sha256": "9626b5f262cee30db10f20bc164e8c3bac2bc8e151f7a2dfee60cc7a59070b04"
+  },
+  "legacy/mfsim23/Files/CASO10-1-4.mf2": {
+   "size": 1727495,
+   "sha256": "d7b3f26594eb44e7ef6c2626abfbd61ef88f531a87a7b9dccd9e1a65b18d30cd"
+  },
+  "legacy/mfsim23/Files/CASO10-2-1.mf2": {
+   "size": 4618752,
+   "sha256": "e97b3b02500433b87583ea266c39f30e17e528012342e97c7022c1cbb30606fd"
+  },
+  "legacy/mfsim23/Files/CASO10-2-1b.mf2": {
+   "size": 4597656,
+   "sha256": "918daad8681ec48c65c4390cbaa175bca3f23bd359ccc1f8144fd00984f71ddc"
+  },
+  "legacy/mfsim23/Files/CASO10-2-2.mf2": {
+   "size": 6266179,
+   "sha256": "e4b013bd4889c8a291384d7308fb5ae735505108c86c83009c3a52428ff255fd"
+  },
+  "legacy/mfsim23/Files/CASO10-3-1.mf2": {
+   "size": 704835,
+   "sha256": "cabf85fbcae609a7a7b02e87789e4f53fc7d79234db96f7a44b0e0f3dd48654a"
+  },
+  "legacy/mfsim23/Files/CASO10-3-2.mf2": {
+   "size": 3071621,
+   "sha256": "29227ba0f484610234ef8f695d4b7a7c3f4149aed177787fe1f7cd95f11b489d"
+  },
+  "legacy/mfsim23/Files/CASO10-3-2b.mf2": {
+   "size": 3369661,
+   "sha256": "44e22e4f3230287892bf6ce6259b59ccccb3bb9b7d7fc337fc5efb230e4e7247"
+  },
+  "legacy/mfsim23/Files/CASO10-3-3.mf2": {
+   "size": 18806,
+   "sha256": "71477926e4b4844a090c44182787bc6786aa87337e3c2d8c3c7490acb3be6ede"
+  },
+  "legacy/mfsim23/Files/CASO10-3-3b.mf2": {
+   "size": 3716588,
+   "sha256": "35bfdde534f3d31ad242321deec15fc3acd02b55902edb0813cdbdc53a85e8db"
+  },
+  "notebooks/data/severe_slug_blocked_conservative.npz": {
+   "size": 1190524,
+   "sha256": "d7f53ef0e91ef2a265abed333c6906d38f85d5412a9b0719274c05c02ab764b8",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    96,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "n_steps": 132679,
+    "n_rejected": 39681,
+    "cpu": 1524.012849330902
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc.npz": {
+   "size": 1382892,
+   "sha256": "66683512e26142aec9e8328500d3de9a66724b4845c27951cbdadfc8a7cdd464",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "n_steps": 112474,
+    "n_rejected": 29359,
+    "cpu": 1340.7174398899078
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_av.npz": {
+   "size": 1383336,
+   "sha256": "8f0b54eb51ff12d2457282aa913b1fb59fd9c6076c099aac2024e576966c0ff2",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.01,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "n_steps": 85653,
+    "n_rejected": 22823,
+    "cpu": 1209.6291060447693
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_av05.npz": {
+   "size": 1383532,
+   "sha256": "06606912b71fbd3c995ef4446d09f14e671b8f6586575196f19673218d8e187c",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "n_steps": 59236,
+    "n_rejected": 13820,
+    "cpu": 820.5063509941101
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_av_reg.npz": {
+   "size": 1383336,
+   "sha256": "68676ca7e3c98b57150423de6d44643163e782b48022f2d4d6d4cea780b0d871",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.01,
+    "low_void_regime": 2,
+    "interfacial_pressure": 1.2,
+    "n_steps": 85418,
+    "n_rejected": 23090,
+    "cpu": 1295.9856119155884
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_boe_bub.npz": {
+   "size": 6126604,
+   "sha256": "0ea9787311cad20317df54483b000eade67f2197458b28dc59acc7b456964904",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    3001
+   ],
+   "X_shape": [
+    252,
+    3001
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 1000.0,
+    "P_out": 2.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 6000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "high_void_regime": 0,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.0,
+    "vm_lambda": 1.0,
+    "n_steps": 105019,
+    "n_rejected": 27726,
+    "cpu": 590.1703679561615
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_boe_bub_dp01.npz": {
+   "size": 6126604,
+   "sha256": "3010adc605fa5316b78502a76ee5c57212a0be201846e294b6402d9b5db199d9",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    3001
+   ],
+   "X_shape": [
+    252,
+    3001
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 1000.0,
+    "P_out": 2.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 6000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "high_void_regime": 0,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.0,
+    "vm_lambda": 1.0,
+    "n_steps": 63993,
+    "n_rejected": 22228,
+    "cpu": 408.84256386756897
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_boe_bub_rules.npz": {
+   "size": 6126604,
+   "sha256": "d001c7d037156c9595a3c09457495105d3f50fd5a2077cfbdcd3eb91335c2987",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    3001
+   ],
+   "X_shape": [
+    252,
+    3001
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 1000.0,
+    "P_out": 2.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 6000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 56710,
+    "n_rejected": 19545,
+    "cpu": 341.22466802597046
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_boe_int_rules.npz": {
+   "size": 6126604,
+   "sha256": "b9e9b2711e60ba10a921efe4357e16ef1dcfb7b136472bb62ca3ad63bed0d60a",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    3001
+   ],
+   "X_shape": [
+    252,
+    3001
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 1000.0,
+    "P_out": 2.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 6000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 3,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 59230,
+    "n_rejected": 20935,
+    "cpu": 458.08154582977295
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_boe_vup20.npz": {
+   "size": 9402744,
+   "sha256": "a99f10324799111f475983382179d435ae141ff8eaf3b1a88413c3307b5ec4fc",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    256,
+    4501
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 1000.0,
+    "P_out": 2.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 9000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 2.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 78421,
+    "n_rejected": 26720,
+    "cpu": 532.7527849674225
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_fast1.npz": {
+   "size": 1383532,
+   "sha256": "e9e88ecc489de24647e4eb948fac358112bf1b590ffeb79685680c2cc32ca0ee",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": 0.01,
+    "atol_q": 0.03,
+    "n_steps": 23172,
+    "n_rejected": 9242,
+    "cpu": 301.45009994506836
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_fast1_jax.npz": {
+   "size": 1383528,
+   "sha256": "ef90cbfedee71fac29d2aa6e53b3d13ab8b2922e3c7fe13105d893c7d26cfe09",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": 0.01,
+    "atol_q": 0.03,
+    "n_steps": 22618,
+    "n_rejected": 9025,
+    "cpu": 45.06584405899048
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_fast2.npz": {
+   "size": 1383528,
+   "sha256": "49c2a7198cc398168919a1adcca95fa9e03b95dda1a7b954053aa39349133f4b",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": 0.02,
+    "atol_q": 0.05,
+    "n_steps": 21798,
+    "n_rejected": 8132,
+    "cpu": 288.9764018058777
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_fine.npz": {
+   "size": 2343704,
+   "sha256": "9126f33636930dd54358336fabee80e2479e2c1eb1c932c5f679e8f6302cd9f0",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    192,
+    1501
+   ],
+   "meta": {
+    "n_down": 30,
+    "n_riser": 10,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "n_steps": 262056,
+    "n_rejected": 77383,
+    "cpu": 4327.020047187805
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_fine_av.npz": {
+   "size": 2343984,
+   "sha256": "fcf223ccdda504d253af7ade2374be2c53527b4ce34f7a5d7d69b7e74be7e0d4",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    192,
+    1501
+   ],
+   "meta": {
+    "n_down": 30,
+    "n_riser": 10,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.01,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "n_steps": 201553,
+    "n_rejected": 59304,
+    "cpu": 3476.6480350494385
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_fine_fast1_jax.npz": {
+   "size": 2344180,
+   "sha256": "04a6caefae3c83d6e82e8167431d52544a682bb3c874d1d6a075814e99dfd1a0",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    192,
+    1501
+   ],
+   "meta": {
+    "n_down": 30,
+    "n_riser": 10,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": 0.01,
+    "atol_q": 0.03,
+    "n_steps": 39033,
+    "n_rejected": 15113,
+    "cpu": 105.22122406959534
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_fine_graded_av.npz": {
+   "size": 2343984,
+   "sha256": "5b9a643eef16ab784f5397729664498651d7678a6cf383383fbecd0b2cd11fbf",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    192,
+    1501
+   ],
+   "meta": {
+    "n_down": 30,
+    "n_riser": 10,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 0.25,
+    "grading_riser": 3.0,
+    "art_visc": 0.01,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "n_steps": 302648,
+    "n_rejected": 85035,
+    "cpu": 4977.999461174011
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_fine_graded_noslip.npz": {
+   "size": 2345452,
+   "sha256": "c0e0cff5e7e0125e59535867ef46904e184a217a65972bc9c5339c1c53f9084a",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    192,
+    1501
+   ],
+   "meta": {
+    "n_down": 30,
+    "n_riser": 10,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 0.25,
+    "grading_riser": 3.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.0,
+    "vm_lambda": 1.0,
+    "n_steps": 77869,
+    "n_rejected": 28242,
+    "cpu": 239.8167290687561
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_fine_graded_vm.npz": {
+   "size": 2345452,
+   "sha256": "73905b3936cc429e59f44a7330eec683ba85e51ef14f33510eeb5e56126f0963",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    192,
+    1501
+   ],
+   "meta": {
+    "n_down": 30,
+    "n_riser": 10,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 0.25,
+    "grading_riser": 3.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 68929,
+    "n_rejected": 24701,
+    "cpu": 189.4720151424408
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_graded.npz": {
+   "size": 1383068,
+   "sha256": "1b34aafc85955cc1241f0266ccce3d1ab18e14c91ccfe20a7de528c73cd628b8",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 0.25,
+    "grading_riser": 3.0,
+    "n_steps": 166181,
+    "n_rejected": 41521,
+    "cpu": 2097.6061878204346
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_graded_av.npz": {
+   "size": 1383340,
+   "sha256": "59bae726d9879d6934046bf69f01264d841f93ef7a51956cd10a9e0c9e48b65e",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 0.25,
+    "grading_riser": 3.0,
+    "art_visc": 0.01,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "n_steps": 145286,
+    "n_rejected": 35811,
+    "cpu": 2082.086083173752
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_scan_P2_g005.npz": {
+   "size": 9186696,
+   "sha256": "dac3a0ef57acf7cefb68500ffdb3d558c953d739d780bfa8d5fdf7dc0a0d1c95",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.05,
+    "L_down": 1000.0,
+    "P_out": 2.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 9000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 61846,
+    "n_rejected": 20320,
+    "cpu": 512.512274980545
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_scan_P2_g02.npz": {
+   "size": 9186696,
+   "sha256": "35ce9478b40fe4c850d42ba138bd5415b49b2ec762102b23408540804421f54b",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.2,
+    "L_down": 1000.0,
+    "P_out": 2.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 9000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 101974,
+    "n_rejected": 37164,
+    "cpu": 682.381100654602
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_scan_P2_g02_int.npz": {
+   "size": 9186792,
+   "sha256": "f78b4e14640714f0f69dac073c8480b88862ee62b5c3e17307b8814687959a4e",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ],
+   "meta": {
+    "L_h1": 20.0,
+    "n_h1": 2,
+    "vSL": 0.3,
+    "vSG": 0.2,
+    "L_down": 1000.0,
+    "P_out": 2.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 9000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 3,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 118474,
+    "n_rejected": 43527,
+    "cpu": 537.50350689888
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_scan_P2_v015.npz": {
+   "size": 9186704,
+   "sha256": "a1425d685861faa700c563258db11c01b68d7795d1525d48d94603d429722a54",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ],
+   "meta": {
+    "vSL": 0.15,
+    "vSG": 0.1,
+    "L_down": 1000.0,
+    "P_out": 2.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 9000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 116306,
+    "n_rejected": 38529,
+    "cpu": 739.3294219970703
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_scan_P2_v03.npz": {
+   "size": 9186700,
+   "sha256": "f13162527ef5fa5678a263cebcc57241975c7c60287708d21336515185b8adaf",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 1000.0,
+    "P_out": 2.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 9000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 59114,
+    "n_rejected": 20676,
+    "cpu": 483.96823501586914
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_scan_P2_v03_gammaG13.npz": {
+   "size": 9186928,
+   "sha256": "ef3cff164ec8ec0fed3f46e66f9406b918940b67ca5bc70f47502c1515f69758",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ],
+   "meta": {
+    "gammaG": 1.3,
+    "gammaL": 100.0,
+    "L_h1": 20.0,
+    "n_h1": 2,
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 1000.0,
+    "P_out": 2.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 9000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 80705,
+    "n_rejected": 27931,
+    "cpu": 264.55297088623047
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_scan_P2_v05.npz": {
+   "size": 9186700,
+   "sha256": "bd328031ec1f16d8d170d9b31c1d1119870a35cd80119b92185c6276da17f619",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ],
+   "meta": {
+    "vSL": 0.5,
+    "vSG": 0.1,
+    "L_down": 1000.0,
+    "P_out": 2.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 9000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 28552,
+    "n_rejected": 10339,
+    "cpu": 252.01502418518066
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_scan_P2_v08.npz": {
+   "size": 9186696,
+   "sha256": "54da191f8331df19bc41ce9fd68fe43cb6ec6fccc37178ca700d5b05b95a4acb",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ],
+   "meta": {
+    "vSL": 0.8,
+    "vSG": 0.1,
+    "L_down": 1000.0,
+    "P_out": 2.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 9000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 15614,
+    "n_rejected": 6105,
+    "cpu": 117.30956292152405
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_scan_P4_v03.npz": {
+   "size": 9186696,
+   "sha256": "0491a72086ced4f36858ade89e901d56b9b2fbdfd8ecca07b54012afe186ccd2",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 1000.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 9000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 59241,
+    "n_rejected": 20844,
+    "cpu": 496.5460307598114
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_scan_P4_v05.npz": {
+   "size": 9186700,
+   "sha256": "b0939b4476a9c30e5e2dd8bf08434f570c0b02f0b9db162499d76990c73a53d1",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ],
+   "meta": {
+    "vSL": 0.5,
+    "vSG": 0.1,
+    "L_down": 1000.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 9000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 29369,
+    "n_rejected": 10690,
+    "cpu": 268.73701000213623
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_scan_P4_v08.npz": {
+   "size": 9186692,
+   "sha256": "8b9c66b740711ef9e0be8025b1578cef90a8bd74794ca71b1e241d8e1fa51787",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ],
+   "meta": {
+    "vSL": 0.8,
+    "vSG": 0.1,
+    "L_down": 1000.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 9000,
+    "n_down": 50,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 17169,
+    "n_rejected": 6757,
+    "cpu": 129.3403217792511
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol.npz": {
+   "size": 1383824,
+   "sha256": "df7a67f1c13f7fb1c9ca59b3caf740392866db955276766c1c2c5bc4b9c7609e",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "n_steps": 25923,
+    "n_rejected": 9686,
+    "cpu": 50.094062089920044
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_bestion.npz": {
+   "size": 1384804,
+   "sha256": "ffd4d5b28da4639a099126614506da01172b82702dfe9721d3fb4544ca059641",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "interfacial_pressure": 1.2,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.0,
+    "vm_lambda": 1.0,
+    "n_steps": 41437,
+    "n_rejected": 11553,
+    "cpu": 86.18234395980835
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_fi05.npz": {
+   "size": 1384648,
+   "sha256": "66aa024db20de4b33468d3728dbe54509fbc6329f1cecc75f4eb5fbcc4a748bc",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 0.5,
+    "fi_vgt": 5.5,
+    "n_steps": 30578,
+    "n_rejected": 11386,
+    "cpu": 77.82851719856262
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_fi20.npz": {
+   "size": 1384644,
+   "sha256": "a0d859f558732e97d807064cda2f8b0e7f7bee9c6e4ea0b14fa2fe39f480e6c0",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 2.0,
+    "fi_vgt": 5.5,
+    "n_steps": 20217,
+    "n_rejected": 7626,
+    "cpu": 53.11081027984619
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_fitaitel.npz": {
+   "size": 1384656,
+   "sha256": "55b5debbffe5874e198c2e260b460cf1791d23b3d77eb35aab23bca742b0feb5",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 1e+30,
+    "n_steps": 27250,
+    "n_rejected": 10145,
+    "cpu": 70.62794399261475
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_gammaG10.npz": {
+   "size": 1385796,
+   "sha256": "6a884d3dffa7f78185c16733a85cda64aa0f0b127dd252b71da410bbdeb3d407",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "gammaG": 1.0,
+    "gammaL": 100.0,
+    "L_h1": 20.0,
+    "n_h1": 2,
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 17363,
+    "n_rejected": 6565,
+    "cpu": 45.06567597389221
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_gammaG13.npz": {
+   "size": 1385796,
+   "sha256": "e9e07fff47d7e1a1aac9827bd6943bd067e9b4885538d61e6179c988f1b3d46e",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "gammaG": 1.3,
+    "gammaL": 100.0,
+    "L_h1": 20.0,
+    "n_h1": 2,
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 17963,
+    "n_rejected": 6660,
+    "cpu": 46.28133797645569
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_hv.npz": {
+   "size": 1384988,
+   "sha256": "d35a7e35d3317b84254ed144207b1f86ec23c18b3018fef4fe4c3058e7ae42d1",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.0,
+    "vm_lambda": 1.0,
+    "n_steps": 23512,
+    "n_rejected": 7869,
+    "cpu": 52.23882079124451
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_hv_vm_lv.npz": {
+   "size": 1384988,
+   "sha256": "560c2e12d9c3facaaa15282ced434d8105c3bd25e3869a96befcc52a592fd051",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 16833,
+    "n_rejected": 6306,
+    "cpu": 38.65702772140503
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys.npz": {
+   "size": 1386792,
+   "sha256": "c174a4c701289f777abbfc102c304dc45ea784e610dcc0332beaf3791aacda6e",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "parcial": false,
+    "gammaG": 1.05,
+    "gammaL": 100.0,
+    "L_h1": 20.0,
+    "n_h1": 2,
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000.0,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "bubble_drag": "fisico",
+    "t_ramp": 100.0,
+    "dP_margin": 0.3,
+    "D": 0.05,
+    "rhoL": 900.0,
+    "muL": 0.002,
+    "rhoG0": 1.2,
+    "muG": 1.8e-05,
+    "P0": 100000.0,
+    "sigma": 0.05,
+    "P_gas_ref": null,
+    "L_h2": 5.0,
+    "dt_out": 2.0,
+    "roughness": 1e-05,
+    "n_steps": 15602,
+    "n_rejected": 5812,
+    "cpu": 89.26081013679504
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_tese.npz": {
+   "size": 1386780,
+   "sha256": "9d0e5ce11d8cfb178ac8fcee647db1e6f950cdede8474e5fe8e7462734e41a00",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "parcial": false,
+    "gammaG": 1.05,
+    "gammaL": 100.0,
+    "L_h1": 20.0,
+    "n_h1": 2,
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000.0,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "bubble_drag": "tese",
+    "t_ramp": 100.0,
+    "dP_margin": 0.3,
+    "D": 0.05,
+    "rhoL": 900.0,
+    "muL": 0.002,
+    "rhoG0": 1.2,
+    "muG": 1.8e-05,
+    "P0": 100000.0,
+    "sigma": 0.05,
+    "P_gas_ref": null,
+    "L_h2": 5.0,
+    "dt_out": 2.0,
+    "roughness": 1e-05,
+    "n_steps": 16833,
+    "n_rejected": 6306,
+    "cpu": 97.3497519493103
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_int.npz": {
+   "size": 1385480,
+   "sha256": "40c1691bfedac2288b7d0d759f9c4bfe4d267ede86b718ed618b08b95e930c67",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "high_void_regime": 0,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 3,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.0,
+    "vm_lambda": 1.0,
+    "n_steps": 101181,
+    "n_rejected": 39407,
+    "cpu": 293.2271101474762
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_int_hv_vm_lv.npz": {
+   "size": 1385480,
+   "sha256": "cdf7e1a558c35ee1d2b04fe8a6a35b13e2b883d11815906cd3228b0ed15a76ff",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 3,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 112355,
+    "n_rejected": 47032,
+    "cpu": 299.8653938770294
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_lh1_200.npz": {
+   "size": 1769932,
+   "sha256": "573f0a9dbdf2f6ce41cf29e6d51672a0be861baa90acb38ad1745d16e8029f42",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    144,
+    1501
+   ],
+   "meta": {
+    "L_h1": 200.0,
+    "n_h1": 10,
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 15183,
+    "n_rejected": 5850,
+    "cpu": 44.20252704620361
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_lh1_500.npz": {
+   "size": 2490412,
+   "sha256": "a732ca9d0491722654915682b0765e6d6d73571c552553ebcc9803520d48215d",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    204,
+    1501
+   ],
+   "meta": {
+    "L_h1": 500.0,
+    "n_h1": 25,
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 19420,
+    "n_rejected": 7114,
+    "cpu": 65.75529289245605
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_muscl.npz": {
+   "size": 1384284,
+   "sha256": "2dba4d059d55bbdd5e96c8c9ffb229d49bbe4ba59f9fe41a5aba00a29c9ee380",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "muscl",
+    "n_steps": 24788,
+    "n_rejected": 9263,
+    "cpu": 48.354267835617065
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_noslip.npz": {
+   "size": 1384388,
+   "sha256": "e6563a2acff6ec06a04159379a6c6dc2a6da11600f90468214fe33be5099e5dc",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "n_steps": 25228,
+    "n_rejected": 9474,
+    "cpu": 46.75590705871582
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_v12_bub.npz": {
+   "size": 1385460,
+   "sha256": "558234dfe992c36c66867238adce5530179d2a17be56ce6744534460bef0cd4c",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "vSL": 1.2,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "high_void_regime": 0,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.0,
+    "vm_lambda": 1.0,
+    "n_steps": 555,
+    "n_rejected": 239,
+    "cpu": 2.825493097305298
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_v12_int.npz": {
+   "size": 1385464,
+   "sha256": "269be55b365690b7c855314edbe0070b93ea26c009c944f1c834c61b338db239",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "vSL": 1.2,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "high_void_regime": 0,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 3,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.0,
+    "vm_lambda": 1.0,
+    "n_steps": 1123,
+    "n_rejected": 475,
+    "cpu": 5.548458099365234
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_v16_bub.npz": {
+   "size": 1385464,
+   "sha256": "301997048630d2de1fdd0ca9c00b8d54dd0119568b8fa732fb57cbf366074586",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "vSL": 1.6,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "high_void_regime": 0,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.0,
+    "vm_lambda": 1.0,
+    "n_steps": 356,
+    "n_rejected": 148,
+    "cpu": 2.1854259967803955
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_v16_int.npz": {
+   "size": 1385472,
+   "sha256": "4198420728498d2ea824adbb2fe533c7eee9c380a8ebf79c96ebf9148b751d36",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "vSL": 1.6,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "high_void_regime": 0,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 3,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.0,
+    "vm_lambda": 1.0,
+    "n_steps": 3325,
+    "n_rejected": 1458,
+    "cpu": 10.748188257217407
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_vm05.npz": {
+   "size": 1384796,
+   "sha256": "8a73b61830da926f15ec93a3d541b5a10a7450ee74327039df12feb419229b39",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 23597,
+    "n_rejected": 8613,
+    "cpu": 49.8374719619751
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_vm05_lam2.npz": {
+   "size": 1384804,
+   "sha256": "482bde0b04a8d2c7876cbcc832ab541e919861b31e7dd57a37c3de0e52ea68dd",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 20003,
+    "n_rejected": 7436,
+    "cpu": 46.777206897735596
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_vm05_lam2_lv.npz": {
+   "size": 1384804,
+   "sha256": "36114afce1f69792c5b84384b76edaed2e6755d244586a720e1a6755b89a1ad1",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 23314,
+    "n_rejected": 8430,
+    "cpu": 54.315924882888794
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_vm05_lv.npz": {
+   "size": 1384800,
+   "sha256": "5938d6b6ba1e87e0a1fe4bc91226a200b244870965fe49ffe8de562b9ee61f2a",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 21919,
+    "n_rejected": 8031,
+    "cpu": 46.43763089179993
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_vup01.npz": {
+   "size": 1457620,
+   "sha256": "ac99cfa89e9c382f32a5afc19e8824457e31127c44e95de970902039efe5ea2e",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    116,
+    1501
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.1,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 17927,
+    "n_rejected": 6762,
+    "cpu": 156.69524383544922
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_vup05.npz": {
+   "size": 1457620,
+   "sha256": "96984056fbf4fe9799528f41d0b6363c3d125994874473138eb23f0d4ee04e5a",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    116,
+    1501
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.5,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 17614,
+    "n_rejected": 6686,
+    "cpu": 146.77828216552734
+   }
+  },
+  "notebooks/data/severe_slug_blocked_conservative_arc_tol_vup20.npz": {
+   "size": 1457620,
+   "sha256": "6d0923b42e99d2cd058cddb704811193a528c3eba7d0337d0dde749a96a672d9",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    116,
+    1501
+   ],
+   "meta": {
+    "vSL": 0.3,
+    "vSG": 0.1,
+    "L_down": 300.0,
+    "P_out": 4.0,
+    "H_riser": 20.0,
+    "slope": -3.0,
+    "tf": 3000,
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 2.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "n_steps": 20938,
+    "n_rejected": 7767,
+    "cpu": 169.90168714523315
+   }
+  },
+  "notebooks/data/severe_slug_blocked_network_v001.npz": {
+   "size": 1599968,
+   "sha256": "ddbea6ddd1c1b586bfabb69b92a5d14bfda934b3eb6c16f2d189fd272cd4ba7b",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    124,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": true,
+    "vertex_volume": 0.001,
+    "tol_range": 0.01,
+    "jax": true,
+    "n_steps": 592071,
+    "n_rejected": 34256,
+    "cpu": 842.434445142746
+   }
+  },
+  "notebooks/data/severe_slug_blocked_network_v002.npz": {
+   "size": 1672020,
+   "sha256": "9604572c0cc190ff0d72d4040253451613a28fc7aade4fd7d8b95b3c1d7cac4f",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    124,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": true,
+    "vertex_volume": 0.002,
+    "tol_range": 0.01,
+    "jax": true,
+    "n_steps": 65018,
+    "n_rejected": 24964,
+    "cpu": 225.32997035980225
+   }
+  },
+  "notebooks/data/severe_slug_blocked_network_v005.npz": {
+   "size": 1672020,
+   "sha256": "505a5960a2c94e0515859cb8df914fdcc13e4141a656c143ec7f6edc1cf3e13d",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    124,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": true,
+    "vertex_volume": 0.005,
+    "tol_range": 0.01,
+    "jax": true,
+    "n_steps": 61109,
+    "n_rejected": 22705,
+    "cpu": 221.43138909339905
+   }
+  },
+  "notebooks/data/severe_slug_blocked_network_v050.npz": {
+   "size": 1672016,
+   "sha256": "53795ffc53d7fa2f7258b5c75ccd3281162703cd99f951c5bbf4a5f8746c55a2",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    124,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 0,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": true,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "n_steps": 35518,
+    "n_rejected": 13470,
+    "cpu": 147.53192710876465
+   }
+  },
+  "notebooks/data/severe_slug_blocked_primitive.npz": {
+   "size": 1190528,
+   "sha256": "0f752c93784a332f9256880d0cd81f6800bb431f71b9c4ca8eed7683ec21636b",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    96,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": false,
+    "n_steps": 91783,
+    "n_rejected": 24105,
+    "cpu": 1066.8400192260742
+   }
+  },
+  "notebooks/data/severe_slug_blocked_primitive_arc.npz": {
+   "size": 1382896,
+   "sha256": "8a1cb017036c6b819a135fa240968683016f66f0166b3fef677739f6f760bc2c",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": false,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 20.0,
+    "n_steps": 128021,
+    "n_rejected": 31494,
+    "cpu": 1438.8028259277344
+   }
+  },
+  "notebooks/data/severe_slug_blocked_regime6_local.npz": {
+   "size": 1384164,
+   "sha256": "845f0a57d38f3ea040df88899d9936b9e8198b25c95b716be80c9a43b663891a",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 0.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 6,
+    "k_switch": 20.0,
+    "ipe_smooth": true,
+    "ipe_local": true,
+    "fv_order": 1,
+    "n_steps": 35328,
+    "n_rejected": 13291,
+    "cpu": 206.74255514144897
+   }
+  },
+  "notebooks/data/severe_slug_blocked_regime6_smooth.npz": {
+   "size": 1384168,
+   "sha256": "e2a28aae611c19a22d0af634d45070784e541637d19fe72677e600f7191667e4",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 0.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 6,
+    "k_switch": 20.0,
+    "ipe_smooth": true,
+    "ipe_local": false,
+    "fv_order": 1,
+    "n_steps": 175927,
+    "n_rejected": 59350,
+    "cpu": 2034.108384847641
+   }
+  },
+  "notebooks/data/severe_slug_blocked_regime6_smooth_k50.npz": {
+   "size": 1384172,
+   "sha256": "418a834a360e63ef756cf03565e8328f7a40d15ef4d3457071132860a2da9746",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 5.0,
+    "n_elbow": 4,
+    "vertical_blend": 0.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 6,
+    "k_switch": 50.0,
+    "ipe_smooth": true,
+    "ipe_local": false,
+    "fv_order": 1,
+    "n_steps": 163091,
+    "n_rejected": 55581,
+    "cpu": 1892.0806498527527
+   }
+  },
+  "notebooks/data/severe_slug_lab_fabre1_fisico.npz": {
+   "size": 5240512,
+   "sha256": "500c83e93c1ca3dc4ac4ad97a1f19fbd10851ab7653d533b686966cc8ac889bf",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    2001
+   ],
+   "X_shape": [
+    324,
+    2001
+   ],
+   "meta": {
+    "parcial": false,
+    "gammaG": 1.0,
+    "gammaL": 100.0,
+    "L_h1": 1.0,
+    "n_h1": 2,
+    "vSL": 0.13,
+    "vSG": 0.45,
+    "L_down": 25.0,
+    "P_out": 1.013,
+    "H_riser": 13.5,
+    "slope": -0.57,
+    "tf": 1000.0,
+    "n_down": 50,
+    "n_riser": 27,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "shut_in",
+    "conservative": true,
+    "elbow_radius": 0.0,
+    "n_elbow": 0,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "bubble_drag": "fisico",
+    "t_ramp": 20.0,
+    "dP_margin": 0.3,
+    "D": 0.0508,
+    "rhoL": 998.0,
+    "muL": 0.001,
+    "rhoG0": 1.2,
+    "muG": 1.8e-05,
+    "P0": 101300.0,
+    "sigma": 0.072,
+    "P_gas_ref": 1.013,
+    "L_h2": 1.0,
+    "dt_out": 0.5,
+    "roughness": 1e-05,
+    "n_steps": 6711,
+    "n_rejected": 2932,
+    "cpu": 42.049766063690186
+   }
+  },
+  "notebooks/data/severe_slug_lab_fabre2_fisico.npz": {
+   "size": 6286916,
+   "sha256": "6216fe6bbd951c745802d3cdd02a376312a0cd627d984f829960b96a92e42e09",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    2401
+   ],
+   "X_shape": [
+    324,
+    2401
+   ],
+   "meta": {
+    "parcial": false,
+    "gammaG": 1.0,
+    "gammaL": 100.0,
+    "L_h1": 1.0,
+    "n_h1": 2,
+    "vSL": 0.13,
+    "vSG": 0.2,
+    "L_down": 25.0,
+    "P_out": 1.013,
+    "H_riser": 13.5,
+    "slope": -0.57,
+    "tf": 1200.0,
+    "n_down": 50,
+    "n_riser": 27,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "shut_in",
+    "conservative": true,
+    "elbow_radius": 0.0,
+    "n_elbow": 0,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "bubble_drag": "fisico",
+    "t_ramp": 20.0,
+    "dP_margin": 0.3,
+    "D": 0.0508,
+    "rhoL": 998.0,
+    "muL": 0.001,
+    "rhoG0": 1.2,
+    "muG": 1.8e-05,
+    "P0": 101300.0,
+    "sigma": 0.072,
+    "P_gas_ref": 1.013,
+    "L_h2": 1.0,
+    "dt_out": 0.5,
+    "roughness": 1e-05,
+    "n_steps": 117508,
+    "n_rejected": 44751,
+    "cpu": 684.6971960067749
+   }
+  },
+  "notebooks/data/severe_slug_lab_fabre2_tese.npz": {
+   "size": 6286904,
+   "sha256": "0702ed7b9d0d3aeca342191ff3743c5c4a7eb3b0b69f3e2241d18494bd8d4d64",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    2401
+   ],
+   "X_shape": [
+    324,
+    2401
+   ],
+   "meta": {
+    "parcial": false,
+    "gammaG": 1.0,
+    "gammaL": 100.0,
+    "L_h1": 1.0,
+    "n_h1": 2,
+    "vSL": 0.13,
+    "vSG": 0.2,
+    "L_down": 25.0,
+    "P_out": 1.013,
+    "H_riser": 13.5,
+    "slope": -0.57,
+    "tf": 1200.0,
+    "n_down": 50,
+    "n_riser": 27,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "shut_in",
+    "conservative": true,
+    "elbow_radius": 0.0,
+    "n_elbow": 0,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "bubble_drag": "tese",
+    "t_ramp": 20.0,
+    "dP_margin": 0.3,
+    "D": 0.0508,
+    "rhoL": 998.0,
+    "muL": 0.001,
+    "rhoG0": 1.2,
+    "muG": 1.8e-05,
+    "P0": 101300.0,
+    "sigma": 0.072,
+    "P_gas_ref": 1.013,
+    "L_h2": 1.0,
+    "dt_out": 0.5,
+    "roughness": 1e-05,
+    "n_steps": 43735,
+    "n_rejected": 17095,
+    "cpu": 319.5065178871155
+   }
+  },
+  "notebooks/data/severe_slug_lab_jansen_fisico.npz": {
+   "size": 5057788,
+   "sha256": "1ce36f86149873c29e00785c8fc7cc171542c8a92de988d85ae998fa1817ee41",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    2401
+   ],
+   "X_shape": [
+    260,
+    2401
+   ],
+   "meta": {
+    "parcial": false,
+    "gammaG": 1.0,
+    "gammaL": 100.0,
+    "L_h1": 15.0,
+    "n_h1": 15,
+    "vSL": 0.0959,
+    "vSG": 0.0753,
+    "L_down": 9.1,
+    "P_out": 1.013,
+    "H_riser": 3.0,
+    "slope": -1.0,
+    "tf": 600.0,
+    "n_down": 36,
+    "n_riser": 12,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "shut_in",
+    "conservative": true,
+    "elbow_radius": 0.0,
+    "n_elbow": 0,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "bubble_drag": "fisico",
+    "t_ramp": 20.0,
+    "fsw": 0.02,
+    "fsw_G": 0.02,
+    "slow": true,
+    "dP_margin": 0.3,
+    "D": 0.0254,
+    "rhoL": 998.0,
+    "muL": 0.001,
+    "rhoG0": 1.2,
+    "muG": 1.8e-05,
+    "P0": 101300.0,
+    "sigma": 0.072,
+    "P_gas_ref": 1.013,
+    "L_h2": 0.5,
+    "dt_out": 0.25,
+    "roughness": 1e-05,
+    "n_steps": 98214,
+    "n_rejected": 36572,
+    "cpu": 1026.9862940311432
+   }
+  },
+  "notebooks/data/severe_slug_lab_jansen_tese.npz": {
+   "size": 5057608,
+   "sha256": "f1f1869e0d3f4c53b9ab1ed405c05b43b6e3ba5b2710ff6299e70354fb0cf86f",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    2401
+   ],
+   "X_shape": [
+    260,
+    2401
+   ],
+   "meta": {
+    "parcial": false,
+    "gammaG": 1.0,
+    "gammaL": 100.0,
+    "L_h1": 15.0,
+    "n_h1": 15,
+    "vSL": 0.0959,
+    "vSG": 0.0753,
+    "L_down": 9.1,
+    "P_out": 1.013,
+    "H_riser": 3.0,
+    "slope": -1.0,
+    "tf": 600.0,
+    "n_down": 36,
+    "n_riser": 12,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "shut_in",
+    "conservative": true,
+    "elbow_radius": 0.0,
+    "n_elbow": 0,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "bubble_drag": "tese",
+    "t_ramp": 20.0,
+    "dP_margin": 0.3,
+    "D": 0.0254,
+    "rhoL": 998.0,
+    "muL": 0.001,
+    "rhoG0": 1.2,
+    "muG": 1.8e-05,
+    "P0": 101300.0,
+    "sigma": 0.072,
+    "P_gas_ref": 1.013,
+    "L_h2": 0.5,
+    "dt_out": 0.25,
+    "roughness": 1e-05,
+    "n_steps": 63349,
+    "n_rejected": 23637,
+    "cpu": 427.1928639411926
+   }
+  },
+  "notebooks/data/severe_slug_lab_jansen_tese_bloqueada.npz": {
+   "size": 3374360,
+   "sha256": "43df1c511fdd919baab2d5456dd2e78e83f64c2debd38a7e04ae095cb1645700",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1601
+   ],
+   "X_shape": [
+    260,
+    1601
+   ],
+   "meta": {
+    "parcial": false,
+    "gammaG": 1.0,
+    "gammaL": 1000.0,
+    "L_h1": 15.0,
+    "n_h1": 15,
+    "vSL": 0.0959,
+    "vSG": 0.0753,
+    "L_down": 9.1,
+    "P_out": 1.013,
+    "H_riser": 3.0,
+    "slope": -1.0,
+    "tf": 400.0,
+    "n_down": 36,
+    "n_riser": 12,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "blocked",
+    "conservative": true,
+    "elbow_radius": 0.0,
+    "n_elbow": 0,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "bubble_drag": "tese",
+    "t_ramp": 100.0,
+    "dP_margin": 0.05,
+    "D": 0.0254,
+    "rhoL": 998.0,
+    "muL": 0.001,
+    "rhoG0": 1.2,
+    "muG": 1.8e-05,
+    "P0": 101300.0,
+    "sigma": 0.072,
+    "P_gas_ref": 1.013,
+    "L_h2": 0.5,
+    "dt_out": 0.25,
+    "roughness": 1e-05,
+    "n_steps": null,
+    "n_rejected": null,
+    "cpu": null
+   }
+  },
+  "notebooks/data/severe_slug_lab_teng1_fisico.npz": {
+   "size": 4757840,
+   "sha256": "2a971b4d71c2c21a9eb56abb68fb11e6496f1e2b4d5a9268f22790dc1776ff25",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "meta"
+   ],
+   "T_shape": [
+    1601
+   ],
+   "X_shape": [
+    368,
+    1601
+   ],
+   "meta": {
+    "parcial": false,
+    "gammaG": 1.0,
+    "gammaL": 100.0,
+    "L_h1": 65.0,
+    "n_h1": 20,
+    "vSL": 0.32,
+    "vSG": 0.35,
+    "L_down": 19.81,
+    "P_out": 1.013,
+    "H_riser": 14.63,
+    "slope": -1.0,
+    "tf": 800.0,
+    "n_down": 40,
+    "n_riser": 30,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "start": "shut_in",
+    "conservative": true,
+    "elbow_radius": 0.0,
+    "n_elbow": 0,
+    "vertical_blend": 20.0,
+    "grading_down": 1.0,
+    "grading_riser": 1.0,
+    "art_visc": 0.05,
+    "low_void_regime": 2,
+    "high_void_regime": 1,
+    "high_void_alpha": 0.9,
+    "interfacial_pressure": 0.0,
+    "max_newton": 20,
+    "atol_P": null,
+    "atol_q": null,
+    "network": false,
+    "vertex_volume": 0.05,
+    "tol_range": 0.01,
+    "jax": true,
+    "regime": 4,
+    "regime_vertical": 2,
+    "k_switch": 1000000.0,
+    "ipe_smooth": false,
+    "ipe_local": false,
+    "fv_order": 1,
+    "alpha_face": "upwind",
+    "relax_target": "noslip",
+    "model": 1,
+    "drift_relax": 0.05,
+    "upstream_volume": 0.0,
+    "fi_mult": 1.0,
+    "fi_vgt": 5.5,
+    "virtual_mass": 0.5,
+    "vm_lambda": 1.0,
+    "bubble_drag": "fisico",
+    "t_ramp": 20.0,
+    "fsw": 0.02,
+    "fsw_G": 0.02,
+    "slow": true,
+    "dP_margin": 0.3,
+    "D": 0.0762,
+    "rhoL": 856.0,
+    "muL": 0.026,
+    "rhoG0": 1.2,
+    "muG": 1.8e-05,
+    "P0": 101300.0,
+    "sigma": 0.03,
+    "P_gas_ref": 1.013,
+    "L_h2": 1.0,
+    "dt_out": 0.5,
+    "roughness": 1e-05,
+    "n_steps": 50439,
+    "n_rejected": 21947,
+    "cpu": 497.9774703979492
+   }
+  },
+  "notebooks/data/severe_slug_run.npz": {
+   "size": 5666698,
+   "sha256": "3c2ed5a3b46aff8610d1abf3cfd22142eadace64187e52cabf2442bba84401d8",
+   "keys": [
+    "T",
+    "X",
+    "meta"
+   ],
+   "T_shape": [
+    4001
+   ],
+   "X_shape": [
+    176,
+    4001
+   ],
+   "meta": {
+    "n_down": 30,
+    "n_riser": 10,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "note": "scratch/severe_D.py L3: malha fina, 8000 s"
+   }
+  },
+  "notebooks/data/severe_slug_run_3600.npz": {
+   "size": 1107462,
+   "sha256": "98ce130b1fb4c5f71b87d017024def1c11a48f7718386c7e7b274e14cca5a112",
+   "keys": [
+    "T",
+    "X",
+    "meta"
+   ],
+   "T_shape": [
+    781
+   ],
+   "X_shape": [
+    176,
+    781
+   ],
+   "meta": {
+    "n_down": 30,
+    "n_riser": 10,
+    "n_h1": 2,
+    "n_h2": 2,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "gammaL": 100.0,
+    "rtol": 0.001,
+    "note": "0-2550 s: scratch/diag2600.py; 2550-3600 s: scratch/cont2600.py variante F"
+   }
+  },
+  "notebooks/data/severe_slug_run_fine8000.npz": {
+   "size": 5666698,
+   "sha256": "3c2ed5a3b46aff8610d1abf3cfd22142eadace64187e52cabf2442bba84401d8",
+   "keys": [
+    "T",
+    "X",
+    "meta"
+   ],
+   "T_shape": [
+    4001
+   ],
+   "X_shape": [
+    176,
+    4001
+   ],
+   "meta": {
+    "n_down": 30,
+    "n_riser": 10,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "note": "scratch/severe_D.py L3: malha fina, 8000 s"
+   }
+  },
+  "notebooks/data/severe_slug_run_long.npz": {
+   "size": 3106062,
+   "sha256": "0131924c3458cad18ee036df348f385a6299f41fd7e12ba8b5a27a45b33638ee",
+   "keys": [
+    "T",
+    "X",
+    "meta"
+   ],
+   "T_shape": [
+    4001
+   ],
+   "X_shape": [
+    96,
+    4001
+   ],
+   "meta": {
+    "n_down": 15,
+    "n_riser": 5,
+    "relax_time": 0.05,
+    "switch_frac": 0.5,
+    "rtol": 0.003,
+    "note": "scratch/severe_D.py L2: malha grossa, 8000 s"
+   }
+  },
+  "scratch/X_10_3_2b_rtol0.001.npz": {
+   "size": 663994,
+   "sha256": "421a4bdf02acd9a2a16ee41a9ff408db2f863f6f9e882d0bb8a296609911d2d7",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    601
+   ],
+   "X_shape": [
+    137,
+    601
+   ]
+  },
+  "scratch/cmpnet_M11.npz": {
+   "size": 61264,
+   "sha256": "e6311992753420e7538c44dca24fcb9c77499037d2a5a7bea7f0fd0a19053352",
+   "keys": [
+    "T",
+    "aG_base",
+    "mass",
+    "p_in",
+    "q_out"
+   ],
+   "T_shape": [
+    1501
+   ]
+  },
+  "scratch/cmpnet_N1.npz": {
+   "size": 61264,
+   "sha256": "02d5044a1f10b51648db67767f1ae95cb9d5f782d6c89e7fa9cdff65f64f40a9",
+   "keys": [
+    "T",
+    "aG_base",
+    "mass",
+    "p_in",
+    "q_out"
+   ],
+   "T_shape": [
+    1501
+   ]
+  },
+  "scratch/cmpnet_N2.npz": {
+   "size": 61264,
+   "sha256": "909cdf155065c5ae2715fd6ac9190831b78509c4dd4a67c85ee4c01a35fa8999",
+   "keys": [
+    "T",
+    "aG_base",
+    "mass",
+    "p_in",
+    "q_out"
+   ],
+   "T_shape": [
+    1501
+   ]
+  },
+  "scratch/cmpnet_N3.npz": {
+   "size": 61264,
+   "sha256": "ac7f25658888274234b871f08509bb31523c1097cea6d77b12e53dde14ab0152",
+   "keys": [
+    "T",
+    "aG_base",
+    "mass",
+    "p_in",
+    "q_out"
+   ],
+   "T_shape": [
+    1501
+   ]
+  },
+  "scratch/cmpnet_N7.npz": {
+   "size": 61264,
+   "sha256": "9d63ddd710a4be7a66aa9cfd51643840e7c15aa70272fea78ade763a83133abc",
+   "keys": [
+    "T",
+    "aG_base",
+    "mass",
+    "p_in",
+    "q_out"
+   ],
+   "T_shape": [
+    1501
+   ]
+  },
+  "scratch/cmpnet_N8.npz": {
+   "size": 61264,
+   "sha256": "7b552ed2f23e543b64ba7c27d3978f08e57cc29685660967a06cbc2646d5907a",
+   "keys": [
+    "T",
+    "aG_base",
+    "mass",
+    "p_in",
+    "q_out"
+   ],
+   "T_shape": [
+    1501
+   ]
+  },
+  "scratch/cmpnet_N9.npz": {
+   "size": 61264,
+   "sha256": "4575d143bd58ec0168ee88e905594432b47db461676be37ae5b31d793fafea7a",
+   "keys": [
+    "T",
+    "aG_base",
+    "mass",
+    "p_in",
+    "q_out"
+   ],
+   "T_shape": [
+    1501
+   ]
+  },
+  "scratch/cont2600_C.npz": {
+   "size": 745306,
+   "sha256": "197bda899fc3ddb6289cbe22da35a29b1f4a39c2186441488f88ef973a190134",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    526
+   ],
+   "X_shape": [
+    176,
+    526
+   ]
+  },
+  "scratch/cont2600_F.npz": {
+   "size": 745306,
+   "sha256": "72a8eb0db0906f976c04e523d883e2a21c95bcda1071a21c8abf1ac922bbb764",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    526
+   ],
+   "X_shape": [
+    176,
+    526
+   ]
+  },
+  "scratch/diag2600_state.npz": {
+   "size": 362986,
+   "sha256": "54049d00225cff9a00e84d9698905a8bbd2a5b56384176a1d62f33b5c2140830",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    256
+   ],
+   "X_shape": [
+    176,
+    256
+   ]
+  },
+  "scratch/diag_K6ref.npz": {
+   "size": 665954,
+   "sha256": "ad5693719490a785ffa89004c5002f5dca866e7ca2bdf23652020115d6be8f6b",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    431
+   ],
+   "X_shape": [
+    192,
+    431
+   ]
+  },
+  "scratch/diag_K7.npz": {
+   "size": 665954,
+   "sha256": "816bda3f166b18aff10dc75de47fe87786233e753bcedbea21c0e795b3319f97",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    431
+   ],
+   "X_shape": [
+    192,
+    431
+   ]
+  },
+  "scratch/diag_K7amin.npz": {
+   "size": 665954,
+   "sha256": "c0d223c0ef8b45a1c3d5df80db812ae93b79df03f74fc068f7ee09cab8ee2f5d",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    431
+   ],
+   "X_shape": [
+    192,
+    431
+   ]
+  },
+  "scratch/diag_K7aminlvd.npz": {
+   "size": 665954,
+   "sha256": "fa10b8c9314d5a88e5de875c8590f186921f0c55e05aa0698d088d43720fad66",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    431
+   ],
+   "X_shape": [
+    192,
+    431
+   ]
+  },
+  "scratch/diag_K7av1.npz": {
+   "size": 665954,
+   "sha256": "929d24df53a87947c918251031c63bbb0214d81c361bbc8ff3bbf97b5e68309d",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    431
+   ],
+   "X_shape": [
+    192,
+    431
+   ]
+  },
+  "scratch/diag_K7av3.npz": {
+   "size": 665954,
+   "sha256": "16f000806138e6a804b4e8543087fa29f3fa4896376f8a1df22250fb317afab3",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    431
+   ],
+   "X_shape": [
+    192,
+    431
+   ]
+  },
+  "scratch/diag_K7av3lvd.npz": {
+   "size": 665954,
+   "sha256": "8052d291497bff0984a7024e1ac61d491fd1588d053efaef9f13763836ad5531",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    431
+   ],
+   "X_shape": [
+    192,
+    431
+   ]
+  },
+  "scratch/diag_K7band.npz": {
+   "size": 665954,
+   "sha256": "3d9a15061b20a97c6da186984771e52f7eee8e4680a781120cea6340c4962f91",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    431
+   ],
+   "X_shape": [
+    192,
+    431
+   ]
+  },
+  "scratch/diag_K7dense.npz": {
+   "size": 673674,
+   "sha256": "f00bb8f8174b2c8a2ff89eb1a77c699dae72323c20836ae6d191bc6ca0be261d",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    436
+   ],
+   "X_shape": [
+    192,
+    436
+   ]
+  },
+  "scratch/diag_K7lv.npz": {
+   "size": 665954,
+   "sha256": "3d1820adce5d2fa7d226f4c3d43507f61cfb6ba7611da6d0776f189304ccd0a8",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    431
+   ],
+   "X_shape": [
+    192,
+    431
+   ]
+  },
+  "scratch/diag_K7lvd.npz": {
+   "size": 665954,
+   "sha256": "d7ec2d2e96f1841b66a4b03bd2b9f76f1e0c2539514d97d1a87ab92ee5311ff4",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    431
+   ],
+   "X_shape": [
+    192,
+    431
+   ]
+  },
+  "scratch/diag_K7relax.npz": {
+   "size": 665954,
+   "sha256": "cd9b82bb5bbb9b3ba30d5dfa3ff75e68f82145adec34bc651c876cc7d27551e0",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    431
+   ],
+   "X_shape": [
+    192,
+    431
+   ]
+  },
+  "scratch/gl_strong_ab10_16k.npz": {
+   "size": 3534394,
+   "sha256": "f4620fa2683ed6fef3453f329f05aa6d417285efd24cd8b84e91c7c88f2aab56",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    3201
+   ],
+   "X_shape": [
+    137,
+    3201
+   ]
+  },
+  "scratch/gl_strong_ab10o1.npz": {
+   "size": 1767994,
+   "sha256": "fa1c9610ff0bbcdc39c12f7f2feb927fb3f6192deb6ef1aeec3b71d5bc4689a6",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1601
+   ],
+   "X_shape": [
+    137,
+    1601
+   ]
+  },
+  "scratch/gl_strong_ab10o2.npz": {
+   "size": 1767994,
+   "sha256": "20bee628d6588adff2dcd68cbc46b7622769ea3fd8b759e81dea141dd5981aea",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1601
+   ],
+   "X_shape": [
+    137,
+    1601
+   ]
+  },
+  "scratch/gl_strong_ab12.npz": {
+   "size": 1767994,
+   "sha256": "d115eaf3f381bf3c71461d19a1e5ce9f0e91ecfbf9fc23896f2c195627476a39",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1601
+   ],
+   "X_shape": [
+    137,
+    1601
+   ]
+  },
+  "scratch/gl_strong_ab12_16k.npz": {
+   "size": 3534394,
+   "sha256": "97d993ee9801df8fd1bfde441b8d2e6001df888f90618a360429c00231a8baac",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    3201
+   ],
+   "X_shape": [
+    137,
+    3201
+   ]
+  },
+  "scratch/newton_fail_state.npz": {
+   "size": 5698,
+   "sha256": "d4663006247771d6d2136b6dd7b3adb4f8df0c8cb89b8f7541d089542277f7aa",
+   "keys": [
+    "c_hist",
+    "gcoef",
+    "h",
+    "pred",
+    "t",
+    "x"
+   ]
+  },
+  "scratch/plug_ring_base_A.npz": {
+   "size": 2186666,
+   "sha256": "af492ea24ceae4ad0b399c372360a28026caf5b5ad62064a19813af2a991827e",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    3001
+   ]
+  },
+  "scratch/plug_ring_base_Ap.npz": {
+   "size": 2186642,
+   "sha256": "176cb70cded0940048758ccfd9f1fb50ce6cf64a48ca5ed3fb7d12ae43752758",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    3001
+   ]
+  },
+  "scratch/plug_ring_base_B.npz": {
+   "size": 2186642,
+   "sha256": "6b5e34710fdddf273742233047d246d09c8cb2bf1a887940dad9cafb16da29ae",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    3001
+   ]
+  },
+  "scratch/plug_ring_closedA.npz": {
+   "size": 2914834,
+   "sha256": "64a76e99f3bcefd4d68c7e3b97a10c917477abf1f85af56668d1465614eff82e",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    4001
+   ]
+  },
+  "scratch/plug_ring_closed_Ap.npz": {
+   "size": 2186786,
+   "sha256": "858e8ea5ac9a396679b1fef1d09b81650e6ef7d01eced90e7e6037e8c9730033",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    3001
+   ]
+  },
+  "scratch/plug_ring_closed_B.npz": {
+   "size": 2186786,
+   "sha256": "74a241e98a12c9b2c4a440c8d51b8e77e2c99f56bb8ef62f35c9cbcb6eb4b893",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    3001
+   ]
+  },
+  "scratch/plug_ring_flowA_closed.npz": {
+   "size": 1458878,
+   "sha256": "1cefc55b1fe76716f735282c1325a77e334039b21dee3ad86db90a520516c47a",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    2001
+   ]
+  },
+  "scratch/plug_ring_flow_A.npz": {
+   "size": 2186730,
+   "sha256": "a09a934dc7c44e8215b0f47f03e978b9c9f0892857c9f238052c1a0c07d7c7a8",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    3001
+   ]
+  },
+  "scratch/plug_ring_flow_Ap.npz": {
+   "size": 2186730,
+   "sha256": "9d16a1143703ce0e2dbd6d74fd91188ed98027dc4e23491ffc8c1eb5887f0277",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    3001
+   ]
+  },
+  "scratch/plug_ring_flow_B.npz": {
+   "size": 2186734,
+   "sha256": "4459cdc617e3f97dd977f6ae816dde51f7636c686c61a2b21675dca2f5a42716",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    3001
+   ]
+  },
+  "scratch/plug_ring_ns.npz": {
+   "size": 2914938,
+   "sha256": "669d0d7634ebe39e29d9244c06e59bbe2e26af55abcaf1e5d2983acbe39fafd9",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    4001
+   ]
+  },
+  "scratch/plug_ring_ns2.npz": {
+   "size": 2914942,
+   "sha256": "a001278024d6a033347c90cce0a9f6c413c9838331cb2ee06af06d40cc264421",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    4001
+   ]
+  },
+  "scratch/plug_ring_nsg.npz": {
+   "size": 2186902,
+   "sha256": "f95e7d6d756d11ccabc961f55beb6fc930896783a7e8a173b42938b825656545",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    3001
+   ]
+  },
+  "scratch/plug_ring_v.npz": {
+   "size": 2186798,
+   "sha256": "99c1e6fd187fa76a8f7253ab06f46a607e36dbb6a857806c21f0b400ea6d7804",
+   "keys": [
+    "P_mid",
+    "T",
+    "Y",
+    "info",
+    "opts",
+    "q_mid"
+   ],
+   "T_shape": [
+    3001
+   ]
+  },
+  "scratch/r6a_fail_state.npz": {
+   "size": 1394,
+   "sha256": "95b43cfee8252ae99fda14ffb220fc213bddcdfe6051b717b847b0864ab75b58",
+   "keys": [
+    "t",
+    "x"
+   ]
+  },
+  "scratch/restart_aP10.npz": {
+   "size": 1357394,
+   "sha256": "97119283cf2779192222d4a0d44e1dc4727f81dff518d0df933ce0f29a00697a",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_aP10q.npz": {
+   "size": 1357394,
+   "sha256": "bab39de3bd6fad1cef33f9235ed46f05ed9dcaf9054c839e8ba3b297d6afb59d",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_aP20q.npz": {
+   "size": 1357394,
+   "sha256": "a6f4682b0d3c975019d508e17fed57715049b3e94a47eb85153b1b9ed6f5c43d",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_aP5.npz": {
+   "size": 1357394,
+   "sha256": "1e5a175d36ecf356c1eee53253eb773586eee7b8a00c6badc7bdb8ba06915cd5",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_ab05.npz": {
+   "size": 1357394,
+   "sha256": "9f5ba02d7c881b9404ec7bb10e96acc7188e48dbc87888f123a009865bb2381c",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_ab10.npz": {
+   "size": 1357394,
+   "sha256": "0006c8128ecec17adc4dcfd57a6dcd0f8fb56d36811cdd9269d1182b71e2323c",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_av05.npz": {
+   "size": 1357394,
+   "sha256": "ba697819c547344e7de6b17f3807c281005d65b00be667a212fe9d0ac320336a",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_base.npz": {
+   "size": 1357394,
+   "sha256": "5c5b2fcc9ebdb0a32d245a432030bb3e4bdaf826289fbfca89b7c84be9b3b433",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_fb02.npz": {
+   "size": 1357394,
+   "sha256": "4c7a63661a2579d21db9f5a38b877763c2e96d73311babdf690407f0e48118fa",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_fb02lvd.npz": {
+   "size": 1357394,
+   "sha256": "70affba77a5ae715ecc5df3256a25f621e9493e5ac28a562f54d089226ab8ef9",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_fband.npz": {
+   "size": 1357394,
+   "sha256": "817fe3ffd15de448283d0a7727d81a62c710dfc27ceeb5667727c8b739439522",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_gam30.npz": {
+   "size": 1357394,
+   "sha256": "93b652ab07d479e78f0d199420f5eeff96d33077d43205501bac54bf9e03e2b6",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_hand.npz": {
+   "size": 1357394,
+   "sha256": "e551ff2ec021a883fbf2b40579f69a363385e2c23855915e1a50e0264e9fdb27",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_jax_fast.npz": {
+   "size": 1357394,
+   "sha256": "f3947c1fecfb32afdf2f4bbdee48321b2126f6fc7703650b15d6e61ffae47aa5",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_jax_fast2.npz": {
+   "size": 1357394,
+   "sha256": "f3947c1fecfb32afdf2f4bbdee48321b2126f6fc7703650b15d6e61ffae47aa5",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_jax_ref.npz": {
+   "size": 1357394,
+   "sha256": "3f0ce9338a36c686595fec00a43177f56bb95bbcee4d1277e314a35b159a4135",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_jax_ref2.npz": {
+   "size": 1357394,
+   "sha256": "3f0ce9338a36c686595fec00a43177f56bb95bbcee4d1277e314a35b159a4135",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_lvd.npz": {
+   "size": 1357394,
+   "sha256": "db1373fb9548690dca7d6d749addcbc298ed9b5da201136a642aacbfe99713b7",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_noDPL.npz": {
+   "size": 1357394,
+   "sha256": "5c5b2fcc9ebdb0a32d245a432030bb3e4bdaf826289fbfca89b7c84be9b3b433",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_np_fast.npz": {
+   "size": 1357394,
+   "sha256": "bab39de3bd6fad1cef33f9235ed46f05ed9dcaf9054c839e8ba3b297d6afb59d",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_np_ref.npz": {
+   "size": 1357394,
+   "sha256": "e88865a2d3128b36843b78c4628d6e5ddf44a7ae63f4f5556997716d60d88bde",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_o1.npz": {
+   "size": 1357394,
+   "sha256": "e80d635ccd24e8590ed2852d5dabe622f5899569224500140f94b600d15f3f98",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_pk003.npz": {
+   "size": 1357394,
+   "sha256": "008ca2873cf1dab63fa01148e6a66928e227e862167241d84f46e77c18a04e93",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_pk005.npz": {
+   "size": 1357394,
+   "sha256": "70f5d21fe2fbda3e57b4be39bbe3282614e04c12e58aa6720ad460abead89550",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_pk01.npz": {
+   "size": 1357394,
+   "sha256": "9a0978a24bbe2e43baaf64f7851e476bc8d143684b81cb22e4b78ba77c778d32",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_pkG.npz": {
+   "size": 1357394,
+   "sha256": "429623f93263b8ec6ff791d923f9796ff564f29e0c9366e22c776656d9a7b480",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_ref.npz": {
+   "size": 1357394,
+   "sha256": "e88865a2d3128b36843b78c4628d6e5ddf44a7ae63f4f5556997716d60d88bde",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_relax0005.npz": {
+   "size": 1357394,
+   "sha256": "d3f933cfa29ea481c1a1ed0d943bdd5dde84d35fae113492c9c3e404b81587f4",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_relax02.npz": {
+   "size": 1357394,
+   "sha256": "9afd303f240871fcdaea6d9a85b76b9ddc02675bd52ad66bfdf8f290173b6d0d",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_relax05.npz": {
+   "size": 1357394,
+   "sha256": "ba53573d618139bd19f2e2b687f125d547c2fdbaaa59b252c084f8d25dc62d3d",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_rtolP.npz": {
+   "size": 1357394,
+   "sha256": "c5e4e265b7809436f8573b2ea395f5e9d9d648a303a801e817b34d912b8370db",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_tr02.npz": {
+   "size": 1357394,
+   "sha256": "0f83188346b2fadd34423abd2e9ba969ec0c854315527fd69009bd80b86fe3ce",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_tr05.npz": {
+   "size": 1357394,
+   "sha256": "ef898e6820bc927e359a24c57d6a8f6f14d7192a4882463f85697f5c592d8566",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/restart_tr10.npz": {
+   "size": 1357394,
+   "sha256": "96c6fffe3094983b0f9b4a0c272ab35089cb60bb8f80e16f87cbc1aae7d2344f",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_B1.npz": {
+   "size": 778010,
+   "sha256": "3a976f21da58d781f1563d7bdfc8e3bf27a91845cf1a83cb393654e9159cbd6b",
+   "keys": [
+    "T",
+    "X",
+    "opts"
+   ],
+   "T_shape": [
+    1001
+   ],
+   "X_shape": [
+    96,
+    1001
+   ]
+  },
+  "scratch/severe_D_G1.npz": {
+   "size": 1383284,
+   "sha256": "8f6666283fbf33e2dedcead5cf6394778b3287b51c5b0ed5d24e1cb8ccbd7ce4",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_G2.npz": {
+   "size": 1383284,
+   "sha256": "684f73a6210f56a240bc30d5ceb4479280735e415f5fe67d36b32ac4dd84b1e9",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_G3.npz": {
+   "size": 9184548,
+   "sha256": "bd6d3cfdc2586346260860c7a39be890d4f91f085a80f1ec4db0af119db58ae2",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ]
+  },
+  "scratch/severe_D_K2.npz": {
+   "size": 1166086,
+   "sha256": "9f8b115272b0b8651b3c3208c3babc05a43292289f2d80a1373bd702a31b56cd",
+   "keys": [
+    "T",
+    "X",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    96,
+    1501
+   ]
+  },
+  "scratch/severe_D_K3.npz": {
+   "size": 1190340,
+   "sha256": "00858026eab1edb194a202ec53d7d32b8f35806a92925ee8c492f238402ac8ae",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    96,
+    1501
+   ]
+  },
+  "scratch/severe_D_K4.npz": {
+   "size": 1382652,
+   "sha256": "1e91da404dcfd4f720d37ad3ced710ae4017706e40ca0cb0ac32592a1d643321",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_K5.npz": {
+   "size": 1382780,
+   "sha256": "7cda0975233a0df9487b797d917a2607e90e60bc1509a4a053aefa87fc18a428",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_K6.npz": {
+   "size": 2343296,
+   "sha256": "e965a33c979dc350001735298fd1603baa0d19222496a9a5465005cfb65a4e3c",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    192,
+    1501
+   ]
+  },
+  "scratch/severe_D_L1.npz": {
+   "size": 3105870,
+   "sha256": "adfd83cd861a173672844a55d2a594a1ba0b8f13ede11898cf2cce79b09acb1b",
+   "keys": [
+    "T",
+    "X",
+    "opts"
+   ],
+   "T_shape": [
+    4001
+   ],
+   "X_shape": [
+    96,
+    4001
+   ]
+  },
+  "scratch/severe_D_L2.npz": {
+   "size": 3105930,
+   "sha256": "823c63fde84b3b6d3117b4b1de06630e708251254ec36d90aebfd5081c36dd5c",
+   "keys": [
+    "T",
+    "X",
+    "opts"
+   ],
+   "T_shape": [
+    4001
+   ],
+   "X_shape": [
+    96,
+    4001
+   ]
+  },
+  "scratch/severe_D_L3.npz": {
+   "size": 5666574,
+   "sha256": "1f9e8a9333a96d6bfab63f0ab0b13ae71d1d76315733fd318c68236f560406d2",
+   "keys": [
+    "T",
+    "X",
+    "opts"
+   ],
+   "T_shape": [
+    4001
+   ],
+   "X_shape": [
+    176,
+    4001
+   ]
+  },
+  "scratch/severe_D_M1.npz": {
+   "size": 1382724,
+   "sha256": "37b97518d3bcfb16a7db72e69469e13b8d4f2a3bd8f1586b7ee4ff6e1b56f9d8",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_M10.npz": {
+   "size": 2343608,
+   "sha256": "900b0d36641818cb7343db3d565d759f3399561d416c2542e108b7229b53a028",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    192,
+    1501
+   ]
+  },
+  "scratch/severe_D_M11.npz": {
+   "size": 1382912,
+   "sha256": "778488b60f0ea2e85907d5b86603d1a9cf9e4b77323eb87c1d46b080fd2fcb14",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_M2.npz": {
+   "size": 1382852,
+   "sha256": "81e84e30e613ee7991226c1fbc6817b7fac8a8b30625193d3294cbd597d23e30",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_M3.npz": {
+   "size": 2343368,
+   "sha256": "f444a8089690284d016111a3d8c7e6b2b9fa241c4651cdda103b3f81731a3429",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    192,
+    1501
+   ]
+  },
+  "scratch/severe_D_M4.npz": {
+   "size": 2343496,
+   "sha256": "f29eca6423add597827f998d719db9c383672a052dcaf9f93ac80c56b837934a",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    192,
+    1501
+   ]
+  },
+  "scratch/severe_D_M5.npz": {
+   "size": 1382840,
+   "sha256": "b0c3bbee27e59b5c41b3db66a7e00547f0ee3b481576a8a045de79769007ad7a",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_M6.npz": {
+   "size": 1382796,
+   "sha256": "73056c857ba296020ba82c2a9942efaf51a519432c469cae11afa7caaebed083",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_M7.npz": {
+   "size": 1382924,
+   "sha256": "cf90412b76e54ac6aa96afe7ac6acb7ed4207da9db768703d85614cd5a478e77",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_M8.npz": {
+   "size": 1382924,
+   "sha256": "cd6f3e1d7d2843d904724fbd1cb465cf194bea7a08757d60805a04ac78a08a37",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_M9.npz": {
+   "size": 1382964,
+   "sha256": "4cd6a928ecde915aa2ceabb1959b1983765e8e1a10b68095ce715e8f040d6517",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_N1.npz": {
+   "size": 1599168,
+   "sha256": "df883dcb2751a2de14b0b454f6fb497a8fe4e4ff7604d77dc31751d161b2965c",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    124,
+    1501
+   ]
+  },
+  "scratch/severe_D_N2.npz": {
+   "size": 1599164,
+   "sha256": "a78752e5b0d7224834fa1a9ff63c328992c1ca5d8156587db1a33e5795fc1f83",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    124,
+    1501
+   ]
+  },
+  "scratch/severe_D_N3.npz": {
+   "size": 1599168,
+   "sha256": "535a51a8d60e8401cdebfd0febc82a20176e6592b126f460c5541f0b21abbbcc",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    124,
+    1501
+   ]
+  },
+  "scratch/severe_D_N7.npz": {
+   "size": 1671216,
+   "sha256": "9dfa03a100da91f05780c67804d793cc56d541b34f53be279d37dfb599afe594",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    124,
+    1501
+   ]
+  },
+  "scratch/severe_D_N8.npz": {
+   "size": 1671212,
+   "sha256": "c6d9b9752b64eefec61336bd15a2eed6ff5bcbcc5955c5603c15389086eb3485",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    124,
+    1501
+   ]
+  },
+  "scratch/severe_D_N9.npz": {
+   "size": 1671216,
+   "sha256": "e31b7f23a762d5b9559ef5d5990bdb8df2eb37ae4399fb713eb33186c6e14420",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    124,
+    1501
+   ]
+  },
+  "scratch/severe_D_P1.npz": {
+   "size": 1166010,
+   "sha256": "a425300535dca35ac541c433379d6534bd171c58baf47608ad8dee078e8a6a2e",
+   "keys": [
+    "T",
+    "X",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    96,
+    1501
+   ]
+  },
+  "scratch/severe_D_P2.npz": {
+   "size": 1190340,
+   "sha256": "bcf35c7a61b1b327c9300086b62dbba62089c2ec8c150f06ce6dba4cb28f387d",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    96,
+    1501
+   ]
+  },
+  "scratch/severe_D_P3.npz": {
+   "size": 1382652,
+   "sha256": "e3a9e40d1c0f57ed037dbfd2023fec8f8cdaa6e4ce80efd2ffd33a305be150ec",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R1.npz": {
+   "size": 2126330,
+   "sha256": "9f0bc5006a717afebd8d26d0ec16d25742296ae46ec6658af4d7f20519309d77",
+   "keys": [
+    "T",
+    "X",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    176,
+    1501
+   ]
+  },
+  "scratch/severe_D_R10a.npz": {
+   "size": 1383100,
+   "sha256": "aeb3e54cc12e1918162973076dfa411eaa885018a317385142f7f53c853943e6",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R10b.npz": {
+   "size": 1383160,
+   "sha256": "8ad3d1a7bcd570ab39345ffc57ed02d2d3313b6008a698cf4edfdf34615e372c",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R10c.npz": {
+   "size": 1383132,
+   "sha256": "d8370673ac96209fbb5ded94c716bc085d19dd87f910f24af8a76d8567fe18f8",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R10d.npz": {
+   "size": 1383172,
+   "sha256": "cc25abebb0b110bd3cc9750f0a9f926fd571c0eebfe98031bf527898707a7000",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R10e.npz": {
+   "size": 1383232,
+   "sha256": "71be5705320446637abe639e42983f5ab833ae47b5ec97b66300cc7cffb07f7e",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R11a.npz": {
+   "size": 2343788,
+   "sha256": "7d5e18dd131799bb594345c19c3d9eacffa1b478c10935494170c209860f09f5",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    192,
+    1501
+   ]
+  },
+  "scratch/severe_D_R11b.npz": {
+   "size": 2343932,
+   "sha256": "25ad76c2fbabb9f8478642363b845153fc0fe9f969a8d54d949a2d09d36af797",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    192,
+    1501
+   ]
+  },
+  "scratch/severe_D_R12a.npz": {
+   "size": 1383080,
+   "sha256": "a7ba41f04badc8649c0ce0ea988f8190a7f813128950129a821988d1ffd94d06",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R12b.npz": {
+   "size": 1383224,
+   "sha256": "8cd7e01633367d989309c9f48cd8a457f22192fe836a50c9e5d5f142fd1ff5d4",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R13.npz": {
+   "size": 1382912,
+   "sha256": "778488b60f0ea2e85907d5b86603d1a9cf9e4b77323eb87c1d46b080fd2fcb14",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R14a.npz": {
+   "size": 1383052,
+   "sha256": "6413b6f307e96b734498f8202bc0285f05a5ad49c1757df9766cf89caf17ab39",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R14b.npz": {
+   "size": 1383260,
+   "sha256": "60289ac25d5db043d71ccc105bed3d8fe79e037fe339edf8d584b5a4182ec4b9",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R15a.npz": {
+   "size": 1383100,
+   "sha256": "00202085eb6bfcb55562472c9c92fd7e31183cbda8968540813d35570b0a59a9",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R15b.npz": {
+   "size": 1383100,
+   "sha256": "6bbfd4fb7b0796f9b23330b4b7291bf906d13331ae7faf272f3b5d1a34af2305",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R15c.npz": {
+   "size": 1383100,
+   "sha256": "81181519ed7fe651691f947305aad448ce9c73d631a4985fa1ac1a69fa94c542",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R15d.npz": {
+   "size": 1383100,
+   "sha256": "1f4ab4bcb50e3d228d3fb6ae213fc13a28f609420f7989757c1be057c7a143c1",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R16a.npz": {
+   "size": 6124244,
+   "sha256": "96648942b4d6bb1c90a97c13ebc8e73cbceddcfb65dc86aae470cb36e2d5d5d0",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    3001
+   ],
+   "X_shape": [
+    252,
+    3001
+   ]
+  },
+  "scratch/severe_D_R16c.npz": {
+   "size": 6124452,
+   "sha256": "6d86e36f76a1a8cd64146c6b5a2ce89c3fc5203462c6b5681b1e19cf75497da4",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    3001
+   ],
+   "X_shape": [
+    252,
+    3001
+   ]
+  },
+  "scratch/severe_D_R16d.npz": {
+   "size": 6124452,
+   "sha256": "24a5953028d9d1a44e6f2e1d43f22a60bef8f69fcb60334b6d8ee7035374d246",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    3001
+   ],
+   "X_shape": [
+    252,
+    3001
+   ]
+  },
+  "scratch/severe_D_R16f.npz": {
+   "size": 6124316,
+   "sha256": "ac3a3332e89aba4c2ff4ab8db35e3654ffca9162812108e07d4ad9cfd3032ade",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    3001
+   ],
+   "X_shape": [
+    252,
+    3001
+   ]
+  },
+  "scratch/severe_D_R17a.npz": {
+   "size": 9184572,
+   "sha256": "0c96b7f998998b96b7039fdf8d8f145c3a26616b259432dac86f5e15974baa60",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ]
+  },
+  "scratch/severe_D_R2.npz": {
+   "size": 2126250,
+   "sha256": "33c3cbce141b93c91d8f6fec6941131c3cadacab641f87758b7b27b88743e57b",
+   "keys": [
+    "T",
+    "X",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    176,
+    1501
+   ]
+  },
+  "scratch/severe_D_R3.npz": {
+   "size": 2126330,
+   "sha256": "71947d3a97606c029a7921a52b57ce53b77e97589f8db011a0c1978ff09d100e",
+   "keys": [
+    "T",
+    "X",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    176,
+    1501
+   ]
+  },
+  "scratch/severe_D_R6e.npz": {
+   "size": 1383100,
+   "sha256": "bef59f71c98afb2b635711784aec8b169f923734343a2f66008999d74712a0a6",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R6f.npz": {
+   "size": 1383100,
+   "sha256": "e11ab21bc5aec7b413885379e44e5e0e222c4b11599528ff0e6da784e897bb42",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R6g.npz": {
+   "size": 1383164,
+   "sha256": "1c24277abf09ee2c4b5a314a96203978ed80af4964594deeb074edf9c2e189f3",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R7a.npz": {
+   "size": 1383004,
+   "sha256": "840f2ffcb4a13f458eb5c0d477b5736855ae479798e5695c5a0c5c177fb0f800",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R7c.npz": {
+   "size": 1383032,
+   "sha256": "9c7386df07dfe0921f7e6142d0573dac0caccc63f874a32c2a8d46942c6a0900",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R7d.npz": {
+   "size": 1383016,
+   "sha256": "cdc3e4c7aebcc8139fa274648c59fa774637d8f8ae7ee1c89bacf77c41808db6",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R8c.npz": {
+   "size": 1383192,
+   "sha256": "c43b8cbc960f1fc0be2722af5e679195f88f3acd543d1fbed6ffdfce5cf5e91e",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R9a.npz": {
+   "size": 1383140,
+   "sha256": "c7e8c1670f85db8a38e094e19376c60d5a823fbb36397493cdb40aafd2ac79e4",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R9b.npz": {
+   "size": 1383140,
+   "sha256": "a80efb9867df6037829416a9392643b020ae498ab84be2c1f06d242dc599bb83",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_R9c.npz": {
+   "size": 1383148,
+   "sha256": "420a140cc4a6456dd7cf7b0f3780e989a85ba93c4f4cfa3501c6b63c180bc7c4",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_S1.npz": {
+   "size": 9184588,
+   "sha256": "08997ca2a005d3c3205a45be48ab8370b5b3eee4e6b2b44cab4ce8e4658eaad5",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ]
+  },
+  "scratch/severe_D_S2.npz": {
+   "size": 9184584,
+   "sha256": "bcb0b5064500e075662dc4027ae55e779ec20f8c7d8607b84747812c71da99eb",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ]
+  },
+  "scratch/severe_D_S3.npz": {
+   "size": 9184584,
+   "sha256": "9c067e7bd547ab47392f3a9c5e55a08ef0440ffd4685146ff42c2fd524bfa1ed",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ]
+  },
+  "scratch/severe_D_S4.npz": {
+   "size": 9184584,
+   "sha256": "48ae7cb4f1746bef62e3d1f66dcb28d860ef6591eb408e7407b607de5fca7801",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ]
+  },
+  "scratch/severe_D_S5.npz": {
+   "size": 9184584,
+   "sha256": "f6ab02743b37eb1f52887c0c2caefd96b57171c55c99d579b36f4f2574d1705b",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ]
+  },
+  "scratch/severe_D_S6.npz": {
+   "size": 9184584,
+   "sha256": "880294d5a326f09c32c9addc23aa08a758a2b94cad4c255db9fb41f0e0ce9eb6",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ]
+  },
+  "scratch/severe_D_S7.npz": {
+   "size": 9184584,
+   "sha256": "e27bb89d25fae774b894f3b6744cef251359b3f82243875597e6777a0c2a6ff9",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ]
+  },
+  "scratch/severe_D_S8.npz": {
+   "size": 9184588,
+   "sha256": "482fe94280146016d21e0f0b53e78cce14be28cc6068f3e9d066a9c88acdd413",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ]
+  },
+  "scratch/severe_D_S9.npz": {
+   "size": 9184584,
+   "sha256": "2ef1c640aac8d266d18d938305a16cbd9014a5e615d4d48977e28ffdc4f94feb",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    252,
+    4501
+   ]
+  },
+  "scratch/severe_D_T2.npz": {
+   "size": 2834322,
+   "sha256": "6f8b787146bbcedb7cdac829f32a8b2323c5f2f9633d24aa67a304417586aed3",
+   "keys": [
+    "T",
+    "X",
+    "opts"
+   ],
+   "T_shape": [
+    2001
+   ],
+   "X_shape": [
+    176,
+    2001
+   ]
+  },
+  "scratch/severe_D_T3.npz": {
+   "size": 2834366,
+   "sha256": "3c8d02c550aff45bdf2ada723d3dead72da2eff055e127359b0db434494c2bb0",
+   "keys": [
+    "T",
+    "X",
+    "opts"
+   ],
+   "T_shape": [
+    2001
+   ],
+   "X_shape": [
+    176,
+    2001
+   ]
+  },
+  "scratch/severe_D_U1.npz": {
+   "size": 1455324,
+   "sha256": "3b5f21b7cbd9c01596ce25aa9029c6230406c10bcac468cd2377dad46cb730f7",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    116,
+    1501
+   ]
+  },
+  "scratch/severe_D_U2.npz": {
+   "size": 1455324,
+   "sha256": "fbf1ffe1fc830742e10d45b36bb0e5fb51b3536a188dc27953d39a0a216f3750",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    116,
+    1501
+   ]
+  },
+  "scratch/severe_D_U3.npz": {
+   "size": 1455324,
+   "sha256": "a4c15fa6bff7c4770a58390174a12b987c67f1d48c50a0de0da80d14b52f9152",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    116,
+    1501
+   ]
+  },
+  "scratch/severe_D_U4.npz": {
+   "size": 9400588,
+   "sha256": "5a240bf43c6f8ead550417094c342205f650f0f99589abc17c0e08150f170d8e",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    4501
+   ],
+   "X_shape": [
+    256,
+    4501
+   ]
+  },
+  "scratch/severe_D_U5.npz": {
+   "size": 1767588,
+   "sha256": "3d9ec5ceeb028ac289017952ec427e65859566f36d0f53affa734edd7af64da5",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    144,
+    1501
+   ]
+  },
+  "scratch/severe_D_U6.npz": {
+   "size": 2488068,
+   "sha256": "1ac30dd7b88baf7eedea683203730c32e45b828bde47722a73d199f2725fe856",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    204,
+    1501
+   ]
+  },
+  "scratch/severe_D_field_phys.npz": {
+   "size": 1383424,
+   "sha256": "dbbcec3e5b2fb5c77d2e06ba2ac7b8ace4599668d9affefa5d60fd8adda1d6ea",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_field_tese.npz": {
+   "size": 1383324,
+   "sha256": "03937afb3c5932a007ec7ed4581a5da5f3c58c0a7136a41370c5d194a3d454a9",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1501
+   ],
+   "X_shape": [
+    112,
+    1501
+   ]
+  },
+  "scratch/severe_D_smoke_fabre.npz": {
+   "size": 110548,
+   "sha256": "0060bd42c55e809233bc096289baee7b537d87eb5f9e78e249308aff82be69a2",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    41
+   ],
+   "X_shape": [
+    324,
+    41
+   ]
+  },
+  "scratch/severe_D_v2_fabre2_phys_partial.npz": {
+   "size": 814350,
+   "sha256": "8ca88a00bbbf09faf6b120181b6e0832801d99b965bf4aca1f0c54526c27bd42",
+   "keys": [
+    "T",
+    "X",
+    "opts"
+   ],
+   "T_shape": [
+    312
+   ],
+   "X_shape": [
+    324,
+    312
+   ]
+  },
+  "scratch/severe_D_v2_jansen_tese.npz": {
+   "size": 5055008,
+   "sha256": "1463b343efd94fb9a6b9b7b183ea8699b90c96298d79f4bceaff54b9c2f09d8f",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    2401
+   ],
+   "X_shape": [
+    260,
+    2401
+   ]
+  },
+  "scratch/severe_D_v2_teng1_phys_partial.npz": {
+   "size": 868094,
+   "sha256": "a05c5480b0d88cbebf553b9eba8a328ebc207afda816cae84975e2fb5f61a7d4",
+   "keys": [
+    "T",
+    "X",
+    "opts"
+   ],
+   "T_shape": [
+    293
+   ],
+   "X_shape": [
+    368,
+    293
+   ]
+  },
+  "scratch/severe_D_v3_fabre1_phys.npz": {
+   "size": 5238076,
+   "sha256": "05ccbc09b46c6e9335f83803965cda4a2e36cc9d16431f59fcc5726594f67694",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    2001
+   ],
+   "X_shape": [
+    324,
+    2001
+   ]
+  },
+  "scratch/severe_D_v3_fabre2_phys.npz": {
+   "size": 6284472,
+   "sha256": "3146d2fde75b6f5cfff981dae2aed4e5c9d61c3b154c5969dbd3f39deb67d505",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    2401
+   ],
+   "X_shape": [
+    324,
+    2401
+   ]
+  },
+  "scratch/severe_D_v3_fabre2_tese.npz": {
+   "size": 6284372,
+   "sha256": "4dc3f90ac8b88624ec554529681a3ca553e31c2872544002ad9f75c288c7b394",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    2401
+   ],
+   "X_shape": [
+    324,
+    2401
+   ]
+  },
+  "scratch/severe_D_v3_jansen_tese.npz": {
+   "size": 5055076,
+   "sha256": "32b463c987b85d36e78eead1f0abd7e8106a883ac21be4dac228158f27a86765",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    2401
+   ],
+   "X_shape": [
+    260,
+    2401
+   ]
+  },
+  "scratch/severe_D_v5a_jansen_slow.npz": {
+   "size": 5055220,
+   "sha256": "bac18232258b1ffd44a5e419191cdf2ed14ff53bae72e7785930d466bccb2a35",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    2401
+   ],
+   "X_shape": [
+    260,
+    2401
+   ]
+  },
+  "scratch/severe_D_v5b_jansen_fswG.npz": {
+   "size": 5055232,
+   "sha256": "e0d8b4177b85fca2f18c5e926807596b875c810053e422fe4b69153de85e2f19",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    2401
+   ],
+   "X_shape": [
+    260,
+    2401
+   ]
+  },
+  "scratch/severe_D_v5c_teng_slow.npz": {
+   "size": 4755276,
+   "sha256": "2a9af12ccec3c2ebd43d05243fc7fe6bb006b8b5122b91a87ba90916cf8dfc71",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1601
+   ],
+   "X_shape": [
+    368,
+    1601
+   ]
+  },
+  "scratch/severe_D_v5d_teng_fswG.npz": {
+   "size": 4755288,
+   "sha256": "6903ed91d6c3be6045b82352407829a775228e9cf60e6a7e65154eb477a6d01d",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1601
+   ],
+   "X_shape": [
+    368,
+    1601
+   ]
+  },
+  "scratch/severe_D_val_fabre1_fix_d.npz": {
+   "size": 550044,
+   "sha256": "f07bf15ad52ca09e0490c187c9054f4756cdadaa0272960c450f8a2aba153116",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    209
+   ],
+   "X_shape": [
+    324,
+    209
+   ]
+  },
+  "scratch/severe_D_val_jansen_fix.npz": {
+   "size": 3371820,
+   "sha256": "33305caf5fc3ca8dc94bddd074a8aa55224e8b44b21db04f7551bf1c0f740567",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    1601
+   ],
+   "X_shape": [
+    260,
+    1601
+   ]
+  },
+  "scratch/severe_D_val_teng1_fix_d.npz": {
+   "size": 1377496,
+   "sha256": "a06b35802afb3af600dad39d431e00b2942432a31aeaad15d2a4c00b57d61c9e",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "opts"
+   ],
+   "T_shape": [
+    463
+   ],
+   "X_shape": [
+    368,
+    463
+   ]
+  },
+  "scratch/severe_single_r4.npz": {
+   "size": 368914,
+   "sha256": "b70c758111cb5fccd3f24549431bf7bbdbfa68289bd17b593e13d919a2168ca9",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    301
+   ],
+   "X_shape": [
+    152,
+    301
+   ]
+  },
+  "scratch/severe_single_rv2_3000.npz": {
+   "size": 736114,
+   "sha256": "42098163db3a700c77c46611f481481c5e1b28950e541b6281e5109bbe59b7fa",
+   "keys": [
+    "T",
+    "X"
+   ],
+   "T_shape": [
+    601
+   ],
+   "X_shape": [
+    152,
+    601
+   ]
+  },
+  "scratch/well_fv_fv.npz": {
+   "size": 13156,
+   "sha256": "c879c8bf680f8821abc84364d72184a89675f1c188570e493de2ac1652b074dc",
+   "keys": [
+    "P_bottom",
+    "P_end",
+    "P_top",
+    "T",
+    "aG_end",
+    "info",
+    "qG_out",
+    "qL_in",
+    "qL_out",
+    "x"
+   ],
+   "T_shape": [
+    201
+   ]
+  },
+  "scratch/well_fv_nodal.npz": {
+   "size": 13484,
+   "sha256": "f8fbc938de984036623dee3c8d8db74998222b8c4a35d431c2293d06b23fb293",
+   "keys": [
+    "P_bottom",
+    "P_end",
+    "P_top",
+    "T",
+    "aG_end",
+    "info",
+    "qG_out",
+    "qL_in",
+    "qL_out",
+    "x"
+   ],
+   "T_shape": [
+    201
+   ]
+  }
+ }
+}
