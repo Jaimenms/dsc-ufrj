@@ -16,6 +16,9 @@ Os números de cada entrada estão em [severe_slug.md](../severe_slug.md),
 [thesis_reproduction.md](../thesis_reproduction.md); a infraestrutura (casos JSON, corridas,
 referências de regressão) está em [data_formats.md](../data_formats.md) e no README.
 
+A síntese do que impedia a tese de simular a intermitência severa está em
+[why_no_severe_slug_in_thesis.md](../why_no_severe_slug_in_thesis.md).
+
 ## Notebooks
 
 Cada grupo tem um notebook em `notebooks_src/issues/` que lê as corridas gravadas e desenha as
