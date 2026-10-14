@@ -29,7 +29,7 @@ de laboratório. As 38 alterações em relação à tese estão em `docs/issues/
 | `notebooks/data/` | 80 corridas históricas (fora do git, fixadas em `MANIFEST.sha256`); não são reproduzíveis bit a bit (dinâmica caótica), são dados. |
 | `tests/` | rotina (`uv run pytest`, ≈3 min, 312 testes) e noturna (`-m nightly`, ≈35 min: lotes, corridas longas, laboratório, notebooks contra `tests/golden/notebook_text`). `tests/golden/` só por `tools/golden_generate.py --rebaseline --note`. |
 | `tools/` | `golden_generate`, `manifest`, `make_nb`, migração do dialeto antigo (`legacy_runs`, `convert_runs`, `severe_run`, `save_run_data`, `export_severe_cases`). |
-| `docs/` | documentação; `docs/issues/NNN-*.md` + `INDEX.md`; `docs/thesis.pdf`. |
+| `docs/` | documentação; `docs/issues/NNN-*.md` + `INDEX.md`; `docs/future/` (planos não iniciados: criogenia, CO₂, composicional, trifásico); `docs/thesis.pdf`. |
 
 ## Comandos
 
