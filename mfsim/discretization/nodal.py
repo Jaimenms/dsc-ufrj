@@ -18,6 +18,15 @@ from .base import PipeScheme
 class NodalScheme(PipeScheme):
     """Base para esquemas com variáveis nos N+1 nós da malha."""
 
+    def __init__(self, model, mesh, settings=None):
+        super().__init__(model, mesh, settings)
+        xp = self.xp
+        self._slots = list(self.model.slots)
+        self._h_x = xp.asarray(self.h)
+        self._theta_x = xp.asarray(self.theta_nodes)
+        self._limit = 0 in self._slots
+        self._alpha_band = float(self.settings.get("alpha_band", 0.02))
+
     @property
     def n_nodes(self):
         return self.N + 1
@@ -30,21 +39,21 @@ class NodalScheme(PipeScheme):
     def theta_nodes(self):
         return node_angles(self.theta_elem)
 
-    def _slots(self, Y):
-        return np.asarray(Y, float)[:, list(self.model.slots)]
+    def _slot_values(self, Y):
+        return Y[:, self._slots]
 
     def _expand(self, dys, Y=None):
-        dY = np.zeros((self.n_nodes, 4))
-        dY[:, list(self.model.slots)] = dys
-        if Y is not None and 0 in self.model.slots:
+        xp, bk = self.xp, self.bk
+        dY = bk.set(xp.zeros((self.n_nodes, 4)), (slice(None), self._slots), dys)
+        if Y is not None and self._limit:
             # limitador suave da fração de área junto aos limites físicos
             p = self.model.params
-            band = float(self.settings.get("alpha_band", 0.02))
-            aG = np.asarray(Y, float)[:, 0]
-            r_lo = np.clip((aG - p.alpha_min) / band, 0.0, 1.0)
-            r_hi = np.clip((p.alpha_max - aG) / band, 0.0, 1.0)
+            band = self._alpha_band
+            aG = Y[:, 0]
+            r_lo = xp.clip((aG - p.alpha_min) / band, 0.0, 1.0)
+            r_hi = xp.clip((p.alpha_max - aG) / band, 0.0, 1.0)
             d = dY[:, 0]
-            dY[:, 0] = np.where(d < 0, d * r_lo, d * r_hi)
+            dY = bk.set(dY, (slice(None), 0), xp.where(d < 0, d * r_lo, d * r_hi))
         return dY
 
 
@@ -54,14 +63,16 @@ class FDCentralScheme(NodalScheme):
     name = "fd_central"
 
     def rhs(self, Y):
-        A, B = self.model.quasi_linear(Y, self.theta_nodes)
-        ys = self._slots(Y)
-        h = self.h
-        dydx = np.empty_like(ys)
-        dydx[0] = (ys[1] - ys[0]) / h[0]
-        dydx[-1] = (ys[-1] - ys[-2]) / h[-1]
-        dydx[1:-1] = (ys[2:] - ys[:-2]) / (h[:-1] + h[1:])[:, None]
-        dys = -(np.einsum("nij,nj->ni", A, dydx) + B)
+        xp = self.xp
+        Y = self.bk.asarray(Y)
+        A, B = self.model.quasi_linear(Y, self._theta_x)
+        ys = self._slot_values(Y)
+        h = self._h_x
+        first = (ys[1] - ys[0]) / h[0]
+        last = (ys[-1] - ys[-2]) / h[-1]
+        mid = (ys[2:] - ys[:-2]) / (h[:-1] + h[1:])[:, None]
+        dydx = xp.concatenate([first[None, :], mid, last[None, :]], axis=0)
+        dys = -(xp.einsum("nij,nj->ni", A, dydx) + B)
         return self._expand(dys, Y)
 
 
@@ -71,13 +82,15 @@ class FDUpwindScheme(NodalScheme):
     name = "fd_upwind"
 
     def rhs(self, Y):
-        A, B = self.model.quasi_linear(Y, self.theta_nodes)
-        ys = self._slots(Y)
-        h = self.h
-        dydx = np.empty_like(ys)
-        dydx[0] = (ys[1] - ys[0]) / h[0]
-        dydx[1:] = (ys[1:] - ys[:-1]) / h[:, None]
-        dys = -(np.einsum("nij,nj->ni", A, dydx) + B)
+        xp = self.xp
+        Y = self.bk.asarray(Y)
+        A, B = self.model.quasi_linear(Y, self._theta_x)
+        ys = self._slot_values(Y)
+        h = self._h_x
+        first = (ys[1] - ys[0]) / h[0]
+        rest = (ys[1:] - ys[:-1]) / h[:, None]
+        dydx = xp.concatenate([first[None, :], rest], axis=0)
+        dys = -(xp.einsum("nij,nj->ni", A, dydx) + B)
         return self._expand(dys, Y)
 
 
@@ -112,17 +125,28 @@ class GalerkinScheme(NodalScheme):
         self.Minv = np.linalg.inv(self.M)
         self._phi_right = self.xi          # phi do nó direito
         self._phi_left = 1.0 - self.xi     # phi do nó esquerdo
+        self._thq = np.repeat(self.theta_elem, self.xi.size)
+        self._to_backend()
+
+    def _to_backend(self):
+        xp = self.xp
+        self._xi_x = xp.asarray(self.xi)
+        self._wq_x = xp.asarray(self.wq)
+        self._phi_l_x = xp.asarray(self._phi_left)
+        self._phi_r_x = xp.asarray(self._phi_right)
+        self._Minv_x = xp.asarray(self.Minv)
+        self._thq_x = xp.asarray(self._thq)
 
     def _quad_points(self, Y):
         """Estados (N*nq x 4) e ângulos nos pontos de quadratura."""
-        Y = np.asarray(Y, float)
         yl = Y[:-1][:, None, :]
         yr = Y[1:][:, None, :]
-        Yq = yl + (yr - yl) * self.xi[None, :, None]
-        thq = np.repeat(self.theta_elem, self.xi.size)
-        return Yq.reshape(-1, 4), thq
+        Yq = yl + (yr - yl) * self._xi_x[None, :, None]
+        return Yq.reshape(-1, 4), self._thq_x
 
     def residual(self, Y):
+        xp, bk = self.xp, self.bk
+        Y = bk.asarray(Y)
         nq = self.xi.size
         N = self.N
         Yq, thq = self._quad_points(Y)
@@ -130,21 +154,20 @@ class GalerkinScheme(NodalScheme):
         nv = self.model.nv
         A = A.reshape(N, nq, nv, nv)
         B = B.reshape(N, nq, nv)
-        ys = self._slots(Y)
+        ys = self._slot_values(Y)
         dy = ys[1:] - ys[:-1]                                   # (N, nv)
-        Ady = np.einsum("eqij,ej->eqi", A, dy)                  # (N, nq, nv)
-        hB = self.h[:, None, None] * B
+        Ady = xp.einsum("eqij,ej->eqi", A, dy)                  # (N, nq, nv)
+        hB = self._h_x[:, None, None] * B
         integrand = Ady + hB                                    # (N, nq, nv)
-        R_left = np.einsum("q,eqi->ei", self.wq * self._phi_left, integrand)
-        R_right = np.einsum("q,eqi->ei", self.wq * self._phi_right, integrand)
-        R = np.zeros((N + 1, nv))
-        R[:-1] += R_left
-        R[1:] += R_right
+        R_left = xp.einsum("q,eqi->ei", self._wq_x * self._phi_l_x, integrand)
+        R_right = xp.einsum("q,eqi->ei", self._wq_x * self._phi_r_x, integrand)
+        R = bk.add(bk.add(xp.zeros((N + 1, nv)), slice(None, -1), R_left), slice(1, None), R_right)
         return R
 
     def rhs(self, Y):
+        Y = self.bk.asarray(Y)
         R = self.residual(Y)
-        dys = -(self.Minv @ R)
+        dys = -(self._Minv_x @ R)
         return self._expand(dys, Y)
 
 
@@ -164,8 +187,11 @@ class PetrovGalerkinScheme(GalerkinScheme):
             Mp[e, e + 1] += -he / 4
             Mp[e + 1, e + 1] += he / 4
         self.Minv = np.linalg.inv(self.M + self.alpha * Mp)
+        self._to_backend()
 
     def residual(self, Y):
+        xp, bk = self.xp, self.bk
+        Y = bk.asarray(Y)
         nq = self.xi.size
         N = self.N
         Yq, thq = self._quad_points(Y)
@@ -173,19 +199,22 @@ class PetrovGalerkinScheme(GalerkinScheme):
         nv = self.model.nv
         A = A.reshape(N, nq, nv, nv)
         B = B.reshape(N, nq, nv)
-        ys = self._slots(Y)
+        ys = self._slot_values(Y)
         dy = ys[1:] - ys[:-1]
         a2 = self.alpha / 2.0
+        wq, phi_l, phi_r, h = self._wq_x, self._phi_l_x, self._phi_r_x, self._h_x
         # pesos modificados dependem do sinal de cada coeficiente
-        wl = self.wq[None, :, None, None] * (self._phi_left[None, :, None, None] - a2 * np.sign(A))
-        wr = self.wq[None, :, None, None] * (self._phi_right[None, :, None, None] + a2 * np.sign(A))
-        Al = np.einsum("eqij,eqij->eij", wl, A)
-        Ar = np.einsum("eqij,eqij->eij", wr, A)
-        wlB = self.wq[None, :, None] * (self._phi_left[None, :, None] - a2 * np.sign(B))
-        wrB = self.wq[None, :, None] * (self._phi_right[None, :, None] + a2 * np.sign(B))
-        Bl = np.einsum("eqi,eqi->ei", wlB, B) * self.h[:, None]
-        Br = np.einsum("eqi,eqi->ei", wrB, B) * self.h[:, None]
-        R = np.zeros((N + 1, nv))
-        R[:-1] += np.einsum("eij,ej->ei", Al, dy) + Bl
-        R[1:] += np.einsum("eij,ej->ei", Ar, dy) + Br
+        sA = xp.sign(A)
+        wl = wq[None, :, None, None] * (phi_l[None, :, None, None] - a2 * sA)
+        wr = wq[None, :, None, None] * (phi_r[None, :, None, None] + a2 * sA)
+        Al = xp.einsum("eqij,eqij->eij", wl, A)
+        Ar = xp.einsum("eqij,eqij->eij", wr, A)
+        sB = xp.sign(B)
+        wlB = wq[None, :, None] * (phi_l[None, :, None] - a2 * sB)
+        wrB = wq[None, :, None] * (phi_r[None, :, None] + a2 * sB)
+        Bl = xp.einsum("eqi,eqi->ei", wlB, B) * h[:, None]
+        Br = xp.einsum("eqi,eqi->ei", wrB, B) * h[:, None]
+        R_left = xp.einsum("eij,ej->ei", Al, dy) + Bl
+        R_right = xp.einsum("eij,ej->ei", Ar, dy) + Br
+        R = bk.add(bk.add(xp.zeros((N + 1, nv)), slice(None, -1), R_left), slice(1, None), R_right)
         return R
