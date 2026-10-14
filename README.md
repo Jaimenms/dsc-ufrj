@@ -3,113 +3,114 @@
 Reimplementação em Python do MFSIM/SDMPFLOW (MATLAB, 2010) desenvolvido na tese
 *Modelagem Dinâmica de Redes de Escoamento Bifásico* (Jaime Souza), com foco no
 capítulo 10 (simulação dinâmica) e na exploração de intermitência severa
-(*severe slugging*) em geometrias linha–riser.
+(*severe slugging*) em geometrias linha–riser. Modelo a dois fluidos (4 equações), modelo de
+mistura (3 equações) e monofásicos; Galerkin, diferenças finitas e volumes finitos
+escalonados; BDF implícito próprio com lado direito em numpy ou compilado com JAX.
 
-## Instalação e uso
+## Começar
 
 ```bash
-uv sync                      # cria o ambiente e instala o pacote (editável)
-uv run pytest                # testes (fechamentos x MATLAB, regressão dos casos)
-uv run jupyter lab notebooks # notebooks de reprodução das figuras
-uv run black mfsim tests tools notebooks_src   # formatação (black, 120 colunas; `--check` para só verificar)
+uv sync                                                        # ambiente e pacote (editável)
+uv run mfsim validate cases/examples/hello_world.json          # o caso obedece ao schema?
+uv run mfsim run cases/examples/hello_world.json --out runs/hello_world.npz
 ```
 
-Os notebooks são gerados a partir de `notebooks_src/*.py` (marcadores `# %%`):
+Um caso é **um ficheiro JSON** (`mfsim-case/1`) com tudo o que a simulação precisa: fluido,
+rede, tempo, integrador e estado inicial. [docs/hello_world.md](docs/hello_world.md) explica
+esse primeiro caso bloco a bloco, como ler os resultados e como construir o mesmo caso em
+Python; [docs/data_formats.md](docs/data_formats.md) tem o vocabulário completo.
 
 ```bash
-uv run python tools/make_nb.py notebooks_src/nb_10_1_1_estratificado.py --execute   # ou: uv run mfsim nb ...
+uv run pytest                                  # rotina (≈ 3 min): regressão bit a bit, paridade JAX, CLI
+uv run pytest -m nightly                       # noturna (≈ 25 min): corridas longas, laboratório, notebooks
+uv run black --check mfsim tests tools notebooks_src   # formatação (120 colunas)
+uv run mfsim nb notebooks_src/nb_10_1_1_estratificado.py --execute   # notebooks a partir de notebooks_src/*.py
 ```
 
-Linha de comando (`mfsim/cli.py`; os casos são ficheiros JSON `mfsim-case/1`, ver
-[docs/data_formats.md](docs/data_formats.md)):
+## Linha de comando
 
 ```bash
-uv run mfsim run cases/examples/hello_world.json --out runs/hello_world.npz   # primeiro caso (docs/hello_world.md)
+# simular (grava a corrida em npz v2; --set altera qualquer campo do caso)
 uv run mfsim run cases/severe_slug/reference.json --backend jax --tf 150 --out runs/ref150.npz
-uv run mfsim run cases/severe_slug/lab_jansen.json --backend jax        # validação de laboratório (shut_in, slow)
+uv run mfsim run cases/severe_slug/lab_jansen.json --backend jax           # laboratório (shut_in, slow)
 uv run mfsim run cases/severe_slug/reference.json --set integration.integrator=radau --set integration.rtol=1e-5
-uv run mfsim steady cases/chapter10/10_1_1.json --out /tmp/10_1_1_ss.json
-uv run mfsim stats severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys   # ciclos de uma corrida gravada
-uv run mfsim scan severe_slug_blocked_conservative_arc_scan_P2_g005          # varredura da fronteira (Bøe, padrão, ciclos)
+uv run mfsim steady cases/chapter10/10_1_1.json --out /tmp/10_1_1_ss.json  # estacionário -> caso com a condição inicial
+
+# analisar corridas gravadas (nomes em notebooks/data ou caminhos .npz)
+uv run mfsim stats severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys   # ciclos
+uv run mfsim scan  severe_slug_blocked_conservative_arc_scan_P2_g005           # varredura da fronteira (Bøe, padrão, ciclos)
 uv run mfsim riser severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys   # filme no riser (contracorrente)
-uv run mfsim val severe_slug_lab_fabre2_fisico --plot                         # validação de laboratório + figura
-uv run mfsim export-case --chapter10            # .mf2 -> cases/chapter10/*.json
+uv run mfsim val   severe_slug_lab_fabre2_fisico --plot                        # validação de laboratório + figura
+
+# casos e corridas
+uv run mfsim validate cases/chapter10/*.json cases/severe_slug/*.json      # schema mfsim-case/1
+uv run mfsim export-case --chapter10                                       # .mf2 -> cases/chapter10/*.json
 uv run mfsim export-case --severe --out novo.json --param D=0.05 --param start=blocked
-uv run mfsim validate cases/chapter10/*.json cases/severe_slug/*.json   # schema mfsim-case/1
-uv run mfsim convert-runs antiga.npz --out-dir runs/                     # corrida v1 (meta) -> v2 (case_json)
+uv run mfsim convert-runs antiga.npz --out-dir runs/                       # corrida v1 (meta) -> v2 (case_json)
 ```
 
-`mfsim run` grava a corrida em npz v2 (`T`, `X`, `acc`, `info_json`, `provenance_json` e o
-caso completo em `case_json`, de onde `mfsim.runs.load_run` reconstrói caso, modelo e
-resultados sem outra fonte); uma falha do integrador grava a trajetória parcial. O caso
-JSON (secções `integration` e `initial_state` incluídas) é tudo o que `simulate` precisa,
-em numpy ou JAX: um só caminho de execução serve a CLI, os notebooks e os testes. As 76
-corridas históricas de `notebooks/data` foram convertidas para v2 (`mfsim convert-runs`;
-cópias v1 em `archive/data_v1_2026-10/`). Os casos JSON obedecem ao schema `mfsim-case/1`
-(`mfsim/io/schema/mfsim-case-1.schema.json`), verificado ao carregar, ao exportar e por
-`mfsim validate`; uma variante herda o caso base com `"$extends"` e traz só o que muda
-(as variantes de `cases/severe_slug` são remendos de poucas linhas), e `--set caminho=valor`
-altera qualquer campo sem ficheiro novo. As análises das corridas gravadas
-(ciclos, varredura da fronteira, filme no riser, validação de laboratório) são
-subcomandos da CLI, com testes que reproduzem as tabelas publicadas; em `tools/` ficam só
-`golden_generate`, `manifest`, `make_nb` e os invólucros do dialeto antigo (`severe_run.py`,
-com as opções do antigo driver `scratch/severe_D.py`, e `save_run_data.py`, ambos sobre
-`mfsim/io/legacy_runs.py`). A antiga
-`scratch/` e os diagnósticos pontuais estão arquivados em `archive/scratch_2026-10/`
-(índice em `INDEX.md`; os dados fora do git são fixados por `MANIFEST.sha256`,
-`uv run python tools/manifest.py --check`).
+- **Um só caminho de execução.** `simulate(case)` lê tudo do caso, em numpy ou JAX; CLI,
+  notebooks e testes usam-no. Uma corrida gravada (npz v2: `T`, `X`, `acc`, `info_json`,
+  `provenance_json`, `case_json`) reconstrói caso, modelo e resultados sem outra fonte
+  (`mfsim.runs.load_run`); uma falha do integrador grava a trajetória parcial.
+- **Casos sem repetição.** O schema `mfsim/io/schema/mfsim-case-1.schema.json` é verificado ao
+  carregar, ao exportar e por `mfsim validate`. Uma variante herda o caso base com
+  `"$extends"` e traz só o que muda (as de `cases/severe_slug` têm poucas linhas);
+  `--set caminho=valor` varia um caso sem ficheiro novo.
+- **Dados.** As 76 corridas históricas de `notebooks/data` estão em v2 (cópias v1 em
+  `archive/data_v1_2026-10/`); os dados fora do git são fixados por `MANIFEST.sha256`
+  (`uv run python tools/manifest.py --check`). A antiga `scratch/` e os diagnósticos
+  pontuais estão em `archive/scratch_2026-10/` (índice em `INDEX.md`); nada foi apagado.
 
 ## Estrutura
 
 | módulo | conteúdo |
 |---|---|
-| `mfsim/fluid.py` | equação de estado politrópica (ρ, C = dρ/dP) |
-| `mfsim/geometry.py` | nível estratificado em seção circular, malha do duto |
-| `mfsim/friction.py` | fator de atrito de Fanning (Churchill) |
-| `mfsim/closures/` | fechamentos por padrão (estratificado, anular, bolhas, intermitente) e identificação do padrão (IPE: Taitel, Pots, critérios de estabilidade) |
-| `mfsim/models/` | modelos de duto: dois fluidos (4 eq.), mistura Beggs & Brill (3 eq.), monofásicos |
-| `mfsim/discretization/` | Galerkin, Petrov-Galerkin, diferenças centrais, diferenças regressivas (métodos da tese) e **volumes finitos escalonados com upwind pela velocidade de fase** (`fv_upwind`, novo; classes concretas por modelo: dois fluidos, deriva, monofásico, e `fv_upwind_cons` com massas por volume) |
-| `mfsim/network/` | grafo `Vertex`/`Edge` (`graph.py`: fronteira, junção, tanque; duto, conector, choke, reservatório, retenção; construtores `Network.build`/`Pipe.legacy` e editores `set_method`/`set_time`/`set_options`), especificações no tempo (`schedules.py`), relações das arestas (`elements.py`), resolução de portas e plano estático de avaliação (`ports.py`) e `NetworkSystem` (`system.py`: layout de estados, `time_inputs(t)`, núcleo puro `rhs_core(x, E_t, opt_t)`, mapa conservativo, escalas, esparsidade) |
-| `mfsim/backend/` | backend numérico injetado (`NUMPY`, `JAX`): as primitivas (`set/add` funcionais, `while_loop`, `sigmoid`, `masked_apply`, `robust_inv`, `jvp`) sobre as quais fluido, fechamentos, modelos, esquemas e rede são escritos **uma só vez** |
-| `mfsim/compiled.py` | `CompiledNetwork(model)`: o mesmo `NetworkModel` reconstruído com o backend JAX, `jit` do `rhs_core` e Jacobiana exata por `jacfwd` (`build_jax_rhs`/`get_jax`) |
 | `mfsim/core/` | slots do estado, `PortKind` (livre/Dirichlet/Neumann), dataclasses de opções (modelo, esquema, tempo, referência, integração) |
-| `mfsim/io/`, `mfsim/initial/` | casos em JSON (`mfsim-case/1`, `$ref`/`$include`; schema em `io/schema/` e validador `io/validate.py`), conversão dos `.mf2`, dialeto das corridas antigas (`legacy_runs.py`: `meta` v1 → caso JSON, `convert_run`), registo legado (`legacy_case.py`: o struct `dados` do MATLAB, só como formato de entrada convertido para o grafo); receitas de condição inicial (bloqueada, linha fechada) |
-| `mfsim/runs.py`, `mfsim/analysis.py` | corridas gravadas no formato v2 (`load_run`, `save_run`; `Run.case`/`network`/`res`), assinaturas de ciclo e análises (varredura, riser, laboratório) |
-| `mfsim/cli.py` | `mfsim run\|steady\|stats\|scan\|riser\|val\|export-case\|validate\|convert-runs\|nb` |
-| `cases/`, `tools/`, `tests/golden/`, `archive/` | casos JSON (exemplo `hello_world`, capítulo 10, severe slug), ferramentas (`make_nb`, `golden_generate`, `manifest`, `severe_run`, `save_run_data`), referências de regressão (nível A = bit a bit), arquivo da antiga `scratch/` e dos diagnósticos |
-| `mfsim/integrators/` | BDF implícito próprio (ordem 1–2, passo adaptativo, Newton modificado, Jacobiana colorida) e invólucro do `solve_ivp` |
-| `mfsim/steady.py`, `mfsim/initial_guess.py` | estado estacionário (Newton + pseudo-transiente) e estimativa inicial |
-| `mfsim/io_legacy.py` | leitura dos `.mf2` originais (entrada e resultados do MATLAB) |
-| `mfsim/cases/` | casos do capítulo 10 e gerador do caso de severe slug |
-| `mfsim/plotting.py`, `mfsim/notebook_utils.py` | figuras no estilo da tese |
+| `mfsim/fluid.py`, `geometry.py`, `friction.py` | equação de estado politrópica (ρ, C = dρ/dP); nível estratificado em seção circular e malha do duto; fator de atrito de Fanning (Churchill) |
+| `mfsim/closures/` | fechamentos por padrão (estratificado, anular, bolhas, intermitente) e identificação do padrão (Taitel, Pots, critérios de estabilidade) |
+| `mfsim/models/` | modelos de duto: dois fluidos (4 eq.), mistura Beggs & Brill (3 eq.), monofásicos |
+| `mfsim/discretization/` | Galerkin, Petrov-Galerkin, diferenças centrais e regressivas (métodos da tese) e volumes finitos escalonados com upwind pela velocidade de fase (`fv_upwind`, `fv_upwind_cons` com massas por volume) |
+| `mfsim/network/` | grafo `Vertex`/`Edge` (`graph.py`: fronteira, junção, tanque; duto, conector, choke, reservatório, retenção; `Network.build`, `set_method`/`set_time`/`set_options`), especificações no tempo (`schedules.py`), relações das arestas de comprimento zero (`elements.py`), resolução de portas e plano estático de avaliação (`ports.py`), `NetworkSystem` (`system.py`: layout de estados, `time_inputs(t)`, núcleo puro `rhs_core`, mapa conservativo, escalas, esparsidade) |
+| `mfsim/backend/`, `mfsim/compiled.py` | backend numérico injetado (`NUMPY`, `JAX`): fluido, fechamentos, modelos, esquemas e rede escritos **uma só vez**; `CompiledNetwork` reconstrói o mesmo `NetworkSystem` em JAX com `jit` e Jacobiana exata por `jacfwd` |
+| `mfsim/integrators/`, `steady.py`, `initial_guess.py` | BDF implícito próprio (ordem 1–2, passo adaptativo, Newton modificado, Jacobiana colorida ou externa) e invólucro do `solve_ivp`; estado estacionário (Newton + pseudo-transiente); estimativa inicial |
+| `mfsim/simulation.py`, `results.py` | `build_model`, `simulate`, `steady_state`; `Results` com as saídas da tese por duto e por vértice |
+| `mfsim/io/`, `mfsim/initial/` | casos em JSON (`spec.py`; `$extends`/`$ref`/`$include` em `extends.py`; schema e `validate.py`), conversão dos `.mf2` (`legacy_mf2.py`), registo legado (`legacy_case.py`, só formato de entrada), dialeto das corridas antigas (`legacy_runs.py`, só para `convert-runs`); receitas de condição inicial (bloqueada, linha fechada) |
+| `mfsim/runs.py`, `analysis.py`, `cli.py` | corridas gravadas v2 (`load_run`, `save_run`, `Run.case`/`network`/`res`); assinaturas de ciclo e análises (varredura, riser, laboratório); `mfsim run\|steady\|stats\|scan\|riser\|val\|export-case\|validate\|convert-runs\|nb` |
+| `mfsim/cases/`, `io_legacy.py` | casos do capítulo 10 (dos `.mf2`) e gerador do caso de severe slug (`generate`, presets de laboratório) |
+| `mfsim/plotting.py`, `notebook_utils.py` | figuras no estilo da tese e apoio aos notebooks |
+| `cases/` | JSON: `examples/hello_world`, `chapter10/` (11 casos da tese), `severe_slug/` (referência, variantes como `$extends`, laboratório) |
+| `tools/`, `tests/`, `notebooks_src/` | `golden_generate` (referências de regressão), `manifest`, `make_nb`, `severe_run`/`save_run_data` (dialeto antigo); testes com `tests/golden/` (nível A = bit a bit, B = tolerância, C = assinaturas de ciclo; `CHANGELOG.md`); fontes dos 9 notebooks |
+| `legacy/`, `archive/` | `.mf2` e código MATLAB originais; arquivo da antiga `scratch/`, dos diagnósticos e das corridas v1 |
 
 ## Documentação
 
-- [docs/hello_world.md](docs/hello_world.md) — primeiro caso: um duto e duas fronteiras em JSON (`cases/examples/hello_world.json`), correr, ler os resultados, o mesmo caso em Python, variar com `--set`/`$extends`.
-- [docs/thesis_reproduction.md](docs/thesis_reproduction.md) — modelo e layout de estados, resultados da reprodução do capítulo 10, gas lift com intermitência forte, observações sobre os ficheiros originais.
-- [docs/data_formats.md](docs/data_formats.md) — casos em JSON (`mfsim-case/1`) e grafo da rede, corridas gravadas (npz v1/v2), referências de regressão e manifesto.
+- [docs/hello_world.md](docs/hello_world.md) — primeiro caso: um duto e duas fronteiras em JSON, correr, ler os resultados, o mesmo caso em Python, variar com `--set`/`$extends`.
+- [docs/data_formats.md](docs/data_formats.md) — casos em JSON (`mfsim-case/1`, schema, herança), grafo e montagem da rede, corridas gravadas (v2, conversão de v1), referências de regressão e manifesto.
+- [docs/thesis_reproduction.md](docs/thesis_reproduction.md) — modelo e layout de estados, reprodução do capítulo 10, gas lift com intermitência forte, observações sobre os ficheiros originais.
 - [docs/jax_backend.md](docs/jax_backend.md) — backend único numpy/JAX, `CompiledNetwork`, paridade e desempenho.
 - [docs/severe_slug.md](docs/severe_slug.md) — intermitência severa: esquema escalonado conservativo, rede com vértices dinâmicos, identificação automática de padrão, itens 1–7 do modelo físico, fronteira de Bøe/Taitel.
 - [docs/lab_validation.md](docs/lab_validation.md) — validação com dados de laboratório (Jansen, Fabre, Tengesdal; item 8).
 - [docs/findings_for_paper.md](docs/findings_for_paper.md) — achados para o artigo (resumo).
-- `archive/scratch_2026-10/INDEX.md` — índice do arquivo da antiga `scratch/`; `tests/golden/CHANGELOG.md` — registo das referências de regressão.
+- `archive/scratch_2026-10/INDEX.md` — índice do arquivo; `tests/golden/CHANGELOG.md` — registo das referências de regressão.
 
-## Reorganização do código (2026-10, status)
+## Reorganização do código (2026-10)
 
-Plano aprovado (OO + injeção de dependências, grafo `Vertex`/`Edge`, casos em JSON, backend
-único numpy/JAX, `scratch/` arquivada, camada de compatibilidade temporária) e executado
-por fases, cada uma fechada com a suíte de regressão bit a bit verde:
+O plano aprovado (OO com injeção de dependências, grafo `Vertex`/`Edge`, casos em JSON,
+backend único numpy/JAX, `scratch/` arquivada, compatibilidade temporária depois removida)
+está executado. Cada fase fechou com a suíte de regressão bit a bit verde; a noturna
+(referência 3000 s em JAX, gas lift 2000 s, Fabre 2 e Jansen, 9 notebooks contra os
+outputs de texto) está verde (14/14) em 2026-10-14.
 
-| fase | conteúdo | estado |
+| fase | conteúdo | tag |
 |---|---|---|
-| 0 | git, manifesto dos dados, referências de regressão (níveis A/B/C), `mfsim.runs` | feito (tags `v0-baseline`, `v0-results-snapshot`) |
-| 1 | `core/options`, grafo `network/graph` + `schedules`, `io/spec` (JSON `mfsim-case/1`) + `legacy_mf2`, receitas de condição inicial, casos JSON do capítulo 10 e do severe slug; round-trip bit-idêntico | feito |
-| 2 | backend único (`mfsim/backend`): fluido, fechamentos, identificação de padrão, modelos, discretizações, rede numa só implementação; `mfsim/compiled.py`; `jax_physics`/`jax_schemes`/`jaxrhs` apagados; numpy bit-idêntico, JAX paridade 1e−14, desempenho ≤ 1.1× | feito (tag `v2-backend`) |
-| 3 | `mfsim run\|steady\|stats\|export-case\|nb`, corridas npz v2, `tools/` e `archive/scratch_2026-10` (nada apagado) | feito |
-| 4 | notebooks pelo carregador único e API pública, re-executados; outputs de texto iguais (numpy) ou explicados (células JAX) | feito (tag `v4-notebooks`) |
-| noturna | referência 3000 s JAX, gas lift 2000 s, validação de laboratório (Fabre 2, Jansen), 9 notebooks re-executados contra os outputs de texto | verde 14/14 em 2026-10-14 |
-| 5 | remoção da compatibilidade: `jaxrhs` e módulos JAX duplicados apagados, documentação dividida em `docs/`; rede montada diretamente sobre o grafo (`network/system.py` + `ports.py`: resolução de portas e plano topológico das arestas de comprimento zero; junções explícitas com as especificações herdadas; `specs.py` apagado), com o golden `network` (E por extremidade de duto, diagnósticos, rhs, layout, escalas, esparsidade) bit-idêntico em todos os casos; o `Network` é o objeto de ponta a ponta (JSON, `.mf2`, gerador do severe slug, `simulate`/`steady_state`/`integrate_run`, CLI, corridas gravadas) e o registo legado saiu do pacote `network` para `io/legacy_case.py`, só como formato de entrada | feito (tags `v5-refactored`, `v5-network-native`) |
-| 6 | caminho único de execução: `simulate(case)` constrói o integrador só a partir da secção `integration` do caso (campos opcionais explícitos, `initial_state`), `integrate_run` e o dialeto do `meta` saem do simulador (`io/legacy_runs.py`); corridas gravadas só em v2 (`case_json`), as 76 históricas convertidas (`mfsim convert-runs`, cópias em `archive/data_v1_2026-10`); schema `mfsim-case/1` com validação ao carregar/exportar e `mfsim validate`; herança de casos (`$extends`, remendo mínimo pelo exportador) e `--set caminho=valor` | feito (tag `v6-single-driver`) |
+| 0 | git, manifesto dos dados, referências de regressão (níveis A/B/C), `mfsim.runs` | `v0-baseline`, `v0-results-snapshot` |
+| 1 | opções tipadas, grafo + especificações no tempo, JSON `mfsim-case/1` e conversão dos `.mf2`, receitas de condição inicial; round-trip bit-idêntico | — |
+| 2 | backend único: fluido, fechamentos, padrão, modelos, discretizações e rede numa só implementação; `compiled.py`; módulos JAX duplicados apagados; numpy bit-idêntico, JAX paridade 1e−14, desempenho ≤ 1.1× | `v2-backend` |
+| 3 | CLI, corridas npz v2, `tools/` revistas e `archive/scratch_2026-10` (nada apagado) | — |
+| 4 | notebooks pelo carregador único e API pública, re-executados; outputs de texto iguais ou explicados (células JAX) | `v4-notebooks` |
+| 5 | compatibilidade removida; documentação dividida em `docs/`; rede montada diretamente sobre o grafo (`system.py` + `ports.py`, junções explícitas) com o golden `network` bit-idêntico; `Network` de ponta a ponta e registo legado só como formato de entrada | `v5-refactored`, `v5-network-native` |
+| 6 | caminho único de execução (`simulate` só lê o caso), corridas só em v2 com as 76 históricas convertidas, schema com validação, herança `$extends`, `--set`, primeiro caso documentado | `v6-single-driver` |
 
 ## Pendências do modelo físico (status)
 
