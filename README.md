@@ -90,6 +90,7 @@ uv run python tools/convert_runs.py antiga.npz --out-dir runs/            # corr
 ## Documentação
 
 - [docs/issues/INDEX.md](docs/issues/INDEX.md) — o que mudou em relação ao modelo e ao solver da tese: 38 alterações atómicas (feature, bugfix, estudo), cada uma com antes, depois e benefício medido.
+- [docs/method_thesis_to_modern_code.md](docs/method_thesis_to_modern_code.md) — o método que nos trouxe até aqui (tese + código legado → versão moderna e melhorada) e um prompt consolidado para reutilizar; [CLAUDE.md](CLAUDE.md) é o guia do projeto para sessões do Claude.
 - [docs/why_no_severe_slug_in_thesis.md](docs/why_no_severe_slug_in_thesis.md) — por que a tese não conseguiu simular a intermitência severa, em quatro pontos ligados às issues.
 - [docs/hello_world.md](docs/hello_world.md) — primeiro caso: um duto e duas fronteiras em JSON, correr, ler os resultados, o mesmo caso em Python, variar com `--set`/`$extends`.
 - [docs/data_formats.md](docs/data_formats.md) — casos em JSON (`mfsim-case/1`, schema, herança), grafo e montagem da rede, corridas gravadas (v2, conversão de v1), referências de regressão e manifesto.
