@@ -3,6 +3,8 @@ secundários (estacionário automático, estudo de esquemas, 10.1.4 consistente,
 volumes finitos) têm de ser bit-idênticos aos gerados antes da reorganização."""
 import copy
 
+from mfsim.network.graph import ports
+
 import numpy as np
 import pytest
 
@@ -27,7 +29,7 @@ def test_trajectory(key, golden):
 def test_variant_10_1_1_steady_auto(golden):
     g = golden("variants.npz")
     case, raw = load_chapter10_case("10.1.1")
-    case_ss = copy.deepcopy(case); case_ss.pipes[0].bc_in = (3, 1, 2, 2); case_ss.pipes[0].ic = None
+    case_ss = copy.deepcopy(case); case_ss.pipes[0].ports_in = ports((3, 1, 2, 2)); case_ss.pipes[0].ic = None
     model_ss, X_ss, info_ss = steady_state(case_ss, X0="auto", verbose=False)
     g.assert_equal("10.1.1_steady_auto/X", X_ss)
     res2 = simulate(copy.deepcopy(case_ss), integrator="implicit", rtol=1e-4, atol=1e-6, max_step=np.inf, progress=False)
@@ -38,7 +40,7 @@ def test_variant_10_1_1_steady_auto(golden):
 def test_variant_10_1_1_mesh_study(method, nel, golden):
     g = golden("variants.npz")
     case, raw = load_chapter10_case("10.1.1")
-    c = copy.deepcopy(case); c.pipes[0].bc_in = (3, 1, 2, 2); c.pipes[0].n_elements = np.array([nel]); c.pipes[0].ic = None; c.settings.method = method
+    c = copy.deepcopy(case); c.pipes[0].ports_in = ports((3, 1, 2, 2)); c.pipes[0].n_elements = np.array([nel]); c.pipes[0].ic = None; c.set_method(method)
     steady_state(c, X0="auto", verbose=False)
     r = simulate(c, integrator="implicit", rtol=1e-4, atol=1e-6, max_step=np.inf, progress=False)
     g.assert_equal(f"10.1.1_mesh{nel}_{method}/T", r.T); g.assert_equal(f"10.1.1_mesh{nel}_{method}/X", r.X)
@@ -57,8 +59,7 @@ def test_variant_10_1_4_steady(golden):
 def test_variant_10_3_1_fv_drift(golden):
     g = golden("variants.npz")
     case, raw = load_chapter10_case("10.3.1")
-    case_fv = copy.deepcopy(case); case_fv.settings.method = "fv_upwind"
-    case_fv.pipes[0].extra.update({"conservative": True, "q_switch": 0.05})
+    case_fv = copy.deepcopy(case).set_method("fv_upwind").set_options(conservative=True, q_switch=0.05)
     steady_state(case_fv, verbose=False, update_case=True)
     r = simulate(case_fv, progress=False, integrator="implicit", rtol=1e-3, atol=1e-6)
     g.assert_equal("10.3.1_fv_drift/T", r.T); g.assert_equal("10.3.1_fv_drift/X", r.X)

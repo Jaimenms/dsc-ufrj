@@ -33,7 +33,7 @@ NOTEBOOK_FLUID = dict(rhoL0=900.0, rhoG0=1.2, muL=2e-3, muG=1.8e-5, gammaL=100.0
 
 
 def case_from_meta(meta: dict, tf: float, dt_out=None):
-    """Caso `severe_slug_case` reconstruído do `meta` de uma corrida gravada, com os
+    """Grafo (`severe_slug_case`) reconstruído do `meta` de uma corrida gravada, com os
     defaults do notebook. `tf` é o instante final da trajetória (`T[-1]`)."""
     mb = meta
     fluid = Fluid(rhoL0=mb.get("rhoL", NOTEBOOK_FLUID["rhoL0"]), rhoG0=mb.get("rhoG0", NOTEBOOK_FLUID["rhoG0"]),
@@ -78,13 +78,14 @@ def integrator_opts_from_meta(meta: dict) -> dict:
 
 
 def integrator_opts_from_case(case) -> dict:
-    """Opções do integrador de um caso JSON (secção `integration`, que `Network.to_legacy_case`
-    escreve em `settings.extra`), nos nomes de `integrate_run`."""
-    ex = dict(getattr(case.settings, "extra", {}) or {})
-    return dict(rtol=float(case.settings.rtol), tol_range=ex.get("tol_range"), atol_P=ex.get("atol_P"), atol_q=ex.get("atol_q"),
-                order=int(ex.get("max_order", 2)), max_newton=int(ex.get("max_newton", 12)), newton_tol=float(ex.get("newton_tol", 1e-3)),
-                slow=bool(ex.get("slow_exit", False)), jax=str(ex.get("backend", "numpy")) == "jax",
-                first_step=float(ex.get("first_step", 1e-3)))
+    """Opções do integrador de um caso (`Network.integration`, ou o registo legado convertido),
+    nos nomes de `integrate_run`."""
+    from .network.graph import as_network
+    it = as_network(case).integration
+    ex = dict(it.extra)
+    return dict(rtol=float(it.rtol), tol_range=it.tol_range, atol_P=ex.get("atol_P"), atol_q=ex.get("atol_q"),
+                order=int(it.max_order), max_newton=int(it.max_newton), newton_tol=float(it.newton_tol),
+                slow=bool(it.slow_exit), jax=str(it.backend) == "jax", first_step=float(it.first_step))
 
 
 def integrate_run(case, opts=None, verbose=False, t_eval=None, start=None, partial=False):
@@ -102,8 +103,8 @@ def integrate_run(case, opts=None, verbose=False, t_eval=None, start=None, parti
     from .integrators.implicit import ImplicitBDF
     opts = dict(opts or {})
     model = build_model(case)
-    start = start or getattr(case, "meta", {}).get("start")
-    X0 = model.initial_state() if start in ("shut_in", "blocked") or case.pipes[0].ic is not None else initial_guess(model)
+    start = start or model.meta.get("start")
+    X0 = model.initial_state() if start in ("shut_in", "blocked") or model.pipes[0].ic is not None else initial_guess(model)
     lo, hi = state_bounds(model)
     if opts.get("tightbounds"):
         pb = model.pipes[0]; slots = pb.free % 4
@@ -132,8 +133,8 @@ def integrate_run(case, opts=None, verbose=False, t_eval=None, start=None, parti
     if opts.get("jt_refresh"):
         bdf.jt_refresh = opts["jt_refresh"]
     if t_eval is None:
-        dt_out = case.settings.dt_out
-        t_eval = np.arange(0.0, case.settings.tf + dt_out / 2, dt_out)
+        dt_out = model.dt_out
+        t_eval = np.arange(0.0, model.tf + dt_out / 2, dt_out)
     t_start = _time.time()
     try:
         T, X, info = bdf.integrate(t_eval, X0, first_step=float(opts.get("first_step", 1e-3)), breakpoints=model.spec_breakpoints())
@@ -173,7 +174,8 @@ class Run:
             if self.case_json:
                 from .io.spec import case_from_json
                 self._case = case_from_json(self.case_json, ic_arrays=self.ic_arrays)
-                self._case.settings.tf = float(self.T[-1]) if self.T.size else self._case.settings.tf
+                if self.T.size:
+                    self._case.set_time(tf=float(self.T[-1]))
             else:
                 self._case = case_from_meta(self.meta, tf=float(self.T[-1]))
         return self._case
@@ -324,7 +326,7 @@ def flows_from_severe_opts(opts, fluid=None):
 
 
 def case_from_severe_opts(opts, tf=None, dt_out=None):
-    """Caso `severe_slug_case` construído como o driver `scratch/severe_D.py` (verbatim)."""
+    """Grafo `severe_slug_case` construído como o driver `scratch/severe_D.py` (verbatim)."""
     fluid = fluid_from_severe_opts(opts)
     qL, qG, A, P_out = flows_from_severe_opts(opts, fluid)
     D = opts.get("D", 0.05)

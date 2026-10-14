@@ -22,7 +22,7 @@ def test_graded_mesh_lengths_and_ratio():
 
 def test_steady_state_on_graded_mesh_matches_uniform():
     case, raw = load_chapter10_case("10.1.1")
-    c_u = copy.deepcopy(case); c_u.settings.method = "fv_upwind"; c_u.pipes[0].ic = None
+    c_u = copy.deepcopy(case).set_method("fv_upwind"); c_u.pipes[0].ic = None
     c_g = copy.deepcopy(c_u); c_g.pipes[0].grading = [0.25] * len(c_g.pipes[0].n_elements)
     m_u, X_u, _ = steady_state(c_u, X0="auto", verbose=False)
     m_g, X_g, _ = steady_state(c_g, X0="auto", verbose=False)

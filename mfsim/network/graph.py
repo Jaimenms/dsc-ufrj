@@ -10,7 +10,7 @@ inicial) e as de comprimento zero `Connector` (acoplamento), `Choke` (válvula),
 
 O grafo é a representação que a rede consome (`network.system.NetworkSystem`, com
 resolução de portas em `network.ports`) e a que os casos JSON descrevem. O `Case` legado
-(`network.data`) converte-se sem perda por `Network.from_legacy_case`, que insere as
+(`io.legacy_case`, o struct `dados` do MATLAB) converte-se sem perda por `Network.from_legacy_case`, que insere as
 junções que o legado deixava implícitas (choke "no vértice de destino" -> `Jc<v>`,
 reservatório "no vértice de origem" -> `Jr<v>`; a junção herda as especificações do
 vértice legado para as portas que a aresta não fornece); `to_legacy_case` é a inversa
@@ -19,7 +19,7 @@ vértice legado para as portas que a aresta não fornece); `to_legacy_case` é a
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Optional
 
 import numpy as np
@@ -28,6 +28,26 @@ from ..core.options import IntegrationSpec, ModelSpec, ReferenceSpec, SchemeSpec
 from ..core.slots import PortKind, SLOT_NAMES
 from ..fluid import Fluid
 from .schedules import Schedule
+
+
+def specs(**kw) -> dict:
+    """Especificações de um vértice a partir de valores legados (escalar, (t, v)) ou `Schedule`."""
+    return {k: (v if isinstance(v, Schedule) else Schedule.from_legacy(v)) for k, v in kw.items() if v is not None}
+
+
+def ports(codes) -> tuple:
+    """Portas de uma extremidade a partir de códigos legados (1/2/3) ou `PortKind`."""
+    return tuple(c if isinstance(c, PortKind) else PortKind.from_legacy(c) for c in codes)
+
+
+def as_network(obj) -> "Network":
+    """O próprio `Network`, ou o grafo equivalente a um registo legado (`io.legacy_case.Case`)."""
+    if isinstance(obj, Network):
+        return obj
+    from ..io.legacy_case import Case
+    if isinstance(obj, Case):
+        return Network.from_legacy_case(obj)
+    raise TypeError(f"esperava Network ou Case legado, recebi {type(obj).__name__}")
 
 
 # ----------------------------------------------------------------------------- vértices
@@ -119,6 +139,35 @@ class Pipe(Edge):
     def type(self):
         return "pipe"
 
+    # traçado por coordenada e código legado do padrão (só leitura; para alterar use
+    # `points` e `Network.set_options(regime=...)`)
+    @property
+    def x(self):
+        return np.asarray(self.points, float)[:, 0]
+
+    @property
+    def y(self):
+        return np.asarray(self.points, float)[:, 1]
+
+    @property
+    def z(self):
+        return np.asarray(self.points, float)[:, 2]
+
+    @property
+    def regime(self):
+        return self.model.to_legacy()[1]
+
+    @classmethod
+    def legacy(cls, id, v_from, v_to, x, y, z, n_elements, D=0.1, roughness=1e-3, model=1, regime=4, method="galerkin",
+               bc_in=(1, 1, 2, 2), bc_out=(1, 2, 1, 1), ic=None, extra=None, grading=None) -> "Pipe":
+        """Duto no dialeto legado (traçado x, y, z; modelo/padrão por código; opções em `extra`)."""
+        e = dict(extra or {})
+        return cls(id=str(id), v_from=str(v_from), v_to=str(v_to),
+                   points=np.stack([np.asarray(x, float), np.asarray(y, float), np.asarray(z, float)], axis=1),
+                   n_elements=np.atleast_1d(np.asarray(n_elements, int)), grading=None if grading is None else np.asarray(grading, float),
+                   D=float(D), roughness=float(roughness), model=ModelSpec.from_legacy(model, regime, e), scheme=SchemeSpec.from_legacy(method, e),
+                   ports_in=ports(bc_in), ports_out=ports(bc_out), ic=None if ic is None else np.asarray(ic, float))
+
 
 @dataclass
 class ZeroLengthEdge(Edge):
@@ -190,12 +239,71 @@ class Network:
     meta: dict = field(default_factory=dict)
     description: str = ""
 
+    # --- construção --------------------------------------------------------
+    @classmethod
+    def build(cls, name, fluid, vertices, edges, *, tf, dt_out, t0=0.0, PR=1e6, integrator="bdf", quadrature_order=1,
+              max_step=1.0, atol=1e-3, rtol=1e-4, state_ref=None, meta=None, **integration) -> "Network":
+        """Grafo a partir das listas de vértices e arestas e das opções de tempo/referência/integração."""
+        it = IntegrationSpec(integrator=integrator, method_quadrature=int(quadrature_order), max_step=float(max_step),
+                             atol=float(atol), rtol=float(rtol), **integration)
+        net = cls(name=name, fluid=fluid, time=TimeSpec(float(t0), float(tf), float(dt_out)),
+                  reference=ReferenceSpec(float(PR), tuple(sorted((state_ref or {}).items()))), integration=it,
+                  vertices=list(vertices), edges=list(edges), meta=dict(meta or {}))
+        return net.validate()
+
     # --- consultas ---------------------------------------------------------
     def vertex(self, vid):
+        vid = str(vid)
         for v in self.vertices:
             if v.id == vid:
                 return v
         raise KeyError(vid)
+
+    def pipe(self, pid):
+        pid = str(pid)
+        for p in self.pipes:
+            if p.id == pid:
+                return p
+        raise KeyError(pid)
+
+    # --- edição (em lugar; devolvem o próprio grafo) -------------------------
+    def set_method(self, method):
+        """Esquema `method` em todos os dutos (opções mantidas)."""
+        for p in self.pipes:
+            p.scheme = SchemeSpec(type=method, options=p.scheme.options)
+        return self
+
+    def set_time(self, **kw):
+        self.time = replace(self.time, **kw)
+        return self
+
+    def set_integration(self, **kw):
+        self.integration = replace(self.integration, **kw)
+        return self
+
+    def set_reference(self, PR=None, state_ref=None):
+        self.reference = ReferenceSpec(self.reference.PR if PR is None else float(PR),
+                                       self.reference.state_ref if state_ref is None else tuple(sorted(dict(state_ref).items())))
+        return self
+
+    def set_options(self, pipes=None, **legacy):
+        """Opções no dialeto legado (`model`, `regime`, `method` e as chaves de `Pipe.extra`:
+        k_switch, conservative, art_visc, bb_derivatives, ...) nos dutos `pipes` (ids; todos
+        por omissão): reconstrói os `ModelSpec`/`SchemeSpec` com as chaves alteradas."""
+        ids = None if pipes is None else {str(p) for p in pipes}
+        for p in self.pipes:
+            if ids is not None and p.id not in ids:
+                continue
+            model_id, regime_id, extra = p.model.to_legacy()
+            extra.update(p.scheme.to_legacy_extra())
+            kw = dict(legacy)
+            model_id = kw.pop("model", model_id)
+            regime_id = kw.pop("regime", regime_id)
+            method = kw.pop("method", p.scheme.type)
+            extra.update(kw)
+            p.model = ModelSpec.from_legacy(model_id, regime_id, extra)
+            p.scheme = SchemeSpec.from_legacy(method, extra)
+        return self
 
     @property
     def pipes(self):
@@ -228,7 +336,6 @@ class Network:
         """Grafo equivalente a um `Case` legado (índices como ids). As junções implícitas
         do legado ganham vértices: `Jc<v>` para chokes (duto termina em Jc<v>, choke Jc<v> -> v)
         e `Jr<v>` para reservatórios (reservatório v -> Jr<v>, duto parte de Jr<v>)."""
-        from .data import SimulatorSettings
         s = case.settings
         vertices = []
         for v in case.vertices:
@@ -286,7 +393,7 @@ class Network:
 
     def to_legacy_case(self):
         """`Case` legado equivalente (o que o NetworkModel consome)."""
-        from .data import Case, CheckValve as LCheckValve, Coupling, Pipe as LPipe, Reservoir as LReservoir, SimulatorSettings, Valve, Vertex as LVertex
+        from ..io.legacy_case import Case, CheckValve as LCheckValve, Coupling, Pipe as LPipe, Reservoir as LReservoir, SimulatorSettings, Valve, Vertex as LVertex
         self.validate()
         junction = {v.id for v in self.vertices if isinstance(v, JunctionVertex)}
         # junções colapsam no vértice legado: choke Jc -> v  (dutos que chegam a Jc passam a chegar a v);

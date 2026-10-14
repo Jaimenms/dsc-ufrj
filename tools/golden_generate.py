@@ -77,17 +77,18 @@ def gen_variants():
     """Cálculos secundários dos notebooks: estacionário automático, estudo de esquemas, 10.1.4
     com estacionário consistente, 10.3.1 em volumes finitos (modelo de deriva)."""
     from mfsim.cases import load_chapter10_case
+    from mfsim.network.graph import ports
     from mfsim.simulation import simulate, steady_state
     out = {}
     case, raw = load_chapter10_case("10.1.1")
-    case_ss = copy.deepcopy(case); case_ss.pipes[0].bc_in = (3, 1, 2, 2); case_ss.pipes[0].ic = None
+    case_ss = copy.deepcopy(case); case_ss.pipes[0].ports_in = ports((3, 1, 2, 2)); case_ss.pipes[0].ic = None
     model_ss, X_ss, info_ss = steady_state(case_ss, X0="auto", verbose=False)
     out["10.1.1_steady_auto/X"] = X_ss; out["10.1.1_steady_auto/residual"] = np.array(info_ss["residual"])
     res2 = simulate(copy.deepcopy(case_ss), integrator="implicit", rtol=1e-4, atol=1e-6, max_step=np.inf, progress=False)
     out["10.1.1_c2/T"] = res2.T; out["10.1.1_c2/X"] = res2.X
     for method in ("galerkin", "fd_central"):                 # estudo de malha do notebook (métodos e malhas 5 e 25)
         for nel in (5, 25):
-            c = copy.deepcopy(case_ss); c.pipes[0].n_elements = np.array([nel]); c.pipes[0].ic = None; c.settings.method = method
+            c = copy.deepcopy(case_ss); c.pipes[0].n_elements = np.array([nel]); c.pipes[0].ic = None; c.set_method(method)
             steady_state(c, X0="auto", verbose=False)
             r = simulate(c, integrator="implicit", rtol=1e-4, atol=1e-6, max_step=np.inf, progress=False)
             out[f"10.1.1_mesh{nel}_{method}/T"] = r.T; out[f"10.1.1_mesh{nel}_{method}/X"] = r.X
@@ -98,8 +99,7 @@ def gen_variants():
     r = simulate(case_ss, integrator="implicit", rtol=1e-4, atol=1e-6, max_step=np.inf, progress=False)
     out["10.1.4_steady/T"] = r.T; out["10.1.4_steady/X"] = r.X
     case, raw = load_chapter10_case("10.3.1")
-    case_fv = copy.deepcopy(case); case_fv.settings.method = "fv_upwind"
-    case_fv.pipes[0].extra.update({"conservative": True, "q_switch": 0.05})
+    case_fv = copy.deepcopy(case); case_fv.set_method("fv_upwind").set_options(conservative=True, q_switch=0.05)
     steady_state(case_fv, verbose=False, update_case=True)
     r = simulate(case_fv, progress=False, integrator="implicit", rtol=1e-3, atol=1e-6)
     out["10.3.1_fv_drift/T"] = r.T; out["10.3.1_fv_drift/X"] = r.X; out["10.3.1_fv_drift/n_steps"] = np.array(r.info.get("n_steps", -1))
@@ -274,6 +274,8 @@ def gen_nightly():
     """Nível noturno: referência 3000 s em JAX e gas lift 2000 s (duas aberturas)."""
     from mfsim.cases import load_chapter10_case
     from mfsim.integrators.implicit import ImplicitBDF
+    from mfsim.network.graph import Choke
+    from mfsim.network.schedules import PiecewiseLinear
     from mfsim.runs import integrate_run
     from mfsim.simulation import build_model, state_bounds
     out = {}
@@ -283,10 +285,10 @@ def gen_nightly():
     print(f"  referência JAX 3000 s: {info['n_steps']} passos {time.time()-t0:.1f} s")
     for opening in (0.12, 0.10):
         tf = 2000.0
-        case, raw = load_chapter10_case("10.3.2b"); case.settings.tf = tf
-        for v in case.valves:
-            if v.vertex == 6:
-                v.opening = (np.array([0.0, 100.0, 150.0, tf]), np.array([0.75, 0.75, opening, opening]))
+        case, raw = load_chapter10_case("10.3.2b"); case.set_time(tf=tf)
+        for v in case.edges_of(Choke):
+            if v.v_to == "6":
+                v.opening = PiecewiseLinear(np.array([0.0, 100.0, 150.0, tf]), np.array([0.75, 0.75, opening, opening]))
         model = build_model(case)
         bdf = ImplicitBDF(model.rhs, S=model.jac_sparsity(), rtol=1e-3, atol=1e-5, bounds=state_bounds(model), min_step=1e-9, max_order=2)
         T, X, info = bdf.integrate(np.arange(0, tf + 1, 5.0), model.initial_state(), breakpoints=model.spec_breakpoints())
@@ -366,15 +368,14 @@ def gen_network():
     from mfsim.simulation import build_model
     out = {}
     for key in CHAPTER10:
-        case, _ = load_chapter10_case(key); t = case.settings.t0 + 1.0
+        case, _ = load_chapter10_case(key); t = case.time.t0 + 1.0
         out.update(_network_arrays(f"ch10/{key}", build_model(case), t))
     for key, methods in (("10.1.1", ("fd_central", "fd_upwind", "petrov_galerkin")), ("10.3.1", ("fv_upwind",))):
         for m in methods:
-            case, _ = load_chapter10_case(key); c = copy.deepcopy(case); c.settings.method = m
+            case, _ = load_chapter10_case(key); c = copy.deepcopy(case); c.set_method(m)
             if m == "fv_upwind":
-                for pp in c.pipes:
-                    pp.extra.update(conservative=True)
-            out.update(_network_arrays(f"ch10/{key}_{m}", build_model(c), c.settings.t0 + 1.0))
+                c.set_options(conservative=True)
+            out.update(_network_arrays(f"ch10/{key}_{m}", build_model(c), c.time.t0 + 1.0))
     for f in sorted((ROOT / "cases" / "severe_slug").glob("*.json")):
         case = case_from_json(str(f)); out.update(_network_arrays(f"severe/{f.stem}", build_model(case), 1.0))
     from mfsim.runs import load_run

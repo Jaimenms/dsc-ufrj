@@ -40,7 +40,7 @@ from mfsim.plotting import compare_runs
 def mesh_runs(case, meshes, method, q0):
     out = {}
     for nel in meshes:
-        c = copy.deepcopy(case); c.pipes[0].n_elements = np.array([nel]); c.settings.method = method
+        c = copy.deepcopy(case); c.pipes[0].n_elements = np.array([nel]); c.set_method(method)
         nn = nel + 1
         c.pipes[0].ic = np.stack([np.full(nn, q0[0]), np.full(nn, 1.0), np.full(nn, q0[1]), np.full(nn, q0[2])], axis=1)
         steady_state(c, verbose=False)

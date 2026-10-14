@@ -46,9 +46,9 @@ def cmd_run(a):
     from .runs import integrate_run, integrator_opts_from_case, save_run
     case = case_from_json(a.case)
     if a.tf is not None:
-        case.settings.tf = float(a.tf)
+        case.set_time(tf=float(a.tf))
     if a.dt_out is not None:
-        case.settings.dt_out = float(a.dt_out)
+        case.set_time(dt_out=float(a.dt_out))
     opts = integrator_opts_from_case(case)
     if a.backend:
         opts["jax"] = a.backend == "jax"
@@ -60,14 +60,14 @@ def cmd_run(a):
             opts[key] = v
     out = a.out or os.path.join("runs", f"{case.name}.npz")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
-    print(f"caso {case.name}: tf = {case.settings.tf} s, dt_out = {case.settings.dt_out} s, backend = {'jax' if opts.get('jax') else 'numpy'}, "
+    print(f"caso {case.name}: tf = {case.time.tf} s, dt_out = {case.time.dt_out} s, backend = {'jax' if opts.get('jax') else 'numpy'}, "
           f"rtol = {opts['rtol']}, tol_range = {opts.get('tol_range')}, max_newton = {opts['max_newton']}, slow_exit = {opts['slow']}", flush=True)
     t0 = time.time()
     model, T, X, info = integrate_run(case, opts, verbose=a.verbose, partial=True)
     meta = dict(getattr(case, "meta", {}) or {})
     meta.update(n_steps=info.get("n_steps"), n_rejected=info.get("n_rejected"), cpu=info.get("cpu"),
                 parcial=not info.get("success", True), jax=bool(opts.get("jax")), rtol=opts["rtol"], tol_range=opts.get("tol_range"),
-                max_newton=opts["max_newton"], slow=opts["slow"], tf=case.settings.tf, dt_out=case.settings.dt_out)
+                max_newton=opts["max_newton"], slow=opts["slow"], tf=case.time.tf, dt_out=case.time.dt_out)
     if not info.get("success", True):
         print(f"FALHA: {info.get('error')} após {info.get('n_steps')} passos ({time.time() - t0:.1f} s); trajetória parcial até t = {T[-1] if T.size else float('nan')} s", flush=True)
     save_run(out, T, X, meta, acc=info.get("accum"), info=info, command=" ".join(sys.argv), case=case)

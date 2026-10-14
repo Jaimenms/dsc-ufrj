@@ -18,10 +18,10 @@ def severe(cons):
 cases = []
 for cid in ("10.1.1", "10.1.2", "10.1.3", "10.1.4", "10.2.1A", "10.2.1B", "10.2.2", "10.3.1", "10.3.2a", "10.3.2b", "10.3.3"):
     case, raw = load_chapter10_case(cid); cases.append((cid, case))
-c = copy.deepcopy(cases[0][1]); c.settings.method = "fd_central"; cases.append(("10.1.1 fd_central", c))
-c = copy.deepcopy(cases[0][1]); c.settings.method = "petrov_galerkin"; cases.append(("10.1.1 petrov_galerkin", c))
-c = copy.deepcopy(cases[0][1]); c.settings.method = "fd_upwind"; cases.append(("10.1.1 fd_upwind", c))
-c = copy.deepcopy(cases[0][1]); c.settings.method = "fv_upwind"; c.pipes[0].ic = None; cases.append(("10.1.1 fv_upwind primitivo", c))
+c = copy.deepcopy(cases[0][1]); c.set_method("fd_central"); cases.append(("10.1.1 fd_central", c))
+c = copy.deepcopy(cases[0][1]); c.set_method("petrov_galerkin"); cases.append(("10.1.1 petrov_galerkin", c))
+c = copy.deepcopy(cases[0][1]); c.set_method("fd_upwind"); cases.append(("10.1.1 fd_upwind", c))
+c = copy.deepcopy(cases[0][1]); c.set_method("fv_upwind"); c.pipes[0].ic = None; cases.append(("10.1.1 fv_upwind primitivo", c))
 cases.append(("severe slug conservativo", severe(True))); cases.append(("severe slug primitivo", severe(False)))
 sel = sys.argv[1:] 
 rng = np.random.default_rng(1)
@@ -35,7 +35,7 @@ for name, case in cases:
         else:
             X0 = model.initial_state()
         t0 = time.time(); rhs_j, jac_j = build_jax_rhs(model); t_build = time.time() - t0
-        tt = case.settings.t0 + 1.0
+        tt = case.time.t0 + 1.0
         worst = 0.0; scale = 0.0
         states = [X0]
         for k in range(3):

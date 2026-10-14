@@ -3,6 +3,8 @@ fechar exatamente o balanço de massa por célula em cada passo."""
 
 import copy
 
+from mfsim.network.schedules import Constant
+
 import numpy as np
 
 from mfsim.cases import load_chapter10_case
@@ -27,12 +29,11 @@ def _mass_per_cell(model, X):
 def test_conservative_mode_balances_mass_each_step():
     case, raw = load_chapter10_case("10.1.1")
     c = copy.deepcopy(case)
-    c.settings.method = "fv_upwind"
+    c.set_method("fv_upwind").set_options(conservative=True)
     c.pipes[0].ic = None
-    c.pipes[0].extra["conservative"] = True
     model0, X0, _ = steady_state(c, X0="auto", verbose=False)
     # perturbação: vazão de gás 30% maior na entrada a partir de t=0 (transiente forte)
-    c.vertices[0].spec["qG"] = 0.13
+    c.vertices[0].spec["qG"] = Constant(0.13)
     model = build_model(c)
     bdf = ImplicitBDF(model.rhs, S=model.jac_sparsity(), rtol=1e-4, atol=1e-6, bounds=state_bounds(model),
                       transform=model.transform, inverse=model.inverse_transform, transform_jac=model.transform_jacobian, max_order=1, fixed_step=0.5)
@@ -60,11 +61,10 @@ def test_conservative_mode_global_balance_adaptive_bdf2():
     igual à integral BDF-consistente dos fluxos de contorno (acumulador do integrador)."""
     case, raw = load_chapter10_case("10.1.1")
     c = copy.deepcopy(case)
-    c.settings.method = "fv_upwind"
+    c.set_method("fv_upwind").set_options(conservative=True)
     c.pipes[0].ic = None
-    c.pipes[0].extra["conservative"] = True
     model0, X0, _ = steady_state(c, X0="auto", verbose=False)
-    c.vertices[0].spec["qG"] = 0.13
+    c.vertices[0].spec["qG"] = Constant(0.13)
     model = build_model(c)
     bdf = ImplicitBDF(model.rhs, S=model.jac_sparsity(), rtol=1e-3, atol=1e-5, bounds=state_bounds(model),
                       transform=model.transform, inverse=model.inverse_transform, transform_jac=model.transform_jacobian, max_order=2)

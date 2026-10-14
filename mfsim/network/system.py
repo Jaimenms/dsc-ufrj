@@ -16,12 +16,11 @@ import numpy as np
 
 from ..backend import NUMPY
 from ..core.options import PIPE_PARAM_KEYS, SCHEME_KEYS
-from ..core.slots import SLOT_ALPHA, SLOT_P, SLOT_QG, SLOT_QL
+from ..core.slots import BC_DIRICHLET, BC_NEUMANN, SLOT_ALPHA, SLOT_P, SLOT_QG, SLOT_QL
 from ..discretization import SCHEMES
 from ..geometry import pipe_mesh
 from ..models import MODEL_BY_LEGACY_ID
 from ..models.base import PipeParams
-from .data import BC_DIRICHLET, BC_NEUMANN
 from .graph import CheckValve, Choke, Connector, JunctionVertex, Network, Reservoir, TankVertex, ZeroLengthEdge
 from .ports import build_plan
 from .schedules import UNSPECIFIED, Unspecified

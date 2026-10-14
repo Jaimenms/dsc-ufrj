@@ -6,7 +6,8 @@ import numpy as np
 import pytest
 
 from mfsim.fluid import Fluid
-from mfsim.network.data import BC_ABSENT, BC_DIRICHLET, Case, Pipe, SimulatorSettings, Vertex
+from mfsim.core.slots import BC_ABSENT, BC_DIRICHLET
+from mfsim.network.graph import BoundaryVertex, Network, Pipe, specs
 from mfsim.simulation import build_model, simulate
 
 jax = pytest.importorskip("jax")
@@ -27,7 +28,7 @@ def _case(phase="L", order=1, tf=20.0):
     key = "qL" if phase == "L" else "qG"
     # vazão de saída cai à metade entre t = 2 s e t = 4 s (transiente de pressão)
     spec_out = {key: (np.array([0.0, 2.0, 4.0, tf]), np.array([q0, q0, 0.5 * q0, 0.5 * q0]))}
-    vertices = [Vertex(index=1, kind="B", spec={"PT": P_in / PR}), Vertex(index=2, kind="B", spec=spec_out)]
+    vertices = [BoundaryVertex("1", spec=specs(PT=P_in / PR)), BoundaryVertex("2", spec=specs(**spec_out))]
     s = np.linspace(0, L, N + 1)
     ic = np.zeros((N + 1, 4))
     ic[:, 0] = 0.0 if phase == "L" else 1.0
@@ -35,11 +36,10 @@ def _case(phase="L", order=1, tf=20.0):
     ic[:, slot] = q0
     bc_in = (BC_ABSENT, BC_DIRICHLET, BC_ABSENT, BC_ABSENT)
     bc_out = (BC_ABSENT, BC_ABSENT, BC_DIRICHLET, BC_ABSENT) if phase == "L" else (BC_ABSENT, BC_ABSENT, BC_ABSENT, BC_DIRICHLET)
-    pipe = Pipe(index=1, v_in=1, v_out=2, x=[0.0, 0.0], y=[0.0, L], z=[0.0, 10.0], n_elements=[N], D=D, roughness=1e-5,
-                model=model, regime=4, bc_in=bc_in, bc_out=bc_out, ic=ic, extra={"fv_order": order, "q_switch": 1e-2 * q0})
-    settings = SimulatorSettings(t0=0.0, tf=tf, dt_out=1.0, PR=PR, method="fv_upwind", max_step=np.inf,
-                                 atol=1e-6, rtol=1e-4, quadrature_order=2, integrator="implicit")
-    return Case(name=f"single_{phase}", fluid=fluid, settings=settings, vertices=vertices, pipes=[pipe])
+    pipe = Pipe.legacy("1", "1", "2", [0.0, 0.0], [0.0, L], [0.0, 10.0], [N], D=D, roughness=1e-5, model=model, regime=4, method="fv_upwind",
+                       bc_in=bc_in, bc_out=bc_out, ic=ic, extra={"fv_order": order, "q_switch": 1e-2 * q0})
+    return Network.build(f"single_{phase}", fluid, vertices, [pipe], t0=0.0, tf=tf, dt_out=1.0, PR=PR, integrator="implicit",
+                         quadrature_order=2, max_step=np.inf, atol=1e-6, rtol=1e-4)
 
 
 @pytest.mark.parametrize("phase, order", [("L", 1), ("G", 1), ("L", 2)])

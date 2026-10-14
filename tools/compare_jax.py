@@ -8,12 +8,14 @@ rtol, atol = opts.get("rtol", 1e-4), opts.get("atol", 1e-6)
 out = {"case": cid}
 def load():
     case, raw = load_chapter10_case(cid)
-    if opts.get("method"): case.settings.method = opts["method"]
-    if opts.get("tf"): case.settings.tf = opts["tf"]
+    if opts.get("method"): case.set_method(opts["method"])
+    if opts.get("tf"): case.set_time(tf=opts["tf"])
     if opts.get("choke") is not None:
-        tf = case.settings.tf
-        for v in case.valves:
-            if v.vertex == 6: v.opening = (np.array([0.0, 100.0, 150.0, tf]), np.array([0.75, 0.75, opts["choke"], opts["choke"]]))
+        tf = case.time.tf
+        from mfsim.network.graph import Choke
+        from mfsim.network.schedules import PiecewiseLinear
+        for v in case.edges_of(Choke):
+            if v.v_to == "6": v.opening = PiecewiseLinear(np.array([0.0, 100.0, 150.0, tf]), np.array([0.75, 0.75, opts["choke"], opts["choke"]]))
     return case
 res = {}
 case0 = load()

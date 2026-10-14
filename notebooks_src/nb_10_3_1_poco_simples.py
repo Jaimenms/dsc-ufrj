@@ -67,8 +67,7 @@ import copy, time
 from mfsim.simulation import simulate, steady_state
 
 case_fv = copy.deepcopy(case)
-case_fv.settings.method = "fv_upwind"
-case_fv.pipes[0].extra.update({"conservative": True, "q_switch": 0.05})
+case_fv.set_method("fv_upwind").set_options(conservative=True, q_switch=0.05)
 t0_ = time.time()
 steady_state(case_fv, verbose=False, update_case=True)
 res_fv = simulate(case_fv, progress=False, integrator="implicit", rtol=1e-3, atol=1e-6)

@@ -10,6 +10,8 @@ import numpy as np
 import pytest
 
 from mfsim.analysis import cycle_signature
+from mfsim.network.graph import Choke
+from mfsim.network.schedules import PiecewiseLinear
 from mfsim.runs import case_from_meta, integrate_run, integrator_opts_from_meta, load_run
 
 pytestmark = [pytest.mark.nightly, pytest.mark.golden]
@@ -37,10 +39,10 @@ def test_gaslift_intermittency_2000s(opening, golden):
     from mfsim.simulation import build_model, state_bounds
     g = golden("nightly.npz")
     tf = 2000.0
-    case, raw = load_chapter10_case("10.3.2b"); case.settings.tf = tf
-    for v in case.valves:
-        if v.vertex == 6:
-            v.opening = (np.array([0.0, 100.0, 150.0, tf]), np.array([0.75, 0.75, opening, opening]))
+    case, raw = load_chapter10_case("10.3.2b"); case.set_time(tf=tf)
+    for v in case.edges_of(Choke):
+        if v.v_to == "6":
+            v.opening = PiecewiseLinear(np.array([0.0, 100.0, 150.0, tf]), np.array([0.75, 0.75, opening, opening]))
     model = build_model(case)
     bdf = ImplicitBDF(model.rhs, S=model.jac_sparsity(), rtol=1e-3, atol=1e-5, bounds=state_bounds(model), min_step=1e-9, max_order=2)
     T, X, info = bdf.integrate(np.arange(0, tf + 1, 5.0), model.initial_state(), breakpoints=model.spec_breakpoints())

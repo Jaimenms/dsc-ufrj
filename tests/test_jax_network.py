@@ -19,13 +19,12 @@ SCHEMES = ["galerkin", "petrov_galerkin", "fd_central", "fd_upwind"]
 def test_jax_network_matches_numpy(cid):
     from mfsim.compiled import build_jax_rhs
     case, raw = load_chapter10_case(cid)
-    for pipe in case.pipes:
-        pipe.extra["bb_derivatives"] = "fd"      # equivalência exata com o numpy (que usa diferenças finitas na tese)
+    case.set_options(bb_derivatives="fd")      # equivalência exata com o numpy (que usa diferenças finitas na tese)
     model = build_model(case)
     rhs_j, jac_j = build_jax_rhs(model)
     X0 = model.initial_state()
     rng = np.random.default_rng(0)
-    t = case.settings.t0 + 1.0
+    t = case.time.t0 + 1.0
     for x in (X0, X0 * (1 + 0.02 * rng.standard_normal(X0.size))):
         f_np = model.rhs(t, x)
         f_jx = rhs_j(t, x)
@@ -38,7 +37,7 @@ def test_jax_schemes_match_numpy(method):
     from mfsim.compiled import build_jax_rhs
     case, raw = load_chapter10_case("10.1.1")
     c = copy.deepcopy(case)
-    c.settings.method = method
+    c.set_method(method)
     model = build_model(c)
     rhs_j, jac_j = build_jax_rhs(model)
     X0 = model.initial_state()
@@ -56,15 +55,14 @@ def test_beggs_brill_exact_derivatives_close_to_fd(cid):
     x = None
     for mode in ("fd", "exact"):
         case, raw = load_chapter10_case(cid)
-        for pipe in case.pipes:
-            pipe.extra["bb_derivatives"] = mode
+        case.set_options(bb_derivatives=mode)
         model = build_model(case)
         rhs_j, _ = build_jax_rhs(model)
         if x is None:
             rng = np.random.default_rng(3)
             X0 = model.initial_state()
             x = X0 * (1 + 0.05 * rng.standard_normal(X0.size))      # o MESMO estado perturbado nos dois modos
-        out[mode] = rhs_j(case.settings.t0 + 1.0, x)
+        out[mode] = rhs_j(case.time.t0 + 1.0, x)
     scale = np.max(np.abs(out["fd"]))
     assert scale > 0
     assert np.max(np.abs(out["fd"] - out["exact"])) < 2e-2 * scale

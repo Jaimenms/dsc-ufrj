@@ -70,22 +70,23 @@ CHAPTER10 = {
 
 
 def load_chapter10_case(key, **kw):
-    """Retorna (case, legacy_raw) do caso `key` (ex.: '10.1.1')."""
+    """Retorna (network, legacy_raw) do caso `key` (ex.: '10.1.1')."""
+    from ..network.graph import Choke
     info = CHAPTER10[key]
     if key == "10.3.2a":
         kw = dict(kw, ic_from="file")   # o arquivo original não monta (válvula de retenção em vértice estático)
-    case, raw = load_case(info.file, **kw)
-    case.name = f"{info.section} {info.title}"
+    net, raw = load_case(info.file, **kw)
+    net.name = f"{info.section} {info.title}"
     if key == "10.3.2a":
         # o arquivo do cenário 1 tem o vértice 8 como estático (editado após a
         # simulação); a rede da tese usa vértice dinâmico com válvula de retenção,
-        # como no arquivo do cenário 2
-        case_b, _ = load_case("CASO10-3-2b.mf2", ic_from="legacy_t0")
-        valve_tables = {v.vertex: v for v in case.valves}
-        case_b.valves = [valve_tables.get(v.vertex, v) for v in case_b.valves]
-        case_b.name = case.name
-        case = case_b
-    return case, raw
+        # como no arquivo do cenário 2: os chokes do cenário 1 sobre a rede do cenário 2
+        net_b, _ = load_case("CASO10-3-2b.mf2", ic_from="legacy_t0")
+        chokes_a = {e.v_to: e for e in net.edges_of(Choke)}
+        net_b.edges = [chokes_a.get(e.v_to, e) if isinstance(e, Choke) else e for e in net_b.edges]
+        net_b.name = net.name
+        net = net_b
+    return net, raw
 
 
 CASES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "cases", "chapter10")
@@ -97,7 +98,7 @@ def chapter10_json_path(key):
 
 def load_chapter10_json(key):
     """O mesmo caso a partir do JSON exportado (`cases/chapter10/<chave>.json`); devolve
-    (case, raw) como `load_chapter10_case` (raw = dados do .mf2 para comparação)."""
+    (network, raw) como `load_chapter10_case` (raw = dados do .mf2 para comparação)."""
     from ..io.spec import case_from_json
     from ..io_legacy import load_mf2
     path = chapter10_json_path(key)

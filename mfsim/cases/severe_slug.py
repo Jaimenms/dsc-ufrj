@@ -16,7 +16,8 @@ import os
 import numpy as np
 
 from ..fluid import Fluid
-from ..network.data import BC_ABSENT, BC_DIRICHLET, BC_NEUMANN, Case, Pipe, SimulatorSettings, Vertex
+from ..core.slots import BC_ABSENT, BC_DIRICHLET, BC_NEUMANN
+from ..network.graph import BoundaryVertex, Network, Pipe, TankVertex, specs
 
 G = 9.80665
 
@@ -83,8 +84,8 @@ def severe_slug_case(
                    de líquido; vazões nominais de líquido em todo o duto e de gás
                    só no bolsão. Com isso o primeiro blowdown ocorre em ~100 s.
     """
-    """Constrói o caso: um único duto com 4 trechos (ou 4 dutos acoplados por
-    vértices dinâmicos se single_pipe=False)."""
+    """Constrói o grafo (`Network`): um único duto com 4 trechos (ou 4 dutos acoplados por
+    vértices dinâmicos se single_pipe=False); `net.meta` guarda a geometria e as vazões."""
     fluid = fluid or Fluid(rhoL0=850.0, rhoG0=18.0, muL=5e-3, muG=1.5e-5, gammaL=1000.0, gammaG=1.1,
                            P0=20e5, sigma=0.03)
     PR = 1e6
@@ -118,8 +119,6 @@ def severe_slug_case(
         s_elbow0 = L_h1 + L_down
         groups = [[0, 1], [2], [3]]
     x = [0.0] * len(y)
-    settings = SimulatorSettings(t0=0.0, tf=tf, dt_out=dt_out, PR=PR, method=method, max_step=np.inf,
-                                 atol=1e-6, rtol=1e-4, quadrature_order=2, integrator="implicit")
     if start == "shut_in":
         # partida de linha fechada: vazões sobem em rampa de 0 até o valor nominal
         spec_in = {"qL": (np.array([0.0, t_ramp]), np.array([0.0, qL])),
@@ -132,15 +131,10 @@ def severe_slug_case(
         # vazões na face de entrada passam a ser estados (só no duto único)
         if not single_pipe:
             raise ValueError("upstream_volume só está implementado com single_pipe=True")
-        vertices = [
-            Vertex(index=1, kind="A", volume=upstream_volume, spec=spec_in),
-            Vertex(index=2, kind="B", spec={"PT": P_out_bar * 1e5 / PR}),
-        ]
+        v_in = TankVertex("1", volume=upstream_volume, spec=specs(**spec_in))
     else:
-        vertices = [
-            Vertex(index=1, kind="B", spec=spec_in),
-            Vertex(index=2, kind="B", spec={"PT": P_out_bar * 1e5 / PR}),
-        ]
+        v_in = BoundaryVertex("1", spec=specs(**spec_in))
+    v_out = BoundaryVertex("2", spec=specs(PT=P_out_bar * 1e5 / PR))
     extra = dict(extra or {})
     if model == 2:
         # modelo de deriva no escalonado: o hold-up da condição inicial é o dado (bolsão,
@@ -149,11 +143,9 @@ def severe_slug_case(
     if single_pipe:
         bc_in_single = (BC_DIRICHLET, BC_DIRICHLET, BC_ABSENT, BC_ABSENT) if upstream_volume > 0 else \
                        (BC_NEUMANN, BC_ABSENT, BC_DIRICHLET, BC_DIRICHLET)
-        pipe = Pipe(index=1, v_in=1, v_out=2, x=x, y=y, z=z, n_elements=n_el_list,
-                    D=D, roughness=roughness, model=model, regime=regime,
-                    bc_in=bc_in_single,
-                    bc_out=(BC_ABSENT, BC_DIRICHLET, BC_ABSENT, BC_ABSENT), ic=None, extra=extra, grading=grading)
-        pipes = [pipe]
+        vertices = [v_in, v_out]
+        pipes = [Pipe.legacy("1", "1", "2", x, y, z, n_el_list, D=D, roughness=roughness, model=model, regime=regime, method=method,
+                             bc_in=bc_in_single, bc_out=(BC_ABSENT, BC_DIRICHLET, BC_ABSENT, BC_ABSENT), extra=extra, grading=grading)]
     else:
         # rede: um duto por grupo de trechos (linha, pescoço, riser, saída), acoplados
         # por vértices dinâmicos (balanço de massa num volume, sem momento); as
@@ -163,7 +155,7 @@ def severe_slug_case(
         regimes = list(regime) if isinstance(regime, (list, tuple)) else [regime] * n_pipes
         vol = extra.pop("vertex_volume", 0.05)
         junctions = [3 + j for j in range(n_pipes - 1)]
-        vertices = [vertices[0]] + [Vertex(index=j, kind="A", volume=vol, spec={"qL": 0.0, "qG": 0.0}) for j in junctions] + [vertices[1]]
+        vertices = [v_in] + [TankVertex(str(j), volume=vol, spec=specs(qL=0.0, qG=0.0)) for j in junctions] + [v_out]
         vs = [1] + junctions + [2]
         pipes = []
         for i, g in enumerate(groups):
@@ -175,11 +167,14 @@ def severe_slug_case(
             # saída para o separador: alphaG livre
             bc_out = (BC_DIRICHLET, BC_DIRICHLET, BC_ABSENT, BC_ABSENT) if i < n_pipes - 1 else \
                      (BC_ABSENT, BC_DIRICHLET, BC_ABSENT, BC_ABSENT)
-            pipes.append(Pipe(index=i + 1, v_in=vs[i], v_out=vs[i + 1], x=[0.0] * len(seg_y), y=seg_y, z=seg_z,
-                              n_elements=[n_el_list[k] for k in g], D=D, roughness=roughness, model=model,
-                              regime=regimes[i], bc_in=bc_in, bc_out=bc_out,
-                              ic=None, extra=dict(extra), grading=[grading[k] for k in g]))
-    case = Case(name="severe_slug", fluid=fluid, settings=settings, vertices=vertices, pipes=pipes)
+            pipes.append(Pipe.legacy(str(i + 1), str(vs[i]), str(vs[i + 1]), [0.0] * len(seg_y), seg_y, seg_z, [n_el_list[k] for k in g],
+                                     D=D, roughness=roughness, model=model, regime=regimes[i], method=method, bc_in=bc_in, bc_out=bc_out,
+                                     extra=dict(extra), grading=[grading[k] for k in g]))
+    # faixas esperadas dos estados (para tolerâncias absolutas uniformes, tol_range):
+    # os picos de blowdown chegam a ~20x a alimentação de líquido e ~50x a de gás
+    state_ref = dict(qL=20.0 * qL, qG=50.0 * qG, PT=(P_out_bar * 1e5 + 1.1 * fluid.rhoL0 * G * H_riser + 2e5) / PR)
+    net = Network.build("severe_slug", fluid, vertices, pipes, t0=0.0, tf=tf, dt_out=dt_out, PR=PR, integrator="implicit",
+                        quadrature_order=2, max_step=np.inf, atol=1e-6, rtol=1e-4, state_ref=state_ref)
     if start == "blocked":
         from ..geometry import pipe_mesh
         mesh = pipe_mesh(x, y, z, n_el_list, grading=grading)
@@ -218,12 +213,13 @@ def severe_slug_case(
             # e inicializa os vértices dinâmicos com o estado da junção
             s_off = 0.0
             for i, pipe in enumerate(pipes):
-                m_i = pipe_mesh(pipe.x, pipe.y, pipe.z, pipe.n_elements, grading=pipe.grading)
+                pts = pipe.points
+                m_i = pipe_mesh(pts[:, 0], pts[:, 1], pts[:, 2], pipe.n_elements, grading=None if pipe.grading is None else list(pipe.grading))
                 s_glob = s_off + m_i["s"]
                 pipe.ic = np.stack([np.interp(s_glob, s_nodes, ic_full[:, c]) for c in range(4)], axis=1)
                 s_off += m_i["L"]
                 if i < len(pipes) - 1:
-                    vtx = next(v for v in vertices if v.index == pipe.v_out)
+                    vtx = net.vertex(pipe.v_to)
                     vtx.HG0 = float(np.interp(s_off, s_nodes, aG0))
                     vtx.PT0 = float(np.interp(s_off, s_nodes, P / PR))
         case_meta_extra = dict(pocket_alpha=pocket_alpha, s_front=s_front, s_top=s_top)
@@ -235,21 +231,16 @@ def severe_slug_case(
         # estado inicial: fluido parado, fração de gás prescrita por trecho e
         # pressão hidrostática (densidade da mistura) a partir da saída
         from ..geometry import pipe_mesh
-        mesh = pipe_mesh(x, y, z, pipes[0].n_elements, grading=pipes[0].grading)
+        mesh = pipe_mesh(x, y, z, pipes[0].n_elements, grading=None if pipes[0].grading is None else list(pipes[0].grading))
         s_nodes = mesh["s"]
         z_nodes = mesh["xyz"][:, 2]
         n_nodes = s_nodes.size
         from ..initial.recipes import shut_in_ic
         pipes[0].ic = shut_in_ic(s_nodes, z_nodes, s_elbow0=s_elbow0, alpha_line=alpha_line0, alpha_riser=alpha_riser0,
                                  P_out=P_out_bar * 1e5, fluid=fluid, PR=PR)
-    case.meta = dict(L_h1=L_h1, L_down=L_down, slope_down_deg=slope_down_deg, H_riser=H_riser, L_h2=L_h2,
-                     qL=qL, qG=qG, P_out_bar=P_out_bar, **case_meta_extra)
-    # faixas esperadas dos estados (para tolerâncias absolutas uniformes, tol_range):
-    # os picos de blowdown chegam a ~20x a alimentação de líquido e ~50x a de gás
-    case.settings.extra.setdefault("state_ref", dict(
-        qL=20.0 * qL, qG=50.0 * qG,
-        PT=(P_out_bar * 1e5 + 1.1 * fluid.rhoL0 * G * H_riser + 2e5) / PR))
-    return case
+    net.meta = dict(L_h1=L_h1, L_down=L_down, slope_down_deg=slope_down_deg, H_riser=H_riser, L_h2=L_h2,
+                    qL=qL, qG=qG, P_out_bar=P_out_bar, **case_meta_extra)
+    return net
 
 
 def superficial_velocities(case):
@@ -289,20 +280,16 @@ def export_run_cases(out_dir=CASES_DIR, runs=None):
     written = []
     for run_name, name in (runs or REFERENCE_RUNS).items():
         run = load_run(run_name)
-        case = run.case
-        case.name = name
+        net = run.case
+        net.name = name
         o = integrator_opts_from_meta(run.meta)
-        case.settings.integrator = "implicit"
-        case.settings.rtol = o["rtol"]
-        case.settings.extra.update(tol_range=o["tol_range"], max_newton=o["max_newton"], slow_exit=o["slow"],
-                                   backend="jax" if o["jax"] else "numpy", first_step=1e-3, max_order=2, newton_tol=1e-3)
-        case.meta = dict(case.meta, run=run_name, generator="severe_slug_case", generator_params={k: v for k, v in run.meta.items()
-                         if k not in ("n_steps", "n_rejected", "cpu", "parcial", "note")})
-        from ..network.graph import Network
-        net = Network.from_legacy_case(case)
+        net.set_integration(integrator="implicit", rtol=o["rtol"], tol_range=o["tol_range"], max_newton=o["max_newton"], slow_exit=o["slow"],
+                            backend="jax" if o["jax"] else "numpy", first_step=1e-3, max_order=2, newton_tol=1e-3)
+        net.meta = dict(net.meta, run=run_name, generator="severe_slug_case", generator_params={k: v for k, v in run.meta.items()
+                        if k not in ("n_steps", "n_rejected", "cpu", "parcial", "note")})
         if not run.meta.get("network", False) and run.meta.get("start", "blocked") in ("blocked", "shut_in"):
             # duto único: a condição inicial fica como receita (ficheiro auto-contido)
-            m = case.meta; pipe = net.pipes[0]
+            m = net.meta; pipe = net.pipes[0]
             if run.meta.get("start", "blocked") == "blocked":
                 pipe.ic_recipe = {"recipe": "blocked", "s_front": float(m["s_front"]), "s_top": float(m["s_top"]), "pocket_alpha": float(m["pocket_alpha"]),
                                   "P_out_bar": float(m["P_out_bar"]), "dP_margin_bar": float(run.meta.get("dP_margin", 0.3)), "qL": float(m["qL"]), "qG": float(m["qG"])}
@@ -324,10 +311,8 @@ def generate(**kw):
         case_to_json(net, "cases/severe_slug/novo.json")
     """
     from ..io.spec import case_to_json  # noqa: F401  (documentação)
-    from ..network.graph import Network
-    case = severe_slug_case(**kw)
-    net = Network.from_legacy_case(case)
-    m = case.meta
+    net = severe_slug_case(**kw)
+    m = net.meta
     if kw.get("single_pipe", True) and kw.get("start", "guess") in ("blocked", "shut_in"):
         pipe = net.pipes[0]
         if kw.get("start") == "blocked":

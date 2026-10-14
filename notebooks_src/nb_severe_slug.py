@@ -1060,7 +1060,8 @@ if runs_ns:
         print(f"{tag:40s} {r['meta']['n_steps']:8d} {r['meta']['cpu']:5.0f} s {nb_:9d} {per:7.0f} s {qmax:6.1f} kg/s {P1.min():5.2f}–{P1.max():4.2f} {front_width(r):10.1f} m")
 
 # %%
-from mfsim.network.data import BC_ABSENT, BC_DIRICHLET, BC_NEUMANN, Case, Pipe, SimulatorSettings, Vertex
+from mfsim.core.slots import BC_ABSENT, BC_DIRICHLET, BC_NEUMANN
+from mfsim.network.graph import BoundaryVertex, Network, Pipe, specs
 from mfsim.integrators.implicit import ImplicitBDF
 from mfsim.compiled import build_jax_rhs
 from mfsim.simulation import state_bounds
@@ -1073,9 +1074,9 @@ def column_case(which, closed=False, relax_target="raw", L_=20.0, N_=20, dP_=0.2
     P0_ = 5e5; xn = np.linspace(0, L_, N_ + 1); ic_ = np.zeros((N_ + 1, 4))
     ic_[:, 1] = (P0_ + dP_ * (xn < L_ / 2)) / 1e6 if closed else (P0_ + dP_ * (1 - xn / L_)) / 1e6
     if closed:
-        verts = [Vertex(index=1, kind="B", spec={"qL": 0.0, "qG": 0.0}), Vertex(index=2, kind="B", spec={"qL": 0.0, "qG": 0.0})]
+        verts = [BoundaryVertex("1", spec=specs(qL=0.0, qG=0.0)), BoundaryVertex("2", spec=specs(qL=0.0, qG=0.0))]
     else:
-        verts = [Vertex(index=1, kind="B", spec={"PT": (P0_ + dP_) / 1e6}), Vertex(index=2, kind="B", spec={"PT": P0_ / 1e6})]
+        verts = [BoundaryVertex("1", spec=specs(PT=(P0_ + dP_) / 1e6)), BoundaryVertex("2", spec=specs(PT=P0_ / 1e6))]
     if which == "B":
         mid, ex = 3, {"q_switch": 1e-3}
         bci = (BC_ABSENT, BC_ABSENT, BC_DIRICHLET, BC_ABSENT) if closed else (BC_ABSENT, BC_DIRICHLET, BC_ABSENT, BC_ABSENT)
@@ -1087,9 +1088,8 @@ def column_case(which, closed=False, relax_target="raw", L_=20.0, N_=20, dP_=0.2
         ex = {"regime_vertical": 0, "q_switch_L": 1e-3, "q_switch_G": 1e-5, "switch_frac": 0.5, "conservative": True, "relax_target": relax_target}
         bci = (BC_NEUMANN, BC_ABSENT, BC_DIRICHLET, BC_DIRICHLET) if closed else (BC_NEUMANN, BC_DIRICHLET, BC_ABSENT, BC_ABSENT)
         bco = (BC_ABSENT, BC_ABSENT, BC_DIRICHLET, BC_DIRICHLET) if closed else (BC_ABSENT, BC_DIRICHLET, BC_ABSENT, BC_ABSENT)
-    st = SimulatorSettings(t0=0.0, tf=tf_, dt_out=dt_, PR=1e6, method="fv_upwind", max_step=np.inf, atol=1e-6, rtol=3e-3, quadrature_order=2, integrator="implicit")
-    pipe_ = Pipe(index=1, v_in=1, v_out=2, x=[0.0, 0.0], y=[0.0, L_], z=[0.0, 0.0], n_elements=[N_], D=D, roughness=1e-5, model=mid, regime=4, bc_in=bci, bc_out=bco, ic=ic_, extra=ex)
-    return Case(name="coluna", fluid=fluid, settings=st, vertices=verts, pipes=[pipe_])
+    pipe_ = Pipe.legacy("1", "1", "2", [0.0, 0.0], [0.0, L_], [0.0, 0.0], [N_], D=D, roughness=1e-5, model=mid, regime=4, method="fv_upwind", bc_in=bci, bc_out=bco, ic=ic_, extra=ex)
+    return Network.build("coluna", fluid, verts, [pipe_], t0=0.0, tf=tf_, dt_out=dt_, PR=1e6, integrator="implicit", quadrature_order=2, max_step=np.inf, atol=1e-6, rtol=3e-3)
 
 
 def run_column(case_):
@@ -1097,7 +1097,7 @@ def run_column(case_):
     lo_, hi_ = state_bounds(m_); kw_ = dict(transform=m_.transform, inverse=m_.inverse_transform, transform_jac=m_.transform_jacobian) if m_.conservative else {}
     bdf_ = ImplicitBDF(rhs_, S=m_.jac_sparsity(), rtol=3e-3, atol=1e-3 * np.ones(X0_.size), bounds=(lo_, hi_), jac_fun=jac_, min_step=1e-9, verbose=False, max_order=2, max_newton=20, newton_tol=1e-3, **kw_)
     bdf_.slow_exit = False
-    st = case_.settings; T_, X_, info_ = bdf_.integrate(np.arange(0, st.tf + 0.5 * st.dt_out, st.dt_out), X0_, first_step=1e-4)
+    st = case_.time; T_, X_, info_ = bdf_.integrate(np.arange(0, st.tf + 0.5 * st.dt_out, st.dt_out), X0_, first_step=1e-4)
     X_ = np.asarray(X_); X_ = X_.T if X_.shape[0] != T_.size else X_
     N_ = m_.pipes[0].scheme.N
     q_mid = np.array([m_.assemble(0.0, X_[i])[1][0][N_ // 2, 2] for i in range(T_.size)])

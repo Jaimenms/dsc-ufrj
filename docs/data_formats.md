@@ -88,3 +88,19 @@ inicial e a estimativa inicial ficam iguais aos de antes. Nas saídas por
 vértice (`Results.vertex`), um vértice desdobrado em junção é representado pela linha da
 sua junção (pressão a montante do choke, vazões do reservatório), como o vértice legado e a
 tese reportavam (`NetworkSystem.report_row`).
+
+## O grafo de ponta a ponta e o registo legado
+
+`load_chapter10_case`, `load_case` (`.mf2`), `case_from_json`, `severe_slug_case` e
+`mfsim.runs.load_run(...).case` devolvem um `Network`; `build_model`, `simulate`,
+`steady_state`, `integrate_run`, `save_run` e a linha de comando consomem-no diretamente.
+Edição conveniente no dialeto legado (o que os notebooks e testes faziam no `Case`):
+`net.set_method("fv_upwind")`, `net.set_time(tf=...)`, `net.set_integration(rtol=...)`,
+`net.set_options(conservative=True, q_switch=0.05, bb_derivatives="fd", regime=6)` (reconstrói
+`ModelSpec`/`SchemeSpec` com as chaves alteradas; `from_legacy(to_legacy())` é a identidade),
+`net.pipes[0].ports_in = ports((3, 1, 2, 2))`, `net.vertices[0].spec["qG"] = Constant(0.13)`,
+`net.edges_of(Choke)[i].opening = PiecewiseLinear(t, v)`; construção direta com
+`Network.build(...)`, `Pipe.legacy(...)`, `BoundaryVertex(id, spec=specs(PT=...))`. O registo
+legado (`mfsim.io.legacy_case`: `Case`, `Vertex`, `Pipe`, `Valve`, ...; o struct `dados`) é só o
+formato intermédio do leitor dos `.mf2` e do exportador `Network.to_legacy_case` (round-trip
+testado); nada no simulador o consome.

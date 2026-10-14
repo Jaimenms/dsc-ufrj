@@ -1,9 +1,9 @@
 """`NetworkModel`: o sistema da rede (`NetworkSystem`, montado sobre o grafo) construído a
-partir de um `Case` legado (`network.data`) ou diretamente de um `Network`, com as opções
-de `build_model` (esquema global `method`, `scheme_settings`). O `Case` legado é só um
-formato de entrada: converte-se por `Network.from_legacy_case` (sem perda; junções
-explícitas para chokes e reservatórios) e o estado estacionário é escrito de volta nas
-suas condições iniciais (`state_to_case_ic`)."""
+partir de um `Network` (o caso normal) ou do registo legado (`io.legacy_case.Case`, o struct
+`dados` do MATLAB), com as opções de `build_model` (esquema global `method`,
+`scheme_settings`). O registo legado converte-se por `Network.from_legacy_case` (sem perda;
+junções explícitas para chokes e reservatórios) e o estado estacionário é escrito de volta
+nas suas condições iniciais (`state_to_case_ic`)."""
 
 from __future__ import annotations
 
@@ -29,7 +29,6 @@ class NetworkModel(NetworkSystem):
         if method is not None:
             net = with_method(net, method)
         super().__init__(net, scheme_settings=scheme_settings, bk=bk)
-        self.settings = getattr(case, "settings", None)
 
     def state_to_case_ic(self, X, t=0.0):
         """Escreve o estado X nas condições iniciais do grafo e, se o modelo veio de um

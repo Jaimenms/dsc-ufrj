@@ -22,7 +22,7 @@ case = severe_slug_case(method="fv_upwind", tf=t0+dur, dt_out=2.0, qL=qL, qG=qG,
                         slope_down_deg=-3.0, H_riser=20.0, L_h2=5.0, n_h1=2, n_down=opts.get("n_down", 15), n_riser=opts.get("n_riser", 5), n_h2=2,
                         regime=opts.get("regime", 4), model=opts.get("model", 1), single_pipe=True, fluid=fluid, roughness=1e-5, start="blocked",
                         elbow_radius=5.0, n_elbow=4, extra=extra)
-case.pipes[0].extra.update({"q_switch_L": 0.02*qL, "q_switch_G": 0.02*qG})
+case.set_options(q_switch_L=0.02*qL, q_switch_G=0.02*qG)
 model = build_model(case); X0 = model.initial_state(); rhs_j, jac_j = build_jax_rhs(model)
 lo, hi = state_bounds(model); atol = 0.01*model.state_scales(X0)
 kw_t = dict(transform=model.transform, inverse=model.inverse_transform, transform_jac=model.transform_jacobian)

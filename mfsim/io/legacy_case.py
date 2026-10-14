@@ -1,4 +1,11 @@
-"""Estruturas de dados de entrada de um caso (equivalente ao struct `dados`)."""
+"""Registo legado de um caso (o struct `dados` do MFSIM/MATLAB como dataclasses).
+
+É só um formato de entrada: o leitor dos `.mf2` (`mfsim.io_legacy`) produz este registo
+e converte-o para o grafo (`Network.from_legacy_case`), que é o que o simulador consome;
+`Network.to_legacy_case` é a inversa (round-trip = identidade, teste). Índices inteiros
+de vértices e dutos, elementos "no vértice" (choke no vértice de destino, reservatório no
+de origem, retenção num vértice dinâmico, conexão entre vértices) e opções em `extra`.
+"""
 
 from __future__ import annotations
 
@@ -7,12 +14,8 @@ from typing import Optional, Sequence, Union
 
 import numpy as np
 
+from ..core.slots import BC_ABSENT, BC_DIRICHLET, BC_NEUMANN  # noqa: F401  (reexportados)
 from ..fluid import Fluid
-
-# tipos de condição de contorno nas extremidades dos dutos
-BC_ABSENT = 1      # ausência (variável livre na extremidade)
-BC_DIRICHLET = 2   # valor imposto pelo vértice conectado
-BC_NEUMANN = 3     # gradiente nulo (copia o nó vizinho)
 
 # Especificação temporal: valor constante ou (tempos, valores) interpolados linearmente
 SpecValue = Union[float, tuple]

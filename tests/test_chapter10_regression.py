@@ -48,7 +48,7 @@ def test_staggered_steady_state_unique():
     vals = []
     for nel in (10, 50):
         c = copy.deepcopy(case)
-        c.pipes[0].n_elements = np.array([nel]); c.pipes[0].ic = None; c.settings.method = "fv_upwind"
+        c.pipes[0].n_elements = np.array([nel]); c.pipes[0].ic = None; c.set_method("fv_upwind")
         model, X, info = steady_state(c, X0="auto", verbose=False)
         assert info["converged"]
         E, Ys, _, _ = model.assemble(0.0, X)

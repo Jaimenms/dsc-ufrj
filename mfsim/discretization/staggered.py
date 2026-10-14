@@ -36,7 +36,7 @@ import numpy as np
 
 from ..backend import NUMPY
 from ..core.slots import G, SLOT_ALPHA, SLOT_P, SLOT_QG, SLOT_QL
-from ..network.data import BC_ABSENT, BC_DIRICHLET, BC_NEUMANN
+from ..core.slots import BC_ABSENT, BC_DIRICHLET, BC_NEUMANN
 from .base import PipeScheme
 
 

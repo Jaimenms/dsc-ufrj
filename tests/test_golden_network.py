@@ -26,11 +26,13 @@ def _check(g, prefix, model, t, case=None):
     else:
         # o grafo tem as junções explícitas (linhas a mais): compara o que cada duto lê nas
         # extremidades e as linhas dos tanques com as linhas legadas dos vértices
-        assert case is not None, f"{prefix}: E com {E.shape[0]} linhas e golden com {E_gold.shape[0]}"
-        pos = {v.index: i for i, v in enumerate(case.vertices)}
-        for pb, lp in zip(model.pipes, case.pipes):
-            assert np.array_equal(E[pb.i_from], E_gold[pos[lp.v_in]]), f"{prefix}: duto {lp.index} entrada"
-            assert np.array_equal(E[pb.i_to], E_gold[pos[lp.v_out]]), f"{prefix}: duto {lp.index} saída"
+        # (a ordem legada = vértices não-junção na ordem do grafo; Jc<v>/Jr<v> desdobram v)
+        shown = [v for v in model.vertices if v.kind != "junction"]
+        pos = {int(v.id): i for i, v in enumerate(shown)}
+        legacy = lambda vid: int(vid[2:]) if vid.startswith(("Jc", "Jr")) else int(vid)
+        for pb in model.pipes:
+            assert np.array_equal(E[pb.i_from], E_gold[pos[legacy(pb.pipe.v_from)]]), f"{prefix}: duto {pb.pipe.id} entrada"
+            assert np.array_equal(E[pb.i_to], E_gold[pos[legacy(pb.pipe.v_to)]]), f"{prefix}: duto {pb.pipe.id} saída"
         for vi in model.vA:
             assert np.array_equal(E[vi], E_gold[pos[int(model.vertices[vi].id)]]), f"{prefix}: tanque {model.vertices[vi].id}"
         assert np.array_equal(np.asarray(model.time_inputs(t)[0], float)[:E_gold.shape[0]], g[f"{prefix}/E_t"])
@@ -59,17 +61,16 @@ def _check(g, prefix, model, t, case=None):
 def test_chapter10_network_assembly(key, golden):
     g = golden("network.npz")
     case, _ = load_chapter10_case(key)
-    _check(g, f"ch10/{key}", build_model(case), case.settings.t0 + 1.0, case)
+    _check(g, f"ch10/{key}", build_model(case), case.time.t0 + 1.0, case)
 
 
 @pytest.mark.parametrize("key,method", [("10.1.1", "fd_central"), ("10.1.1", "fd_upwind"), ("10.1.1", "petrov_galerkin"), ("10.3.1", "fv_upwind")])
 def test_chapter10_scheme_variants(key, method, golden):
     g = golden("network.npz")
-    case, _ = load_chapter10_case(key); c = copy.deepcopy(case); c.settings.method = method
+    case, _ = load_chapter10_case(key); c = copy.deepcopy(case).set_method(method)
     if method == "fv_upwind":
-        for pp in c.pipes:
-            pp.extra.update(conservative=True)
-    _check(g, f"ch10/{key}_{method}", build_model(c), c.settings.t0 + 1.0, c)
+        c.set_options(conservative=True)
+    _check(g, f"ch10/{key}_{method}", build_model(c), c.time.t0 + 1.0, c)
 
 
 @pytest.mark.parametrize("stem", sorted(p.stem for p in (ROOT / "cases" / "severe_slug").glob("*.json")))

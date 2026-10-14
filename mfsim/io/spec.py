@@ -264,6 +264,6 @@ def case_to_json(case, path, ic_file=None):
 
 
 def case_from_json(path_or_dict, ic_arrays=None):
-    """`Case` legado (o que `simulate`/`build_model` consomem) a partir de um JSON."""
+    """Grafo (`Network`, o que `simulate`/`build_model`/`mfsim run` consomem) a partir de um JSON."""
     d = load_json(path_or_dict) if isinstance(path_or_dict, (str, os.PathLike)) else dict(path_or_dict)
-    return network_from_json(d, ic_arrays=ic_arrays).to_legacy_case()
+    return network_from_json(d, ic_arrays=ic_arrays)

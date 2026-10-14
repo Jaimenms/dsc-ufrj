@@ -100,7 +100,7 @@ def test_models_jax_vs_numpy(key):
     from mfsim.simulation import build_model
     case, raw = load_chapter10_case(key)
     model = build_model(case)
-    E, Ys, _, _ = model.assemble(case.settings.t0 + 1.0, model.initial_state())
+    E, Ys, _, _ = model.assemble(case.time.t0 + 1.0, model.initial_state())
     for pb, Y in zip(model.pipes, Ys):
         p = pb.model.params
         p2 = PipeParams(**{**p.__dict__, "bb_derivatives": "fd"})

@@ -15,8 +15,7 @@ from mfsim.integrators.implicit import ImplicitBDF
 
 def _fv_case(bb_derivatives="fd"):
     case, raw = load_chapter10_case("10.3.1")
-    case.settings.method = "fv_upwind"
-    case.pipes[0].extra.update({"conservative": True, "q_switch": 0.05, "bb_derivatives": bb_derivatives})
+    case.set_method("fv_upwind").set_options(conservative=True, q_switch=0.05, bb_derivatives=bb_derivatives)
     return case
 
 

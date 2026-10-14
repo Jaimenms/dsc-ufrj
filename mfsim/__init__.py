@@ -7,20 +7,24 @@ diferenças finitas e volumes finitos escalonados, integração implícita).
 """
 
 from .fluid import Fluid
-from .network.data import (
-    Case,
+from .network.graph import (
+    BoundaryVertex,
     CheckValve,
-    Coupling,
+    Choke,
+    Connector,
+    JunctionVertex,
+    Network,
     Pipe,
     Reservoir,
-    SimulatorSettings,
-    Valve,
-    Vertex,
+    TankVertex,
+    as_network,
+    ports,
+    specs,
 )
 
 __all__ = [
-    "Fluid", "Case", "CheckValve", "Coupling", "Pipe", "Reservoir",
-    "SimulatorSettings", "Valve", "Vertex",
+    "Fluid", "Network", "BoundaryVertex", "JunctionVertex", "TankVertex", "Pipe", "Connector", "Choke",
+    "Reservoir", "CheckValve", "as_network", "ports", "specs",
 ]
 
 

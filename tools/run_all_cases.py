@@ -10,7 +10,7 @@ for f in files:
         case, raw = load_case(f + ".mf2")
         model = build_model(case)
         Tl, Xl = legacy_states(raw)
-        print(" method", case.settings.method, "n_states", model.n_states, "legacy", Xl.shape, "tf", Tl[-1])
+        print(" method", case.pipes[0].scheme.type, "n_states", model.n_states, "legacy", Xl.shape, "tf", Tl[-1])
         X0 = Xl[:, 0]
         r0 = model.rhs(Tl[0], X0)
         print(f" |rhs(X0)|={np.linalg.norm(r0):.3e}")

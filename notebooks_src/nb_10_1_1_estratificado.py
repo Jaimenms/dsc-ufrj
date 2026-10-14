@@ -17,6 +17,7 @@ import copy, time
 import numpy as np
 import matplotlib.pyplot as plt
 from mfsim.cases import load_chapter10_case, CHAPTER10
+from mfsim.network.graph import ports
 from mfsim.simulation import simulate, steady_state, build_model
 from mfsim.plotting import pipe_surfaces, pipe_profiles, pipe_timeseries, compare_runs, legacy_pipe_dict, eigenvalue_plot
 from mfsim.io_legacy import legacy_states
@@ -26,7 +27,7 @@ info = CHAPTER10["10.1.1"]
 case, raw = load_chapter10_case("10.1.1")
 legacy = legacy_pipe_dict(raw, 0)
 print(info.title); print(info.description); print("Figuras:", info.figures)
-print(case.settings)
+print(case.time, case.reference, case.integration)
 
 # %% [markdown]
 # ## Estado estacionário (Figura 10.2)
@@ -46,7 +47,7 @@ print(case.settings)
 
 # %%
 case_ss = copy.deepcopy(case)
-case_ss.pipes[0].bc_in = (3, 1, 2, 2)   # von Neumann para alphaG na entrada
+case_ss.pipes[0].ports_in = ports((3, 1, 2, 2))   # von Neumann para alphaG na entrada
 case_ss.pipes[0].ic = None
 t0 = time.time()
 model_ss, X_ss, info_ss = steady_state(case_ss, X0="auto", verbose=True)
@@ -102,7 +103,7 @@ def run_mesh(nel, method):
     c = copy.deepcopy(case_ss)
     c.pipes[0].n_elements = np.array([nel])
     c.pipes[0].ic = None
-    c.settings.method = method
+    c.set_method(method)
     t0 = time.time()
     steady_state(c, X0="auto", verbose=False)
     r = simulate(c, integrator="implicit", rtol=1e-4, atol=1e-6, max_step=np.inf, progress=False)
@@ -163,13 +164,13 @@ for method, nel, cpu, steps in table:
 # %%
 def jacobian_eigs(c, X):
     m = build_model(c)
-    f0 = m.rhs(c.settings.tf, X)
+    f0 = m.rhs(c.time.tf, X)
     n = m.n_states
     J = np.empty((n, n))
     for j in range(n):
         h = 1e-7 * abs(X[j]) + 1e-9
         xp = X.copy(); xp[j] += h
-        J[:, j] = (m.rhs(c.settings.tf, xp) - f0) / h
+        J[:, j] = (m.rhs(c.time.tf, xp) - f0) / h
     return np.linalg.eigvals(J)
 
 ev1 = jacobian_eigs(case, res.X[:, -1])

@@ -27,7 +27,7 @@ def run_case(key, integrator="implicit", rtol=1e-4, atol=1e-6, method=None, ic="
     """
     case, raw = load_chapter10_case(key)
     if method is not None:
-        case.settings.method = method
+        case.set_method(method)
     t0 = time.time()
     res = simulate(case, integrator=integrator, rtol=rtol, atol=atol, max_step=np.inf, progress=True, **kw)
     res.cpu = time.time() - t0
@@ -125,7 +125,7 @@ def jax_comparison(case, res_numpy=None, label="", **simulate_kw):
     t0 = time.time()
     rhs_j, jac_j = get_jax(model)
     x0 = model.initial_state()
-    rhs_j(case.settings.t0, x0); jac_j(case.settings.t0, x0)
+    rhs_j(model.t0, x0); jac_j(model.t0, x0)
     t_compile = time.time() - t0
     kw = dict(integrator="implicit", max_step=np.inf, progress=False)
     kw.update(simulate_kw)

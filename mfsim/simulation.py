@@ -11,6 +11,7 @@ from . import steady as _steady
 
 
 def build_model(case, method=None, scheme_settings=None):
+    """Sistema da rede a partir de um `Network` (ou do registo legado `io.legacy_case.Case`)."""
     return NetworkModel(case, method=method, scheme_settings=scheme_settings)
 
 
@@ -56,7 +57,8 @@ def state_bounds(model):
 
 
 def steady_state(case, method=None, X0=None, verbose=True, update_case=True, scheme_settings=None, **kw):
-    """Estado estacionário em t0 (anulando as derivadas temporais)."""
+    """Estado estacionário em t0 (anulando as derivadas temporais); com `update_case` o estado
+    é escrito nas condições iniciais do grafo (e do registo legado, se foi esse o caso dado)."""
     model = build_model(case, method, scheme_settings)
     if isinstance(X0, str) and X0 == "auto":
         from .initial_guess import initial_guess
@@ -67,10 +69,10 @@ def steady_state(case, method=None, X0=None, verbose=True, update_case=True, sch
         except ValueError:
             from .initial_guess import initial_guess
             X0 = initial_guess(model)
-    X, info = _steady.steady_state(model, X0, t=case.settings.t0, verbose=verbose,
+    X, info = _steady.steady_state(model, X0, t=model.t0, verbose=verbose,
                                    bounds=state_bounds(model), **kw)
     if update_case:
-        model.state_to_case_ic(X, case.settings.t0)
+        model.state_to_case_ic(X, model.t0)
     return model, X, info
 
 
@@ -79,15 +81,15 @@ def simulate(case, method=None, integrator=None, X0=None, t_eval=None, rtol=None
     """Simulação dinâmica do caso. Retorna Results. jax=True: lado direito compilado e
     Jacobiana exata (só com integrator="implicit")."""
     model = build_model(case, method, scheme_settings)
-    st = case.settings
+    it = model.integration
     if X0 is None:
         X0 = model.initial_state()
     if t_eval is None:
-        t_eval = np.arange(st.t0, st.tf + 0.5 * st.dt_out, st.dt_out)
-    rtol = st.rtol if rtol is None else rtol
-    atol = st.atol if atol is None else atol
-    max_step = st.max_step if max_step is None else max_step
-    integrator = integrator or st.integrator
+        t_eval = np.arange(model.t0, model.tf + 0.5 * model.dt_out, model.dt_out)
+    rtol = it.rtol if rtol is None else rtol
+    atol = it.atol if atol is None else atol
+    max_step = it.max_step if max_step is None else max_step
+    integrator = integrator or it.integrator
     if integrator in ("bdf", "BDF", "Radau", "radau", "LSODA"):
         meth = {"bdf": "BDF", "radau": "Radau"}.get(integrator, integrator)
         T, X, info = integrate_scipy(model, X0, t_eval, method=meth, rtol=rtol, atol=atol,

@@ -64,10 +64,10 @@ def _list_of_structs(d, key):
     return [x for x in v if isinstance(x, dict) and x]
 
 
-def case_from_legacy(data, name=None):
-    """Constrói um `Case` a partir do dict `dados` de um arquivo .mf2."""
+def legacy_record(data, name=None):
+    """Registo legado (`io.legacy_case.Case`) a partir do dict `dados` de um arquivo .mf2."""
     from .fluid import Fluid
-    from .network.data import (
+    from .io.legacy_case import (
         BC_ABSENT,
         BC_DIRICHLET,
         BC_NEUMANN,
@@ -209,8 +209,19 @@ LEGACY_OVERRIDES = {
 }
 
 
+def case_from_legacy(data, name=None, overrides=None):
+    """Grafo (`Network`) a partir do dict `dados` de um arquivo .mf2 (com `overrides`
+    = {índice do duto: {atributo: valor}} aplicados ao registo legado antes da conversão)."""
+    from .network.graph import Network
+    rec = legacy_record(data, name)
+    for idx, kv in (overrides or {}).items():
+        for k, v in kv.items():
+            setattr(rec.pipe(idx), k, v)
+    return Network.from_legacy_case(rec)
+
+
 def load_case(path, ic_from="legacy_t0", apply_overrides=True):
-    """Carrega .mf2 e devolve (case, legacy) com os resultados originais.
+    """Carrega .mf2 e devolve (network, legacy) com os resultados originais.
 
     No MFSIM original, `dados.tubo.condicaoInicial*` é sobrescrito com o
     estado FINAL da simulação; o estado inicial da trajetória gravada está em
@@ -219,20 +230,15 @@ def load_case(path, ic_from="legacy_t0", apply_overrides=True):
     esquemas nodais). Com ic_from="file" mantém-se o que está no arquivo.
     """
     raw = load_mf2(path)
-    case = case_from_legacy(raw["dados"], name=Path(path).stem)
-    if apply_overrides and case.name in LEGACY_OVERRIDES:
-        for idx, kv in LEGACY_OVERRIDES[case.name].get("pipes", {}).items():
-            for k, v in kv.items():
-                setattr(case.pipe(idx), k, v)
-    for p in case.pipes:
-        p.extra["ic_file"] = None if p.ic is None else p.ic.copy()
+    name = Path(path).stem
+    net = case_from_legacy(raw["dados"], name=name, overrides=LEGACY_OVERRIDES.get(name, {}).get("pipes") if apply_overrides else None)
     T, X = legacy_states(raw)
     if ic_from == "legacy_t0" and X is not None and X.ndim == 2:
         from .network.model import NetworkModel
-        model = NetworkModel(case)
+        model = NetworkModel(net)
         if model.n_states == X.shape[0]:
-            model.state_to_case_ic(X[:, 0], case.settings.t0)
-    return case, raw
+            model.state_to_network_ic(X[:, 0], net.time.t0)
+    return net, raw
 
 
 def legacy_pipe_outputs(raw, pipe_idx):

@@ -50,12 +50,11 @@ MATRIX = {
 @pytest.mark.parametrize("key", sorted(MATRIX))
 def test_compiled_matches_numpy_and_traces(key):
     case = MATRIX[key]()
-    for pipe in case.pipes:
-        pipe.extra.setdefault("bb_derivatives", "fd")
+    case.set_options(bb_derivatives="fd")
     model = build_model(case)
     cn = CompiledNetwork(model)
     X0 = model.initial_state()
-    t = case.settings.t0 + 1.0
+    t = case.time.t0 + 1.0
     E, opt = model.time_inputs(t)
     jaxpr = jax.make_jaxpr(cn.system.rhs_core)(X0, E, opt)       # traça: sem ramos em valores
     assert len(jaxpr.jaxpr.eqns) > 0
@@ -74,7 +73,7 @@ def test_specifications_info_numpy_only():
     """Os diagnósticos dos elementos (válvulas, reservatório, retenção) continuam no lado numpy."""
     case, _ = load_chapter10_case("10.3.3")
     model = build_model(case)
-    E, info = model.specifications(case.settings.t0 + 1.0, model.initial_state())
+    E, info = model.specifications(case.time.t0 + 1.0, model.initial_state())
     assert info["valves"] or info["reservoirs"] or info["check_valves"]
     for grp in info.values():
         for d in grp:

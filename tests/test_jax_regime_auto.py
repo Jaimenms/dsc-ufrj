@@ -115,8 +115,7 @@ def test_regime_auto_nodal_schemes():
     from mfsim.compiled import build_jax_rhs
     case, raw = load_chapter10_case("10.1.1")
     c = copy.deepcopy(case)
-    for pipe in c.pipes:
-        pipe.regime = 6
+    c.set_options(regime=6)
     model = build_model(c)
     rhs_j, jac_j = build_jax_rhs(model)
     X0 = model.initial_state()

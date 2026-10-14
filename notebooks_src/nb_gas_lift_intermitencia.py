@@ -24,14 +24,16 @@ from mfsim.cases import load_chapter10_case
 from mfsim.simulation import build_model, state_bounds
 from mfsim.integrators.implicit import ImplicitBDF
 from mfsim.results import Results
+from mfsim.network.graph import Choke
+from mfsim.network.schedules import PiecewiseLinear
 
 
 def run_gas_lift(opening, tf=16000.0, rtol=1e-3, order=2):
     case, raw = load_chapter10_case("10.3.2b")
-    case.settings.tf = tf
-    for v in case.valves:
-        if v.vertex == 6:   # choke de gás
-            v.opening = (np.array([0.0, 100.0, 150.0, tf]), np.array([0.75, 0.75, opening, opening]))
+    case.set_time(tf=tf)
+    for v in case.edges_of(Choke):
+        if v.v_to == "6":   # choke de gás
+            v.opening = PiecewiseLinear(np.array([0.0, 100.0, 150.0, tf]), np.array([0.75, 0.75, opening, opening]))
     model = build_model(case)
     bdf = ImplicitBDF(model.rhs, S=model.jac_sparsity(), rtol=rtol, atol=rtol * 1e-2, bounds=state_bounds(model),
                       min_step=1e-9, max_order=order)
@@ -105,10 +107,10 @@ from mfsim.compiled import get_jax
 
 def run_gas_lift_jax(opening, tf=16000.0, rtol=1e-3, order=2):
     case, raw = load_chapter10_case("10.3.2b")
-    case.settings.tf = tf
-    for v in case.valves:
-        if v.vertex == 6:
-            v.opening = (np.array([0.0, 100.0, 150.0, tf]), np.array([0.75, 0.75, opening, opening]))
+    case.set_time(tf=tf)
+    for v in case.edges_of(Choke):
+        if v.v_to == "6":
+            v.opening = PiecewiseLinear(np.array([0.0, 100.0, 150.0, tf]), np.array([0.75, 0.75, opening, opening]))
     model = build_model(case)
     t0 = time.time(); rhs_j, jac_j = get_jax(model); x0 = model.initial_state(); rhs_j(0.0, x0); jac_j(0.0, x0); t_compile = time.time() - t0
     bdf = ImplicitBDF(rhs_j, S=model.jac_sparsity(), rtol=rtol, atol=rtol * 1e-2, bounds=state_bounds(model), min_step=1e-9, max_order=order, jac_fun=jac_j)
