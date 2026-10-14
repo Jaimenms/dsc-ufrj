@@ -28,25 +28,27 @@ class _SinglePhase(PipeModel):
         return rhoG, CG, self.fluid.muG
 
     def coefficients(self, y, theta, outputs=False):
+        xp, bk = self.xp, self.bk
         p = self.params
-        y = np.asarray(y, float).reshape(-1, 4)
+        y = xp.asarray(y, dtype=float).reshape(-1, 4)
         PT = y[:, SLOT_P]
         q = y[:, self.slots[1]]
-        n = PT.size
-        th = np.asarray(theta, float) * np.ones(n)
+        n = PT.shape[0]
+        th = xp.asarray(theta, dtype=float) * xp.ones(n)
         P = p.PR * PT
         rho, C, mu = self._props(P)
-        Area = np.pi * p.D**2 / 4.0
+        Area = xp.pi * p.D**2 / 4.0
         v = q / (rho * Area)
-        Per = np.pi * p.D
-        f, Re = fanning(v, rho, mu, p.D, p.eps)
-        tau = f * rho * v * vabs(v) / 2.0
+        Per = xp.pi * p.D
+        f, Re = fanning(v, rho, mu, p.D, p.eps, bk=bk)
+        tau = f * rho * v * vabs(v, bk) / 2.0
         Gamma = Per * tau
-        F = np.empty((4, n))
-        F[0] = 1.0 / Area / C / p.PR
-        F[1] = Area * (1.0 - C * v * np.abs(v)) * p.PR
-        F[2] = 2.0 * np.abs(v)
-        F[3] = Gamma + G * Area * rho * np.sin(th)
+        F = xp.stack([
+            (1.0 / Area / C / p.PR),
+            Area * (1.0 - C * v * xp.abs(v)) * p.PR,
+            2.0 * xp.abs(v),
+            Gamma + G * Area * rho * xp.sin(th),
+        ])
         if not outputs:
             return F
         key = self.phase
@@ -61,15 +63,16 @@ class _SinglePhase(PipeModel):
         return F, out
 
     def conservative_terms(self, y, theta):
+        xp, bk = self.xp, self.bk
         p = self.params
-        y = np.asarray(y, float).reshape(-1, 4)
+        y = xp.asarray(y, dtype=float).reshape(-1, 4)
         P = p.PR * y[:, SLOT_P]
         rho, C, mu = self._props(P)
-        Area = np.pi * p.D**2 / 4.0
+        Area = xp.pi * p.D**2 / 4.0
         q = y[:, self.slots[1]]
         v = q / (rho * Area)
-        f, _ = fanning(v, rho, mu, p.D, p.eps)
-        Gamma = np.pi * p.D * f * rho * v * vabs(v) / 2.0
+        f, _ = fanning(v, rho, mu, p.D, p.eps, bk=bk)
+        Gamma = xp.pi * p.D * f * rho * v * vabs(v, bk) / 2.0
         return dict(rho=rho, C=C, v=v, Gamma=Gamma, Area=Area, P=P)
 
 

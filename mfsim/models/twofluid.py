@@ -15,6 +15,7 @@ de escoamento.
 from __future__ import annotations
 
 import numpy as np
+from dataclasses import replace
 
 from ..closures import (
     REGIME_AUTO,
@@ -24,6 +25,7 @@ from ..closures import (
     fixed_regime,
     identify_regime,
 )
+from ..closures.regime import RegimeFlags, closures_used
 from ..geometry import stratified_level
 from .base import G, PipeModel, PipeParams
 
@@ -40,16 +42,18 @@ class TwoFluidModel(PipeModel):
 
     def local_state(self, y, theta):
         """Variáveis locais e entradas de fechamento a partir do estado nodal."""
+        xp, bk = self.xp, self.bk
         p = self.params
         aG, PT, qL, qG = self.unpack(y)
-        aG = np.clip(aG, p.alpha_min, p.alpha_max)
+        aG = xp.clip(aG, p.alpha_min, p.alpha_max)
         aL = 1.0 - aG
-        n = aG.size
+        n = aG.shape[0]
         P = p.PR * PT
         rhoL, rhoG, CL, CG = self.fluid.props(P)
-        hD, beta = stratified_level(aG)
-        D = np.full(n, p.D)
-        Area = np.pi * p.D**2 / 4.0
+        hD, beta = stratified_level(aG, bk=bk)
+        ones = xp.ones(n)
+        D = p.D * ones
+        Area = xp.pi * p.D**2 / 4.0
         AreaG = Area * aG
         AreaL = Area * aL
         vLS = qL / (rhoL * Area)
@@ -58,34 +62,51 @@ class TwoFluidModel(PipeModel):
         vG = vGS / aG
         inp = ClosureInputs(
             alphaG=aG, alphaL=aL, vL=vL, vLS=vLS, vG=vG, vGS=vGS,
-            AreaL=AreaL, AreaG=AreaG, D=D, eps=np.full(n, p.eps),
-            theta=np.asarray(theta, float) * np.ones(n),
-            rhoL=rhoL, rhoG=rhoG, muL=np.full(n, self.fluid.muL), muG=np.full(n, self.fluid.muG),
-            CL=CL, CG=CG, sigma=np.full(n, self.fluid.sigma), beta=beta, hD=hD,
-            fi_mult=np.full(n, p.fi_mult), fi_vgt=np.full(n, p.fi_vgt),
-            bubble_drag=np.full(n, 1.0 if p.bubble_drag == "fisico" else 0.0),
+            AreaL=AreaL, AreaG=AreaG, D=D, eps=p.eps * ones,
+            theta=xp.asarray(theta, dtype=float) * ones,
+            rhoL=rhoL, rhoG=rhoG, muL=self.fluid.muL * ones, muG=self.fluid.muG * ones,
+            CL=CL, CG=CG, sigma=self.fluid.sigma * ones, beta=beta, hD=hD,
+            fi_mult=p.fi_mult * ones, fi_vgt=p.fi_vgt * ones,
+            bubble_drag=(1.0 if p.bubble_drag == "fisico" else 0.0) * ones,
         )
         return inp, P, Area
 
-    def closures(self, inp, want_eq=False):
+    @property
+    def used_closures(self):
+        """Conjunto estático de fechamentos que podem ter peso não nulo (poda no jit)."""
         p = self.params
+        return closures_used(p.regime, p.regime_vertical, p.low_void_regime, p.high_void_regime)
+
+    @property
+    def blend_threshold(self):
+        # com mistura por ângulo/fração os pesos pequenos também contam (sem o corte
+        # de 0.1, que criaria um salto na borda da faixa de transição)
+        p = self.params
+        blended = ((p.regime != REGIME_AUTO and ((p.regime_vertical and p.vertical_blend > 0) or p.low_void_regime or p.high_void_regime))
+                   or (p.regime == REGIME_AUTO and (p.low_void_regime or p.ipe_smooth or p.ipe_local)))
+        return 1e-6 if blended else 0.1
+
+    @staticmethod
+    def _mix_flags(flags, other, w):
+        return RegimeFlags(**{nm: (1.0 - w) * getattr(flags, nm) + w * getattr(other, nm) for nm in flags.names()})
+
+    def closures(self, inp, want_eq=False):
+        xp, bk = self.xp, self.bk
+        p = self.params
+        n = inp.size
         eq = None
         if p.regime == REGIME_AUTO:
-            eq = equilibrium_fractions(inp, smooth=p.ipe_smooth)
-            flags, _ = identify_regime(inp, k_switch=p.k_switch, eq=eq, smooth=p.ipe_smooth, local=p.ipe_local)
+            eq = equilibrium_fractions(inp, smooth=p.ipe_smooth, bk=bk)
+            flags, _ = identify_regime(inp, k_switch=p.k_switch, eq=eq, smooth=p.ipe_smooth, local=p.ipe_local, bk=bk)
             if p.low_void_regime:
                 # sem gás não há padrão a identificar: os critérios degeneram (FG* e
                 # FG*c nulos, empates permanentes); abaixo de low_void_alpha vale o
                 # padrão disperso, com a mesma rampa C1 do modo de padrão fixo
-                u = np.clip((2.0 * p.low_void_alpha - inp.alphaG) / p.low_void_alpha, 0.0, 1.0)
+                u = xp.clip((2.0 * p.low_void_alpha - inp.alphaG) / p.low_void_alpha, 0.0, 1.0)
                 wl = u * u * (3.0 - 2.0 * u)
-                if np.any(wl > 0):
-                    flv = fixed_regime(p.low_void_regime, inp.size)
-                    for nm in ("Est", "EsS", "EsW", "Anu", "Bub", "Int"):
-                        a = getattr(flags, nm); b = getattr(flv, nm)
-                        setattr(flags, nm, (1.0 - wl) * a + wl * b)
+                flags = self._mix_flags(flags, fixed_regime(p.low_void_regime, n, bk=bk), wl)
         else:
-            flags = fixed_regime(p.regime, inp.size)
+            flags = fixed_regime(p.regime, n, bk=bk)
             if p.regime_vertical:
                 # padrão distinto nos trechos quase verticais (ex.: riser): peso w do
                 # padrão vertical em função do ângulo -- chave dura em vertical_angle
@@ -93,44 +114,27 @@ class TwoFluidModel(PipeModel):
                 # vertical_angle -/+ vertical_blend; os fechamentos são somados com
                 # pesos (1 - w) e w, o que remove a descontinuidade espacial no joelho
                 w = self.vertical_weight(inp.theta)
-                if np.any(w > 0):
-                    fv = fixed_regime(p.regime_vertical, inp.size)
-                    for nm in ("Est", "EsS", "EsW", "Anu", "Bub", "Int"):
-                        a = getattr(flags, nm); b = getattr(fv, nm)
-                        setattr(flags, nm, (1.0 - w) * a + w * b)
+                flags = self._mix_flags(flags, fixed_regime(p.regime_vertical, n, bk=bk), w)
             if p.low_void_regime:
                 # fração de gás muito baixa (camada de gás de ~1 % da área): o
                 # estratificado é mal posto nesse limite (velocidades características
                 # complexas mesmo sem escorregamento); mistura C1 para o padrão
                 # disperso entre 2*low_void_alpha e low_void_alpha
-                u = np.clip((2.0 * p.low_void_alpha - inp.alphaG) / p.low_void_alpha, 0.0, 1.0)
+                u = xp.clip((2.0 * p.low_void_alpha - inp.alphaG) / p.low_void_alpha, 0.0, 1.0)
                 wl = u * u * (3.0 - 2.0 * u)
-                if np.any(wl > 0):
-                    flv = fixed_regime(p.low_void_regime, inp.size)
-                    for nm in ("Est", "EsS", "EsW", "Anu", "Bub", "Int"):
-                        a = getattr(flags, nm); b = getattr(flv, nm)
-                        setattr(flags, nm, (1.0 - wl) * a + wl * b)
+                flags = self._mix_flags(flags, fixed_regime(p.low_void_regime, n, bk=bk), wl)
             if p.high_void_regime:
                 # fração de gás alta (duto quase cheio de gás): o líquido é um filme de parede
                 # (anular), seja qual for o padrão prescrito; rampa C1 de +-0.05 em torno de
                 # high_void_alpha (simétrica à regra de fração baixa)
-                u = np.clip((inp.alphaG - (p.high_void_alpha - 0.05)) / 0.1, 0.0, 1.0)
+                u = xp.clip((inp.alphaG - (p.high_void_alpha - 0.05)) / 0.1, 0.0, 1.0)
                 wh = u * u * (3.0 - 2.0 * u)
-                if np.any(wh > 0):
-                    fhv = fixed_regime(p.high_void_regime, inp.size)
-                    for nm in ("Est", "EsS", "EsW", "Anu", "Bub", "Int"):
-                        a = getattr(flags, nm); b = getattr(fhv, nm)
-                        setattr(flags, nm, (1.0 - wh) * a + wh * b)
+                flags = self._mix_flags(flags, fixed_regime(p.high_void_regime, n, bk=bk), wh)
             if want_eq:
-                eq = equilibrium_fractions(inp)
-        # com mistura por ângulo/fração os pesos pequenos também contam (sem o corte
-        # de 0.1, que criaria um salto na borda da faixa de transição)
-        blended = ((p.regime != REGIME_AUTO and ((p.regime_vertical and p.vertical_blend > 0) or p.low_void_regime or p.high_void_regime))
-                   or (p.regime == REGIME_AUTO and (p.low_void_regime or p.ipe_smooth or p.ipe_local)))
-        thr = 1e-6 if blended else 0.1
-        S = blend_closures(inp, flags, threshold=thr)
+                eq = equilibrium_fractions(inp, bk=bk)
+        S = blend_closures(inp, flags, threshold=self.blend_threshold, used=self.used_closures, bk=bk)
         if p.interfacial_pressure > 0:
-            self._add_interfacial_pressure(inp, S)
+            S = self._add_interfacial_pressure(inp, S)
         return S, flags, eq
 
     def _add_interfacial_pressure(self, inp, S):
@@ -145,10 +149,11 @@ class TwoFluidModel(PipeModel):
         não bastam, p.ex. fase que desaparece com escorregamento residual).
         Derivadas em alphaG e P incluídas (as em velocidade são desprezadas, como
         nas demais correções de pressão)."""
+        xp = self.xp
         p = self.params
         aG, aL = inp.alphaG, inp.alphaL
         rhoL, rhoG, CL, CG = inp.rhoL, inp.rhoG, inp.CL, inp.CG
-        slip = np.clip(inp.vG - inp.vL, -p.ip_slip_max, p.ip_slip_max)
+        slip = xp.clip(inp.vG - inp.vL, -p.ip_slip_max, p.ip_slip_max)
         den = aG * rhoL + aL * rhoG
         g = aG * aL / den
         dP = p.interfacial_pressure * rhoG * rhoL * g * slip**2
@@ -158,23 +163,21 @@ class TwoFluidModel(PipeModel):
         # d/dP: rhoG, rhoL e den dependem de P (CL = drhoL/dP, CG = drhoG/dP)
         dden_dP = aG * CL + aL * CG
         ddP_dP = p.interfacial_pressure * slip**2 * aG * aL * ((CG * rhoL + rhoG * CL) * den - rhoG * rhoL * dden_dP) / den**2
-        S.dPL = S.dPL + dP
-        S.dPG = S.dPG + dP
-        S.ddPLdalphaG = S.ddPLdalphaG + ddP_daG
-        S.ddPGdalphaG = S.ddPGdalphaG + ddP_daG
-        S.ddPLdP = S.ddPLdP + ddP_dP
-        S.ddPGdP = S.ddPGdP + ddP_dP
+        return replace(S, dPL=S.dPL + dP, dPG=S.dPG + dP, ddPLdalphaG=S.ddPLdalphaG + ddP_daG,
+                       ddPGdalphaG=S.ddPGdalphaG + ddP_daG, ddPLdP=S.ddPLdP + ddP_dP, ddPGdP=S.ddPGdP + ddP_dP)
 
     def vertical_weight(self, theta):
         """Peso (0..1) do padrão vertical em função do ângulo de inclinação (rad)."""
+        xp = self.xp
         p = self.params
-        ath = np.rad2deg(np.abs(np.asarray(theta, float)))
+        ath = xp.rad2deg(xp.abs(xp.asarray(theta, dtype=float)))
         if p.vertical_blend > 0:
-            u = np.clip((ath - (p.vertical_angle - p.vertical_blend)) / (2.0 * p.vertical_blend), 0.0, 1.0)
+            u = xp.clip((ath - (p.vertical_angle - p.vertical_blend)) / (2.0 * p.vertical_blend), 0.0, 1.0)
             return u * u * (3.0 - 2.0 * u)
-        return (ath > p.vertical_angle).astype(float)
+        return xp.where(ath > p.vertical_angle, 1.0, 0.0)
 
     def coefficients(self, y, theta, outputs=False):
+        xp = self.xp
         p = self.params
         fl = self.fluid
         inp, P, Area = self.local_state(y, theta)
@@ -183,7 +186,7 @@ class TwoFluidModel(PipeModel):
         rhoL, rhoG, CL, CG = inp.rhoL, inp.rhoG, inp.CL, inp.CG
         vL, vG = inp.vL, inp.vG
         AreaL, AreaG = inp.AreaL, inp.AreaG
-        sin_t = np.sin(inp.theta)
+        sin_t = xp.sin(inp.theta)
 
         auxr = aL / fl.gammaL + aG / fl.gammaG
         rL = (aL / fl.gammaL) / auxr
@@ -192,25 +195,26 @@ class TwoFluidModel(PipeModel):
         rG2 = (1.0 / fl.gammaG) / auxr
 
         if p.legacy_convective:
-            vL2, vG2 = vL * np.abs(vL), vG * np.abs(vG)
-            cL, cG = 2.0 * np.abs(vL), 2.0 * np.abs(vG)
+            vL2, vG2 = vL * xp.abs(vL), vG * xp.abs(vG)
+            cL, cG = 2.0 * xp.abs(vL), 2.0 * xp.abs(vG)
         else:
             vL2, vG2 = vL * vL, vG * vG
             cL, cG = 2.0 * vL, 2.0 * vG
 
-        F = np.empty((12, aG.size))
-        F[0] = -rG / (Area * rhoL)
-        F[1] = rL / (Area * rhoG)
-        F[2] = rL2 / (Area * p.PR * CL)
-        F[3] = rG2 / (Area * p.PR * CG)
-        F[4] = -Area * (S.dPL - aL * S.ddPLdalphaG - vL2 * rhoL)
-        F[5] = p.PR * AreaL * (1.0 - vL2 * CL + S.ddPLdP)
-        F[6] = cL
-        F[7] = Area * (S.dPG + aG * S.ddPGdalphaG - vG2 * rhoG)
-        F[8] = p.PR * AreaG * (1.0 - vG2 * CG + S.ddPGdP)
-        F[9] = cG
-        F[10] = S.GammaL + G * AreaL * rhoL * sin_t
-        F[11] = S.GammaG + G * AreaG * rhoG * sin_t
+        F = xp.stack([
+            -rG / (Area * rhoL),
+            rL / (Area * rhoG),
+            rL2 / (Area * p.PR * CL),
+            rG2 / (Area * p.PR * CG),
+            -Area * (S.dPL - aL * S.ddPLdalphaG - vL2 * rhoL),
+            p.PR * AreaL * (1.0 - vL2 * CL + S.ddPLdP),
+            cL,
+            Area * (S.dPG + aG * S.ddPGdalphaG - vG2 * rhoG),
+            p.PR * AreaG * (1.0 - vG2 * CG + S.ddPGdP),
+            cG,
+            S.GammaL + G * AreaL * rhoL * sin_t,
+            S.GammaG + G * AreaG * rhoG * sin_t,
+        ])
         if not outputs:
             return F
         out = self._outputs(y, inp, S, flags, eq, F, Area)
@@ -310,7 +314,7 @@ class TwoFluidModel(PipeModel):
         aG, aL = inp.alphaG, inp.alphaL
         auxr = aL / fl.gammaL + aG / fl.gammaG
         return dict(
-            inp=inp, S=S, flags=flags, Area=Area, P=P, vm_weight=np.asarray(flags.Bub, float),
+            inp=inp, S=S, flags=flags, Area=Area, P=P, vm_weight=flags.Bub,
             rL=(aL / fl.gammaL) / auxr, rG=(aG / fl.gammaG) / auxr,
             rL2=(1.0 / fl.gammaL) / auxr, rG2=(1.0 / fl.gammaG) / auxr,
         )

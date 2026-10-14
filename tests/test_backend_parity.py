@@ -89,3 +89,50 @@ def test_fixed_regime_blend_with_used_set():
     for nm in S.names():
         _close(getattr(Sj, nm), getattr(S, nm), nm)
     assert np.array_equal(S.GammaL, stratified(inp).GammaL)
+
+
+@pytest.mark.parametrize("key", ["10.1.1", "10.1.4", "10.3.1", "10.3.2b"])
+def test_models_jax_vs_numpy(key):
+    """Coeficientes F e termos conservativos dos modelos com bk=JAX iguais aos do numpy
+    (deriva com derivadas por diferenças finitas em ambos, como o teste de rede)."""
+    from mfsim.cases import load_chapter10_case
+    from mfsim.models import MODEL_BY_LEGACY_ID
+    from mfsim.models.base import PipeParams
+    from mfsim.simulation import build_model
+    case, raw = load_chapter10_case(key)
+    model = build_model(case)
+    E, Ys, _, _ = model.assemble(case.settings.t0 + 1.0, model.initial_state())
+    for pb, Y in zip(model.pipes, Ys):
+        p = pb.model.params
+        p2 = PipeParams(**{**p.__dict__, "bb_derivatives": "fd"})
+        m_np = MODEL_BY_LEGACY_ID[pb.pipe.model](model.fluid, p2)
+        m_jx = MODEL_BY_LEGACY_ID[pb.pipe.model](model.fluid, p2, bk=JAX)
+        th = pb.scheme.theta_nodes
+        Yj = JAX.asarray(Y)
+        F_np = m_np.coefficients(Y, th); F_jx = m_jx.coefficients(Yj, JAX.asarray(th))
+        _close(F_jx, F_np, f"{key} duto {pb.pipe.index} F")
+        F_jit = jax.jit(m_jx.coefficients)(Yj, JAX.asarray(th))
+        _close(F_jit, F_np, f"{key} duto {pb.pipe.index} F jit")
+        t_np = m_np.conservative_terms(Y, th); t_jx = m_jx.conservative_terms(Yj, JAX.asarray(th))
+        for k in t_np:
+            if k in ("inp", "S", "flags"):
+                continue
+            _close(t_jx[k], t_np[k], f"{key} termo {k}")
+
+
+def test_beggs_brill_exact_derivatives_jax():
+    from mfsim.cases import load_chapter10_case
+    from mfsim.models.driftflux_bb import BeggsBrillModel
+    from mfsim.simulation import build_model
+    case, raw = load_chapter10_case("10.1.4")
+    model = build_model(case); pb = model.pipes[0]
+    E, Ys, _, _ = model.assemble(1.0, model.initial_state())
+    p = pb.model.params
+    m_ex = BeggsBrillModel(model.fluid, p, bk=JAX)      # bb_derivatives="exact" por omissão
+    assert m_ex.exact_derivatives
+    F_ex = np.asarray(m_ex.coefficients(JAX.asarray(Ys[0]), JAX.asarray(pb.scheme.theta_nodes)))
+    F_fd = pb.model.coefficients(Ys[0], pb.scheme.theta_nodes)
+    # escala por linha com piso na magnitude global: linhas numericamente nulas (1e-11)
+    # não contam
+    scale = np.maximum(np.max(np.abs(F_fd), axis=1, keepdims=True), 1e-6 * np.max(np.abs(F_fd)))
+    assert np.max(np.abs(F_ex - F_fd) / scale) < 2e-2

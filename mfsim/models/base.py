@@ -70,7 +70,10 @@ class PipeParams:
 
 
 class PipeModel:
-    """Classe base. Subclasses definem slots, padrões e `coefficients`."""
+    """Classe base. Subclasses definem slots, padrões e `coefficients`.
+
+    `bk` é o backend numérico (numpy por omissão, ou JAX): os métodos usam `self.xp`
+    para a aritmética e as primitivas do backend onde os dois diferem."""
 
     name = "base"
     slots: tuple = (0, 1, 2, 3)
@@ -78,9 +81,12 @@ class PipeModel:
     B_pattern: np.ndarray = None
     nF: int = 12
 
-    def __init__(self, fluid, params: PipeParams):
+    def __init__(self, fluid, params: PipeParams, bk=None):
+        from ..backend import NUMPY
         self.fluid = fluid
         self.params = params
+        self.bk = bk or NUMPY
+        self.xp = self.bk.xp
 
     @property
     def nv(self):
@@ -95,24 +101,17 @@ class PipeModel:
 
     def quasi_linear(self, y, theta):
         """Retorna (A, B): A (n, nv, nv), B (n, nv) a partir dos padrões."""
+        xp = self.xp
         F = self.coefficients(y, theta)
         n = F.shape[1]
-        nv = self.nv
-        A = np.zeros((n, nv, nv))
-        B = np.zeros((n, nv))
-        for i in range(nv):
-            for j in range(nv):
-                k = self.A_pattern[i, j]
-                if k > 0:
-                    A[:, i, j] = F[k - 1]
-            kb = self.B_pattern[i]
-            if kb > 0:
-                B[:, i] = F[kb - 1]
+        z = xp.zeros(n)
+        A = xp.stack([xp.stack([F[k - 1] if k > 0 else z for k in row], axis=1) for row in self.A_pattern], axis=1)
+        B = xp.stack([F[k - 1] if k > 0 else z for k in self.B_pattern], axis=1)
         return A, B
 
     # --- utilidades comuns ---------------------------------------------------
     def unpack(self, y):
-        y = np.asarray(y, float)
+        y = self.xp.asarray(y, dtype=float)
         if y.ndim == 1:
             y = y.reshape(-1, 4)
         return y[:, 0], y[:, 1], y[:, 2], y[:, 3]

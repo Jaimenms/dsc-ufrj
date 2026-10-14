@@ -32,14 +32,13 @@ class Fluid:
     sigma: float = 0.03
 
     def rhoL(self, P):
-        return self.rhoL0 * (np.asarray(P) / self.P0) ** (1.0 / self.gammaL)
+        return self.rhoL0 * (P / self.P0) ** (1.0 / self.gammaL)
 
     def rhoG(self, P):
-        return self.rhoG0 * (np.asarray(P) / self.P0) ** (1.0 / self.gammaG)
+        return self.rhoG0 * (P / self.P0) ** (1.0 / self.gammaG)
 
     def props(self, P):
-        """Retorna (rhoL, rhoG, CL, CG) para a pressão absoluta P [Pa]."""
-        P = np.asarray(P, dtype=float)
+        """Retorna (rhoL, rhoG, CL, CG) para a pressão absoluta P [Pa] (numpy ou JAX)."""
         rhoL = self.rhoL(P)
         rhoG = self.rhoG(P)
         CL = rhoL / (P * self.gammaL)
