@@ -46,7 +46,7 @@ def integrate_scipy(
         success=sol.success,
         message=sol.message,
         n_rhs=n_calls[0],
-        n_steps=sol.t.size,
+        n_steps=int(np.size(sol.t)),
         cpu=time.time() - t_start,
         nfev=sol.nfev,
         njev=sol.njev,
@@ -54,4 +54,4 @@ def integrate_scipy(
     )
     if progress:
         print(f"[scipy {method}] {sol.message} | rhs={n_calls[0]} | njev={sol.njev} | {info['cpu']:.1f}s")
-    return sol.t, sol.y, info
+    return np.asarray(sol.t, float), np.asarray(sol.y, float).reshape(len(X0), -1), info

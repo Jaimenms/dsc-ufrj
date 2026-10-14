@@ -168,6 +168,15 @@ def _integrate_bdf(model, X0, t_eval, spec, progress=True, verbose=False, partia
     return T, X, info
 
 
+def output_times(t0, tf, dt_out):
+    """Instantes de saída: `t0`, `t0 + dt_out`, ... e sempre `tf` (também quando `tf` não é múltiplo
+    de `dt_out`, p. ex. `--tf 0.5` com saída a cada 10 s dá `[0, 0.5]`)."""
+    t = np.arange(t0, tf + 0.5 * dt_out, dt_out)
+    if t.size == 0 or tf - t[-1] > 1e-9 * max(1.0, abs(dt_out)):
+        t = np.append(t, tf)
+    return t
+
+
 def simulate(
     case,
     method=None,
@@ -187,7 +196,8 @@ def simulate(
     `overrides` (rtol, atol, max_step, integrator, backend, tol_range, first_step, max_order,
     max_newton, newton_tol, min_step, slow_exit, accumulate, ...) substituem campos de
     `integration` só nesta chamada (`jax=True` é atalho de `backend="jax"`). `X0`/`t_eval`
-    substituem o estado inicial e os instantes de saída. Com `partial=True` uma falha do
+    substituem o estado inicial e os instantes de saída (por omissão `output_times`: de `t0` a
+    `tf` de `dt_out` em `dt_out`, e `tf` sempre incluído). Com `partial=True` uma falha do
     integrador devolve a trajetória integrada até aí (`info["success"] = False`). Devolve
     `Results`."""
     from dataclasses import replace
@@ -206,7 +216,12 @@ def simulate(
         else:
             X0 = model.initial_state()
     if t_eval is None:
-        t_eval = np.arange(model.t0, model.tf + 0.5 * model.dt_out, model.dt_out)
+        t_eval = output_times(model.t0, model.tf, model.dt_out)
+    t_eval = np.asarray(t_eval, float)
+    if t_eval.size < 2:  # tf == t0: a "trajetória" é o estado inicial (nada a integrar)
+        X0 = np.asarray(X0, float)
+        info = dict(success=True, message="tf == t0: estado inicial", n_steps=0, n_rhs=0, cpu=0.0)
+        return Results(model, t_eval, X0[:, None], info)
     integrator = spec.integrator
     if integrator in ("bdf", "BDF", "Radau", "radau", "LSODA"):
         meth = {"bdf": "BDF", "radau": "Radau"}.get(integrator, integrator)

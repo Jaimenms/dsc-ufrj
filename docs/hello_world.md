@@ -32,7 +32,7 @@ uv run mfsim run cases/examples/hello_world.json --out runs/hello_world.npz
 ```
 Fluido politrópico (densidades em `P0`, expoentes `gammaL`/`gammaG`; unidades SI). `PR` é a
 pressão de referência: no vetor de estados a pressão aparece adimensional, `PT = P/PR`, e por
-isso 100 bar com `PR = 1e7` Pa é `PT = 1`. O tempo diz de `t0` a `tf` com saída a cada `dt_out`.
+isso 100 bar com `PR = 1e7` Pa é `PT = 1`. O tempo diz de `t0` a `tf` com saída a cada `dt_out` (e sempre em `tf`).
 
 ```json
  "network": {
