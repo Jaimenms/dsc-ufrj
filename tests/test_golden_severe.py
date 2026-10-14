@@ -57,7 +57,7 @@ def test_reference_rhs_at_historical_states(golden, data_dir):
 
 def test_reference_jax_at_historical_states(golden, data_dir):
     pytest.importorskip("jax")
-    from mfsim.jaxrhs import build_jax_rhs
+    from mfsim.compiled import build_jax_rhs
     g = golden("severe.npz")
     run = load_run(str(data_dir / f"{REFERENCE_RUN}.npz")); model = run.model; T, X = run.T, run.X
     idx = g["reference_samples/idx"]

@@ -1,11 +1,11 @@
 ### célula 1
 10.3.3 Poço offshore
-Poço + linha de produção (3500 m horizontal + trecho descendente) + riser de 1500 m, gas lift com linha de gás e anular; choke de gás 100%->80% entre 100 e 200 s.
+Poço + linha de produção (3500 m horizontal + trecho descendente) + riser de 1500 m, gas lift com linha de gás e anular; choke de gás 100%->80% entre 100 e <t>s.
 Figuras da tese: Figs. 10.48-10.54
 
 ### célula 1
-[implicit BDF] steps=78 rejected=9 rhs=678 jac=13 | 1.2s
-tempo de CPU: 1.22 s
+[implicit BDF] steps=78 rejected=9 rhs=678 jac=13 | <t>s
+tempo de CPU: <t>s
 duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
    1 liquid       PT        5.74e-05       2.34e-01   2.45e-04
    1 liquid       qL        1.71e-03       2.13e-01   8.04e-03
@@ -26,4 +26,4 @@ duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
    7 gas          qG        2.32e-04       1.85e-02   1.26e-02
 
 ### célula 5
-JAX: 1.39 s (78 passos; compilação 1.42 s, uma vez por modelo) | numpy: 1.22 s (78 passos) | diferença máxima relativa dos estados 2.8e-11
+JAX: <t>s (78 passos; compilação <t>s, uma vez por modelo) | numpy: <t>s (78 passos) | diferença máxima relativa dos estados 2.8e-11

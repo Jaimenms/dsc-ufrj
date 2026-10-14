@@ -1,11 +1,19 @@
 """Modelo da rede: montagem do vetor de estados e do sistema de EDOs
 (equivalente a calculos_iniciais.m + modelo_rede.m + modelo_vertice.m).
+
+Backend: `NetworkModel(case, bk=...)` constrói os modelos de duto e os esquemas sobre o
+backend injetado (numpy por omissão). O núcleo `rhs_core(x, E_t, opt_t)` é uma função
+pura das entradas no instante (tabelas avaliadas em numpy por `time_inputs(t)`), igual em
+numpy e em JAX (`mfsim.compiled.CompiledNetwork` compila-o e diferencia-o). As rotinas
+de apoio ao integrador (estado inicial, escalas, esparsidade, mapa conservativo) são
+numpy e vivem no modelo numpy.
 """
 
 from __future__ import annotations
 
 import numpy as np
 
+from ..backend import NUMPY
 from ..discretization import SCHEMES
 from ..geometry import pipe_mesh
 from ..models import MODEL_BY_LEGACY_ID
@@ -20,14 +28,15 @@ TOL_Q = 1e-6
 class PipeBlock:
     """Um duto discretizado dentro da rede."""
 
-    def __init__(self, pipe, fluid, settings, method, scheme_settings):
+    def __init__(self, pipe, fluid, settings, method, scheme_settings, bk=None):
         self.pipe = pipe
+        self.bk = bk or NUMPY
         self.mesh = pipe_mesh(pipe.x, pipe.y, pipe.z, pipe.n_elements, grading=getattr(pipe, "grading", None))
         params = PipeParams(D=pipe.D, eps=pipe.roughness, PR=settings.PR, regime=pipe.regime,
                             **{k: v for k, v in pipe.extra.items()
                                if k in ("k_switch", "ipe_smooth", "ipe_local", "alpha_min", "alpha_max", "legacy_convective",
                                         "regime_vertical", "vertical_angle", "vertical_blend", "interfacial_pressure", "ip_slip_max", "low_void_regime", "low_void_alpha", "high_void_regime", "high_void_alpha", "bb_derivatives", "fi_mult", "fi_vgt", "virtual_mass", "vm_lambda", "bubble_drag")})
-        self.model = MODEL_BY_LEGACY_ID[pipe.model](fluid, params)
+        self.model = MODEL_BY_LEGACY_ID[pipe.model](fluid, params, bk=self.bk)
         ss = dict(scheme_settings)
         ss.update(dict(n_quad=settings.n_quad, bc_in=pipe.bc_in, bc_out=pipe.bc_out))
         ss.update({k: v for k, v in pipe.extra.items()
@@ -53,6 +62,7 @@ class PipeBlock:
         self.free = np.flatnonzero(mask.ravel())
         self.n_states = self.free.size
         self.offset = 0  # definido pela rede
+        self._base_Y_flat = self.bk.xp.asarray(self.base_Y().ravel())
 
     def state_index(self, node, slot):
         """Índice global do estado (node, slot) ou None se não for estado."""
@@ -75,23 +85,20 @@ class PipeBlock:
 
     def assemble(self, Xseg, E_in, E_out):
         """Monta Y (n_nodes x 4) a partir do segmento de estados e das
-        especificações dos vértices de entrada/saída (vetores de 4)."""
-        Y = self.base_Y()
-        Yr = Y.ravel()
-        Yr[self.free] = Xseg
-        Y = Yr.reshape(self.n_nodes, 4)
+        especificações dos vértices de entrada/saída (vetores de 4); função pura."""
+        bk = self.bk
+        Y = bk.set(self._base_Y_flat, self.free, Xseg).reshape(self.n_nodes, 4)
         for s in range(4):
             if self.bc_in[s] == BC_DIRICHLET:
-                Y[0, s] = E_in[s]
+                Y = bk.set(Y, (0, s), E_in[s])
             if self.bc_out[s] == BC_DIRICHLET:
-                Y[-1, s] = E_out[s]
+                Y = bk.set(Y, (-1, s), E_out[s])
         for s in range(4):
             if self.bc_in[s] == BC_NEUMANN:
-                Y[0, s] = Y[1, s]
+                Y = bk.set(Y, (0, s), Y[1, s])
             if self.bc_out[s] == BC_NEUMANN:
-                Y[-1, s] = Y[-2, s]
-        Y = self.scheme.fill_derived(Y)
-        return Y
+                Y = bk.set(Y, (-1, s), Y[-2, s])
+        return self.scheme.fill_derived(Y)
 
     def ic_nodal(self, ic):
         """Interpola uma condição inicial nodal (nós da malha) para os nós do esquema."""
@@ -106,13 +113,16 @@ class PipeBlock:
 class NetworkModel:
     """Sistema de EDOs da rede: dX/dt = rhs(t, X)."""
 
-    def __init__(self, case: Case, method=None, scheme_settings=None):
+    def __init__(self, case: Case, method=None, scheme_settings=None, bk=None):
         self.case = case
+        self.bk = bk or NUMPY
+        self.xp = self.bk.xp
         self.fluid = case.fluid
         self.settings = case.settings
         self.method = method or case.settings.method
         self.PR = case.settings.PR
-        scheme_settings = scheme_settings or {}
+        scheme_settings = dict(scheme_settings or {})
+        self.scheme_settings = scheme_settings
 
         # vértices
         self.vertices = list(case.vertices)
@@ -131,7 +141,7 @@ class NetworkModel:
             self.tables.append(row)
 
         # dutos
-        self.pipes = [PipeBlock(p, self.fluid, case.settings, self.method, scheme_settings)
+        self.pipes = [PipeBlock(p, self.fluid, case.settings, self.method, scheme_settings, bk=self.bk)
                       for p in case.pipes]
         off = 0
         for pb in self.pipes:
@@ -162,6 +172,9 @@ class NetworkModel:
         self.check_idx = np.zeros(0, dtype=int)
 
         self._last_E = None
+        # especificação estática das tabelas (as vazões externas não especificadas dos
+        # vértices dinâmicos valem zero)
+        self._specified = np.array([[tb.is_specified for tb in row] for row in self.tables], dtype=bool)
         # limites de fração de gás (dos parâmetros dos dutos bifásicos) e faixa do limitador
         a_min, a_max = 1e-3, 1 - 1e-3
         for pb in self.pipes:
@@ -189,58 +202,68 @@ class NetworkModel:
         return np.array(sorted(bp))
 
     # ------------------------------------------------------------------
-    def specifications(self, t, X):
-        """Vetor de especificações E (NV x 4) no instante t para o estado X."""
+    def time_inputs(self, t):
+        """Entradas no instante t (numpy): tabelas dos vértices E_t (NV x 4) e aberturas
+        das válvulas opt_t (uma por válvula)."""
         E = np.array([[tb(t) for tb in row] for row in self.tables], dtype=float)
+        opt = np.array([op(t) for (_, _, _, op, _, _) in self.valves], dtype=float) if self.valves else np.zeros(0)
+        return E, opt
+
+    def specs_core(self, x, E_t, opt_t, info=None):
+        """Vetor de especificações E (NV x 4) para o estado x a partir das entradas no
+        instante; função pura no backend. `info` (só no lado numpy) recebe os diagnósticos
+        das válvulas, reservatórios e válvulas de retenção."""
+        bk = self.bk
+        E = bk.asarray(E_t)
         PR = self.PR
-        info = {"valves": [], "reservoirs": [], "check_valves": []}
 
         # vértices dinâmicos: vazões externas não especificadas = 0
         for vi in self.vA:
             for s in (SLOT_QL, SLOT_QG):
-                if E[vi, s] == UNSPECIFIED:
-                    E[vi, s] = 0.0
+                if not self._specified[vi, s]:
+                    E = bk.set(E, (vi, s), 0.0)
 
         # conexões: pressão do vértice a montante = pressão no início da aresta a jusante
         for vu, vd in self.couplings:
             for k in self.pipes_out[vd]:
                 pb = self.pipes[k]
                 i = pb.state_index(pb.inlet_P_node, SLOT_P)
-                E[vu, SLOT_P] = X[i] if i is not None else E[vu, SLOT_P]
+                if i is not None:
+                    E = bk.set(E, (vu, SLOT_P), x[i])
 
         # válvulas
-        for vi, v, k, op, mo, sp in self.valves:
+        for j, (vi, v, k, op, mo, sp) in enumerate(self.valves):
             pb = self.pipes[k]
-            qL = qG = 0.0
-            i = pb.state_index(pb.outlet_q_node, SLOT_QL)
-            if i is not None:
-                qL = X[i]
-            i = pb.state_index(pb.outlet_q_node, SLOT_QG)
-            if i is not None:
-                qG = X[i]
-            opening = op(t)
-            ZP, dP = valve_upstream_pressure(E[vi, SLOT_P], qL, qG, opening, v.CV, self.fluid, PR)
-            info["valves"].append(dict(vertex=v.vertex, Ab=opening, ZP=ZP * PR / 1e5, dP=dP,
-                                       qL=qL, qG=qG, P_down=E[vi, SLOT_P] * PR / 1e5))
-            E[vi, SLOT_P] = ZP
+            iL = pb.state_index(pb.outlet_q_node, SLOT_QL)
+            iG = pb.state_index(pb.outlet_q_node, SLOT_QG)
+            qL = x[iL] if iL is not None else 0.0
+            qG = x[iG] if iG is not None else 0.0
+            opening = opt_t[j]
+            ZP, dP = valve_upstream_pressure(E[vi, SLOT_P], qL, qG, opening, v.CV, self.fluid, PR, bk=bk)
+            if info is not None:
+                info["valves"].append(dict(vertex=v.vertex, Ab=opening, ZP=ZP * PR / 1e5, dP=dP,
+                                           qL=qL, qG=qG, P_down=E[vi, SLOT_P] * PR / 1e5))
+            E = bk.set(E, (vi, SLOT_P), ZP)
 
         # reservatórios
         for vi, r, k in self.reservoirs:
             pb = self.pipes[k]
             i = pb.state_index(pb.inlet_P_node, SLOT_P)
-            P = X[i] if i is not None else E[vi, SLOT_P]
-            ZL, ZG, dP = reservoir_flows(P, r.IPL, r.IPG, r.P, PR)
-            info["reservoirs"].append(dict(vertex=r.vertex, ZL=ZL, ZG=ZG, dP=dP, P=P * PR / 1e5))
-            E[vi, SLOT_QL] = ZL
-            E[vi, SLOT_QG] = ZG
+            P = x[i] if i is not None else E[vi, SLOT_P]
+            ZL, ZG, dP = reservoir_flows(P, r.IPL, r.IPG, r.P, PR, bk=bk)
+            if info is not None:
+                info["reservoirs"].append(dict(vertex=r.vertex, ZL=ZL, ZG=ZG, dP=dP, P=P * PR / 1e5))
+            E = bk.set(E, (vi, SLOT_QL), ZL)
+            E = bk.set(E, (vi, SLOT_QG), ZG)
 
         # válvulas de retenção (vértice dinâmico -> pressão externa do vértice)
         for vi, c in self.check_valves:
             iH, iP = self.vertex_A_index(c.vertex)
-            qL, qG, dP = check_valve_flows(X[iP], E[vi, SLOT_P], X[iH], c.CV, c.dP_min, self.fluid, PR)
-            info["check_valves"].append(dict(vertex=c.vertex, ZP=X[iP] * PR / 1e5, dP=dP, qL=qL, qG=qG))
-            E[vi, SLOT_QL] = -qL
-            E[vi, SLOT_QG] = -qG
+            qL, qG, dP = check_valve_flows(x[iP], E[vi, SLOT_P], x[iH], c.CV, c.dP_min, self.fluid, PR, bk=bk)
+            if info is not None:
+                info["check_valves"].append(dict(vertex=c.vertex, ZP=x[iP] * PR / 1e5, dP=dP, qL=qL, qG=qG))
+            E = bk.set(E, (vi, SLOT_QL), -qL)
+            E = bk.set(E, (vi, SLOT_QG), -qG)
 
         # conexões: vazões do vértice a jusante = soma das vazões no fim das arestas a montante
         acc = {}
@@ -251,16 +274,24 @@ class NetworkModel:
                 for j, s in enumerate((SLOT_QL, SLOT_QG)):
                     i = pb.state_index(pb.outlet_q_node, s)
                     if i is not None:
-                        acc[vd][j] += X[i]
+                        acc[vd][j] = acc[vd][j] + x[i]
         for vd, (qL, qG) in acc.items():
-            E[vd, SLOT_QL] = qL
-            E[vd, SLOT_QG] = qG
+            E = bk.set(E, (vd, SLOT_QL), qL)
+            E = bk.set(E, (vd, SLOT_QG), qG)
 
         # vértices dinâmicos: hold-up e pressão do vértice
         for vi in self.vA:
             iH, iP = self.vertex_A_index(self.vertices[vi].index)
-            E[vi, SLOT_ALPHA] = X[iH]
-            E[vi, SLOT_P] = X[iP]
+            E = bk.set(E, (vi, SLOT_ALPHA), x[iH])
+            E = bk.set(E, (vi, SLOT_P), x[iP])
+        return E
+
+    def specifications(self, t, X):
+        """Vetor de especificações E (NV x 4) no instante t para o estado X e os
+        diagnósticos dos elementos (lado numpy)."""
+        info = {"valves": [], "reservoirs": [], "check_valves": []}
+        E_t, opt_t = self.time_inputs(t)
+        E = self.specs_core(X, E_t, opt_t, info)
         return E, info
 
     def assemble(self, t, X):
@@ -274,63 +305,68 @@ class NetworkModel:
             Ys.append(pb.assemble(seg, E_in, E_out))
         return E, Ys, info, X
 
-    def rhs(self, t, X):
-        E, Ys, info, X = self.assemble(t, X)
-        dX = np.zeros(self.n_states)
-        for pb, Y in zip(self.pipes, Ys):
+    def rhs_core(self, x, E_t, opt_t):
+        """dX/dt a partir do estado x e das entradas no instante (função pura no backend)."""
+        xp = self.xp
+        E = self.specs_core(x, E_t, opt_t)
+        Ys = []
+        parts = []
+        for pb in self.pipes:
+            Y = pb.assemble(x[pb.offset:pb.offset + pb.n_states], E[self.vpos[pb.pipe.v_in]], E[self.vpos[pb.pipe.v_out]])
+            Ys.append(Y)
             dY = pb.scheme.rhs(Y)
-            dX[pb.offset:pb.offset + pb.n_states] = dY.ravel()[pb.free]
+            parts.append(dY.ravel()[pb.free])
         if self.vA:
-            dX[self.n_pipe_states:] = self._vertex_rhs(X, E, Ys)
-        return dX
+            parts.append(self._vertex_rhs(x, E, Ys))
+        return xp.concatenate(parts) if parts else xp.zeros(self.n_states)
+
+    def rhs(self, t, X):
+        X = np.asarray(X, float)
+        E_t, opt_t = self.time_inputs(t)
+        return self.bk.to_numpy(self.rhs_core(X, E_t, opt_t))
 
     def _pipe_boundary_fluxes(self, kp, Y):
         """Fluxos de massa (L, G) nas faces de entrada e saída do duto kp: os fluxos
         limitados das equações de massa nos dutos fv_upwind conservativos (para que o
         balanço dos vértices seja exatamente consistente com o dos dutos), as vazões
         das faces nos demais."""
-        pb = self.pipes[kp]
-        sch = pb.scheme
-        if hasattr(sch, "mass_fluxes_nodal") and getattr(sch, "conservative", False):
-            FL, FG = sch.mass_fluxes_nodal(Y)
-            return (FL[0], FG[0]), (FL[-1], FG[-1])
-        i0, i1 = pb.inlet_q_node, pb.outlet_q_node
-        return (Y[i0, SLOT_QL], Y[i0, SLOT_QG]), (Y[i1, SLOT_QL], Y[i1, SLOT_QG])
+        return self.pipes[kp].scheme.boundary_fluxes(Y)
+
+    def _vertex_inflow(self, vi, E, Ys):
+        """Vazões líquidas (L, G) que entram no vértice vi (externas + dutos)."""
+        QL = E[vi, SLOT_QL]
+        QG = E[vi, SLOT_QG]
+        for kp in self.pipes_in[vi]:
+            _, (fL, fG) = self._pipe_boundary_fluxes(kp, Ys[kp])
+            QL = QL + fL
+            QG = QG + fG
+        for kp in self.pipes_out[vi]:
+            (fL, fG), _ = self._pipe_boundary_fluxes(kp, Ys[kp])
+            QL = QL - fL
+            QG = QG - fG
+        return QL, QG
 
     def vertex_net_inflows(self, X, E, Ys):
         """Vazões líquidas (L, G) que entram em cada vértice dinâmico (externas + dutos)."""
-        out = []
-        for vi in self.vA:
-            QL = E[vi, SLOT_QL]
-            QG = E[vi, SLOT_QG]
-            for kp in self.pipes_in[vi]:
-                _, (fL, fG) = self._pipe_boundary_fluxes(kp, Ys[kp])
-                QL += fL
-                QG += fG
-            for kp in self.pipes_out[vi]:
-                (fL, fG), _ = self._pipe_boundary_fluxes(kp, Ys[kp])
-                QL -= fL
-                QG -= fG
-            out.append((QL, QG))
-        return out
+        return [self._vertex_inflow(vi, E, Ys) for vi in self.vA]
 
     def _vertex_rhs(self, X, E, Ys):
         """Dinâmica dos vértices tipo A (balanços de massa, modelo_vertice.m)."""
+        xp = self.xp
         PR = self.PR
-        out = np.zeros(2 * len(self.vA))
-        inflows = self.vertex_net_inflows(X, E, Ys)
-        for k, vi in enumerate(self.vA):
+        out = []
+        a_min, a_max, band = self.alpha_limits
+        for vi in self.vA:
             v = self.vertices[vi]
-            QL, QG = inflows[k]
+            QL, QG = self._vertex_inflow(vi, E, Ys)
             iH, iP = self.vertex_A_index(v.index)
             HG = X[iH]
             PT = X[iP]
-            rhoL, rhoG, CL, CG = self.fluid.props(max(PT * PR, 1e3))
             if self.conservative:
                 # modo conservativo: d(mG)/dt = QG/V, d(mL)/dt = QL/V (massas por volume; balanço exato)
-                out[2 * k] = QG / v.volume
-                out[2 * k + 1] = QL / v.volume
+                out += [QG / v.volume, QL / v.volume]
                 continue
+            rhoL, rhoG, CL, CG = self.fluid.props(xp.maximum(PT * PR, 1e3))
             HL = 1.0 - HG
             CVL = HL / rhoL * CL
             CVG = HG / rhoG * CG
@@ -338,15 +374,15 @@ class NetworkModel:
             BVL = QL / v.volume / rhoL
             BVG = QG / v.volume / rhoG
             BVT = BVL + BVG
-            out[2 * k + 1] = BVT / CVT / PR
+            dPT = BVT / CVT / PR
             dHG = BVG - CVG * BVT / CVT
             # limitador suave: derivada para fora dos limites físicos anulada numa
             # faixa junto a [alpha_min, alpha_max] (evita estados presos no limite)
-            a_min, a_max, band = self.alpha_limits
-            r_lo = min(max((HG - a_min) / band, 0.0), 1.0)
-            r_hi = min(max((a_max - HG) / band, 0.0), 1.0)
-            out[2 * k] = dHG * (r_lo if dHG < 0 else r_hi)
-        return out
+            r_lo = xp.clip((HG - a_min) / band, 0.0, 1.0)
+            r_hi = xp.clip((a_max - HG) / band, 0.0, 1.0)
+            dHG = xp.where(dHG < 0, dHG * r_lo, dHG * r_hi)
+            out += [dHG, dPT]
+        return xp.stack(out)
 
     # ------------------------------------------------------------------
     def initial_state(self):
@@ -404,7 +440,7 @@ class NetworkModel:
         return any(getattr(pb.scheme, "conservative", False) for pb in self.pipes)
 
     def _apply_mass_map(self, X, direction):
-        from ..discretization.staggered import _mass_map, StaggeredFVConsScheme
+        from ..discretization.staggered import _mass_map, solve_pressure
         X = np.asarray(X, float).copy()
         for pb in self.pipes:
             if not getattr(pb.scheme, "conservative", False):
@@ -427,8 +463,7 @@ class NetworkModel:
                     X[iH], X[iP] = rhoG * HG, rhoL * (1.0 - HG)
                 else:
                     mG, mL = X[iH], X[iP]
-                    pb0 = self.pipes[0]
-                    P = StaggeredFVConsScheme._solve_P(pb0.scheme, np.array([mL]), np.array([mG]), P0=None, clip=False)[0]
+                    P = solve_pressure(fl, np.array([mL]), np.array([mG]), P0=None, clip=False)[0]
                     rhoL, rhoG, _, _ = fl.props(P)
                     X[iH], X[iP] = mG / rhoG, P / self.PR
         return X

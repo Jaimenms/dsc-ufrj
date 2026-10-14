@@ -29,7 +29,7 @@ def _model(extra):
                                    {"art_visc": 0.05, "relax_target": "noslip"}, {"art_visc": 0.05, "virtual_mass": 0.5},
                                    {"art_visc": 0.05, "high_void_regime": 1, "low_void_regime": 2}])
 def test_jax_rhs_matches_numpy(extra):
-    from mfsim.jaxrhs import build_jax_rhs
+    from mfsim.compiled import build_jax_rhs
     model = _model(extra)
     rhs_j, jac_j = build_jax_rhs(model)
     rng = np.random.default_rng(0)
@@ -67,7 +67,7 @@ def test_jax_rhs_matches_numpy(extra):
 def test_jax_muscl_matches_numpy(extra):
     """fv_order=2 (MUSCL/minmod na velocidade doadora), alpha_face='central' e alpha_face='muscl'
     (reconstrução TVD da fração de área nas faces) em JAX."""
-    from mfsim.jaxrhs import build_jax_rhs
+    from mfsim.compiled import build_jax_rhs
     model = _model({"art_visc": 0.02, **extra})
     assert model.pipes[0].scheme.order == extra.get("fv_order", 1)
     rhs_j, jac_j = build_jax_rhs(model)

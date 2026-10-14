@@ -832,9 +832,17 @@
  "severe.npz:reference_samples/boundary_net_fluxes": "A",
  "severe.npz:reference_samples/idx": "A",
  "severe.npz:reference_samples/inverse": "A",
- "severe.npz:reference_samples/jac_jax": "A",
+ "severe.npz:reference_samples/jac_jax": {
+  "atol": 0.0,
+  "rtol": 1e-09,
+  "tier": "B"
+ },
  "severe.npz:reference_samples/rhs": "A",
- "severe.npz:reference_samples/rhs_jax": "A",
+ "severe.npz:reference_samples/rhs_jax": {
+  "atol": 0.0,
+  "rtol": 1e-09,
+  "tier": "B"
+ },
  "severe.npz:reference_samples/sparsity": "A",
  "severe.npz:reference_samples/state_scales": "A",
  "severe.npz:reference_samples/transform": "A",

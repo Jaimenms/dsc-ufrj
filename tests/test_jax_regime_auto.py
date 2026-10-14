@@ -15,6 +15,9 @@ from mfsim.fluid import Fluid
 from mfsim.simulation import build_model
 
 jax = pytest.importorskip("jax")
+from mfsim.backend import get_backend   # noqa: E402
+
+JAX = get_backend("jax")
 
 
 def _severe_model(regime=6, **extra):
@@ -46,50 +49,47 @@ def _random_inputs(rng, n):
                          CL=rhoL / (5e5 * 1000.0), CG=rhoG / (5e5 * 1.05), sigma=np.full(n, 0.05), beta=beta, hD=hD)
 
 
-def _as_dict(inp):
-    import dataclasses
-    import jax.numpy as jnp
-    return {f.name: jnp.asarray(getattr(inp, f.name)) for f in dataclasses.fields(inp) if getattr(inp, f.name) is not None}
+def _as_jax(inp):
+    return ClosureInputs(**{k: (JAX.asarray(v) if v is not None else None) for k, v in inp.__dict__.items()})
 
 
 def test_equilibrium_and_flags_match_numpy():
-    from mfsim import jax_physics as jp
     rng = np.random.default_rng(0)
     inp = _random_inputs(rng, 64)
+    inp_j = _as_jax(inp)
     eq_np = equilibrium_fractions(inp)
-    eq_j = jp.equilibrium_fractions(_as_dict(inp))
+    eq_j = equilibrium_fractions(inp_j, bk=JAX)
     for a, b in zip(eq_np, eq_j):
         assert np.allclose(a, np.asarray(b), rtol=1e-12, atol=1e-14)
     fl_np, _ = identify_regime(inp, k_switch=1e6, eq=eq_np)
-    fl_j = jp.identify_regime(_as_dict(inp), 1e6, eq_j)
+    fl_j, _ = identify_regime(inp_j, k_switch=1e6, eq=eq_j, bk=JAX)
     for nm in ("Est", "EsS", "EsW", "Anu", "Bub", "Int"):
-        assert np.allclose(getattr(fl_np, nm), np.asarray(fl_j[nm]), rtol=1e-10, atol=1e-12), nm
+        assert np.allclose(getattr(fl_np, nm), np.asarray(getattr(fl_j, nm)), rtol=1e-10, atol=1e-12), nm
     # chaveamento suave (k_switch baixo): também reproduz
     fl_np, _ = identify_regime(inp, k_switch=50.0, eq=eq_np)
-    fl_j = jp.identify_regime(_as_dict(inp), 50.0, eq_j)
+    fl_j, _ = identify_regime(inp_j, k_switch=50.0, eq=eq_j, bk=JAX)
     for nm in ("Est", "Anu", "Bub", "Int"):
-        assert np.allclose(getattr(fl_np, nm), np.asarray(fl_j[nm]), rtol=1e-10, atol=1e-12), nm
+        assert np.allclose(getattr(fl_np, nm), np.asarray(getattr(fl_j, nm)), rtol=1e-10, atol=1e-12), nm
 
 
 @pytest.mark.parametrize("func_np, name", [(intermittent, "intermittent"), (annular, "annular")])
 def test_closures_match_numpy(func_np, name):
     """Fechamentos que os casos do capítulo 10 com padrão fixo não exercitam em todas as
     inclinações (intermitente, anular) reproduzem o numpy em entradas aleatórias."""
-    from mfsim import jax_physics as jp
     rng = np.random.default_rng(1)
     inp = _random_inputs(rng, 48)
     inp = inp.replace(vLS=np.abs(inp.vLS) + 0.01, vGS=np.abs(inp.vGS) + 0.01,
                       vL=(np.abs(inp.vLS) + 0.01) / inp.alphaL, vG=(np.abs(inp.vGS) + 0.01) / inp.alphaG)
     S_np = func_np(inp)
-    S_j = getattr(jp, name)(_as_dict(inp))
+    S_j = func_np(_as_jax(inp), bk=JAX)
     for nm in ("GammaL", "GammaG", "dPL", "dPG", "ddPLdalphaG", "ddPGdalphaG", "ddPLdP", "ddPGdP"):
-        a, b = getattr(S_np, nm), np.asarray(S_j[nm])
+        a, b = getattr(S_np, nm), np.asarray(getattr(S_j, nm))
         ok = np.isfinite(a)
         assert np.allclose(a[ok], b[ok], rtol=1e-9, atol=1e-12 * (1 + np.max(np.abs(a[ok])))), nm
 
 
 def test_regime_auto_rhs_matches_numpy():
-    from mfsim.jaxrhs import build_jax_rhs
+    from mfsim.compiled import build_jax_rhs
     model = _severe_model()
     rhs_j, jac_j = build_jax_rhs(model)
     X0 = model.initial_state()
@@ -112,7 +112,7 @@ def test_regime_auto_rhs_matches_numpy():
 
 def test_regime_auto_nodal_schemes():
     """Regime 6 nos esquemas nodais da tese (10.1.1 com identificação automática)."""
-    from mfsim.jaxrhs import build_jax_rhs
+    from mfsim.compiled import build_jax_rhs
     case, raw = load_chapter10_case("10.1.1")
     c = copy.deepcopy(case)
     for pipe in c.pipes:
@@ -129,15 +129,13 @@ def test_regime_auto_nodal_schemes():
 def test_sigmoid_tangent_finite_at_clip_boundary():
     """Com k = 1e6 o argumento da sigmoide satura (|k (x1 - x2)| > 700) a 7e-4 do limiar;
     a tangente tem de ser finita também aí (a forma 1/(1+exp(clip)) dá inf/inf)."""
-    from mfsim.jax_physics import _sigmoid
-    import jax
-    for dx in (-7.0e-4, -6.9e-4, 6.9e-4, 7.0e-4, 1e-2):
-        v, dv = jax.jvp(lambda x: _sigmoid(1e6, x, 0.0), (dx,), (1e7,))
-        assert np.isfinite(float(v)) and np.isfinite(float(dv))
-    # valores iguais aos do numpy (closures.regime.sigmoid) longe do underflow
     from mfsim.closures.regime import sigmoid
+    for dx in (-7.0e-4, -6.9e-4, 6.9e-4, 7.0e-4, 1e-2):
+        v, dv = jax.jvp(lambda x: sigmoid(1e6, x, 0.0, bk=JAX), (dx,), (1e7,))
+        assert np.isfinite(float(v)) and np.isfinite(float(dv))
+    # valores iguais aos do numpy longe do underflow
     x = np.linspace(-1e-3, 1e-3, 11)
-    assert np.allclose(np.asarray(_sigmoid(1e6, x, 0.0)), sigmoid(1e6, x, 0.0), atol=1e-300, rtol=1e-12)
+    assert np.allclose(np.asarray(sigmoid(1e6, JAX.asarray(x), 0.0, bk=JAX)), sigmoid(1e6, x, 0.0), atol=1e-300, rtol=1e-12)
 
 
 @pytest.mark.parametrize("extra", [{"low_void_regime": 2}, {"ipe_smooth": True, "k_switch": 20.0, "low_void_regime": 2},
@@ -145,7 +143,7 @@ def test_sigmoid_tangent_finite_at_clip_boundary():
 def test_regime_auto_options_match_numpy(extra):
     """Opções do modo automático (mistura de fração baixa, chaveamento relativo): JAX = numpy
     e Jacobiana finita; com as opções os pesos somam 1 em todos os nós."""
-    from mfsim.jaxrhs import build_jax_rhs
+    from mfsim.compiled import build_jax_rhs
     model = _severe_model(**extra)
     rhs_j, jac_j = build_jax_rhs(model)
     X0 = model.initial_state()

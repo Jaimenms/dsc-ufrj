@@ -10,10 +10,10 @@ erro final de massa: -87.6 kg (estoque inicial 607.1 kg, entrada acumulada 4241 
 
 ### célula 11
 instantes dos picos de líquido (s): [2606, 2912, 3224, 3538, 3852, 4164, 4478, 4792, 5104, 5410, 5726, 6038, 6352, 6664, 6974, 7290, 7602, 7916]
-período médio ≈ 312 s; pico máximo 11.3 kg/s (21x a alimentação)
+período médio ≈ <t>s; pico máximo 11.3 kg/s (21x a alimentação)
 
 ### célula 13
-picos (s): [2656, 2876, 3114, 3342, 3574, 3794, 4026, 4262, 4498, 4722, 4958, 5198, 5424, 5660, 5886, 6112, 6340, 6566, 6796, 7026, 7264, 7494, 7722, 7944] | período médio ≈ 230 s | pico máximo 8.7 kg/s
+picos (s): [2656, 2876, 3114, 3342, 3574, 3794, 4026, 4262, 4498, 4722, 4958, 5198, 5424, 5660, 5886, 6112, 6340, 6566, 6796, 7026, 7264, 7494, 7722, 7944] | período médio ≈ <t>s | pico máximo 8.7 kg/s
 erro final de massa: -112.1 kg em 4241 kg alimentados
 
 ### célula 15
@@ -23,11 +23,11 @@ primitivas   : 91783 passos, 24105 rejeitados, 18 min de CPU
 conservativo : 132679 passos, 39681 rejeitados, 25 min de CPU
 
 ### célula 19
-primitivas   : 12 blowdowns, primeiro em 18 s, período médio ≈ 259 s, pico máximo 8.9 kg/s
-   erro de massa (trapézios nas saídas de 2 s): líquido -59.74 kg (-3.76 % do alimentado), gás +0.3588 kg (+10.96 %)
+primitivas   : 12 blowdowns, primeiro em <t>s, período médio ≈ <t>s, pico máximo 8.9 kg/s
+   erro de massa (trapézios nas saídas de <t>s): líquido -59.74 kg (-3.76 % do alimentado), gás +0.3588 kg (+10.96 %)
    erro de massa (integral consistente com o BDF):   líquido -4.30e+01 kg (-2.71e+00 %), gás +2.78e-01 kg (+8.48e+00 %)
-conservativo : 12 blowdowns, primeiro em 20 s, período médio ≈ 254 s, pico máximo 8.5 kg/s
-   erro de massa (trapézios nas saídas de 2 s): líquido -1.74 kg (-0.11 % do alimentado), gás +0.2096 kg (+6.40 %)
+conservativo : 12 blowdowns, primeiro em <t>s, período médio ≈ <t>s, pico máximo 8.5 kg/s
+   erro de massa (trapézios nas saídas de <t>s): líquido -1.74 kg (-0.11 % do alimentado), gás +0.2096 kg (+6.40 %)
    erro de massa (integral consistente com o BDF):   líquido -1.14e-05 kg (-7.16e-07 %), gás -7.19e-08 kg (-2.20e-06 %)
 
 ### célula 23
@@ -37,40 +37,40 @@ primitivas    (arco R = 5.0 m, 4 elementos, Δ = 20.0°): 128021 passos, 31494 r
 conservativo  (arco R = 5.0 m, 4 elementos, Δ = 20.0°): 112474 passos, 29359 rejeitados, 22 min de CPU
 
 ### célula 25
-primitivas    joelho anguloso:   91783 passos | 12 blowdowns, período ≈ 259 s, pico máximo 8.9 kg/s, P_in 5.73–6.45 bar | erro de massa de líquido -4.30e+01 kg
-conservativo  joelho anguloso:  132679 passos | 12 blowdowns, período ≈ 254 s, pico máximo 8.5 kg/s, P_in 5.78–6.39 bar | erro de massa de líquido -1.14e-05 kg
-primitivas    arco + mistura :  128021 passos | 5 blowdowns, período ≈ 662 s, pico máximo 6.8 kg/s, P_in 4.19–6.06 bar | erro de massa de líquido -4.09e+01 kg
-conservativo  arco + mistura :  112474 passos | 5 blowdowns, período ≈ 698 s, pico máximo 6.8 kg/s, P_in 4.15–6.06 bar | erro de massa de líquido -1.01e-05 kg
+primitivas    joelho anguloso:   91783 passos | 12 blowdowns, período ≈ <t>s, pico máximo 8.9 kg/s, P_in 5.73–6.45 bar | erro de massa de líquido -4.30e+01 kg
+conservativo  joelho anguloso:  132679 passos | 12 blowdowns, período ≈ <t>s, pico máximo 8.5 kg/s, P_in 5.78–6.39 bar | erro de massa de líquido -1.14e-05 kg
+primitivas    arco + mistura :  128021 passos | 5 blowdowns, período ≈ <t>s, pico máximo 6.8 kg/s, P_in 4.19–6.06 bar | erro de massa de líquido -4.09e+01 kg
+conservativo  arco + mistura :  112474 passos | 5 blowdowns, período ≈ <t>s, pico máximo 6.8 kg/s, P_in 4.15–6.06 bar | erro de massa de líquido -1.01e-05 kg
 
 ### célula 30
 malha              passos     CPU blowdowns  período  pico máx   P_in (bar)  erro massa L
-uniforme 15/5       85653    20 min         5    710 s    6.7 kg/s  4.19–5.86     -5.1e-06 kg
-graduada 15/5      145286    35 min         5    682 s    9.1 kg/s  4.24–5.82     -2.0e-04 kg
-uniforme 30/10     201553    58 min         5    726 s    8.6 kg/s  4.17–5.85     -9.5e-06 kg
-graduada 30/10     302648    83 min         5    718 s   10.2 kg/s  4.15–5.83     -1.3e-05 kg
-uniforme 15/5 + regularização    85418    22 min         5    724 s    6.7 kg/s  4.19–5.84     -5.3e-06 kg
+uniforme 15/5       85653    20 min         5    <t>s    6.7 kg/s  4.19–5.86     -5.1e-06 kg
+graduada 15/5      145286    35 min         5    <t>s    9.1 kg/s  4.24–5.82     -2.0e-04 kg
+uniforme 30/10     201553    58 min         5    <t>s    8.6 kg/s  4.17–5.85     -9.5e-06 kg
+graduada 30/10     302648    83 min         5    <t>s   10.2 kg/s  4.15–5.83     -1.3e-05 kg
+uniforme 15/5 + regularização    85418    22 min         5    <t>s    6.7 kg/s  4.19–5.84     -5.3e-06 kg
 
 ### célula 36
 configuração                           passos    CPU blowdowns intervalo  pico máx   P_in (bar)
-referência (noslip)                     25228    47 s         4     749 s    7.1 kg/s  4.14–5.92
-atrito interfacial × 0.5                30578    78 s         4     759 s    7.5 kg/s  4.17–5.91
-atrito interfacial × 2                  20217    53 s         4     746 s    6.6 kg/s  4.15–5.92
-atrito interfacial Taitel–Dukler        27250    71 s         4     735 s    6.5 kg/s  4.13–5.92
-massa virtual 0.5 (λ = 1)               23597    50 s         4     826 s    7.6 kg/s  4.02–6.02
-massa virtual 0.5 + bolhas < 1 %        21919    46 s         4     801 s    6.3 kg/s  4.03–5.85
-massa virtual 0.5 (λ = 2)               20003    47 s         4     823 s    7.8 kg/s  4.02–5.93
-bolhas < 1 % + Bestion δ = 1.2          41437    86 s         4     748 s    5.9 kg/s  4.16–5.85
-riser intermitente (regime_vertical = 3)   101181   293 s         1     nan s    2.0 kg/s  4.36–5.91
-riser intermitente + anular > 90 % + massa virtual + bolhas < 1 %   112355   300 s         1     nan s    2.4 kg/s  4.31–5.85
-anular acima de 90 % de gás             23512    52 s         4     821 s    8.3 kg/s  4.01–5.98
-anular > 90 % + massa virtual + bolhas < 1 %    16833    39 s         4     800 s    6.1 kg/s  4.00–5.85
-γG = 1.0 (+ regras físicas)             17363    45 s         4     841 s    6.3 kg/s  4.00–5.85
-γG = 1.3 (+ regras físicas)             17963    46 s         5     661 s    5.4 kg/s  4.01–5.85
-volume a montante 0.1 m³ (+ regras físicas)    17927   157 s         4     718 s    6.4 kg/s  3.99–5.85
-volume a montante 0.5 m³ (+ regras físicas)    17614   147 s         5     703 s    7.3 kg/s  3.99–5.86
-volume a montante 2 m³ (+ regras físicas)    20938   170 s         4     779 s    9.3 kg/s  3.95–5.85
-malha fina graduada, noslip             77869   240 s         5     710 s   10.3 kg/s  4.16–5.83
-malha fina graduada, massa virtual + bolhas < 1 %    68929   189 s         4     778 s    9.7 kg/s  4.02–5.83
+referência (noslip)                     25228    <t>s         4     <t>s    7.1 kg/s  4.14–5.92
+atrito interfacial × 0.5                30578    <t>s         4     <t>s    7.5 kg/s  4.17–5.91
+atrito interfacial × 2                  20217    <t>s         4     <t>s    6.6 kg/s  4.15–5.92
+atrito interfacial Taitel–Dukler        27250    <t>s         4     <t>s    6.5 kg/s  4.13–5.92
+massa virtual 0.5 (λ = 1)               23597    <t>s         4     <t>s    7.6 kg/s  4.02–6.02
+massa virtual 0.5 + bolhas < 1 %        21919    <t>s         4     <t>s    6.3 kg/s  4.03–5.85
+massa virtual 0.5 (λ = 2)               20003    <t>s         4     <t>s    7.8 kg/s  4.02–5.93
+bolhas < 1 % + Bestion δ = 1.2          41437    <t>s         4     <t>s    5.9 kg/s  4.16–5.85
+riser intermitente (regime_vertical = 3)   101181   <t>s         1     nan s    2.0 kg/s  4.36–5.91
+riser intermitente + anular > 90 % + massa virtual + bolhas < 1 %   112355   <t>s         1     nan s    2.4 kg/s  4.31–5.85
+anular acima de 90 % de gás             23512    <t>s         4     <t>s    8.3 kg/s  4.01–5.98
+anular > 90 % + massa virtual + bolhas < 1 %    16833    <t>s         4     <t>s    6.1 kg/s  4.00–5.85
+γG = 1.0 (+ regras físicas)             17363    <t>s         4     <t>s    6.3 kg/s  4.00–5.85
+γG = 1.3 (+ regras físicas)             17963    <t>s         5     <t>s    5.4 kg/s  4.01–5.85
+volume a montante 0.1 m³ (+ regras físicas)    17927   <t>s         4     <t>s    6.4 kg/s  3.99–5.85
+volume a montante 0.5 m³ (+ regras físicas)    17614   <t>s         5     <t>s    7.3 kg/s  3.99–5.86
+volume a montante 2 m³ (+ regras físicas)    20938   <t>s         4     <t>s    9.3 kg/s  3.95–5.85
+malha fina graduada, noslip             77869   <t>s         5     <t>s   10.3 kg/s  4.16–5.83
+malha fina graduada, massa virtual + bolhas < 1 %    68929   <t>s         4     <t>s    9.7 kg/s  4.02–5.83
 
 ### célula 37
 Força líquida por metro sobre o filme (N/m; negativo = para baixo), αG = 0.95, riser vertical, peso do filme 0.87 N/m
@@ -109,34 +109,34 @@ volume a montante 2 m³ (+ regras físicas)               58.6%           19.6% 
 
 ### célula 40
 configuração                     passos     CPU blowdowns  período  pico máx   P_in (bar)  erro massa L
-referência (ν = 0.01)             85653    20 min         5    710 s    6.7 kg/s  4.19–5.86     -5.1e-06 kg
-ν = 0.05 + Newton 20              59236    14 min         5    738 s    6.4 kg/s  4.15–5.88     -2.0e-06 kg
-+ atol 0.03 kg/s, 0.1 bar         23172     5 min         4    733 s    6.8 kg/s  4.13–5.92     -4.6e-04 kg
-+ atol 0.05 kg/s, 0.2 bar         21798     5 min         5    741 s    6.4 kg/s  4.14–5.86     -9.7e-04 kg
-atol 0.03/0.1, lado direito JAX    22618     1 min         5    742 s    6.4 kg/s  4.14–5.86     -2.8e-04 kg
-malha fina 30/10 (ν = 0.01)      201553    58 min         5    726 s    8.6 kg/s  4.17–5.85     -9.5e-06 kg
-malha fina, atol 0.03/0.1, JAX    39033     2 min         4    747 s    8.8 kg/s  4.14–5.87     -3.6e-04 kg
+referência (ν = 0.01)             85653    20 min         5    <t>s    6.7 kg/s  4.19–5.86     -5.1e-06 kg
+ν = 0.05 + Newton 20              59236    14 min         5    <t>s    6.4 kg/s  4.15–5.88     -2.0e-06 kg
++ atol 0.03 kg/s, 0.1 bar         23172     5 min         4    <t>s    6.8 kg/s  4.13–5.92     -4.6e-04 kg
++ atol 0.05 kg/s, 0.2 bar         21798     5 min         5    <t>s    6.4 kg/s  4.14–5.86     -9.7e-04 kg
+atol 0.03/0.1, lado direito JAX    22618     1 min         5    <t>s    6.4 kg/s  4.14–5.86     -2.8e-04 kg
+malha fina 30/10 (ν = 0.01)      201553    58 min         5    <t>s    8.6 kg/s  4.17–5.85     -9.5e-06 kg
+malha fina, atol 0.03/0.1, JAX    39033     2 min         4    <t>s    8.8 kg/s  4.14–5.87     -3.6e-04 kg
 
 ### célula 43
 configuração           estados   passos    CPU blowdowns intervalo  pico máx   P_in (bar)
-duto único curvado         112    25923    50 s         4     765 s    7.9 kg/s  4.14–6.00
-rede, V = 0.05 m³          124    35518   148 s         6     582 s    4.4 kg/s  4.32–5.80
-rede, V = 0.005 m³         124    61109   221 s         4     753 s   10.0 kg/s  4.04–5.87
-rede, V = 0.002 m³         124    65018   225 s         4     748 s   11.7 kg/s  4.07–5.94
+duto único curvado         112    25923    <t>s         4     <t>s    7.9 kg/s  4.14–6.00
+rede, V = 0.05 m³          124    35518   <t>s         6     <t>s    4.4 kg/s  4.32–5.80
+rede, V = 0.005 m³         124    61109   <t>s         4     <t>s   10.0 kg/s  4.04–5.87
+rede, V = 0.002 m³         124    65018   <t>s         4     <t>s   11.7 kg/s  4.07–5.94
 
 ### célula 46
 configuração                                     passos    CPU blowdowns intervalo  pico máx   P_in (bar)  erro massa L
-padrão fixo (estratificado + bolhas no riser)     25923    50 s         4     765 s    7.9 kg/s  4.14–6.00     +4.3e-05 kg
-IPE suave (k = 20, bolhas < 1 %)                 175927  2034 s         4     861 s    5.7 kg/s  4.01–5.88     -2.4e-03 kg
-IPE suave (k = 50, bolhas < 1 %)                 163091  1892 s         4     883 s    5.4 kg/s  3.98–5.91     -9.0e-04 kg
-IPE suave + critérios no estado local (k = 20)    35328   207 s         4     851 s    4.1 kg/s  4.01–5.86     -2.3e-02 kg
+padrão fixo (estratificado + bolhas no riser)     25923    <t>s         4     <t>s    7.9 kg/s  4.14–6.00     +4.3e-05 kg
+IPE suave (k = 20, bolhas < 1 %)                 175927  <t>s         4     <t>s    5.7 kg/s  4.01–5.88     -2.4e-03 kg
+IPE suave (k = 50, bolhas < 1 %)                 163091  <t>s         4     <t>s    5.4 kg/s  3.98–5.91     -9.0e-04 kg
+IPE suave + critérios no estado local (k = 20)    35328   <t>s         4     <t>s    4.1 kg/s  4.01–5.86     -2.3e-02 kg
 
 ### célula 49
 configuração                               passos    CPU blowdowns intervalo  pico máx   P_in (bar) frente 0.1-0.9
-referência (relaxação com fração real)      25923    50 s         4     765 s    7.9 kg/s  4.14–6.00        2.9 m
-alpha_face = muscl                          24788    48 s         4     775 s    7.2 kg/s  4.12–6.04        2.9 m
-relax_target = noslip                       25228    47 s         4     749 s    7.1 kg/s  4.14–5.92        2.9 m
-malha fina 30/10                            39033   105 s         4     747 s    8.8 kg/s  4.14–5.87        1.7 m
+referência (relaxação com fração real)      25923    <t>s         4     <t>s    7.9 kg/s  4.14–6.00        2.9 m
+alpha_face = muscl                          24788    <t>s         4     <t>s    7.2 kg/s  4.12–6.04        2.9 m
+relax_target = noslip                       25228    <t>s         4     <t>s    7.1 kg/s  4.14–5.92        2.9 m
+malha fina 30/10                            39033   <t>s         4     <t>s    8.8 kg/s  4.14–5.87        1.7 m
 
 ### célula 50
 caso                                                 passos  q final  f (Hz)  decaimento (1/s)
@@ -148,40 +148,40 @@ monofásico, fechado                                     406    0.037    5.56   
 2 fluidos, fechado, sem escorregamento                  294   -0.015    5.56              0.63
 
 ### célula 53
-caso                                 vSL  L (m)  P_out  vSL_mín Bøe  passos  ΔP_in (t>300 s) blowdowns intervalo
-caso base, bolhas no riser          0.30    300    4.0        0.050   25228         1.78 bar         3     790 s
+caso                                 vSL  L (m)  P_out  vSL_mín Bøe  passos  ΔP_in (t><t>s) blowdowns intervalo
+caso base, bolhas no riser          0.30    300    4.0        0.050   25228         1.78 bar         3     <t>s
 caso base, intermitente no riser    0.30    300    4.0        0.050  101181         0.23 bar         0     nan s
 vSL = 1.2, bolhas                   1.20    300    4.0        0.050     555         0.04 bar         0     nan s
 vSL = 1.2, intermitente             1.20    300    4.0        0.050    1123         0.00 bar         0     nan s
 vSL = 1.6, bolhas                   1.60    300    4.0        0.050     356         0.03 bar         0     nan s
 vSL = 1.6, intermitente             1.60    300    4.0        0.050    3325         0.03 bar         0     nan s
-L = 1000 m, 2 bar, bolhas           0.30   1000    2.0        0.012  105019         1.68 bar         2    3750 s
-L = 1000 m, 2 bar, bolhas, sobrepressão 0.1 bar  0.30   1000    2.0        0.012   63993         1.69 bar         2    3760 s
-L = 1000 m, 2 bar, bolhas + regras físicas  0.30   1000    2.0        0.012   56710         1.61 bar         2    3668 s
-L = 1000 m, 2 bar, intermitente + regras físicas  0.30   1000    2.0        0.012   59230         1.81 bar         2    4084 s
-L = 1000 m, 2 bar, vSL = 0.5, regras  0.50   1000    2.0        0.012   28552         1.44 bar         4    2858 s
-L = 1000 m, 2 bar, vSL = 0.8, regras  0.80   1000    2.0        0.012   15614         1.33 bar         4    2099 s
-L = 1000 m, 4 bar, vSL = 0.5, regras  0.50   1000    4.0        0.016   29369         1.49 bar         4    1863 s
-L = 1000 m, 4 bar, vSL = 0.8, regras  0.80   1000    4.0        0.016   17169         1.42 bar         6    1349 s
-L = 1000 m, 2 bar, vSL = 0.15, regras  0.15   1000    2.0        0.012  116306         1.82 bar         2    4714 s
-L = 1000 m, 2 bar, vSL = 0.3, regras  0.30   1000    2.0        0.012   59114         1.62 bar         3    3602 s
-L = 1000 m, 4 bar, vSL = 0.3, regras  0.30   1000    4.0        0.016   59241         1.65 bar         4    2265 s
-L = 1000 m, 2 bar, vSG = 0.05, regras  0.30   1000    2.0        0.006   61846         1.63 bar         2    6524 s
-L = 1000 m, 2 bar, vSG = 0.2, regras  0.30   1000    2.0        0.025  101974         1.67 bar         4    2017 s
-L = 1000 m, 2 bar, 2 m³ a montante (vértice), regras  0.30   1000    2.0        0.012   78421         1.85 bar         3    2576 s
-L = 1000 m, 2 bar, vSG = 0.2, intermitente + regras  0.30   1000    2.0        0.025  118474         1.83 bar         5    2140 s
-caso base + 200 m de linha de entrada, regras  0.30    300    4.0        0.032   15183         1.88 bar         4     841 s
-caso base + 500 m de linha de entrada, regras  0.30    300    4.0        0.020   19420         1.95 bar         3    1077 s
-L = 1000 m, 2 bar, γG = 1.3, regras  0.30   1000    2.0        0.012   80705         1.77 bar         3    3295 s
+L = 1000 m, 2 bar, bolhas           0.30   1000    2.0        0.012  105019         1.68 bar         2    <t>s
+L = 1000 m, 2 bar, bolhas, sobrepressão 0.1 bar  0.30   1000    2.0        0.012   63993         1.69 bar         2    <t>s
+L = 1000 m, 2 bar, bolhas + regras físicas  0.30   1000    2.0        0.012   56710         1.61 bar         2    <t>s
+L = 1000 m, 2 bar, intermitente + regras físicas  0.30   1000    2.0        0.012   59230         1.81 bar         2    <t>s
+L = 1000 m, 2 bar, vSL = 0.5, regras  0.50   1000    2.0        0.012   28552         1.44 bar         4    <t>s
+L = 1000 m, 2 bar, vSL = 0.8, regras  0.80   1000    2.0        0.012   15614         1.33 bar         4    <t>s
+L = 1000 m, 4 bar, vSL = 0.5, regras  0.50   1000    4.0        0.016   29369         1.49 bar         4    <t>s
+L = 1000 m, 4 bar, vSL = 0.8, regras  0.80   1000    4.0        0.016   17169         1.42 bar         6    <t>s
+L = 1000 m, 2 bar, vSL = 0.15, regras  0.15   1000    2.0        0.012  116306         1.82 bar         2    <t>s
+L = 1000 m, 2 bar, vSL = 0.3, regras  0.30   1000    2.0        0.012   59114         1.62 bar         3    <t>s
+L = 1000 m, 4 bar, vSL = 0.3, regras  0.30   1000    4.0        0.016   59241         1.65 bar         4    <t>s
+L = 1000 m, 2 bar, vSG = 0.05, regras  0.30   1000    2.0        0.006   61846         1.63 bar         2    <t>s
+L = 1000 m, 2 bar, vSG = 0.2, regras  0.30   1000    2.0        0.025  101974         1.67 bar         4    <t>s
+L = 1000 m, 2 bar, 2 m³ a montante (vértice), regras  0.30   1000    2.0        0.012   78421         1.85 bar         3    <t>s
+L = 1000 m, 2 bar, vSG = 0.2, intermitente + regras  0.30   1000    2.0        0.025  118474         1.83 bar         5    <t>s
+caso base + 200 m de linha de entrada, regras  0.30    300    4.0        0.032   15183         1.88 bar         4     <t>s
+caso base + 500 m de linha de entrada, regras  0.30    300    4.0        0.020   19420         1.95 bar         3    <t>s
+L = 1000 m, 2 bar, γG = 1.3, regras  0.30   1000    2.0        0.012   80705         1.77 bar         3    <t>s
 
 ### célula 55
 caso                                                           bolhas     período (exp)         P_in kPa (exp)  pico qL blowdowns  passos
-Jansen 1996 (1", riser 3 m; U_LS 0.096, U_GSO 0.075)           tese     119.6 s ( 46.6)  122.2- 132.8 (111-133)     0.21         3   63349
-Jansen 1996 (1", riser 3 m; U_LS 0.096, U_GSO 0.075)           fisico    62.6 s ( 46.6)   99.1- 132.6 (111-133)     0.79         7   98214
+Jansen 1996 (1", riser 3 m; U_LS 0.096, U_GSO 0.075)           tese     <t>s ( 46.6)  122.2- 132.8 (111-133)     0.21         3   63349
+Jansen 1996 (1", riser 3 m; U_LS 0.096, U_GSO 0.075)           fisico    <t>s ( 46.6)   99.1- 132.6 (111-133)     0.79         7   98214
 Fabre 1990 caso 2 (2", riser 13.5 m; vSL 0.13, vSG0 0.20)      tese       nan s (137.0)  145.1- 237.0 (126-235)     1.10         1   43735
-Fabre 1990 caso 2 (2", riser 13.5 m; vSL 0.13, vSG0 0.20)      fisico   135.8 s (137.0)  105.2- 237.9 (126-235)     8.50         8  117508
-Fabre 1990 caso 1 (2", riser 13.5 m; vSL 0.13, vSG0 0.45)      fisico   104.4 s ( 70.0)  121.3- 167.2 (128-210)     3.21         8    6711
-Tengesdal 2002 teste 1 (3", riser 14.6 m, óleo; vSL 0.32, vSG 0.35) fisico    63.7 s ( 79.0)  123.1- 232.9 (121-222)    16.69        10   50439
+Fabre 1990 caso 2 (2", riser 13.5 m; vSL 0.13, vSG0 0.20)      fisico   <t>s (137.0)  105.2- 237.9 (126-235)     8.50         8  117508
+Fabre 1990 caso 1 (2", riser 13.5 m; vSL 0.13, vSG0 0.45)      fisico   <t>s ( 70.0)  121.3- 167.2 (128-210)     3.21         8    6711
+Tengesdal 2002 teste 1 (3", riser 14.6 m, óleo; vSL 0.32, vSG 0.35) fisico    <t>s ( 79.0)  123.1- 232.9 (121-222)    16.69        10   50439
 
 ### célula 58
 caso                                       riser > 90 % gás  E > 0.1  E máx  vSG máx  produção com E_topo > 0.1

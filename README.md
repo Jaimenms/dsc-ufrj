@@ -28,8 +28,14 @@ uv run python tools/make_nb.py notebooks_src/nb_10_1_1_estratificado.py --execut
 | `mfsim/friction.py` | fator de atrito de Fanning (Churchill) |
 | `mfsim/closures/` | fechamentos por padrão (estratificado, anular, bolhas, intermitente) e identificação do padrão (IPE: Taitel, Pots, critérios de estabilidade) |
 | `mfsim/models/` | modelos de duto: dois fluidos (4 eq.), mistura Beggs & Brill (3 eq.), monofásicos |
-| `mfsim/discretization/` | Galerkin, Petrov-Galerkin, diferenças centrais, diferenças regressivas (métodos da tese) e **volumes finitos escalonados com upwind pela velocidade de fase** (`fv_upwind`, novo) |
-| `mfsim/network/` | dados do caso, especificações temporais, válvula/reservatório/válvula de retenção/conexão, montagem da rede e sistema de EDOs |
+| `mfsim/discretization/` | Galerkin, Petrov-Galerkin, diferenças centrais, diferenças regressivas (métodos da tese) e **volumes finitos escalonados com upwind pela velocidade de fase** (`fv_upwind`, novo; classes concretas por modelo: dois fluidos, deriva, monofásico, e `fv_upwind_cons` com massas por volume) |
+| `mfsim/network/` | dados do caso, especificações temporais, relações das arestas de comprimento zero (válvula/reservatório/válvula de retenção/conexão), grafo `Vertex`/`Edge` (`graph.py`, `schedules.py`) e `NetworkModel` (layout de estados, `time_inputs(t)`, núcleo puro `rhs_core(x, E_t, opt_t)`, mapa conservativo, escalas, esparsidade) |
+| `mfsim/backend/` | backend numérico injetado (`NUMPY`, `JAX`): as primitivas (`set/add` funcionais, `while_loop`, `sigmoid`, `masked_apply`, `robust_inv`, `jvp`) sobre as quais fluido, fechamentos, modelos, esquemas e rede são escritos **uma só vez** |
+| `mfsim/compiled.py` | `CompiledNetwork(model)`: o mesmo `NetworkModel` reconstruído com o backend JAX, `jit` do `rhs_core` e Jacobiana exata por `jacfwd` (`build_jax_rhs`/`get_jax`) |
+| `mfsim/core/` | slots do estado, `PortKind` (livre/Dirichlet/Neumann), dataclasses de opções (modelo, esquema, tempo, referência, integração) |
+| `mfsim/io/`, `mfsim/initial/` | casos em JSON (`mfsim-case/1`, `$ref`/`$include`), conversão dos `.mf2`; receitas de condição inicial (bloqueada, linha fechada) |
+| `mfsim/runs.py`, `mfsim/analysis.py` | carregador único das corridas gravadas (`load_run`, `case_from_meta`, `integrate_run`), assinaturas de ciclo |
+| `cases/`, `tools/`, `tests/golden/` | casos JSON (capítulo 10, severe slug), ferramentas (`make_nb`, `golden_generate`, `manifest`), referências de regressão (nível A = bit a bit) |
 | `mfsim/integrators/` | BDF implícito próprio (ordem 1–2, passo adaptativo, Newton modificado, Jacobiana colorida) e invólucro do `solve_ivp` |
 | `mfsim/steady.py`, `mfsim/initial_guess.py` | estado estacionário (Newton + pseudo-transiente) e estimativa inicial |
 | `mfsim/io_legacy.py` | leitura dos `.mf2` originais (entrada e resultados do MATLAB) |
@@ -261,12 +267,11 @@ picos em 6.3–6.8 kg/s (referência 6.7). Sem ganho ou piores: BDF1, relaxaçã
 fase ausente mais longa ou mais curta, γL = 30, tolerância relativa só em P,
 Jacobiana a cada passo, passos diferentes nas diferenças finitas.
 
-**Lado direito em JAX** (`mfsim/jaxrhs.py`, `build_jax_rhs(model)` → `(rhs, jac)`).
-Reescrita em JAX do subconjunto usado nos casos de intermitência severa (um duto
-`fv_upwind` conservativo, estratificado + bolhas com misturas por ângulo e por
-fração, termo de pressão interfacial, limitador, relaxação, viscosidade
-artificial, contornos tipo B com tabelas no tempo); reproduz `NetworkModel.rhs`
-a 1e−13 (`tests/test_jax_rhs.py`). `jit` leva a avaliação de 0.43 para 0.08 ms
+**Lado direito em JAX** (`mfsim/compiled.py`, `build_jax_rhs(model)` → `(rhs, jac)`).
+Na primeira versão foi uma reescrita em JAX do subconjunto usado nos casos de
+intermitência severa; desde a reorganização (secção "Lado direito em JAX para
+toda a tese") é o mesmo código numpy executado com o backend JAX injetado.
+Reproduz `NetworkModel.rhs` a 1e−13 (`tests/test_jax_rhs.py`). `jit` leva a avaliação de 0.43 para 0.08 ms
 e a Jacobiana exata (`jax.jacfwd`) custa 0.9 ms contra 10.7 ms das diferenças
 finitas coloridas; o integrador a recebe por `ImplicitBDF(jac_fun=...)`. A
 Jacobiana exata não reduz as iterações de Newton (a dificuldade é a
@@ -293,7 +298,7 @@ hold-up nos limites), falhou de forma instrutiva: cada duto conservava massa a
 741 kg dos 1590 kg alimentados sem os armazenar (o limitador anula a derivada do
 hold-up e o volume não retém o excesso) — um sumidouro de massa que também
 tornava o sistema rígido (475 mil passos). Correções, todas em
-`NetworkModel`/`jaxrhs`: (1) em modo conservativo os vértices entram no mapa de
+`NetworkModel` (numpy e JAX, o mesmo código): (1) em modo conservativo os vértices entram no mapa de
 massas, T = (ρG·HG, ρL·(1 − HG)) por vértice, com a EDO d(m)/dt = (QG, QL)/V
 exata e sem limitador — é uma mudança de variáveis, não um DAE: a relação
 mL/ρL(P) + mG/ρG(P) = V é invertível e dá P e HG explicitamente (o DAE só
@@ -390,25 +395,47 @@ Quais lições do severe slug se transferem aos demais casos (medido):
 - o orçamento de Newton e as tolerâncias folgadas quase nada rendem no gas
   lift (custo nos eventos de *heading*, não em toque acústico).
 
-## Lado direito em JAX para toda a tese (`mfsim/jaxrhs.py`, `jax_physics.py`, `jax_schemes.py`)
+## Lado direito em JAX para toda a tese (`mfsim/backend`, `mfsim/compiled.py`)
 
-`build_jax_rhs(model)` (ou `get_jax(model)`, com cache) devolve `(rhs, jac)`
-compilados para qualquer `NetworkModel` dos notebooks: modelos de duto (dois
-fluidos com padrão fixo e misturas por ângulo/fração, deriva de Beggs & Brill,
-monofásicos), esquemas nodais (diferenças centrais e regressivas, Galerkin,
-Petrov-Galerkin) e escalonado de dois fluidos (primitivo e conservativo),
-vértices de contorno e dinâmicos, acoplamentos, chokes, reservatórios, válvulas
-de retenção, filtro anti-refluxo e tabelas no tempo. Cobre também a identificação
-automática de padrão do modelo a dois fluidos (regime 6, ver seção própria), o
-escalonado de ordem 2 (`fv_order=2`, MUSCL/minmod) e o escalonado monofásico
-(`make_staggered_single`; `tests/test_fv_single.py`). Não coberto: volumes finitos
-para o modelo de deriva (não existem nem em numpy). A
-reprodução do lado direito numpy é a precisão de máquina em todos os casos
-(`tests/test_jax_network.py`, `tests/test_jax_rhs.py`); a Jacobiana é exata
-(`jax.jacfwd`). Uso: `simulate(case, jax=True)`, `steady_state(case, jax=True)`,
-`integrate_implicit(model, ..., jax=True)` ou `ImplicitBDF(rhs, jac_fun=jac)`.
-A compilação (0.1–5 s por modelo) fica em cache no disco
-(`~/.cache/mfsim_jax`, variável `MFSIM_JAX_CACHE`).
+Desde a reorganização de 2026-10 (fase 2) não existe uma segunda implementação:
+fluido, fechamentos, identificação de padrão, modelos de duto, esquemas, relações
+das arestas e `NetworkModel` são escritos uma só vez sobre um backend injetado
+(`mfsim/backend`: `NumpyBackend`, `JaxBackend`), com regras de forma funcional —
+sem escrita in-place (`bk.set`/`bk.add`), laços por `bk.while_loop` com o mesmo
+critério de paragem, `if` só sobre configuração estática (formas, opções),
+`where` em vez de ramos em valores, NaN tratado por último, `np.` só em constantes
+de construção. `CompiledNetwork(model)` (`build_jax_rhs(model)`/`get_jax(model)`,
+com cache no modelo) reconstrói o `NetworkModel` com o backend JAX e devolve
+`(rhs, jac)` compilados: `jit` do núcleo puro `rhs_core(x, E_t, opt_t)` e
+Jacobiana exata por `jacfwd`; as tabelas no tempo (`time_inputs(t)`) são
+avaliadas em numpy e passadas como argumentos. Cobre tudo o que o numpy cobre:
+modelos de duto (dois fluidos com padrão fixo, misturas por ângulo/fração e
+identificação automática, deriva de Beggs & Brill, monofásicos), esquemas nodais
+(diferenças centrais e regressivas, Galerkin, Petrov-Galerkin) e escalonados
+(dois fluidos primitivo/conservativo, ordem 2 MUSCL, deriva e monofásicos, e
+`fv_upwind_cons`, antes fora do caminho JAX), vértices de contorno e dinâmicos,
+acoplamentos, chokes, reservatórios, válvulas de retenção e tabelas no tempo.
+Paridade numpy × JAX a 1e−9 (na prática 1e−14) em toda a matriz de
+configurações (`tests/test_compiled.py`, `test_backend_parity.py`,
+`test_jax_network.py`, `test_jax_rhs.py`, `test_jax_regime_auto.py`,
+`test_fv_drift.py`, `test_fv_single.py`), com `make_jaxpr` a garantir que o núcleo
+traça sem ramos em valores. O caminho numpy ficou **bit-idêntico** ao anterior
+(goldens de nível A do capítulo 10, das 76 corridas gravadas e do severe slug) e
+com o mesmo custo (referência 150 s: 35 s contra 33 s, mesmos 1871 passos; JAX
+3.2 s contra 4.9 s). A identidade de valores entre backends é garantida por
+construção: sigmoide com a mesma fórmula (o `custom_jvp` só corrige a tangente
+no corte de ±700), `masked_apply` (numpy avalia os fechamentos só no subconjunto
+ativo, como antes; JAX avalia tudo e mascara com `where`), nível estratificado e
+`solve_pressure` com o mesmo critério de paragem, derivadas internas do Beggs &
+Brill por diferenças finitas no numpy e exatas (`jvp`) no JAX por omissão. Os
+goldens do caminho JAX foram regenerados nessa transição (rhs/Jacobiana nos
+estados históricos a 2e−15 do anterior, nível B; as trajetórias longas seguem
+outra sequência de passos pela sensibilidade caótica, com o 1.º blowdown da
+referência em 48 s como no numpy — antes 42 s — e o mesmo ciclo; registo em
+`tests/golden/CHANGELOG.md`). Uso: `simulate(case, jax=True)`,
+`steady_state(case, jax=True)`, `integrate_implicit(model, ..., jax=True)` ou
+`ImplicitBDF(rhs, jac_fun=jac)`. A compilação (0.1–5 s por modelo) fica em
+cache no disco (`~/.cache/mfsim_jax`, variável `MFSIM_JAX_CACHE`).
 
 Comparação numpy × JAX nos casos dos notebooks (mesmo estado inicial, tempos
 sem a compilação; estados coincidem dentro da tolerância, as diferenças
@@ -463,7 +490,7 @@ Objetivo: rodar o severe slug com a identificação de padrão da tese
 Kelvin–Helmholtz, Jeffreys, Froude e turbulência com chaveamento sigmoidal de
 inclinação `k_switch`) em vez de prescrever estratificado na linha e bolhas no riser.
 
-**Porte para JAX.** `jax_physics.equilibrium_fractions`/`identify_regime`
+**Porte para JAX.** `closures.regime.equilibrium_fractions`/`identify_regime` (com `bk=JAX`)
 reproduzem o numpy a 1e−14 (`tests/test_jax_regime_auto.py`): as grandezas
 geométricas das tabelas de hD (FI, Λ) são constantes pré-calculadas, a busca na
 tabela (argmin, constante por partes no estado) é feita sem gradiente

@@ -1,11 +1,11 @@
 ### célula 3
 10.3.2 Poço com gas lift - cenário 2 (com intermitência)
-Choke de gás 75%->15% entre 100 e 150 s.
+Choke de gás 75%->15% entre 100 e <t>s.
 Figuras da tese: Figs. 10.41-10.46
 
 ### célula 3
-[implicit BDF] steps=342 rejected=58 rhs=14770 jac=473 | 11.2s
-tempo de CPU: 11.18 s
+[implicit BDF] steps=342 rejected=58 rhs=14770 jac=473 | <t>s
+tempo de CPU: <t>s
 duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
    1 liquid       PT        3.30e-03       4.16e-01   7.93e-03
    1 liquid       qL        3.04e-01       1.48e+01   2.05e-02
@@ -20,12 +20,12 @@ vértices dinâmicos: máx |dif| = [0.001      0.00170711]
 
 ### célula 6
 10.3.2 Poço com gas lift - cenário 1 (sem intermitência)
-Choke de gás 100%->75% entre 100 e 150 s.
+Choke de gás 100%->75% entre 100 e <t>s.
 Figuras da tese: Figs. 10.36-10.40
 
 ### célula 6
-[implicit BDF] steps=95 rejected=10 rhs=1209 jac=29 | 0.8s
-tempo de CPU: 0.78 s
+[implicit BDF] steps=95 rejected=10 rhs=1209 jac=29 | <t>s
+tempo de CPU: <t>s
 
 ### célula 8
-JAX: 1.57 s (357 passos; compilação 0.57 s, uma vez por modelo) | numpy: 11.18 s (342 passos) | diferença máxima relativa dos estados 9.6e-03
+JAX: <t>s (357 passos; compilação <t>s, uma vez por modelo) | numpy: <t>s (342 passos) | diferença máxima relativa dos estados 9.6e-03

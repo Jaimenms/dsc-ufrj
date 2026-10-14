@@ -44,7 +44,7 @@ def _case(phase="L", order=1, tf=20.0):
 
 @pytest.mark.parametrize("phase, order", [("L", 1), ("G", 1), ("L", 2)])
 def test_single_phase_fv_jax_matches_numpy(phase, order):
-    from mfsim.jaxrhs import build_jax_rhs
+    from mfsim.compiled import build_jax_rhs
     model = build_model(_case(phase, order))
     assert model.pipes[0].scheme.name == "fv_upwind" and not model.conservative
     rhs_j, jac_j = build_jax_rhs(model)

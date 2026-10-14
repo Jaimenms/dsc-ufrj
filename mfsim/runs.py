@@ -107,7 +107,7 @@ def integrate_run(case, opts=None, verbose=False, t_eval=None, start=None):
         atol = opts["tol_range"] * model.state_scales(X0)
     fun, jac = model.rhs, None
     if opts.get("jax"):
-        from .jaxrhs import build_jax_rhs
+        from .compiled import build_jax_rhs
         fun, jac = build_jax_rhs(model)
     bdf = ImplicitBDF(fun, S=model.jac_sparsity(), rtol=rtol, atol=atol, bounds=(lo, hi), jac_fun=jac, min_step=1e-9,
                       verbose=verbose, max_order=opts.get("order", 2), max_newton=opts.get("max_newton", 12),

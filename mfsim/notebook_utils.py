@@ -119,7 +119,7 @@ def jax_comparison(case, res_numpy=None, label="", **simulate_kw):
     versão numpy: tempo de CPU (sem a compilação, que é feita uma vez e guardada em
     cache no disco), passos e diferença máxima relativa dos estados. Devolve o Results
     da versão JAX."""
-    from .jaxrhs import get_jax
+    from .compiled import get_jax
     from .simulation import build_model
     model = build_model(case)
     t0 = time.time()

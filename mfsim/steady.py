@@ -19,7 +19,7 @@ from .integrators.jacobian import color_groups, colored_jacobian
 def newton_steady(model, X0, t=0.0, tol=1e-9, max_iter=50, verbose=True, bounds=None, jax=False):
     """Newton amortecido; jax=True usa o lado direito compilado e a Jacobiana exata (densa)."""
     if jax:
-        from .jaxrhs import get_jax
+        from .compiled import get_jax
         rhs, jac = get_jax(model)
     else:
         rhs, jac = model.rhs, None
@@ -78,7 +78,7 @@ def pseudo_transient(model, X0, t=0.0, t_final=1e5, rtol=1e-6, atol=1e-8, verbos
     S = model.jac_sparsity()
     kw = {}
     if jax:
-        from .jaxrhs import get_jax
+        from .compiled import get_jax
         rhs_j, jac_j = get_jax(model)
         kw["jac_fun"] = lambda tt, x: jac_j(t, x)
         rhs_t = rhs_j
@@ -98,7 +98,7 @@ def pseudo_transient(model, X0, t=0.0, t_final=1e5, rtol=1e-6, atol=1e-8, verbos
 
 
 def steady_state(model, X0, t=0.0, tol=1e-8, verbose=True, bounds=None, pt_time=1e4, jax=False):
-    """Newton; se falhar, pseudo-transiente seguido de Newton. jax=True usa mfsim.jaxrhs."""
+    """Newton; se falhar, pseudo-transiente seguido de Newton. jax=True usa mfsim.compiled."""
     X, info = newton_steady(model, X0, t=t, tol=tol, verbose=verbose, bounds=bounds, jax=jax)
     if info["converged"]:
         return X, info

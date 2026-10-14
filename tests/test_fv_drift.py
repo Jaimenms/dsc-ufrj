@@ -45,7 +45,7 @@ def test_drift_fv_steady_state_stable():
 
 def test_drift_fv_jax_matches_numpy():
     jax = pytest.importorskip("jax")
-    from mfsim.jaxrhs import build_jax_rhs
+    from mfsim.compiled import build_jax_rhs
     case = _fv_case("fd")
     model, X, info = steady_state(case, verbose=False, update_case=False)
     rhs_j, jac_j = build_jax_rhs(model)

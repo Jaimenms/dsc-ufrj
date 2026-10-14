@@ -18,6 +18,7 @@ import copy
 import datetime as _dt
 import hashlib
 import json
+import re
 import os
 import subprocess
 import sys
@@ -120,7 +121,7 @@ def gen_severe():
     """Severe slug de referência (150 s, numpy e JAX), rhs/Jacobiana/transformação nos estados
     históricos da corrida de referência e caso de laboratório (Jansen, 10 s, JAX)."""
     from mfsim.runs import integrate_run
-    from mfsim.jaxrhs import build_jax_rhs
+    from mfsim.compiled import build_jax_rhs
     out = {}
     run, case, opts = _severe_case(REFERENCE_RUN, tf=150.0, dt_out=2.0)
     for backend in ("numpy", "jax"):
@@ -308,8 +309,20 @@ def gen_notebook_text():
     return {}
 
 
+_VOLATILE = re.compile(r"\b\d+(?:\.\d+)?\s?(ms|s)\b")
+_VOLATILE_CPU = re.compile(r"'cpu': \d+(?:\.\d+)?(?:e-?\d+)?")
+
+
+def normalize_text(text: str) -> str:
+    """Substitui os tokens voláteis dos outputs (tempos de CPU/parede como '0.8s', '2.31 s',
+    '12 ms', ``'cpu': 0.94`` nos dicionários `info`) por um marcador, para que a comparação
+    seja de resultados e não de cronómetro."""
+    return _VOLATILE_CPU.sub("'cpu': <t>", _VOLATILE.sub(r"<t>\1", text))
+
+
 def notebook_text(path) -> str:
-    """Concatena os outputs de texto (stream) das células de código de um .ipynb."""
+    """Concatena os outputs de texto (stream) das células de código de um .ipynb, com os
+    tempos de execução normalizados (ver `normalize_text`)."""
     import json as _json
     nb = _json.load(open(path))
     parts = []
@@ -319,7 +332,7 @@ def notebook_text(path) -> str:
         for o in c.get("outputs", []):
             if o.get("output_type") == "stream":
                 parts.append(f"### célula {i}\n" + "".join(o.get("text", [])))
-    return "\n".join(parts)
+    return normalize_text("\n".join(parts))
 
 
 GENERATORS = dict(notebook_text=gen_notebook_text, chapter10=gen_chapter10, variants=gen_variants, severe=gen_severe, results=gen_results, runs_meta=gen_runs_meta, nightly=gen_nightly)

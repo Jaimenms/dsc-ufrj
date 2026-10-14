@@ -17,7 +17,7 @@ SCHEMES = ["galerkin", "petrov_galerkin", "fd_central", "fd_upwind"]
 
 @pytest.mark.parametrize("cid", CASES)
 def test_jax_network_matches_numpy(cid):
-    from mfsim.jaxrhs import build_jax_rhs
+    from mfsim.compiled import build_jax_rhs
     case, raw = load_chapter10_case(cid)
     for pipe in case.pipes:
         pipe.extra["bb_derivatives"] = "fd"      # equivalência exata com o numpy (que usa diferenças finitas na tese)
@@ -35,7 +35,7 @@ def test_jax_network_matches_numpy(cid):
 
 @pytest.mark.parametrize("method", SCHEMES)
 def test_jax_schemes_match_numpy(method):
-    from mfsim.jaxrhs import build_jax_rhs
+    from mfsim.compiled import build_jax_rhs
     case, raw = load_chapter10_case("10.1.1")
     c = copy.deepcopy(case)
     c.settings.method = method
@@ -51,7 +51,7 @@ def test_jax_schemes_match_numpy(method):
 def test_beggs_brill_exact_derivatives_close_to_fd(cid):
     """As derivadas internas exatas (jvp) do Beggs & Brill concordam com as diferenças
     finitas de 1e-3 da tese dentro do erro de truncamento destas (~1e-3 relativo)."""
-    from mfsim.jaxrhs import build_jax_rhs
+    from mfsim.compiled import build_jax_rhs
     out = {}
     x = None
     for mode in ("fd", "exact"):

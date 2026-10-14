@@ -48,13 +48,13 @@ def test_thesis_drag_gives_large_slip_at_atmospheric_conditions():
 
 
 def test_bubble_drag_jax_matches_numpy():
-    jax = pytest.importorskip("jax")
-    import jax.numpy as jnp
-    from mfsim.jax_physics import bubble as bubble_j
+    pytest.importorskip("jax")
+    from mfsim.backend import get_backend
+    JAX = get_backend("jax")
     for phys in (0.0, 1.0):
         inp = _inp(0.1, 0.5, phys=phys)
         t_np = bubble(inp)
-        d = {k: jnp.asarray(getattr(inp, k)) for k in ("alphaG", "alphaL", "vL", "vLS", "vG", "vGS", "AreaL", "AreaG", "D", "eps", "theta", "rhoL", "rhoG", "muL", "muG", "CL", "CG", "sigma", "beta", "hD", "bubble_drag")}
-        t_j = bubble_j(d)
-        assert np.allclose(np.asarray(t_j["GammaG"]), t_np.GammaG, rtol=1e-10, atol=1e-12)
-        assert np.allclose(np.asarray(t_j["GammaL"]), t_np.GammaL, rtol=1e-10, atol=1e-12)
+        inp_j = ClosureInputs(**{k: (JAX.asarray(v) if v is not None else None) for k, v in inp.__dict__.items()})
+        t_j = bubble(inp_j, bk=JAX)
+        assert np.allclose(np.asarray(t_j.GammaG), t_np.GammaG, rtol=1e-10, atol=1e-12)
+        assert np.allclose(np.asarray(t_j.GammaL), t_np.GammaL, rtol=1e-10, atol=1e-12)

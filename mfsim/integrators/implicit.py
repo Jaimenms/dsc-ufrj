@@ -403,7 +403,7 @@ class ImplicitBDF:
 def integrate_implicit(model, X0, t_eval, rtol=1e-4, atol=1e-6, max_step=np.inf, bounds=None,
                        verbose=False, progress=True, jax=False, tol_range=None, **kw):
     """Integra o modelo com o BDF implícito; jax=True usa o lado direito compilado e a
-    Jacobiana exata (mfsim.jaxrhs) em vez de diferenças finitas coloridas.
+    Jacobiana exata (mfsim.compiled) em vez de diferenças finitas coloridas.
 
     tol_range: tolerância absoluta como fração da faixa de cada estado
     (model.state_scales: 1 para frações, pressão e vazões de referência do caso);
@@ -417,7 +417,7 @@ def integrate_implicit(model, X0, t_eval, rtol=1e-4, atol=1e-6, max_step=np.inf,
         kw.setdefault("transform_jac", model.transform_jacobian)
     fun = model.rhs
     if jax:
-        from ..jaxrhs import get_jax
+        from ..compiled import get_jax
         fun, jac_fun = get_jax(model)
         kw.setdefault("jac_fun", jac_fun)
     bdf = ImplicitBDF(fun, S=S, rtol=rtol, atol=atol, max_step=max_step, bounds=bounds,
