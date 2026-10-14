@@ -79,3 +79,37 @@ def test_export_severe_case(tmp_path):
     assert d["schema"] == "mfsim-case/1" and d["network"]["edges"]
     model = build_model(case_from_json(str(out)))
     assert np.all(np.isfinite(model.rhs(0.0, model.initial_state())))
+
+
+def _runs(fname):
+    return (ROOT / "tests" / "golden" / "cli" / fname).read_text().split()
+
+
+def _ref(fname):
+    return (ROOT / "tests" / "golden" / "cli" / fname).read_text()
+
+
+@pytest.mark.data
+def test_scan_matches_old_scan_summary(capsys, data_dir):
+    main(["scan", *_runs("scan_runs.txt")])
+    assert capsys.readouterr().out == _ref("scan_reference.txt")
+
+
+@pytest.mark.data
+def test_riser_matches_old_riser_cc(capsys, data_dir):
+    main(["riser", *_runs("riser_runs.txt")])
+    assert capsys.readouterr().out == _ref("riser_reference.txt")
+
+
+@pytest.mark.data
+def test_val_matches_old_val_summary(capsys, tmp_path, data_dir):
+    import re
+
+    rc = main(["val", *_runs("val_runs.txt"), "--plot", "--out-dir", str(tmp_path)])
+    out = capsys.readouterr().out
+    # o antigo val_summary imprimia sempre "passos ?"; o comando mostra os passos quando os há
+    norm = lambda s: re.sub(
+        r"passos +\S+", "passos ?", "\n".join(l for l in s.splitlines() if not l.startswith("figura:")) + "\n"
+    )
+    assert rc == 0 and norm(out) == norm(_ref("val_reference.txt"))
+    assert all((tmp_path / f"val_{n}.png").exists() for n in _runs("val_runs.txt"))

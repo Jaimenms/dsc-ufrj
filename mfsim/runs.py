@@ -1,8 +1,8 @@
 """Corridas gravadas: um só carregador para os ficheiros `notebooks/data/*.npz`.
 
 Substitui as seis cópias da lógica "reconstruir o caso a partir do `meta`" (notebook
-`load_blocked_run`, cycle_stats, scan_summary, riser_cc, val_summary.rebuild,
-analyze_run). Os defaults são os do notebook `nb_severe_slug` — em particular
+`load_blocked_run` e os antigos scripts cycle_stats, scan_summary, riser_cc, val_summary e
+analyze_run, hoje subcomandos da CLI ou arquivados). Os defaults são os do notebook `nb_severe_slug` — em particular
 `gammaL = 100`, o valor com que as corridas de referência foram feitas (67 dos 80
 ficheiros não gravam `gammaL`; `scratch/severe_D.py` usava 1000 por omissão, mas os
 resultados guardados são bit-idênticos aos obtidos com 100).
@@ -619,3 +619,18 @@ def meta_from_severe_opts(opts, info=None) -> dict:
         n_rejected=info.get("n_rejected"),
         cpu=info.get("cpu"),
     )
+
+
+def driver_opts(run) -> dict:
+    """Opções no dialeto do driver para uma corrida: as próprias nos ficheiros antigos do
+    driver (`opts`), ou o `meta` das corridas gravadas traduzido (H, low_void, high_void,
+    vblend, relax). (Era `load_opts` em tools/val_summary.py.)"""
+    if run.opts is not None:
+        return dict(run.opts)
+    opts = dict(run.meta)
+    opts.setdefault("H", opts.get("H_riser", 20.0))
+    opts.setdefault("low_void", opts.get("low_void_regime"))
+    opts.setdefault("high_void", opts.get("high_void_regime"))
+    opts.setdefault("vblend", opts.get("vertical_blend"))
+    opts.setdefault("relax", opts.get("relax_time"))
+    return opts

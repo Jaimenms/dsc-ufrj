@@ -21,8 +21,8 @@ sobrepressão dá um blowdown inicial violento a escala de laboratório), padrã
 fixo, `noslip`, anular > 90 %, massa virtual 0.5, bolhas < 1 %, `tol_range` 0.01,
 JAX. O volume de gás a montante é representado por linha horizontal de entrada
 (`L_h1`; o estratificado guarda ≈ 35 % de gás nela: 15 m ≈ 5 m de gás no caso
-Jansen, contra 10 m da bancada). Resumo pelo `tools/val_summary.py` e figuras
-pelo `tools/val_plot.py`.
+Jansen, contra 10 m da bancada). Resumo e figuras por `mfsim val <corrida> --plot`
+(`mfsim.analysis.lab_validation`, `mfsim.plotting.lab_validation_figure`).
 
 **Achado 1 — fechamento de bolhas da tese.** Na primeira corrida (Jansen, fechamentos
 da tese, partida bloqueada) o modelo dá período 75 s contra 46.6 s medidos e
@@ -74,7 +74,7 @@ pressão — não voltou a aparecer com γL = 100. O integrador ganhou um diagn�
 do passo rastejante (componentes dominantes do erro local e da última atualização
 de Newton quando h < 10⁻³ s) e o `severe_D.py` grava a trajetória parcial em falha.
 
-**Resultados** (`tools/val_summary.py`; período = média entre mínimos de P_in abaixo
+**Resultados** (`mfsim val`; período = média entre mínimos de P_in abaixo
 de 30 % da faixa; pressão na entrada da linha, kPa abs; "medido" = fonte acima).
 Partida de linha fechada e γL = 100 salvo indicação; "tese"/"físico" = fechamento de bolhas.
 

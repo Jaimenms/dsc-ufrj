@@ -137,3 +137,56 @@ def eigenvalue_plot(ev, ax=None, title=""):
         0.02, 0.95, f"{ev.size} autovalores, {n_pos} com parte real > 0", transform=ax.transAxes, fontsize=8, va="top"
     )
     return ax
+
+
+def lab_validation_figure(run, tag, t0=None, t1=None, out=None, dpi=90):
+    """Figura rápida de uma corrida de validação de laboratório: pressão na entrada (kPa) com
+    as faixas publicadas, vazão de líquido na saída, fração de gás na base e no topo do riser
+    e velocidades das fases na base. (Era tools/val_plot.py.)"""
+    from .analysis import lab_reference
+    from .results import Results
+    from .runs import case_from_severe_opts, driver_opts, flows_from_severe_opts
+    from .simulation import build_model
+
+    opts = driver_opts(run)
+    T = run.T
+    case = case_from_severe_opts(opts, tf=T[-1])
+    fluid = case.fluid
+    qL, qG, A, _ = flows_from_severe_opts(opts, fluid)
+    p = Results(build_model(case), T, run.X).pipe(0)
+    m = case.meta
+    x = p["x"]
+    ib = int(np.argmin(np.abs(x - m["s_elbow0"])))
+    it_ = int(np.argmin(np.abs(x - (m["s_elbow0"] + m["H_riser"]))))
+    t0 = T[0] if t0 is None else t0
+    t1 = T[-1] if t1 is None else t1
+    sel = (T >= t0) & (T <= t1)
+    fig, ax = plt.subplots(4, 1, figsize=(10, 9), sharex=True)
+    ax[0].plot(T[sel], p["out"]["P_bar"][1][sel] * 100)
+    ax[0].set_ylabel("P entrada (kPa)")
+    key, ref = lab_reference(tag)
+    if key:
+        ax[0].axhline(ref["P_min"], ls=":", c="k")
+        ax[0].axhline(ref["P_max"], ls=":", c="k")
+        ax[0].set_title(ref["fonte"] + f" | exp. período {ref['periodo']} s", fontsize=9)
+    ax[1].plot(T[sel], p["out"]["qL"][-1][sel])
+    ax[1].axhline(qL, ls=":", c="k")
+    ax[1].set_ylabel("qL saída (kg/s)")
+    ax[2].plot(T[sel], p["out"]["alphaG"][ib + 1][sel], label="base do riser")
+    ax[2].plot(T[sel], p["out"]["alphaG"][it_ - 1][sel], label="topo do riser")
+    ax[2].plot(T[sel], p["out"]["alphaG"][ib - 2][sel], label="linha, 2 células antes do joelho")
+    ax[2].legend(fontsize=8)
+    ax[2].set_ylabel("αG")
+    vG_ = p["out"]["qG"][ib + 1] / (
+        fluid.rhoG(p["out"]["P_bar"][ib + 1] * 1e5) * np.maximum(p["out"]["alphaG"][ib + 1], 1e-3) * A
+    )
+    vL_ = p["out"]["qL"][ib + 1] / (fluid.rhoL0 * np.maximum(1 - p["out"]["alphaG"][ib + 1], 1e-3) * A)
+    ax[3].plot(T[sel], vG_[sel], label="vG base riser")
+    ax[3].plot(T[sel], vL_[sel], label="vL base riser")
+    ax[3].set_ylabel("m/s")
+    ax[3].legend(fontsize=8)
+    ax[3].set_xlabel("t (s)")
+    fig.tight_layout()
+    if out:
+        fig.savefig(out, dpi=dpi)
+    return fig

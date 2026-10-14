@@ -28,6 +28,9 @@ uv run mfsim run cases/severe_slug/reference.json --backend jax --tf 150 --out r
 uv run mfsim run cases/severe_slug/lab_jansen.json --backend jax        # validação de laboratório (shut_in, slow)
 uv run mfsim steady cases/chapter10/10_1_1.json --out /tmp/10_1_1_ss.json
 uv run mfsim stats severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys   # ciclos de uma corrida gravada
+uv run mfsim scan severe_slug_blocked_conservative_arc_scan_P2_g005          # varredura da fronteira (Bøe, padrão, ciclos)
+uv run mfsim riser severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys   # filme no riser (contracorrente)
+uv run mfsim val severe_slug_lab_fabre2_fisico --plot                         # validação de laboratório + figura
 uv run mfsim export-case --chapter10            # .mf2 -> cases/chapter10/*.json
 uv run mfsim export-case --severe --out novo.json --param D=0.05 --param start=blocked
 ```
@@ -35,12 +38,14 @@ uv run mfsim export-case --severe --out novo.json --param D=0.05 --param start=b
 `mfsim run` grava a corrida em npz v2 (`T`, `X`, `acc`, `meta`, `info_json`,
 `provenance_json` e o caso completo em `case_json`; `mfsim.runs.load_run` lê qualquer
 corrida — `runs/`, `notebooks/data/`, arquivo — e reconstrói caso, modelo e resultados);
-uma falha do integrador grava a trajetória parcial. As ferramentas de análise e
-diagnóstico ficam em `tools/` (`severe_run.py` é o antigo driver `scratch/severe_D.py`
-com as mesmas opções; `cycle_stats`, `scan_summary`, `val_summary`, `riser_cc`,
-`verify_jax`, `diag_*`); a antiga `scratch/` está arquivada em
-`archive/scratch_2026-10/` (índice em `INDEX.md`, nada apagado; os dados fora do git
-são fixados por `MANIFEST.sha256`, `uv run python tools/manifest.py --check`).
+uma falha do integrador grava a trajetória parcial. As análises das corridas gravadas
+(ciclos, varredura da fronteira, filme no riser, validação de laboratório) são
+subcomandos da CLI, com testes que reproduzem as tabelas publicadas; em `tools/` ficam só
+`golden_generate`, `manifest`, `make_nb` e o pipeline no dialeto antigo (`severe_run.py`,
+o driver `scratch/severe_D.py` com as mesmas opções, e `save_run_data.py`). A antiga
+`scratch/` e os diagnósticos pontuais estão arquivados em `archive/scratch_2026-10/`
+(índice em `INDEX.md`; os dados fora do git são fixados por `MANIFEST.sha256`,
+`uv run python tools/manifest.py --check`).
 
 ## Estrutura
 
@@ -58,8 +63,8 @@ são fixados por `MANIFEST.sha256`, `uv run python tools/manifest.py --check`).
 | `mfsim/core/` | slots do estado, `PortKind` (livre/Dirichlet/Neumann), dataclasses de opções (modelo, esquema, tempo, referência, integração) |
 | `mfsim/io/`, `mfsim/initial/` | casos em JSON (`mfsim-case/1`, `$ref`/`$include`), conversão dos `.mf2`, registo legado (`legacy_case.py`: o struct `dados` do MATLAB, só como formato de entrada convertido para o grafo); receitas de condição inicial (bloqueada, linha fechada) |
 | `mfsim/runs.py`, `mfsim/analysis.py` | carregador único das corridas gravadas (`load_run`, `case_from_meta`, `integrate_run`), assinaturas de ciclo |
-| `mfsim/cli.py` | `mfsim run\|steady\|stats\|export-case\|nb` |
-| `cases/`, `tools/`, `tests/golden/`, `archive/` | casos JSON (capítulo 10, severe slug), ferramentas (`make_nb`, `golden_generate`, `manifest`, `severe_run`, análises), referências de regressão (nível A = bit a bit), arquivo da antiga `scratch/` |
+| `mfsim/cli.py` | `mfsim run\|steady\|stats\|scan\|riser\|val\|export-case\|nb` |
+| `cases/`, `tools/`, `tests/golden/`, `archive/` | casos JSON (capítulo 10, severe slug), ferramentas (`make_nb`, `golden_generate`, `manifest`, `severe_run`, `save_run_data`), referências de regressão (nível A = bit a bit), arquivo da antiga `scratch/` e dos diagnósticos |
 | `mfsim/integrators/` | BDF implícito próprio (ordem 1–2, passo adaptativo, Newton modificado, Jacobiana colorida) e invólucro do `solve_ivp` |
 | `mfsim/steady.py`, `mfsim/initial_guess.py` | estado estacionário (Newton + pseudo-transiente) e estimativa inicial |
 | `mfsim/io_legacy.py` | leitura dos `.mf2` originais (entrada e resultados do MATLAB) |

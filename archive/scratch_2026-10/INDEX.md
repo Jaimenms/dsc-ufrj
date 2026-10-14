@@ -73,3 +73,25 @@ Equivalentes atuais: `scratch/severe_D.py '{opts}' tag` -> `tools/severe_run.py`
 | `nblogs/` | 8 |
 | `npz/` | 182 |
 | `sh/` | 3 |
+
+## Revisão de `tools/` (2026-10-14)
+
+Depois da linha de comando `mfsim` e dos goldens, só ficam em `tools/` as ferramentas que o
+código ou os testes invocam (`golden_generate`, `manifest`, `make_nb`) e o pipeline de corridas
+no dialeto antigo (`severe_run`, `save_run_data`). As quatro análises que produziram as tabelas
+publicadas passaram a subcomandos (`mfsim scan`, `mfsim riser`, `mfsim val [--plot]`;
+`mfsim.analysis.scan_summary/riser_countercurrent/lab_validation` e
+`mfsim.plotting.lab_validation_figure`), com testes que reproduzem a saída dos scripts; os
+scripts `scan_summary.py`, `riser_cc.py`, `val_summary.py`, `val_plot.py` e o invólucro
+`cycle_stats.py` (= `mfsim stats`) foram apagados do `tools/` (ficam no histórico do git). Os
+diagnósticos pontuais e verificações antigas, cujo papel está hoje coberto por
+`tests/test_compiled.py`, `test_jax_network.py` e `test_golden_network.py`, foram movidos para
+`tools/` deste arquivo, bem como `archive_scratch.py` (a migração que criou este arquivo):
+
+| ficheiro | propósito |
+|---|---|
+| `tools/diag_ipe.py`, `tools/diag_state.py`, `tools/diag_lab.py` | saídas densas do estado / do IPE numa janela de tempo (opções no dialeto do driver) |
+| `tools/verify_jax.py`, `tools/compare_jax.py` | verificação rhs/Jacobiana JAX vs numpy e comparação de tempos (coberto pelos testes) |
+| `tools/compare_network.py` | rede de 4 dutos vs duto único no severe slug |
+| `tools/analyze_run.py`, `tools/run_all_cases.py` | análise rápida de uma corrida; casos do capítulo 10 contra o MATLAB (coberto por `test_golden_chapter10`) |
+| `tools/archive_scratch.py` | migração de `scratch/` para este arquivo |

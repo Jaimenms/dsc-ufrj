@@ -1,0 +1,4 @@
+trajetória                           vSL   vSG P_out     L  V_up  Bøe mín  linha (IPE)  passos  ΔP_in                blowdowns  interv.   pico
+boe_bub_rules                       0.30  0.15   2.0  1000   0.0     0.01      estrat.   56710   1.61              [302, 3970]    3668s   8.81
+scan_P2_g005                        0.30  0.07   2.0  1000   0.0     0.01      estrat.   61846   1.63              [302, 6826]    6524s   8.60
+boe_vup20                           0.30  0.15   2.0  1000   2.0     0.01      estrat.   78421   1.85        [308, 2224, 5460]    2576s  11.11

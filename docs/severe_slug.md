@@ -609,7 +609,7 @@ acima de 90 %, massa virtual, bolhas abaixo de 1 %) é a mais barata de todas e
 passa a ser a recomendada; os fechamentos prescritos "estratificado na linha,
 bolhas no riser" subestimam o intervalo em ~7 %. Dados em
 `notebooks/data/severe_slug_blocked_conservative_arc_tol_{hv,hv_vm_lv}.npz`;
-diagnóstico `tools/riser_cc.py`.
+diagnóstico `mfsim riser` (`mfsim.analysis.riser_countercurrent`).
 
 ## Fechamento do riser no blowdown: intermitente contra bolhas (item 5)
 
@@ -720,7 +720,7 @@ com vSG à pressão do separador, αG = 0.5 e L = linha de entrada + descendente
 (coluna recalculada em 2026-10-13: a versão anterior de `boe_criterion` dividia L
 por sin|θ|, o que não consta das fontes e dava valores 19× maiores, como o 1.03 m/s
 do caso base); "linha" é o padrão que a
-identificação da tese atribui ao estado médio da linha (`tools/scan_summary.py`).
+identificação da tese atribui ao estado médio da linha (`mfsim scan`, `mfsim.analysis.scan_summary`).
 
 | P_out (bar) | vSL (m/s) | vSG (m/s) | Bøe mín | linha | ΔP_in | blowdowns | intervalo | pico |
 |---|---|---|---|---|---|---|---|---|

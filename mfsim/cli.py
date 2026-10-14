@@ -1,8 +1,11 @@
-"""Linha de comando do mfsim: `mfsim run|steady|stats|export-case|nb`.
+"""Linha de comando do mfsim: `mfsim run|steady|stats|scan|riser|val|export-case|nb`.
 
     mfsim run cases/severe_slug/reference.json --backend jax --tf 150 --out runs/ref150.npz
     mfsim steady cases/chapter10/10_1_1.json --out /tmp/10_1_1_ss.json
     mfsim stats severe_slug_blocked_conservative_arc ...        (nomes em notebooks/data ou caminhos .npz)
+    mfsim scan severe_slug_blocked_conservative_arc_scan_P2_g005 ...   (varredura da fronteira: Bøe, padrão da linha, ciclos)
+    mfsim riser severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys   (filme no riser: contracorrente)
+    mfsim val severe_slug_lab_fabre2_fisico --plot              (validação de laboratório contra os valores publicados)
     mfsim export-case --chapter10 [--out cases/chapter10]
     mfsim export-case --severe-runs
     mfsim export-case --severe --out novo.json --param D=0.05 --param start=blocked
@@ -120,6 +123,56 @@ def cmd_stats(a):
     return 0
 
 
+def cmd_scan(a):
+    from .analysis import SCAN_HEADER, format_scan, scan_summary
+    from .runs import load_run
+
+    print(SCAN_HEADER)
+    for name in a.runs:
+        print(
+            format_scan(os.path.splitext(os.path.basename(name))[0], scan_summary(load_run(name), t_skip=a.t_skip)),
+            flush=True,
+        )
+    return 0
+
+
+def cmd_riser(a):
+    from .analysis import format_riser, riser_countercurrent
+    from .runs import load_run
+
+    for name in a.runs:
+        print(
+            format_riser(os.path.splitext(os.path.basename(name))[0], riser_countercurrent(load_run(name))), flush=True
+        )
+    return 0
+
+
+def cmd_val(a):
+    from .analysis import format_lab, lab_validation
+    from .runs import load_run
+
+    rc = 0
+    for tag in a.runs:
+        name = os.path.splitext(os.path.basename(tag))[0]
+        try:
+            run = load_run(tag)
+            print(format_lab(lab_validation(run, name)), flush=True)
+            if a.plot:
+                import matplotlib
+
+                matplotlib.use("Agg")
+                from .plotting import lab_validation_figure
+
+                os.makedirs(a.out_dir, exist_ok=True)
+                out = os.path.join(a.out_dir, f"val_{name}.png")
+                lab_validation_figure(run, name, t0=a.t0, t1=a.t1, out=out)
+                print("figura:", out, flush=True)
+        except Exception as e:  # uma corrida em falta não impede as outras
+            print(name, "erro:", e, flush=True)
+            rc = 1
+    return rc
+
+
 def cmd_export_case(a):
     if a.chapter10:
         from .io.legacy_mf2 import export_chapter10
@@ -204,6 +257,26 @@ def main(argv=None):
     t.add_argument("--t-skip", dest="t_skip", type=float, default=100.0)
     t.add_argument("--min-gap", dest="min_gap", type=float, default=200.0)
     t.set_defaults(func=cmd_stats)
+
+    sc = sub.add_parser(
+        "scan",
+        help="varredura da fronteira de intermitência severa (Bøe, padrão da linha, ciclos) de corridas gravadas",
+    )
+    sc.add_argument("runs", nargs="+")
+    sc.add_argument("--t-skip", dest="t_skip", type=float, default=300.0)
+    sc.set_defaults(func=cmd_scan)
+
+    ri = sub.add_parser("riser", help="filme no riser (contracorrente) de corridas gravadas")
+    ri.add_argument("runs", nargs="+")
+    ri.set_defaults(func=cmd_riser)
+
+    va = sub.add_parser("val", help="validação de laboratório: período, pressões e pico contra os valores publicados")
+    va.add_argument("runs", nargs="+")
+    va.add_argument("--plot", action="store_true", help="grava a figura val_<nome>.png em --out-dir")
+    va.add_argument("--out-dir", dest="out_dir", default="runs")
+    va.add_argument("--t0", type=float)
+    va.add_argument("--t1", type=float)
+    va.set_defaults(func=cmd_val)
 
     e = sub.add_parser("export-case", help="exporta casos para JSON (mfsim-case/1)")
     e.add_argument("--chapter10", action="store_true")

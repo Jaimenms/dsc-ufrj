@@ -184,3 +184,217 @@ def format_cycle_stats(name, st):
         f"{short:48s} {n_steps:7d} {cpu:5.0f}s {str(tb.round(0).astype(int).tolist()):>24s} {st['interval']:6.0f}s "
         f"{st['q_peak']:5.2f} {st['P_min']:5.2f}-{st['P_max']:4.2f} {st['q_mean']:6.3f} {st['front_width']:5.1f}m"
     )
+
+
+# ----------------------------------------------------------------------------- varredura (era tools/scan_summary.py)
+SCAN_HEADER = (
+    f"{'trajetória':34s} {'vSL':>5s} {'vSG':>5s} {'P_out':>5s} {'L':>5s} {'V_up':>5s} {'Bøe mín':>8s} {'linha (IPE)':>12s} "
+    f"{'passos':>7s} {'ΔP_in':>6s} {'blowdowns':>24s} {'interv.':>8s} {'pico':>6s}"
+)
+_REGIME_SHORT = {1: "anular", 2: "bolhas", 3: "intermit.", 4: "estrat.", 5: "estrat.ond."}
+
+
+def scan_summary(run, t_skip=300.0):
+    """Resumo de uma corrida da varredura da fronteira de intermitência severa: vazões,
+    pressão, critério de Bøe, padrão da linha pela identificação da tese (estado médio da
+    célula no meio do trecho descendente), amplitude da pressão de entrada depois de
+    `t_skip`, blowdowns e intervalo."""
+    from .cases.severe_slug import boe_criterion
+    from .closures import equilibrium_fractions, identify_regime
+
+    mb = run.meta
+    fluid = run.case.fluid
+    D = run.case.pipes[0].D
+    A = np.pi * D**2 / 4
+    P_out = mb.get("P_out", 4.0)
+    vSL = mb.get("vSL", 0.3)
+    L = mb.get("L_down", 300.0)
+    H = mb.get("H_riser", 20.0)
+    qG = mb.get("vSG", 0.1) * fluid.rhoG((P_out + 1) * 1e5) * A
+    model = run.model
+    p = run.pipe(0)
+    T, X = run.T, run.X
+    P1 = p["out"]["P_bar"][1]
+    qout = p["out"]["qL"][-1]
+    sel = T > t_skip
+    amp = P1[sel].max() - P1[sel].min()
+    tb = blowdowns(T[sel], P1[sel]) if amp > 0.3 else np.array([])
+    per = float(np.mean(np.diff(tb))) if tb.size > 1 else np.nan
+    # Bøe com a pressão média na base do riser e vSG à pressão do separador
+    P_base = P_out * 1e5 + fluid.rhoL0 * 9.81 * H
+    vSG_out = qG / (fluid.rhoG(P_out * 1e5) * A)
+    vmin, severe = boe_criterion(
+        vSL, vSG_out, P_base, fluid.rhoL0, 0.5, mb.get("L_h1", 20.0) + L
+    )  # L de gás = entrada + descendente
+    # padrão da linha: IPE da tese no estado médio (fração e vazões) de uma célula do descendente
+    pb = model.pipes[0]
+    sch, mod = pb.scheme, pb.model
+    it = np.flatnonzero(sel)[::10]
+    Ymean = np.mean([model.assemble(T[i], X[:, i])[1][0] for i in it], axis=0)
+    inp, _, _ = mod.local_state(Ymean, sch.theta_nodes)
+    fl, _ = identify_regime(inp, k_switch=1e6, eq=equilibrium_fractions(inp))
+    th_ = np.rad2deg(sch.theta_nodes)
+    down = np.flatnonzero(np.abs(th_ - mb.get("slope", -3.0)) < 0.5)
+    k = int(down[len(down) // 2])
+    line = _REGIME_SHORT.get(int(round(float(fl.reg2[k]))), f"{float(fl.reg2[k]):.1f}")
+    return dict(
+        vSL=vSL,
+        vSG_out=vSG_out,
+        P_out=P_out,
+        L=L,
+        V_up=mb.get("upstream_volume", 0.0),
+        boe_vmin=vmin,
+        boe_severe=bool(severe),
+        line=line,
+        n_steps=mb["n_steps"],
+        amp=amp,
+        blowdowns=tb,
+        interval=per,
+        q_peak=float(qout[sel].max()),
+    )
+
+
+def format_scan(name, st):
+    short = name.replace("severe_slug_blocked_conservative_arc_", "")
+    return (
+        f"{short:34s} {st['vSL']:5.2f} {st['vSG_out']:5.2f} {st['P_out']:5.1f} {st['L']:5.0f} {st['V_up']:5.1f} {st['boe_vmin']:8.2f} "
+        f"{st['line']:>12s} {st['n_steps']:7d} {st['amp']:6.2f} {str(np.round(st['blowdowns']).astype(int).tolist()):>24s} "
+        f"{st['interval']:7.0f}s {st['q_peak']:6.2f}"
+    )
+
+
+# ----------------------------------------------------------------------------- filme no riser (era tools/riser_cc.py)
+def riser_countercurrent(run):
+    """Filme no riser de uma corrida (partida bloqueada, duto único): fração do tempo com o
+    riser quase cheio de gás (> 90 %), e nessas células a fração em contracorrente (filme
+    descendo, gás subindo), com líquido subindo depressa, e as velocidades médias."""
+    model = run.model
+    p = run.pipe(0)
+    th = np.rad2deg(model.pipes[0].scheme.theta_nodes)
+    riser = np.flatnonzero(th > 80)
+    aG = p["out"]["alphaG"][riser]
+    vL = p["out"]["velocidadeL"][riser]
+    vG = p["out"]["velocidadeG"][riser]
+    gasfull = aG > 0.9
+    cc = gasfull & (vL < -0.02) & (vG > 0.02)
+    up = gasfull & (vL > 0.5)
+    n = max(1, gasfull.sum())
+    return dict(
+        gasfull=float(gasfull.mean()),
+        countercurrent=cc.sum() / n,
+        liquid_up=up.sum() / n,
+        vL_mean=float(vL[gasfull].mean()) if gasfull.any() else np.nan,
+        vG_mean=float(vG[gasfull].mean()) if gasfull.any() else np.nan,
+    )
+
+
+def format_riser(name, st):
+    short = name.replace("severe_slug_blocked_conservative_arc_", "")
+    return (
+        f"{short:28s}: riser com >90% gás {st['gasfull']:5.1%} do tempo | nessas células: filme descendo {st['countercurrent']:5.1%}, "
+        f"líquido subindo > 0.5 m/s {st['liquid_up']:5.1%} | vL médio {st['vL_mean']:+.2f} m/s, vG médio {st['vG_mean']:+.2f} m/s"
+    )
+
+
+# ----------------------------------------------------------------------------- validação de laboratório (era tools/val_summary.py)
+# referências experimentais: período (s), pressão na linha mín-máx (kPa abs), fonte
+LAB_REF = {
+    "fabre2": dict(
+        periodo=137.0,
+        P_min=126.0,
+        P_max=235.0,
+        fonte="Fabre et al. 1990 caso 2 (Tengesdal 2002, fig. 3-5): vSL 0.13, vSG0 0.20",
+    ),
+    "fabre1": dict(
+        periodo=70.0,
+        P_min=128.0,
+        P_max=210.0,
+        fonte="Fabre et al. 1990 caso 1 (Tengesdal 2002, fig. 3-3): vSL 0.13, vSG0 0.45",
+    ),
+    "jansen": dict(
+        periodo=46.6,
+        P_min=111.0,
+        P_max=133.0,
+        fonte="Jansen et al. 1996 tab. 1 (choke C = 120 kPa s2/m2): ULS 0.0959, UGSO 0.0753",
+    ),
+    "teng1": dict(
+        periodo=79.0,
+        P_min=121.0,
+        P_max=222.0,
+        fonte="Tengesdal 2002 teste 1 (fig. 4-12/4-13, -1 grau): vSL 0.32, vSG 0.35",
+    ),
+}
+
+
+def lab_reference(tag):
+    """Referência experimental cujo nome aparece em `tag` (ou None)."""
+    key = next((k for k in LAB_REF if k in tag), None)
+    return key, LAB_REF.get(key, {})
+
+
+def lab_validation(run, tag):
+    """Assinatura de uma corrida de validação contra os valores publicados: período (blowdowns
+    separados por 30 % do período medido), pressão de entrada em kPa, pico de líquido, fração
+    de gás na base do riser e critério de Bøe com a fração média da linha. O caso é
+    reconstruído no dialeto do driver (`mfsim.runs.driver_opts`)."""
+    from .cases.severe_slug import boe_criterion
+    from .results import Results
+    from .runs import case_from_severe_opts, driver_opts, flows_from_severe_opts
+    from .simulation import build_model
+
+    opts = driver_opts(run)
+    T = run.T
+    case = case_from_severe_opts(opts, tf=T[-1])
+    fluid = case.fluid
+    qL, qG, A, _ = flows_from_severe_opts(opts, fluid)
+    model = build_model(case)
+    p = Results(model, T, run.X).pipe(0)
+    P1 = p["out"]["P_bar"][1] * 100.0
+    q = p["out"]["qL"][-1]
+    x = p["x"]
+    aG = p["out"]["alphaG"]
+    key, ref = lab_reference(tag)
+    per_ref = ref.get("periodo", 100.0)
+    sel = T > 0.2 * T[-1]
+    tb = blowdowns(T[sel], P1[sel], 0.3 * per_ref)
+    per = float(np.mean(np.diff(tb))) if tb.size > 1 else np.nan
+    m = case.meta
+    P_base = m["P_out_bar"] * 1e5 + fluid.rhoL0 * 9.81 * m["H_riser"]
+    vSL = qL / fluid.rhoL0 / A
+    vSG_out = qG / fluid.rhoG(m["P_out_bar"] * 1e5) / A
+    vmin, sev = boe_criterion(
+        vSL,
+        vSG_out,
+        P_base,
+        fluid.rhoL0,
+        1 - float(np.mean(1 - aG[1 : m.get("n_h1", 2) + opts["n_down"], sel])),
+        m["L_h1"] + m["L_down"],
+    )
+    ib = int(np.argmin(np.abs(x - m["s_elbow0"])))
+    n_steps = run.meta.get("n_steps") or run.info.get("n_steps")
+    return dict(
+        tag=tag,
+        ref=ref,
+        n_steps=n_steps,
+        blowdowns=tb,
+        interval=per,
+        P_min=float(P1[sel].min()),
+        P_max=float(P1[sel].max()),
+        q_peak=float(q[sel].max()),
+        q_feed=qL,
+        aG_base_min=float(aG[ib + 1, sel].min()),
+        aG_base_max=float(aG[ib + 1, sel].max()),
+        boe_vmin=vmin,
+        boe_severe=bool(sev),
+    )
+
+
+def format_lab(st):
+    ref = st["ref"]
+    n = st["n_steps"] if st["n_steps"] is not None else "?"
+    return (
+        f"{st['tag']:18s} passos {n:>6} | blowdowns {len(st['blowdowns'])} | período {st['interval']:6.1f} s (exp {ref.get('periodo', np.nan):6.1f}) "
+        f"| P_in {st['P_min']:6.1f}-{st['P_max']:6.1f} kPa (exp {ref.get('P_min', np.nan):.0f}-{ref.get('P_max', np.nan):.0f}) "
+        f"| pico líquido {st['q_peak']:.3f} kg/s ({st['q_peak']/st['q_feed']:.1f}x) | αG base riser {st['aG_base_min']:.2f}-{st['aG_base_max']:.2f} "
+        f"| Bøe vSL_min {st['boe_vmin']:.3f} ({'sim' if st['boe_severe'] else 'não'})"
+    )
