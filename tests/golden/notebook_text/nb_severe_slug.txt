@@ -18,8 +18,6 @@ erro final de massa: -112.1 kg em 4241 kg alimentados
 
 ### célula 15
 primitivas   : 91783 passos, 24105 rejeitados, 18 min de CPU
-
-### célula 15
 conservativo : 132679 passos, 39681 rejeitados, 25 min de CPU
 
 ### célula 19
@@ -32,8 +30,6 @@ conservativo : 12 blowdowns, primeiro em <t>s, período médio ≈ <t>s, pico m�
 
 ### célula 23
 primitivas    (arco R = 5.0 m, 4 elementos, Δ = 20.0°): 128021 passos, 31494 rejeitados, 24 min de CPU
-
-### célula 23
 conservativo  (arco R = 5.0 m, 4 elementos, Δ = 20.0°): 112474 passos, 29359 rejeitados, 22 min de CPU
 
 ### célula 25

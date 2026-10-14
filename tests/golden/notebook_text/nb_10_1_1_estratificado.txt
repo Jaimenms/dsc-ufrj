@@ -26,28 +26,14 @@ qG     : máx |Python - MATLAB| = 1.14e-04  (faixa MATLAB 3.00e-02)
 
 ### célula 10
 galerkin    N=   5:   <t>s, 156 passos
-
-### célula 10
 galerkin    N=  10:   <t>s, 167 passos
-
-### célula 10
 galerkin    N=  25:   <t>s, 169 passos
-
-### célula 10
 galerkin    N=  50:   <t>s, 173 passos
-
-### célula 10
 galerkin    N= 100:   <t>s, 180 passos
 fd_central  N=   5:   <t>s, 153 passos
-
-### célula 10
 fd_central  N=  10:   <t>s, 161 passos
 fd_central  N=  25:   <t>s, 167 passos
-
-### célula 10
 fd_central  N=  50:   <t>s, 169 passos
-
-### célula 10
 fd_central  N= 100:   <t>s, 169 passos
 
 ### célula 13

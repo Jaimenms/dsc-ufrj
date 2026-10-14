@@ -9,8 +9,6 @@ resíduo |dX/dt| no estado gravado, por variável: {'PT': '2.89e-13', 'qL': '7.6
 
 ### célula 5
 estado estacionário: convergiu = True  resíduo = 5.60e-10
-
-### célula 5
 [implicit BDF] steps=290 rejected=15 rhs=9001 jac=146 | <t>s
 pressão de entrada (bar): 100.107126193036  fração de gás média: 0.0
 

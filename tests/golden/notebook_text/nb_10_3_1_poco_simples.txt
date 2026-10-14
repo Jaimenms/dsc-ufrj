@@ -2,8 +2,6 @@
 10.3.1 Poço simples
 Poço vertical de 2048 m (5 in), modelo a 3 equações (intermitente), reservatório (170 bar, IPL 0.71, IPG 0.042 kg/s/bar) e choke (Cv=30) com rampa 100%->25% (60-<t>s) e 25%->100% (500-<t>s).
 Figuras da tese: Figs. 10.32-10.34
-
-### célula 1
 [implicit BDF] steps=481 rejected=32 rhs=6629 jac=198 | <t>s
 tempo de CPU: <t>s
 duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa

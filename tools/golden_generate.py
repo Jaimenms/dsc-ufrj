@@ -460,9 +460,10 @@ def notebook_text(path) -> str:
     for i, c in enumerate(nb["cells"]):
         if c["cell_type"] != "code":
             continue
-        for o in c.get("outputs", []):
-            if o.get("output_type") == "stream":
-                parts.append(f"### célula {i}\n" + "".join(o.get("text", [])))
+        # o Jupyter pode partir o stdout de uma célula em vários outputs "stream": um cabeçalho por célula
+        text = "".join("".join(o.get("text", [])) for o in c.get("outputs", []) if o.get("output_type") == "stream")
+        if text:
+            parts.append(f"### célula {i}\n" + text)
     return normalize_text("\n".join(parts))
 
 

@@ -2,8 +2,6 @@
 10.3.2 Poço com gas lift - cenário 2 (com intermitência)
 Choke de gás 75%->15% entre 100 e <t>s.
 Figuras da tese: Figs. 10.41-10.46
-
-### célula 3
 [implicit BDF] steps=342 rejected=58 rhs=14770 jac=473 | <t>s
 tempo de CPU: <t>s
 duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
@@ -22,8 +20,6 @@ vértices dinâmicos: máx |dif| = [0.001      0.00170711]
 10.3.2 Poço com gas lift - cenário 1 (sem intermitência)
 Choke de gás 100%->75% entre 100 e <t>s.
 Figuras da tese: Figs. 10.36-10.40
-
-### célula 6
 [implicit BDF] steps=95 rejected=10 rhs=1209 jac=29 | <t>s
 tempo de CPU: <t>s
 

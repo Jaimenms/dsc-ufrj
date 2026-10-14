@@ -2,8 +2,6 @@
 10.3.3 Poço offshore
 Poço + linha de produção (3500 m horizontal + trecho descendente) + riser de 1500 m, gas lift com linha de gás e anular; choke de gás 100%->80% entre 100 e <t>s.
 Figuras da tese: Figs. 10.48-10.54
-
-### célula 1
 [implicit BDF] steps=78 rejected=9 rhs=678 jac=13 | <t>s
 tempo de CPU: <t>s
 duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
