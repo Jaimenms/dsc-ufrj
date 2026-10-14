@@ -1,0 +1,358 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of solver_edp_galerkin</title>
+  <meta name="keywords" content="solver_edp_galerkin">
+  <meta name="description" content="Função que transforma sistemas de EDP em EDO segundo galerkin.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; solver_edp_galerkin.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>solver_edp_galerkin
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que transforma sistemas de EDP em EDO segundo galerkin.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [dWdt]=solver_edp_galerkin(t,Y,Nk,n,h,Swk,modelo,parametros) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que transforma sistemas de EDP em EDO segundo galerkin.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>	Função referente ao modelo de redes de escoamento bifásico</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [invMk,Mk] = gera_Mk(Nk,ne,hk)</a></li><li><a href="#_sub2" class="code">function [Mbjj,Mbjjm1] = gera_Mbk(Nk,ne,hk)</a></li><li><a href="#_sub3" class="code">function [I_jj,ix_jj,I_jjm1,ix_jjm1] = gera_LAMBDA(A,Nk,ne)</a></li><li><a href="#_sub4" class="code">function [I_jj,ix_jj,I_jjm1,ix_jjm1] = gera_CSI(B,Nk,ne)</a></li><li><a href="#_sub5" class="code">function [abcissa,peso] = fatores_quadratura</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [dWdt]=solver_edp_galerkin(t,Y,Nk,n,h,Swk,modelo,parametros)</a>
+0002 <span class="comment">% Função que transforma sistemas de EDP em EDO segundo galerkin.</span>
+0003 
+0004 <span class="keyword">persistent</span> IX teta invMk Mbjj Mbjjm1 pesos ne ixMODEL aux0 ne_0
+0005 <span class="keyword">persistent</span> I_LAMBDAjj ix_LAMBDAjj I_LAMBDAjjm1 ix_LAMBDAjjm1
+0006 <span class="keyword">persistent</span> I_CSIjj ix_CSIjj I_CSIjjm1 ix_CSIjjm1
+0007 
+0008 nt = size(Y{1},2);
+0009 m = length(Y);
+0010 
+0011 <span class="keyword">if</span> isempty(invMk)
+0012     
+0013     <span class="comment">% PESOS E ABCISSAS DE QUADRATURA</span>
+0014     <span class="comment">% teta -&gt; coordenadas modificadas de quadratura (nx1)</span>
+0015     <span class="comment">% teta_ast -&gt; coordenadas modificadas de quadratura do tipo asterisco</span>
+0016     <span class="comment">% (nx1)</span>
+0017     <span class="comment">% teta2 -&gt; fator de peso de quadratura (nx1)</span>
+0018     <span class="comment">% teta2_ast -&gt; fator de peso de quadratura do tipo asterisco (nx1)</span>
+0019 
+0020     [abcissa,peso] = <a href="#_sub5" class="code" title="subfunction [abcissa,peso] = fatores_quadratura">fatores_quadratura</a>;
+0021 
+0022     <span class="comment">% Escolhendo os pesos da quadratura</span>
+0023     abcissas=abcissa{n};
+0024     pesos=peso{n};
+0025     
+0026     <span class="comment">% Ativando tetas</span>
+0027     teta=-0.5+0.5.*abcissas;
+0028     
+0029     
+0030     <span class="keyword">for</span> i = 1 : m
+0031 
+0032         [aux1,aux2,aux3,A,B,ixModel]= feval(modelo{i});
+0033         aux1=[];
+0034         aux2=[];
+0035         aux3=[];
+0036         ne(i) = size(A,1);
+0037         ne_0 = length(ixModel);
+0038 
+0039         ixMODELk=[];
+0040         ni = size(Y{i},1);
+0041         <span class="keyword">for</span> j=1:length(ixModel)
+0042             ixMODELk(j:ne_0:ni)=ixModel(j);
+0043         <span class="keyword">end</span>
+0044         ixMODEL{i} = ixMODELk;
+0045         
+0046         <span class="comment">% Ponteiros (4Nkx1)</span>
+0047         IX_K=1:ne_0*Nk(i)';
+0048 
+0049         <span class="comment">% GERANDO MATRIZ DE DISCRETIZAÇÃO de GALERKIN</span>
+0050         <span class="comment">% Mk -&gt; matriz de discretização (ne*(Nk+1)xne*(Nk+1))</span>
+0051         [invMkK] = <a href="#_sub1" class="code" title="subfunction [invMk,Mk] = gera_Mk(Nk,ne,hk)">gera_Mk</a>(Nk(i),ne(i),h{i});
+0052         
+0053         [MbjjK,Mbjjm1K] = <a href="#_sub2" class="code" title="subfunction [Mbjj,Mbjjm1] = gera_Mbk(Nk,ne,hk)">gera_Mbk</a>(Nk(i),ne(i),h{i});
+0054         
+0055         <span class="comment">% GERANDO MATRIZ DE MONTAGEM DA MATRIZ DE COEFICIENTES LAMBDA</span>
+0056         <span class="comment">% I_LAMBDAjj -&gt; Matriz de ponteiros de geraçao da matriz LAMBDAjj</span>
+0057         <span class="comment">% I_LAMBDAjjm1 -&gt; Matriz de ponteiros de geraçao da matriz LAMBDAjjm1</span>
+0058         [I_LAMBDAjjK,ix_LAMBDAjjK,I_LAMBDAjjm1K,ix_LAMBDAjjm1K] = <span class="keyword">...</span>
+0059             <a href="#_sub3" class="code" title="subfunction [I_jj,ix_jj,I_jjm1,ix_jjm1] = gera_LAMBDA(A,Nk,ne)">gera_LAMBDA</a>(A,Nk(i),ne(i));
+0060         <span class="comment">% GERANDO MATRIZ DE MONTAGEM DA MATRIZ DE COEFICIENTES CSI</span>
+0061         <span class="comment">% I_CSIjj -&gt; Vetor de ponteiros de geraçao da matriz CSIjj</span>
+0062         <span class="comment">% I_CSIjjm1 -&gt; Vetor de ponteiros de geraçao da matriz CSIjjm1</span>
+0063         [I_CSIjjK,ix_CSIjjK,I_CSIjjm1K,ix_CSIjjm1K] = <span class="keyword">...</span>
+0064             <a href="#_sub4" class="code" title="subfunction [I_jj,ix_jj,I_jjm1,ix_jjm1] = gera_CSI(B,Nk,ne)">gera_CSI</a>(B,Nk(i),ne(i));
+0065 
+0066         IX{i} = IX_K;
+0067         invMk{i} = invMkK;
+0068         Mbjj{i} = MbjjK;
+0069         Mbjjm1{i} = Mbjjm1K;
+0070         I_LAMBDAjj{i} = I_LAMBDAjjK;
+0071         ix_LAMBDAjj{i} = ix_LAMBDAjjK;
+0072         I_LAMBDAjjm1{i} = I_LAMBDAjjm1K;
+0073         ix_LAMBDAjjm1{i} = ix_LAMBDAjjm1K;
+0074         I_CSIjj{i} = I_CSIjjK;
+0075         ix_CSIjj{i} = ix_CSIjjK;
+0076         I_CSIjjm1{i} = I_CSIjjm1K;
+0077         ix_CSIjjm1{i} = ix_CSIjjm1K;
+0078 
+0079         aux0{i} = zeros(ne(i).*(Nk(i)+1),ne(i));
+0080         
+0081     <span class="keyword">end</span>
+0082     
+0083 <span class="keyword">end</span>
+0084 
+0085 <span class="keyword">global</span> tubo_ativo
+0086 dWdt = [];
+0087 ix = 0;
+0088 <span class="keyword">for</span> j = 1:m
+0089 
+0090     tubo_ativo = j;
+0091     hk = h{j};
+0092     Yk = Y{j};
+0093     IX_K = IX{j};
+0094     SwkK = Swk{j};
+0095     aux0k = aux0{j};
+0096     invMkK = invMk{j};
+0097     ixMODELk = ixMODEL{j};
+0098         
+0099     I_LAMBDAjjK = I_LAMBDAjj{j};
+0100     I_LAMBDAjjm1K = I_LAMBDAjjm1{j};
+0101     I_CSIjjK = I_CSIjj{j};
+0102     I_CSIjjm1K = I_CSIjjm1{j};
+0103 
+0104     dWkdt = [];
+0105 
+0106     CT=[];
+0107     XT=[];
+0108     <span class="keyword">for</span> i = 1:nt
+0109         
+0110         <span class="comment">% Quadratura Gaussiana</span>
+0111 
+0112         <span class="comment">% C -&gt; matriz de estados para cada ponto de quadratura (4Nkxn)</span>
+0113         <span class="comment">% C mapeia interpolações dentro do elemento da esquerda para a</span>
+0114         <span class="comment">% direita</span>
+0115         C=Yk(IX_K+ne_0,i)*ones(1,n)+(Yk(IX_K+ne_0,i)-Yk(IX_K,i))*teta';
+0116         
+0117 
+0118         <span class="keyword">if</span> isempty(parametros{j}.x)
+0119             x=[];
+0120         <span class="keyword">else</span>
+0121             x_1K =parametros{j}.x(1:(end-1),1);
+0122             x_2K =parametros{j}.x(2:(end  ),1);
+0123             x = x_2K*ones(1,n)+(x_2K-x_1K)*teta';
+0124             XT=[XT x];
+0125         <span class="keyword">end</span>
+0126         CT=[CT C];
+0127         
+0128     <span class="keyword">end</span>
+0129 
+0130     FT=feval(modelo{j},t,XT,CT,parametros,j);
+0131     
+0132     aux=0;
+0133     FI=[];
+0134     <span class="keyword">for</span> i = 1:nt
+0135 
+0136         C = CT(:,aux+(1:n));        
+0137         F = FT(:,aux+(1:n));        
+0138         
+0139         aux=aux+n;
+0140                 
+0141         <span class="comment">% teta  : [-1 0]</span>
+0142         <span class="comment">% tetam1: [ 0 1]</span>
+0143         tetam1 = teta + 1;
+0144 
+0145         Fjjm1= 0.5.*F*((1-tetam1).*pesos);
+0146         Fjj  = 0.5.*F*((1+teta  ).*pesos);
+0147         
+0148         <span class="comment">% Determinando LAMBDA</span>
+0149         LAMBDAaux = zeros(size(I_LAMBDAjjK));
+0150         
+0151         LAMBDAaux(ix_LAMBDAjj{j})= Fjj(I_LAMBDAjjK(ix_LAMBDAjj{j}));
+0152         LAMBDAaux(ix_LAMBDAjjm1{j}) = Fjjm1(I_LAMBDAjjm1K(ix_LAMBDAjjm1{j}));
+0153                 
+0154         <span class="comment">% Determinando CSI</span>
+0155         CSIjj = I_CSIjjK;
+0156         CSIjjm1 = I_CSIjjm1K;
+0157         CSIjj(ix_CSIjj{j}) = Fjj(I_CSIjjK(ix_CSIjj{j}));
+0158         CSIjjm1(ix_CSIjjm1{j}) = Fjjm1(I_CSIjjm1K(ix_CSIjjm1{j}));
+0159 
+0160         CSI = Mbjj{j}*CSIjj + Mbjjm1{j}*CSIjjm1;
+0161                         
+0162         LAMBDA = [aux0k LAMBDAaux]-[LAMBDAaux aux0k];
+0163         
+0164         <span class="comment">% Obtendo derivadas de estado reduzido do tubo j:</span>
+0165         FI(:,i)= (LAMBDA*Yk(find(ixMODELk),i)+CSI);
+0166         
+0167     <span class="keyword">end</span>
+0168            
+0169     dWdt = [dWdt;-SwkK(find(ixMODELk),:)'*(invMkK*FI)];
+0170 <span class="keyword">end</span>
+0171 
+0172 
+0173 
+0174 <a name="_sub1" href="#_subfunctions" class="code">function [invMk,Mk] = gera_Mk(Nk,ne,hk)</a>
+0175 <span class="comment">% Gera matriz inversa de Mk</span>
+0176 
+0177 uns = eye(ne);
+0178 
+0179 MJk=zeros(ne.*(Nk+1));
+0180 MHk=zeros(ne.*(Nk+1));
+0181 
+0182 <span class="keyword">for</span> i=1:Nk
+0183     MJk((i-1).*ne+[1:ne],(i-1).*ne+[1:ne])=2.*hk(i).*uns./6;
+0184     MJk((i-0).*ne+[1:ne],(i-1).*ne+[1:ne])=hk(i).*uns./6;
+0185 <span class="keyword">end</span>
+0186 
+0187 <span class="keyword">for</span> i=1:Nk
+0188     MHk((i-0).*ne+[1:ne],(i-0).*ne+[1:ne])=2.*hk(i).*uns./6;
+0189     MHk((i-1).*ne+[1:ne],(i-0).*ne+[1:ne])=hk(i).*uns./6;
+0190 <span class="keyword">end</span>
+0191 
+0192 Mk = sparse(MJk+MHk);
+0193 
+0194 invMk=Mk\speye(size(Mk));
+0195 
+0196 <a name="_sub2" href="#_subfunctions" class="code">function [Mbjj,Mbjjm1] = gera_Mbk(Nk,ne,hk)</a>
+0197 
+0198 Mbjj  =zeros(ne.*(Nk+1),1);
+0199 Mbjjm1=zeros(ne.*(Nk+1),1);
+0200 
+0201 <span class="keyword">for</span> i=1:Nk
+0202     Mbjj((i-0).*ne+[1:ne],1)=hk(i);
+0203     Mbjjm1((i-1).*ne+[1:ne],1)=hk(i);
+0204 <span class="keyword">end</span>
+0205 
+0206 Mbjj=diag(Mbjj);
+0207 Mbjjm1=diag(Mbjjm1);
+0208 
+0209 
+0210 <a name="_sub3" href="#_subfunctions" class="code">function [I_jj,ix_jj,I_jjm1,ix_jjm1] = gera_LAMBDA(A,Nk,ne)</a>
+0211 <span class="comment">% Gera matrizes que compoem a matriz LAMBDA</span>
+0212 
+0213 ixA = A&gt;0;
+0214 I_aux=[];
+0215 <span class="keyword">for</span> j=1:Nk
+0216     aux = ixA.*((A-1).*Nk+j);
+0217     I_aux = blkdiag(I_aux,aux);
+0218 <span class="keyword">end</span>
+0219 I_jj=sparse([zeros(ne,ne*Nk);I_aux]);
+0220 I_jjm1=sparse([I_aux;zeros(ne,ne*Nk)]);
+0221 ix_jj=find(I_jj&gt;0);
+0222 ix_jjm1=find(I_jjm1&gt;0);
+0223 
+0224 <a name="_sub4" href="#_subfunctions" class="code">function [I_jj,ix_jj,I_jjm1,ix_jjm1] = gera_CSI(B,Nk,ne)</a>
+0225 <span class="comment">% Gera matrizes que compoem a matriz CSI</span>
+0226 
+0227 ixB = B&gt;0;
+0228 I_aux=[];
+0229 <span class="keyword">for</span> j=1:Nk
+0230     aux = ixB.*((B-1).*Nk+j);
+0231     I_aux = [I_aux;aux];
+0232 <span class="keyword">end</span>
+0233 I_jj=sparse([zeros(ne,1);[I_aux]]);
+0234 I_jjm1=sparse([[I_aux];zeros(ne,1)]);
+0235 ix_jj=find(I_jj&gt;0);
+0236 ix_jjm1=find(I_jjm1&gt;0);
+0237 
+0238 <a name="_sub5" href="#_subfunctions" class="code">function [abcissa,peso] = fatores_quadratura</a>
+0239 <span class="comment">% Gera pesos e abcissas da quadratura gaussiana</span>
+0240 
+0241 abcissa{1}=0;
+0242 peso{1}=2;
+0243 abcissa{2}=[<span class="keyword">...</span>
+0244     -1/(3.^(0.5));<span class="keyword">...</span>
+0245     1/(3.^(0.5))];
+0246 peso{2}=[<span class="keyword">...</span>
+0247     1;<span class="keyword">...</span>
+0248     1];
+0249 abcissa{3}=[<span class="keyword">...</span>
+0250     -((3/5).^0.5);<span class="keyword">...</span>
+0251     0;<span class="keyword">...</span>
+0252     ((3/5).^0.5)];
+0253 peso{3}=[<span class="keyword">...</span>
+0254     5/9;<span class="keyword">...</span>
+0255     8/9;<span class="keyword">...</span>
+0256     5/9];
+0257 abcissa{5}=[<span class="keyword">...</span>
+0258     -0.906179845939;<span class="keyword">...</span>
+0259     -0.538469310106;<span class="keyword">...</span>
+0260     0;<span class="keyword">...</span>
+0261     0.538469310106;<span class="keyword">...</span>
+0262     0.906179845939];
+0263 peso{5}=   [<span class="keyword">...</span>
+0264     0.236926885056;<span class="keyword">...</span>
+0265     0.478628670499 ;<span class="keyword">...</span>
+0266     0.568888888889;<span class="keyword">...</span>
+0267     0.478628670499;<span class="keyword">...</span>
+0268     0.236926885056];
+0269 abcissa{8}=[<span class="keyword">...</span>
+0270     -0.960289856497536;<span class="keyword">...</span>
+0271     -0.796666477413627;<span class="keyword">...</span>
+0272     -0.525532409916329;<span class="keyword">...</span>
+0273     -0.183434642495650;<span class="keyword">...</span>
+0274     0.183434642495650;<span class="keyword">...</span>
+0275     0.525532409916329;<span class="keyword">...</span>
+0276     0.796666477413627;<span class="keyword">...</span>
+0277     0.960289856497536];
+0278 peso{8}=[0.101228536290376;<span class="keyword">...</span>
+0279     0.222381034453374;<span class="keyword">...</span>
+0280     0.313706645877887;<span class="keyword">...</span>
+0281     0.362683783378362;<span class="keyword">...</span>
+0282     0.362683783378362;<span class="keyword">...</span>
+0283     0.313706645877887;<span class="keyword">...</span>
+0284     0.222381034453374;<span class="keyword">...</span>
+0285     0.101228536290376];
+0286 abcissa{12}=[-0.981560634246719;<span class="keyword">...</span>
+0287     -0.904117256370475;<span class="keyword">...</span>
+0288     -0.769902674194305;<span class="keyword">...</span>
+0289     -0.587317954286617;<span class="keyword">...</span>
+0290     -0.367831498998180;<span class="keyword">...</span>
+0291     -0.125233408511469;<span class="keyword">...</span>
+0292     0.125233408511469;<span class="keyword">...</span>
+0293     0.367831498998180;<span class="keyword">...</span>
+0294     0.587317954286617;<span class="keyword">...</span>
+0295     0.769902674194305;<span class="keyword">...</span>
+0296     0.904117256370475;<span class="keyword">...</span>
+0297     0.981560634246719];
+0298 peso{12}=[<span class="keyword">...</span>
+0299     0.047175336386512;<span class="keyword">...</span>
+0300     0.106939325995318;<span class="keyword">...</span>
+0301     0.160078328543346;<span class="keyword">...</span>
+0302     0.203167426723066;<span class="keyword">...</span>
+0303     0.233492536538355;<span class="keyword">...</span>
+0304     0.249147045813403;<span class="keyword">...</span>
+0305     0.249147045813403;<span class="keyword">...</span>
+0306     0.233492536538355;<span class="keyword">...</span>
+0307     0.203167426723066;<span class="keyword">...</span>
+0308     0.160078328543346;<span class="keyword">...</span>
+0309     0.106939325995318;<span class="keyword">...</span>
+0310     0.047175336386512];</pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

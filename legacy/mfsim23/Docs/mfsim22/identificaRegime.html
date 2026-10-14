@@ -1,0 +1,523 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of identificaRegime</title>
+  <meta name="keywords" content="identificaRegime">
+  <meta name="description" content="Função que executa a IPE e gera as variáveis identificadoras para fraçõe">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; identificaRegime.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>identificaRegime
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que executa a IPE e gera as variáveis identificadoras para fraçõe</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [fl,reg1,reg2,fatores,fatoresC] = identificaRegime(alfa,q_L,q_G,parametros) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que executa a IPE e gera as variáveis identificadoras para fraçõe
+ de áreas fixadas.
+    [FL] = identificaRegime(ALFA,QL,QG,PARAMETROS), para ALFA, QL e QG
+    matrizes M-por-N correspondentes ao hold-up, vazão mássica de líquido
+    em kg/s e vazão mássica de gás em kg/s, respectivamente e o struct de
+    parametros contendo as seguintes informações:
+      PARAMETROS.angulo_teta -&gt; matriz M-por-N de angulos de inclinaçao em
+      radiano, onde 0 corresponde a duto horizontal
+      PARAMETROS.D           -&gt; diametro do duto (m)
+      PARAMETROS.rugo        -&gt; rugosidade do duto (m)
+      PARAMETROS.h           -&gt; altura de líquido para regime de
+      escoamento estratificado(m)
+      PARAMETROS.viscL       -&gt; viscosidade dinâmica do líquido (Pa.s)
+      PARAMETROS.viscG       -&gt; viscosidade dinâmica do gás (Pa.s)
+      PARAMETROS.densL       -&gt; densidade do líquido (kg/m³)
+      PARAMETROS.densG       -&gt; densidade do gás (kg/m³)
+      PARAMETROS.AreaL       -&gt; Área da seção transversal com líquido (m²)
+      PARAMETROS.AreaG       -&gt; Área da seção transversal com gás (m²)
+      PARAMETROS.tensao      -&gt; Tensao interfacial (Pa.m)
+    Onde a saída FL corresponde a um struct de chaveadores de regime:
+      fl.Est -&gt; matriz M-po-N onde valor 1 indica regime estratificado
+      fl.EsW -&gt; matriz M-po-N onde valor 1 indica regime estratificado
+      com ondas
+      fl.EsS -&gt; matriz M-po-N onde valor 1 indica regime estratificado
+      sem ondas
+      fl.Anu -&gt; matriz M-po-N onde valor 1 indica regime anular
+      fl.Bub -&gt; matriz M-po-N onde valor 1 indica regime bolhas
+      fl.Int -&gt; matriz M-po-N onde valor 1 indica regime intermitente
+
+    [FL,REG1,REG2] = identificaRegime(ALFA,QL,QG,PARAMETROS), para as
+    mesmas entradas gerando as matrizes REG1 e REG2 de ponteiros
+    indicativa do padrao de escoamento existente.
+
+    Os ponteiros de REG1 podem assumir os seguintes valores:
+      Anular ou anular disperso (1)
+      Bolhas ou bolhas dispersas (2)
+      Intermitente (3)
+      Estratificado (4)
+
+    Os ponteiros de REG2 podem assumir os seguintes valores:
+      Anular ou anular disperso (1)
+      Bolhas ou bolhas dispersas (2)
+      Intermitente (3)
+      Estratificado suave (4)
+      Estratificado ondulado (5)
+
+    [FL,REG1,REG2,FATORES] = identificaRegime(ALFA,QL,QG,PARAMETROS), para 
+    mesmas entradas gerando o struct FATORES informa os valores
+    das variáveis identificadoras de padrão de escoamento:
+      FL - numero de Froude do líquido
+      FG - numero de Froude do gás
+      NL - numero de anularidade
+      K - numero de interação onda vento
+      T - numero de interação bolha-intermitente
+      FGcosteta - teste estratificado
+    Segundo as seguinte utilizações para mudanças de regime:
+         Stratified to non-stratified (FG/(cos(teta)^0.5), Kelvin-Helmholtz)
+      Smooth to wavy (K - onda de vento, FL - onda de gravidade)
+      Annular to stratified (NL)
+      Bubble to no-bubble (T)
+      Annular to bubble/intermitent (FG)
+      Intermitent to dispersed bubble (alfaG, dmax)
+
+    O seguinte algoritmo foi utilizado
+
+          ESTRATIFICADO
+                |
+                |
+                V
+              Existe?__________
+                |              |
+               Não            Sim
+                |              |
+                |              |
+                V              V
+         ANULAR DISPERSO   Teste SMOOTH ou WAVY______
+                |              |                     |
+                |              |                     |
+                V              V                     V
+      _______Existe?       ESTRATIFICADO        ESTRATIFICADO
+     |          |             SMOOTH!!!             WAVY!!!         
+     |          |
+    Sim        Não_____________________
+     |                                 |
+     V                                 V
+  Teste de   ______                 BUBBLE
+  entrainment      |                   |
+     |             |                   |
+     V             V                   |
+  ANULAR!!!      ANULAR                V
+                DISPERSO!!!         Existe?_________
+                                       |            |
+                                       |            |
+                                      Sim           |
+                                       |            |
+                                       V            V
+                                    BUBBLE!!!   INTERMITENTE!!!</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="fator.html" class="code" title="function [f,Re]=fator(v,dens,visc,D,rugo)">fator</a>	Função que gera fatores de atrito de fanning para as fases</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function v = gerav(q,dens,Area)</a></li><li><a href="#_sub2" class="code">function [FL, FG] = geraFroude(densL, densG, D, vS_L, vS_G)</a></li><li><a href="#_sub3" class="code">function [F] = sigmoidal(fatorExp,x1,x2)</a></li><li><a href="#_sub4" class="code">function [f,Re]=fator(v,dens,visc,D,rugo)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [fl,reg1,reg2,fatores,fatoresC] = identificaRegime(alfa,q_L,q_G,parametros)</a>
+0002 <span class="comment">% Função que executa a IPE e gera as variáveis identificadoras para fraçõe</span>
+0003 <span class="comment">% de áreas fixadas.</span>
+0004 <span class="comment">%    [FL] = identificaRegime(ALFA,QL,QG,PARAMETROS), para ALFA, QL e QG</span>
+0005 <span class="comment">%    matrizes M-por-N correspondentes ao hold-up, vazão mássica de líquido</span>
+0006 <span class="comment">%    em kg/s e vazão mássica de gás em kg/s, respectivamente e o struct de</span>
+0007 <span class="comment">%    parametros contendo as seguintes informações:</span>
+0008 <span class="comment">%      PARAMETROS.angulo_teta -&gt; matriz M-por-N de angulos de inclinaçao em</span>
+0009 <span class="comment">%      radiano, onde 0 corresponde a duto horizontal</span>
+0010 <span class="comment">%      PARAMETROS.D           -&gt; diametro do duto (m)</span>
+0011 <span class="comment">%      PARAMETROS.rugo        -&gt; rugosidade do duto (m)</span>
+0012 <span class="comment">%      PARAMETROS.h           -&gt; altura de líquido para regime de</span>
+0013 <span class="comment">%      escoamento estratificado(m)</span>
+0014 <span class="comment">%      PARAMETROS.viscL       -&gt; viscosidade dinâmica do líquido (Pa.s)</span>
+0015 <span class="comment">%      PARAMETROS.viscG       -&gt; viscosidade dinâmica do gás (Pa.s)</span>
+0016 <span class="comment">%      PARAMETROS.densL       -&gt; densidade do líquido (kg/m³)</span>
+0017 <span class="comment">%      PARAMETROS.densG       -&gt; densidade do gás (kg/m³)</span>
+0018 <span class="comment">%      PARAMETROS.AreaL       -&gt; Área da seção transversal com líquido (m²)</span>
+0019 <span class="comment">%      PARAMETROS.AreaG       -&gt; Área da seção transversal com gás (m²)</span>
+0020 <span class="comment">%      PARAMETROS.tensao      -&gt; Tensao interfacial (Pa.m)</span>
+0021 <span class="comment">%    Onde a saída FL corresponde a um struct de chaveadores de regime:</span>
+0022 <span class="comment">%      fl.Est -&gt; matriz M-po-N onde valor 1 indica regime estratificado</span>
+0023 <span class="comment">%      fl.EsW -&gt; matriz M-po-N onde valor 1 indica regime estratificado</span>
+0024 <span class="comment">%      com ondas</span>
+0025 <span class="comment">%      fl.EsS -&gt; matriz M-po-N onde valor 1 indica regime estratificado</span>
+0026 <span class="comment">%      sem ondas</span>
+0027 <span class="comment">%      fl.Anu -&gt; matriz M-po-N onde valor 1 indica regime anular</span>
+0028 <span class="comment">%      fl.Bub -&gt; matriz M-po-N onde valor 1 indica regime bolhas</span>
+0029 <span class="comment">%      fl.Int -&gt; matriz M-po-N onde valor 1 indica regime intermitente</span>
+0030 <span class="comment">%</span>
+0031 <span class="comment">%    [FL,REG1,REG2] = identificaRegime(ALFA,QL,QG,PARAMETROS), para as</span>
+0032 <span class="comment">%    mesmas entradas gerando as matrizes REG1 e REG2 de ponteiros</span>
+0033 <span class="comment">%    indicativa do padrao de escoamento existente.</span>
+0034 <span class="comment">%</span>
+0035 <span class="comment">%    Os ponteiros de REG1 podem assumir os seguintes valores:</span>
+0036 <span class="comment">%      Anular ou anular disperso (1)</span>
+0037 <span class="comment">%      Bolhas ou bolhas dispersas (2)</span>
+0038 <span class="comment">%      Intermitente (3)</span>
+0039 <span class="comment">%      Estratificado (4)</span>
+0040 <span class="comment">%</span>
+0041 <span class="comment">%    Os ponteiros de REG2 podem assumir os seguintes valores:</span>
+0042 <span class="comment">%      Anular ou anular disperso (1)</span>
+0043 <span class="comment">%      Bolhas ou bolhas dispersas (2)</span>
+0044 <span class="comment">%      Intermitente (3)</span>
+0045 <span class="comment">%      Estratificado suave (4)</span>
+0046 <span class="comment">%      Estratificado ondulado (5)</span>
+0047 <span class="comment">%</span>
+0048 <span class="comment">%    [FL,REG1,REG2,FATORES] = identificaRegime(ALFA,QL,QG,PARAMETROS), para</span>
+0049 <span class="comment">%    mesmas entradas gerando o struct FATORES informa os valores</span>
+0050 <span class="comment">%    das variáveis identificadoras de padrão de escoamento:</span>
+0051 <span class="comment">%      FL - numero de Froude do líquido</span>
+0052 <span class="comment">%      FG - numero de Froude do gás</span>
+0053 <span class="comment">%      NL - numero de anularidade</span>
+0054 <span class="comment">%      K - numero de interação onda vento</span>
+0055 <span class="comment">%      T - numero de interação bolha-intermitente</span>
+0056 <span class="comment">%      FGcosteta - teste estratificado</span>
+0057 <span class="comment">%    Segundo as seguinte utilizações para mudanças de regime:</span>
+0058 <span class="comment">%         Stratified to non-stratified (FG/(cos(teta)^0.5), Kelvin-Helmholtz)</span>
+0059 <span class="comment">%      Smooth to wavy (K - onda de vento, FL - onda de gravidade)</span>
+0060 <span class="comment">%      Annular to stratified (NL)</span>
+0061 <span class="comment">%      Bubble to no-bubble (T)</span>
+0062 <span class="comment">%      Annular to bubble/intermitent (FG)</span>
+0063 <span class="comment">%      Intermitent to dispersed bubble (alfaG, dmax)</span>
+0064 <span class="comment">%</span>
+0065 <span class="comment">%    O seguinte algoritmo foi utilizado</span>
+0066 <span class="comment">%</span>
+0067 <span class="comment">%          ESTRATIFICADO</span>
+0068 <span class="comment">%                |</span>
+0069 <span class="comment">%                |</span>
+0070 <span class="comment">%                V</span>
+0071 <span class="comment">%              Existe?__________</span>
+0072 <span class="comment">%                |              |</span>
+0073 <span class="comment">%               Não            Sim</span>
+0074 <span class="comment">%                |              |</span>
+0075 <span class="comment">%                |              |</span>
+0076 <span class="comment">%                V              V</span>
+0077 <span class="comment">%         ANULAR DISPERSO   Teste SMOOTH ou WAVY______</span>
+0078 <span class="comment">%                |              |                     |</span>
+0079 <span class="comment">%                |              |                     |</span>
+0080 <span class="comment">%                V              V                     V</span>
+0081 <span class="comment">%      _______Existe?       ESTRATIFICADO        ESTRATIFICADO</span>
+0082 <span class="comment">%     |          |             SMOOTH!!!             WAVY!!!</span>
+0083 <span class="comment">%     |          |</span>
+0084 <span class="comment">%    Sim        Não_____________________</span>
+0085 <span class="comment">%     |                                 |</span>
+0086 <span class="comment">%     V                                 V</span>
+0087 <span class="comment">%  Teste de   ______                 BUBBLE</span>
+0088 <span class="comment">%  entrainment      |                   |</span>
+0089 <span class="comment">%     |             |                   |</span>
+0090 <span class="comment">%     V             V                   |</span>
+0091 <span class="comment">%  ANULAR!!!      ANULAR                V</span>
+0092 <span class="comment">%                DISPERSO!!!         Existe?_________</span>
+0093 <span class="comment">%                                       |            |</span>
+0094 <span class="comment">%                                       |            |</span>
+0095 <span class="comment">%                                      Sim           |</span>
+0096 <span class="comment">%                                       |            |</span>
+0097 <span class="comment">%                                       V            V</span>
+0098 <span class="comment">%                                    BUBBLE!!!   INTERMITENTE!!!</span>
+0099 
+0100 <span class="comment">%% (0) Fator de transição: determina a curvatura da função que chaveia os</span>
+0101 <span class="comment">% regimes. Valores elevados promovem transição instantânea entre os regimes</span>
+0102 <span class="comment">% de escoamento.</span>
+0103 fatorExp = 2e6;
+0104 
+0105 <span class="comment">%% (1) Determinando parâmetros de entrada</span>
+0106 angulo_teta = parametros.angulo_teta;
+0107 D           = parametros.D;
+0108 rugo        = parametros.rugo;
+0109 hL          = parametros.h;
+0110 viscL       = parametros.viscL;
+0111 viscG       = parametros.viscG;
+0112 densL       = parametros.densL;
+0113 densG       = parametros.densG;
+0114 AreaL       = parametros.AreaL;
+0115 AreaG       = parametros.AreaG;
+0116 tensao      = parametros.tensao;
+0117 betah       = parametros.betah;
+0118 
+0119 <span class="comment">% Calculando velocidades superficiais</span>
+0120 vS_L = <a href="#_sub1" class="code" title="subfunction v = gerav(q,dens,Area)">gerav</a>(q_L,densL,AreaL+AreaG);
+0121 vS_G = <a href="#_sub1" class="code" title="subfunction v = gerav(q,dens,Area)">gerav</a>(q_G,densG,AreaL+AreaG);
+0122 
+0123 <span class="comment">% Calculando velocidades reais</span>
+0124 v_L = <a href="#_sub1" class="code" title="subfunction v = gerav(q,dens,Area)">gerav</a>(q_L,densL,AreaL);
+0125 v_G = <a href="#_sub1" class="code" title="subfunction v = gerav(q,dens,Area)">gerav</a>(q_G,densG,AreaG);
+0126 
+0127 <span class="comment">% Calculando valores médios</span>
+0128 densM = (1-alfa).*densL+alfa.*densG;
+0129 v_M = <a href="#_sub1" class="code" title="subfunction v = gerav(q,dens,Area)">gerav</a>(q_L+q_G,densM,AreaL+AreaG);
+0130 
+0131 <span class="comment">% Calculando fração de área de líquido</span>
+0132 alfaL = 1-alfa;
+0133 
+0134 <span class="comment">% Gerando flag que identifica se fluidos estão ou não em sentido opostos</span>
+0135 flag_SentidoOposto = (sign(v_L.*v_G)+1)/2;
+0136 
+0137 <span class="comment">% Fatores de atrito de fanning segundo velocidades superficiais</span>
+0138 [fS_L,ReS_L]=<a href="fator.html" class="code" title="function [f,Re]=fator(v,dens,visc,D,rugo)">fator</a>(vS_L,densL,viscL,D,rugo);
+0139 [fS_G,ReS_G]=<a href="fator.html" class="code" title="function [f,Re]=fator(v,dens,visc,D,rugo)">fator</a>(vS_G,densG,viscG,D,rugo);
+0140 
+0141 <span class="comment">% Fatores de atrito de fanning segundo velocidades reais</span>
+0142 [f_L,Re_L]=<a href="fator.html" class="code" title="function [f,Re]=fator(v,dens,visc,D,rugo)">fator</a>(v_L,densL,viscL,D,rugo);
+0143 [f_G,Re_G]=<a href="fator.html" class="code" title="function [f,Re]=fator(v,dens,visc,D,rugo)">fator</a>(v_G,densG,viscG,D,rugo);
+0144 
+0145 <span class="comment">% Fator de atrito médio</span>
+0146 f_M = (1-alfa).*f_L+alfa.*f_G;
+0147 
+0148 <span class="comment">%% (2) Calculando parametros</span>
+0149 
+0150 <span class="comment">% Calculando grupos adimensionais (FG e FL)</span>
+0151 [FL, FG] = <a href="#_sub2" class="code" title="subfunction [FL, FG] = geraFroude(densL, densG, D, vS_L, vS_G)">geraFroude</a>(densL, densG, D, vS_L, vS_G);
+0152 
+0153 <span class="comment">% Calculando FG/(cos(teta))^0.5</span>
+0154 FGast = FG./((cos(angulo_teta)).^0.5);
+0155 
+0156 <span class="comment">%    Calculando NL, K e T</span>
+0157 NL = (fS_L.*FL.^2./cos(angulo_teta)).^0.5;
+0158 K  = FG.*(ReS_L./cos(angulo_teta)).^0.5;
+0159 T  = (2.*fS_L.*FL.^2./cos(angulo_teta)).^0.5;
+0160 
+0161 EOD = D.*((densL-densG).*9.81./tensao).^0.5;
+0162 
+0163 <span class="comment">% Calculando fatores criticos</span>
+0164 FG_c = (75./(EOD.^2.*((1+ (EOD./75).^2./f_L).^0.5-1))).^0.5;
+0165 FGast_c      = (((1-hL./D).^2).*(alfa.^3).*(pi.*D./4)./(D.*sin(betah./2))).^0.5;
+0166 K_c          = 2.*alfaL.^0.5.*alfa./(0.01.^0.5);
+0167 FL_c         = 1.5.*(hL./D).^0.5.*alfaL;
+0168 NL_c         = 1.0.*(1-hL./D).^0.5.*alfaL./(f_L./fS_L).^0.5;
+0169 T_c          = (2.*pi.*(alfaL.^2.*alfa)./sin(betah./2)./(f_L./fS_L)).^0.5;
+0170 
+0171 
+0172 <span class="comment">%% (3) Assumindo-se estratificado, determinando relação hL/D (VÁ PARA ITEM</span>
+0173 
+0174 <span class="comment">%% (4) Testando instabilidade Kelvin-Helmholtz</span>
+0175 <span class="comment">%    Para o caso de FG/(cos(teta))^0.5 maior que crítico -&gt; (VÁ ITEM 8)</span>
+0176 <span class="comment">%    Para o caso de FG/(cos(teta))^0.5 menor ou igual ao crítico -&gt; (VÁ PARA ITEM 5)</span>
+0177 
+0178 [flag_naoest1] = <a href="#_sub3" class="code" title="subfunction [F] = sigmoidal(fatorExp,x1,x2)">sigmoidal</a>(fatorExp,FGast,FGast_c);<span class="comment">% 0 - se menor e 1 se maior</span>
+0179 
+0180 <span class="comment">%% (5) Verificando sentido</span>
+0181 <span class="comment">%    Fluido subindo (VÁ PARA ITEM 6)</span>
+0182 <span class="comment">%    Fluido descendo (VÁ PARA ITEM 5.1)</span>
+0183 [flag_sobe]=(sign(cos(angulo_teta).*(q_L+q_G))+1)./2; <span class="comment">% 0 se desce e 1 - se sobe</span>
+0184 flag_desce = 1-flag_sobe;
+0185 
+0186 <span class="comment">%% (5.1) Testando a trajetória do filme líquido</span>
+0187 <span class="comment">%    Para o caso de NL maior que crítico -&gt; bubble, intermitente, anular ou anular disperso (VÁ ITEM 8)</span>
+0188 <span class="comment">%    Para o caso de NL menor ou igual ao crítico -&gt; estratificado smooth ou wavy (VÁ ITEM 7)</span>
+0189 [flag_naoest2] = <a href="#_sub3" class="code" title="subfunction [F] = sigmoidal(fatorExp,x1,x2)">sigmoidal</a>(fatorExp,NL,NL_c).*flag_desce;<span class="comment">% 0 - se menor e 1 se maior</span>
+0190 
+0191 <span class="comment">%% (6) Testando iterações de Jeffreus (vento-onda) para escoamento</span>
+0192 <span class="comment">% estratificado comondas</span>
+0193 <span class="comment">%    Para o caso de K maior que crítico -&gt; estratificado wavy (FIM)</span>
+0194 <span class="comment">%    Para o caso de K menor ou igual a crítico -&gt; estratificado smooth (FIM)</span>
+0195 [flag_wavy1] = <a href="#_sub3" class="code" title="subfunction [F] = sigmoidal(fatorExp,x1,x2)">sigmoidal</a>(fatorExp,K,K_c);<span class="comment">% 0 - se menor e 1 se maior</span>
+0196 
+0197 <span class="comment">%% (7) Testando ondas de gravidade</span>
+0198 <span class="comment">%    Para o caso de FL maior que crítico e fluido descendo -&gt; estratificado wavy (FIM)</span>
+0199 <span class="comment">%    Para o caso contrário -&gt; estratificao smooth (FIM)</span>
+0200 [flag_wavy2] = <a href="#_sub3" class="code" title="subfunction [F] = sigmoidal(fatorExp,x1,x2)">sigmoidal</a>(fatorExp,FL,FL_c);<span class="comment">% 0 - se menor e 1 se maior</span>
+0201 
+0202 <span class="comment">%% (8) (Vem do 5.1) Assumindo-se anular#####################################</span>
+0203 
+0204 <span class="comment">%% (9) Testando bridging do líquido acima de abaixo de alfaL = 0.35</span>
+0205 
+0206 <span class="comment">%    Se alfaL&gt;0.35 -&gt; bubble ou intermitente (VÁ PARA ITEM 11)</span>
+0207 flag_naoanular = <a href="#_sub3" class="code" title="subfunction [F] = sigmoidal(fatorExp,x1,x2)">sigmoidal</a>(fatorExp,alfaL,0.35);
+0208 
+0209 <span class="comment">%    Se teta=90º -&gt; bubble, intermitente, anular ou anular disperso (VÁ PARA ITEM 10)</span>
+0210 flag_vertical = (abs(angulo_teta)-90)&lt;(10/180*pi); 
+0211 
+0212 <span class="comment">%    Caso contrário -&gt; anular ou anular disperso (FIM)</span>
+0213 
+0214 <span class="comment">%% (10) (Vem do 9) Testando estabilidade do filme para escoamento vertical</span>
+0215 <span class="comment">%    Para o caso de FG menor que crítico -&gt; bubble ou intermitente (VÁ PARA ITEM 11)</span>
+0216 <span class="comment">%    Para o caso de FG maior ou igual a crítico -&gt; anular ou anular disperso (FIM)</span>
+0217 flag_naohorizontal = (abs(angulo_teta))&gt;(10/180*pi); 
+0218 flag_anular1 = <a href="#_sub3" class="code" title="subfunction [F] = sigmoidal(fatorExp,x1,x2)">sigmoidal</a>(fatorExp,FG,FG_c)+flag_naohorizontal;<span class="comment">% 0 - se menor e 1 se maior</span>
+0219 flag_anular1(find(flag_anular1==2))=1; 
+0220 
+0221 <span class="comment">%% (11) Testando bubble ou intermitente###################################</span>
+0222 
+0223 <span class="comment">%    Para o caso de |teta|&lt;10º (VÁ PARA ITEM 12)</span>
+0224 flag_horizontal = abs(angulo_teta)&lt;(10/180*pi);
+0225 <span class="comment">%    Se alfaG&gt;0.52 -&gt; intermitente (FIM)</span>
+0226 flag_intermitente1 = <a href="#_sub3" class="code" title="subfunction [F] = sigmoidal(fatorExp,x1,x2)">sigmoidal</a>(fatorExp,alfa,0.52);
+0227 <span class="comment">%    Se alfaG&lt;0.25 -&gt; dispersed bubble (FIM)</span>
+0228 flag_bubble1 = <a href="#_sub3" class="code" title="subfunction [F] = sigmoidal(fatorExp,x1,x2)">sigmoidal</a>(fatorExp,0.25,alfa);
+0229 <span class="comment">%    Se 0.25&lt;alfaG&lt;0.52 -&gt; determinar tamanhos das bolhas (ver equações)</span>
+0230 dmax = (0.725+4.15.*(vS_G./v_L).^0.5).*(tensao./densL).^(3/5).*(2.*f_M.*v_M.^3./D).^(-2/5);
+0231 ddef = 2.*(0.4.*tensao./(densL-densG)./9.81).^0.5;
+0232 dmigr = 3./8.*densL./(densL-densG).*f_M.*v_M.^2./9.81./cos(angulo_teta);
+0233 flag_checkbolhas = (1-flag_bubble1).*(1-flag_intermitente1);
+0234 <span class="comment">%    Se dmax&lt;ddef e dmax&lt; dmigr -&gt; dispersed bubble (FIM)</span>
+0235 flag_bubble2 = <a href="#_sub3" class="code" title="subfunction [F] = sigmoidal(fatorExp,x1,x2)">sigmoidal</a>(fatorExp,ddef,dmax).*<a href="#_sub3" class="code" title="subfunction [F] = sigmoidal(fatorExp,x1,x2)">sigmoidal</a>(fatorExp,dmigr,dmax).*flag_checkbolhas;
+0236 <span class="comment">%    Se dmax&gt;ddef ou dmax&lt; dmigr -&gt; intermitente (FIM)</span>
+0237 
+0238 
+0239 <span class="comment">%% (12) Testando empuxo vs. flutuações turbulentas</span>
+0240 
+0241 <span class="comment">%    Para o caso de T &gt; crítico -&gt; bubble (FIM)</span>
+0242 <span class="comment">%    Para o caso de T &lt; crítico -&gt; intermitente (FIM)</span>
+0243 [flag_bubble3] = <a href="#_sub3" class="code" title="subfunction [F] = sigmoidal(fatorExp,x1,x2)">sigmoidal</a>(fatorExp,T,T_c);<span class="comment">% 0 - se menor e 1 se maior</span>
+0244 
+0245 <span class="comment">% Chaveadores principais</span>
+0246 fl.Est = (1-flag_naoest1).*flag_sobe + (1-flag_naoest2).*(1-flag_sobe);
+0247 
+0248 fl.EsW = fl.Est.*(flag_wavy1.*flag_sobe+flag_wavy2.*(1-flag_sobe));
+0249 
+0250 fl.EsS = fl.Est.*(1-fl.EsW);
+0251 
+0252 fl.Anu = (1-fl.Est).*<span class="keyword">...</span>
+0253          (1-flag_naoanular).*<span class="keyword">...</span>
+0254          (flag_vertical.*flag_anular1);
+0255 
+0256 fl.Bub = (1-fl.Est).*<span class="keyword">...</span>
+0257          (1-fl.Anu).*<span class="keyword">...</span>
+0258          (flag_bubble3.*flag_horizontal+(flag_bubble1+flag_bubble2).*(1-flag_horizontal));
+0259 
+0260 fl.Int = (1-fl.Est).*<span class="keyword">...</span>
+0261          (1-fl.Anu).*<span class="keyword">...</span>
+0262          (1-fl.Bub);
+0263 
+0264  <span class="comment">% Armazendo Fatores</span>
+0265 fatores.FL = FL;
+0266 fatores.FG = FG;
+0267 fatores.NL = NL;
+0268 fatores.K  = K;
+0269 fatores.T  = T;
+0270 fatores.FGcosteta = FGast;
+0271 
+0272  <span class="comment">% Armazendo Fatores Críticos</span>
+0273 fatoresC.FL = FL_c;
+0274 fatoresC.NL = NL_c;
+0275 fatoresC.K  = K_c;
+0276 fatoresC.T  = T_c;
+0277 
+0278 <span class="comment">% Gerando marcadores de regime</span>
+0279 reg1 = fl.Anu.*1+fl.Bub.*2+fl.Int.*3+fl.Est.*4;
+0280 reg2 = fl.Anu.*1+fl.Bub.*2+fl.Int.*3+fl.EsS.*4+fl.EsW.*5;
+0281 
+0282 <a name="_sub1" href="#_subfunctions" class="code">function v = gerav(q,dens,Area)</a>
+0283 <span class="comment">% Sub-Função para cálculo da velocidade</span>
+0284 
+0285 <span class="comment">% Variáveis de entrada:</span>
+0286 <span class="comment">% dens -&gt; Densidade (kg/m³)</span>
+0287 <span class="comment">% q -&gt; vazão mássica (kg/s)</span>
+0288 <span class="comment">% Area -&gt; área da seção transversal do duto (m²)</span>
+0289 
+0290 v = q./dens./Area;
+0291 
+0292 <a name="_sub2" href="#_subfunctions" class="code">function [FL, FG] = geraFroude(densL, densG, D, vS_L, vS_G)</a>
+0293 <span class="comment">% Sub-Função para cálculo dos números adimensionais de Froude</span>
+0294 
+0295 <span class="comment">% Variáveis de entrada:</span>
+0296 <span class="comment">% densL -&gt; Densidade do Líquido (kg/m³)</span>
+0297 <span class="comment">% densG -&gt; Densidade do Gás (kg/m³)</span>
+0298 <span class="comment">% D -&gt; diâmetro (m)</span>
+0299 <span class="comment">% vS_L -&gt; velocidade superficial* do líquido</span>
+0300 <span class="comment">% vS_G -&gt; velocidade superficial* do gás</span>
+0301 <span class="comment">%</span>
+0302 <span class="comment">% * velocidade superficial é definida como a vazão volumétrica dividida</span>
+0303 <span class="comment">% pela área total da seção transversal do tubo</span>
+0304 
+0305 <span class="comment">% Calculando FL (número de Froud da fase líquida)</span>
+0306 
+0307 FL = (densL./(densL-densG)./9.8./D).^0.5.*abs(vS_L);
+0308 <span class="comment">% Calculando FG (número de Froud da fase gás)</span>
+0309 
+0310 FG = (densG./(densL-densG)./9.8./D).^0.5.*abs(vS_G);
+0311 
+0312 <a name="_sub3" href="#_subfunctions" class="code">function [F] = sigmoidal(fatorExp,x1,x2)</a>
+0313 <span class="comment">% Função que gera uma saída sigmoidal para eliminação de descontinuidades</span>
+0314 <span class="comment">% em chaveamento de modelos. A Função tem o seguintes comportamento:</span>
+0315 <span class="comment">% Se x1 = x2, então F = 0.5</span>
+0316 <span class="comment">% Se x1 &gt; X2, então F tende a 1</span>
+0317 <span class="comment">% Se x1 &lt; x2, então F tende a 0</span>
+0318 
+0319 <span class="comment">% variável de entrada:</span>
+0320 <span class="comment">% x1, x2 -&gt; coordenadas</span>
+0321 
+0322 <span class="comment">% variável de saída:</span>
+0323 <span class="comment">% F -&gt; resultado da função</span>
+0324 
+0325 <span class="comment">% Parâmetros:</span>
+0326 
+0327 <span class="comment">% Cálculo:</span>
+0328 F= 1./(1+exp(-fatorExp.*(x1-x2)));
+0329 
+0330 
+0331 <a name="_sub4" href="#_subfunctions" class="code">function [f,Re]=fator(v,dens,visc,D,rugo)</a>
+0332 <span class="comment">% Geraçao dos fatores de atrito de fanning para as fases, onde:</span>
+0333 <span class="comment">% tensao_G  = -FI_G.*(f_G.*densG.*(v_G).^2./2).</span>
+0334 <span class="comment">% Sendo o fator de atrito de fanning (f) corresponde a 1/4 do fator de</span>
+0335 <span class="comment">% atrito de Darcy.</span>
+0336 <span class="comment">% Lembrando:</span>
+0337 <span class="comment">% Em regime laminar, f(Fanning) = 16/Re; f(Darcy) = 64/Re;</span>
+0338 
+0339 inx=find(v==0);
+0340 v(inx)=1e-6;
+0341 Re = D.*abs(v).*dens./visc;
+0342 
+0343 correlacao = 3;
+0344 <span class="keyword">switch</span> correlacao
+0345     <span class="keyword">case</span> 1 <span class="comment">% Churchill (1977)</span>
+0346         <span class="comment">% Churchill, S. W. Friction-Factor Equation Spans All Fluid-Flow</span>
+0347         <span class="comment">% Regimes. Chemical Engineering, v. 84, n. 24, 0. 91-92, 1977.</span>
+0348         A=(2.457*log(1./(0.27*rugo./D+(7./Re).^0.9))).^16;
+0349         B=(37530./Re).^16;
+0350         f=2.*((8./Re).^12+1./(A+B).^1.5).^(1./12);
+0351     <span class="keyword">case</span> 2 <span class="comment">% Eck (1973)</span>
+0352         <span class="comment">% Eck B., (1973) “Technische Stromungslehre”, Springer,</span>
+0353         <span class="comment">% New York, 1973.</span>
+0354         f=0.0625./(log10(15./Re+rugo./D./3.715)).^2;
+0355     <span class="keyword">case</span> 3 <span class="comment">% Haaland (1983)</span>
+0356         <span class="comment">% Haaland S. E., (1983) “Simple and Explicit Formulas for the</span>
+0357         <span class="comment">% Friction Factor in Turbulent Pipe Flow”. Journal of Fluids</span>
+0358         <span class="comment">% Engineering, 105, 89-90.</span>
+0359         f=0.07716./(log10(6.9./Re+(rugo./D./3.7).^1.11)).^2;
+0360     <span class="keyword">case</span> 4 <span class="comment">% Colebrook (1939)</span>
+0361         <span class="comment">% Colebrook C. F., (1939) “Turbulent Flow in Pipes, With</span>
+0362         <span class="comment">% Particular Reference to the Transition between the Smooth and</span>
+0363         <span class="comment">% Rough Pipe Laws”. J. Inst. Civ. Eng., 11, 133-156,London, 1939.</span>
+0364         <span class="keyword">for</span> i=1:size(Re,1)
+0365             <span class="keyword">for</span> j=1:size(Re,2)
+0366                 f(i,j)=fzero(@(x) 1+2*x.^0.5.*log10(2.51./Re(i,j)./<span class="keyword">...</span>
+0367                     (x.^0.5)+rugo./3.715./D), 64/Re(i,j));
+0368             <span class="keyword">end</span>
+0369         <span class="keyword">end</span>
+0370         f=f./4; <span class="comment">% de Darcy para Fanning</span>
+0371         
+0372     <span class="keyword">case</span> 5 <span class="comment">% Moody (1947)</span>
+0373         <span class="comment">% Moody L. F., (1947) “An Approximate Formula for Pipe Friction</span>
+0374         <span class="comment">% Factors”. Transactions ASME, 69, 1005.</span>
+0375         f=0.001375.*(1+(1E6.*(0.02.*rugo./D+1./Re)).^(1/3));
+0376 <span class="keyword">end</span>
+0377 f(inx)=0;
+0378 Re(inx)=0;
+0379</pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

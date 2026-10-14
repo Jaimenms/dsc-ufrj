@@ -1,0 +1,193 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of modelo_estratificado</title>
+  <meta name="keywords" content="modelo_estratificado">
+  <meta name="description" content="Função que determina o fechamento do modelo para padrão de escoamento">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; modelo_estratificado.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>modelo_estratificado
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que determina o fechamento do modelo para padrão de escoamento</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [Ses] = modelo_estratificado(entradas) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que determina o fechamento do modelo para padrão de escoamento
+ estratificado.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="fator.html" class="code" title="function [f,Re]=fator(v,dens,visc,D,rugo)">fator</a>	Função que gera fatores de atrito de fanning para as fases</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_duto.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto(t,x,y,parametros,j)">modelo_duto</a>	Função que gera o vetor de coeficientes da matriz da EDP discretizada</li><li><a href="modelo_intermitente.html" class="code" title="function [Sin,ls,lf,lu] = modelo_intermitente(entradas)">modelo_intermitente</a>	Função que determina o fechamento do modelo para padrão de escoamento</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [f_I,f_L,f_G]=fator_I_Est(f_L,Re_L,v_L,densL,viscL,DL,</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [Ses] = modelo_estratificado(entradas)</a>
+0002 <span class="comment">% Função que determina o fechamento do modelo para padrão de escoamento</span>
+0003 <span class="comment">% estratificado.</span>
+0004 
+0005 <span class="comment">%% Capturando variaveis de entrada</span>
+0006 alfaG = entradas.alfaG;
+0007 alfaL = entradas.alfaL;
+0008 v_L = entradas.v_L;
+0009 v_LS = entradas.v_LS;
+0010 v_G = entradas.v_G;
+0011 v_GS = entradas.v_GS;
+0012 AreaL = entradas.AreaL;
+0013 AreaG = entradas.AreaG;
+0014 D = entradas.D;
+0015 rugo = entradas.rugo;
+0016 angulo_teta = entradas.angulo_teta;
+0017 densL = entradas.densL;
+0018 densG = entradas.densG;
+0019 viscL = entradas.viscL;
+0020 viscG = entradas.viscG;
+0021 CL = entradas.CL;
+0022 CG = entradas.CG;
+0023 tensao = entradas.tensao;
+0024 beta = entradas.beta;
+0025 hD = entradas.hD;
+0026 
+0027 
+0028 <span class="comment">%% Calculando perímetros</span>
+0029 
+0030 <span class="comment">% Calculando Perímetros</span>
+0031 PerL = beta/2.*D;
+0032 PerG = pi*D-PerL;
+0033 PerI = D.*sin(beta/2);
+0034 
+0035 <span class="comment">%% Calculando diâmetros hidráulicos</span>
+0036 ix = alfaG&lt;1;
+0037 DG = 4.*AreaG./(PerG+PerI);
+0038 DL = DG.*0;
+0039 DL(ix) = 4.*AreaL(ix)./PerL(ix);
+0040 
+0041 
+0042 <span class="comment">%% Calculando diferença de pressão das fases</span>
+0043     
+0044 <span class="comment">% Calculando o centro de massa</span>
+0045 zcml = D.*(0.5-1/3/pi./alfaL.*(sin(beta./2)).^3);
+0046 zcmg = D.*(0.5+1/3/pi./alfaG.*(sin(beta./2)).^3);        
+0047 
+0048 <span class="comment">% Calculando a diferença entre as fases</span>
+0049 hL = hD.*D;
+0050 dPLG = ((densL-densG).*hL-densL.*zcml+densG.*zcmg).*9.81.*cos(angulo_teta);
+0051 
+0052 <span class="comment">% Calculando a diferença entre as fases e a pressão média</span>
+0053 dPL =  alfaG.*dPLG;
+0054 dPG = -alfaL.*dPLG;
+0055 
+0056 <span class="comment">% Calculando a diferença entre a pressão na interface e a pressão média</span>
+0057 dPI = (alfaL.*densL.*(zcml-hL)+alfaG.*densG.*(zcmg-hL)).*9.81.*cos(angulo_teta);
+0058 
+0059 <span class="comment">% Calculando as derivadas em relação a pressao</span>
+0060 ddPLGdP = ((CL-CG).*hL-CL.*zcml+CG.*zcmg).*9.81.*cos(angulo_teta);
+0061 ddPLdP  =  alfaG.*ddPLGdP;
+0062 ddPGdP  = -alfaL.*ddPLGdP;
+0063 
+0064 <span class="comment">% Calculando derivadas intermediárias</span>
+0065 dbetadalfaG = -2*pi./(1-cos(beta));
+0066 dhLdalfaG= 0.5.*sin(beta./2).*dbetadalfaG;
+0067 dzcmldalfaG= -D./(2.*pi.*alfaL).*(sin(beta./2)).^2.*<span class="keyword">...</span>
+0068     (2./3./alfaL.*sin(beta./2)+cos(beta./2).*dbetadalfaG);
+0069 dzcmgdalfaG= -D./(2.*pi.*alfaG).*(sin(beta./2)).^2.*<span class="keyword">...</span>
+0070     (2./3./alfaG.*sin(beta./2)-cos(beta./2).*dbetadalfaG);
+0071 
+0072 <span class="comment">% Calculando as derivadas em relaçao a fração de área</span>
+0073 ddPLGdalfaG = ((densL-densG).*dhLdalfaG-densL.*dzcmldalfaG+densG.*dzcmgdalfaG).*9.81.*cos(angulo_teta);
+0074 
+0075 ddPLdalfaG  = alfaG.*ddPLGdalfaG+dPLG;
+0076 ddPGdalfaG  =-alfaL.*ddPLGdalfaG+dPLG;
+0077 
+0078 <span class="comment">%% Calculando Fatores de Atrito</span>
+0079 
+0080 <span class="comment">% Fluido-Parede</span>
+0081 [f_L,Re_L]   =<a href="fator.html" class="code" title="function [f,Re]=fator(v,dens,visc,D,rugo)">fator</a>  (v_L,densL,viscL,DL,rugo);
+0082 [f_G,Re_G]   =<a href="fator.html" class="code" title="function [f,Re]=fator(v,dens,visc,D,rugo)">fator</a>  (v_G,densG,viscG,DG,rugo);
+0083 
+0084 <span class="comment">% Fluido-Interface</span>
+0085 [f_I,f_L,f_G]=<a href="#_sub1" class="code" title="subfunction [f_I,f_L,f_G]=fator_I_Est(f_L,Re_L,v_L,densL,viscL,DL,">fator_I_Est</a>(f_L,Re_L,v_L,densL,viscL,DL,<span class="keyword">...</span>
+0086     f_G,Re_G,v_GS,densG,viscG,DG,rugo,D,hL,alfaG);
+0087 
+0088 <span class="comment">%% Calculando Tensoes</span>
+0089 
+0090 <span class="comment">% Fluido-Parede</span>
+0091 tensao_G  = f_G.*densG.*(v_G).*abs(v_G)./2;
+0092 tensao_L  = f_L.*densL.*(v_L).*abs(v_L)./2;
+0093 
+0094 <span class="comment">% FLuido-Interface</span>
+0095 tensao_IG = f_I.*densG.*(v_G-v_L).*abs(v_G-v_L)./2;
+0096 tensao_IL = -tensao_IG;
+0097 
+0098 <span class="comment">%% Calculando fluxo dissipativo</span>
+0099 <span class="comment">%PerI = max(PerI,1e-8);</span>
+0100 <span class="comment">%PerL = max(PerL,1e-8);</span>
+0101 <span class="comment">%PerG = max(PerG,1e-8);</span>
+0102 GamaL = PerI.*tensao_IL+PerL.*tensao_L;
+0103 GamaG = PerI.*tensao_IG+PerG.*tensao_G;
+0104 
+0105 <span class="comment">%% Juntando saidas</span>
+0106 
+0107 Ses.GamaL      =GamaL;
+0108 Ses.GamaG      =GamaG;
+0109 Ses.dPL        =dPL;
+0110 Ses.dPG        =dPG;
+0111 Ses.ddPLdP     =ddPLdP;
+0112 Ses.ddPGdP     =ddPGdP;
+0113 Ses.ddPLdalfaG =ddPLdalfaG;
+0114 Ses.ddPGdalfaG =ddPGdalfaG;
+0115 Ses.dPI        =dPI;
+0116 Ses.hL         =hL;
+0117 Ses.beta       =beta;
+0118 Ses.tensao_G = tensao_G;
+0119 Ses.tensao_L = tensao_L;
+0120 
+0121 <a name="_sub1" href="#_subfunctions" class="code">function [f_I,f_L,f_G]=fator_I_Est(f_L,Re_L,v_L,densL,viscL,DL,</a><span class="keyword">...</span>
+0122     f_G,Re_G,v_GS,densG,viscG,DG,rugo,D,h,alfaG)
+0123 <span class="comment">% Geraçao dos fator de atrito para a interface no escoamento estratificado</span>
+0124 
+0125 correlacao = 2;
+0126 <span class="keyword">switch</span> correlacao
+0127     <span class="keyword">case</span> 1 <span class="comment">% Para Escoamento Estratificado Horizontal</span>
+0128         <span class="comment">% Taitel Y., &amp; Duckler A. E., (1976) “A Model For Predicting Flow</span>
+0129         <span class="comment">% Regime Transitions in Horizontal and Near-Horizontal Gas-Liquid</span>
+0130         <span class="comment">% Flow”. AIChE Journal, 22 (1), 47-55.</span>
+0131         f_I = f_G;
+0132     <span class="keyword">case</span> 2 <span class="comment">% Para Escoamento Estratificado Horizontal</span>
+0133         <span class="comment">% Andritsos N., &amp; Hanratty T. J., (1987) “Influence of interfacial</span>
+0134         <span class="comment">% waves in stratified gas-liquid flows”. AIChE Journal, 33 (3),</span>
+0135         <span class="comment">% 444-454.</span>
+0136         <span class="comment">% Spedding P. L., &amp; Hand N. P., (1997) “Prediction in Stratified</span>
+0137         <span class="comment">% Gas-Liquid Co-Current Flow in Horizontal Pipelines”. Int. J.</span>
+0138         <span class="comment">% Heat Mass Transfer, 40 (8), 1923-1935.</span>
+0139         v_GT = 5.5;
+0140         <span class="comment">% Andritsos N., &amp; Hanratty T. J., (1987) “Influence of interfacial</span>
+0141         <span class="comment">% waves in stratified gas-liquid flows”. AIChE Journal, 33 (3),</span>
+0142         <span class="comment">% 444-454.</span>
+0143         f_I=f_G.*(1+max(0,15.*(abs(v_GS)./v_GT-1).*(h./D).^0.5));
+0144 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

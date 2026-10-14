@@ -1,0 +1,242 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of solver_edp_diferencas_upwind</title>
+  <meta name="keywords" content="solver_edp_diferencas_upwind">
+  <meta name="description" content="Função que transforma sistemas de EDP em EDO segundo diferenças finitas">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; solver_edp_diferencas_upwind.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>solver_edp_diferencas_upwind
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que transforma sistemas de EDP em EDO segundo diferenças finitas</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [dWdt]=solver_edp_diferencas_upwind(t,Y,Nk,n,h,Swk,modelo,parametros) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que transforma sistemas de EDP em EDO segundo diferenças finitas
+ upwind.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>	Função referente ao modelo de redes de escoamento bifásico</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [invMk,Mk] = gera_Mk(Nk,ne,hk)</a></li><li><a href="#_sub2" class="code">function [Mbjj] = gera_Mbk(Nk,ne,hk)</a></li><li><a href="#_sub3" class="code">function [I_jj1,ix_jj1,I_jj2,ix_jj2] = gera_LAMBDA(A,Nk,ne)</a></li><li><a href="#_sub4" class="code">function [I_jj,ix_jj] = gera_CSI(B,Nk,ne)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [dWdt]=solver_edp_diferencas_upwind(t,Y,Nk,n,h,Swk,modelo,parametros)</a>
+0002 <span class="comment">% Função que transforma sistemas de EDP em EDO segundo diferenças finitas</span>
+0003 <span class="comment">% upwind.</span>
+0004 
+0005 <span class="keyword">persistent</span> invMk Mbjj ne ne_0 ixMODEL
+0006 <span class="keyword">persistent</span> I_LAMBDAjj1 ix_LAMBDAjj1 I_LAMBDAjj2 ix_LAMBDAjj2
+0007 <span class="keyword">persistent</span> I_CSIjj ix_CSIjj
+0008 
+0009 nt = size(Y{1},2);
+0010 m = length(Y);
+0011 
+0012 <span class="keyword">if</span> isempty(invMk)
+0013             
+0014     <span class="keyword">for</span> i = 1 : m
+0015         
+0016         [aux1,aux2,aux3,A,B,ixModel]= feval(modelo{i});
+0017         aux1=[];
+0018         aux2=[];
+0019         aux3=[];
+0020         ne(i) = size(A,1);
+0021         ne_0 = length(ixModel);
+0022 
+0023         ixMODELk=[];
+0024         ni = size(Y{i},1);
+0025         <span class="keyword">for</span> j=1:length(ixModel)
+0026             ixMODELk(j:ne_0:ni)=ixModel(j);
+0027         <span class="keyword">end</span>
+0028         ixMODEL{i} = ixMODELk;
+0029         
+0030 
+0031         <span class="comment">% GERANDO MATRIZ DE DISCRETIZAÇÃO de GALERKIN</span>
+0032         <span class="comment">% Mk -&gt; matriz de discretização (ne*(Nk+1)xne*(Nk+1))</span>
+0033         [invMkK] = <a href="#_sub1" class="code" title="subfunction [invMk,Mk] = gera_Mk(Nk,ne,hk)">gera_Mk</a>(Nk(i),ne(i),h{i});
+0034         [MbjjK] = <a href="#_sub2" class="code" title="subfunction [Mbjj] = gera_Mbk(Nk,ne,hk)">gera_Mbk</a>(Nk(i),ne(i),h{i});
+0035         
+0036         <span class="comment">% GERANDO MATRIZ DE MONTAGEM DA MATRIZ DE COEFICIENTES LAMBDA</span>
+0037         <span class="comment">% I_LAMBDAjj -&gt; Matriz de ponteiros de geraçao da matriz LAMBDAjj</span>
+0038         <span class="comment">% I_LAMBDAjjm1 -&gt; Matriz de ponteiros de geraçao da matriz LAMBDAjjm1</span>
+0039         [I_LAMBDAjjK1,ix_LAMBDAjjK1,I_LAMBDAjjK2,ix_LAMBDAjjK2] = <a href="#_sub3" class="code" title="subfunction [I_jj1,ix_jj1,I_jj2,ix_jj2] = gera_LAMBDA(A,Nk,ne)">gera_LAMBDA</a>(A,Nk(i),ne(i));
+0040 
+0041         <span class="comment">% GERANDO MATRIZ DE MONTAGEM DA MATRIZ DE COEFICIENTES CSI</span>
+0042         <span class="comment">% I_CSIjj -&gt; Vetor de ponteiros de geraçao da matriz CSIjj</span>
+0043         <span class="comment">% I_CSIjjm1 -&gt; Vetor de ponteiros de geraçao da matriz CSIjjm1</span>
+0044         [I_CSIjjK,ix_CSIjjK] = <a href="#_sub4" class="code" title="subfunction [I_jj,ix_jj] = gera_CSI(B,Nk,ne)">gera_CSI</a>(B,Nk(i),ne(i));
+0045 
+0046         invMk{i} = invMkK;
+0047         Mbjj{i} = MbjjK;
+0048         I_LAMBDAjj1{i} = I_LAMBDAjjK1;
+0049         ix_LAMBDAjj1{i} = ix_LAMBDAjjK1;
+0050         I_LAMBDAjj2{i} = I_LAMBDAjjK2;
+0051         ix_LAMBDAjj2{i} = ix_LAMBDAjjK2;
+0052         I_CSIjj{i} = I_CSIjjK;
+0053         ix_CSIjj{i} = ix_CSIjjK;
+0054         
+0055     <span class="keyword">end</span>
+0056     
+0057 <span class="keyword">end</span>
+0058 
+0059 
+0060 dWdt = [];
+0061 ix = 0;
+0062 <span class="keyword">for</span> j = 1:m
+0063 
+0064     hk = h{j};
+0065     Yk = Y{j};
+0066     SwkK = Swk{j};
+0067     invMkK = invMk{j};
+0068     ixMODELk = ixMODEL{j};
+0069         
+0070     I_LAMBDAjjK1 = I_LAMBDAjj1{j};
+0071     I_LAMBDAjjK2 = I_LAMBDAjj2{j};
+0072     I_CSIjjK = I_CSIjj{j};
+0073 
+0074     dWkdt = [];
+0075 
+0076     XT=[];
+0077     <span class="keyword">for</span> i = 1:nt
+0078         
+0079         <span class="keyword">if</span> isempty(parametros{j}.x)
+0080             x=[];
+0081         <span class="keyword">else</span>
+0082             x = parametros{j}.x;
+0083             XT=[XT x];
+0084         <span class="keyword">end</span>
+0085         
+0086     <span class="keyword">end</span>
+0087 
+0088     FT=feval(modelo{j},t,XT,Yk,parametros,j);
+0089     
+0090     FI=[];
+0091     <span class="keyword">for</span> i = 1:nt
+0092 
+0093         C = Yk(:,i);
+0094         F = FT(:,i);
+0095         
+0096                 
+0097         <span class="comment">% Determinando LAMBDA</span>
+0098         LAMBDA1 = zeros(size(I_LAMBDAjjK1));
+0099         LAMBDA2 = zeros(size(I_LAMBDAjjK2));
+0100         LAMBDA1(ix_LAMBDAjj1{j})= F(I_LAMBDAjjK1(ix_LAMBDAjj1{j}));
+0101         LAMBDA2(ix_LAMBDAjj2{j})= F(I_LAMBDAjjK2(ix_LAMBDAjj2{j}));
+0102                 
+0103         <span class="comment">% Determinando CSI</span>
+0104         CSIjj = I_CSIjjK;
+0105         CSIjj(ix_CSIjj{j}) = F(I_CSIjjK(ix_CSIjj{j}));
+0106 
+0107         CSI = Mbjj{j}*CSIjj;
+0108         
+0109         
+0110         <span class="comment">% Obtendo derivadas de estado reduzido do tubo j:</span>
+0111 
+0112         LAMBDA = LAMBDA1-LAMBDA2;
+0113         
+0114         <span class="comment">% Obtendo derivadas de estado reduzido do tubo j:</span>
+0115         FI(:,i)= (LAMBDA*Yk(find(ixMODELk),i)+CSI);
+0116         
+0117 
+0118     <span class="keyword">end</span>
+0119              
+0120     dWdt = [dWdt;-SwkK(find(ixMODELk),:)'*(invMkK*FI)];
+0121 <span class="keyword">end</span>
+0122 
+0123 
+0124 
+0125 <a name="_sub1" href="#_subfunctions" class="code">function [invMk,Mk] = gera_Mk(Nk,ne,hk)</a>
+0126 <span class="comment">% Gera matriz inversa de Mk</span>
+0127 
+0128 uns = eye(ne);
+0129 
+0130 Mk=zeros(ne.*(Nk+1));
+0131 
+0132 Mk(1:ne,1:ne)= hk(1).*uns;
+0133 
+0134 <span class="keyword">for</span> i=1:Nk
+0135     Mk(i.*ne+[1:ne],i.*ne+[1:ne])=hk(i).*uns;
+0136 <span class="keyword">end</span>
+0137 
+0138 Mk = sparse(Mk);
+0139 
+0140 invMk=Mk\speye(size(Mk));
+0141 
+0142 <a name="_sub2" href="#_subfunctions" class="code">function [Mbjj] = gera_Mbk(Nk,ne,hk)</a>
+0143 
+0144 Mbjj  =zeros(ne.*(Nk+1),1);
+0145 Mbjj(1:ne,1)= hk(1);
+0146 
+0147 <span class="keyword">for</span> i=1:Nk
+0148     Mbjj((i-0).*ne+[1:ne],1)=hk(i);
+0149 <span class="keyword">end</span>
+0150 
+0151 Mbjj = diag(Mbjj);
+0152 
+0153 <a name="_sub3" href="#_subfunctions" class="code">function [I_jj1,ix_jj1,I_jj2,ix_jj2] = gera_LAMBDA(A,Nk,ne)</a>
+0154 <span class="comment">% Gera matrizes que compoem a matriz LAMBDA</span>
+0155 
+0156 ixA = A&gt;0;
+0157 I_aux=[];
+0158 I_jj1 = zeros((Nk+1).*ne);
+0159 I_jj2 = zeros((Nk+1).*ne);
+0160 <span class="keyword">for</span> j=1:(Nk+1)
+0161     aux = ixA.*((A-1).*(Nk+1)+j);
+0162     <span class="keyword">if</span> j==1
+0163         I_aux1 = aux;
+0164     <span class="keyword">elseif</span> j==(Nk+1)
+0165         I_auxNkM1 = aux;
+0166     <span class="keyword">else</span>
+0167         I_aux = blkdiag(I_aux,aux);
+0168     <span class="keyword">end</span>
+0169 <span class="keyword">end</span>
+0170 I_jj1([1:ne],ne+[1:ne])=I_aux1;
+0171 I_jj1(1*ne+[1:(ne*(Nk-1))],1*ne+[1:(ne*(Nk-1))])=I_jj1(1*ne+[1:(ne*(Nk-1))],2*ne+[1:(ne*(Nk-1))])+I_aux;
+0172 I_jj1(ne.*Nk+[1:ne],ne.*Nk+[1:ne])=I_auxNkM1;
+0173 I_jj1 = sparse(I_jj1);
+0174 ix_jj1=find(I_jj1&gt;0);
+0175 
+0176 I_jj2([1:ne],[1:ne])=I_aux1;
+0177 I_jj2(ne.*Nk+[1:ne],ne.*(Nk-1)+[1:ne])=I_auxNkM1;
+0178 I_jj2(1*ne+[1:(ne*(Nk-1))],0*ne+[1:(ne*(Nk-1))])=I_jj2(1*ne+[1:(ne*(Nk-1))],0*ne+[1:(ne*(Nk-1))])+I_aux;
+0179 I_jj2 = sparse(I_jj2);
+0180 ix_jj2=find(I_jj2&gt;0);
+0181 
+0182 
+0183 <a name="_sub4" href="#_subfunctions" class="code">function [I_jj,ix_jj] = gera_CSI(B,Nk,ne)</a>
+0184 <span class="comment">% Gera matrizes que compoem a matriz CSI</span>
+0185 
+0186 ixB = B&gt;0;
+0187 I_aux=[];
+0188 <span class="keyword">for</span> j=1:(Nk+1)
+0189     aux = ixB.*((B-1).*(Nk+1)+j);
+0190     I_aux = [I_aux;aux];
+0191 <span class="keyword">end</span>
+0192 I_jj=sparse(I_aux);
+0193 ix_jj=find(I_jj&gt;0);</pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

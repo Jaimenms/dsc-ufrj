@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of modelo_duto_L</title>
+  <meta name="keywords" content="modelo_duto_L">
+  <meta name="description" content="Função que gera o vetor de coeficientes da matriz da EDP discretizada">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; modelo_duto_L.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>modelo_duto_L
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que gera o vetor de coeficientes da matriz da EDP discretizada</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [F,saidas,FSS,A,B,ixModel]=modelo_duto_L(t,x,y,parametros,j) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que gera o vetor de coeficientes da matriz da EDP discretizada
+ para o modelo monofásico de líquido.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="fator.html" class="code" title="function [f,Re]=fator(v,dens,visc,D,rugo)">fator</a>	Função que gera fatores de atrito de fanning para as fases</li><li><a href="modelo_fluido.html" class="code" title="function [propL, propG, tensao] = modelo_fluido(P,T,parametros)">modelo_fluido</a>	Função que descreve as propriedades dos fluidos.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="calculos_iniciais.html" class="code" title="function [parametros]=calculos_iniciais(dados)">calculos_iniciais</a>	Função que executa cálculos iniciais dos parametros a serem utilizadas</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function yi = interpola_angulo(x,y,xi)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [F,saidas,FSS,A,B,ixModel]=modelo_duto_L(t,x,y,parametros,j)</a>
+0002 <span class="comment">% Função que gera o vetor de coeficientes da matriz da EDP discretizada</span>
+0003 <span class="comment">% para o modelo monofásico de líquido.</span>
+0004 
+0005 <span class="comment">% Preparando saídas</span>
+0006 saidas=[];
+0007 FSS=[];
+0008 F=[];
+0009 ixModel=[];
+0010 <span class="keyword">if</span> nargout&gt;3
+0011     <span class="comment">% Matrizes de coeficientes</span>
+0012     A = [0 1;<span class="keyword">...</span>
+0013          2 3];
+0014     B = [0;4];
+0015     ixModel = [0;1;1;0];
+0016 <span class="keyword">else</span>
+0017 
+0018     
+0019 <span class="comment">%% Executando cálculos iniciais</span>
+0020 
+0021     <span class="comment">% ny -&gt;</span>
+0022     <span class="comment">% ix -&gt; vetor de ponteiros (1xNk)</span>
+0023     ne = 4; <span class="comment">%numero de variaveis de estado (1x1)</span>
+0024     [nx,ny] = size(y); <span class="comment">% ny (colunas do vetor de estados)</span>
+0025     ni = nx/ne; <span class="comment">% numero de nohs</span>
+0026     nt = length(t); <span class="comment">% numero de instantes de tempo</span>
+0027     ix = 1:ne:nx;
+0028 
+0029     t = ones(ny/nt,1)*t;
+0030     t = ones(ni,1)*t(:)';
+0031     
+0032     g = 9.80665;
+0033 
+0034     parametrosDuto   = parametros{j};
+0035     parametrosFluido = parametros{j}.Fluido;
+0036 
+0037     
+0038 <span class="comment">%% Extraindo variaveis de entrada</span>
+0039     angulo_teta = <a href="#_sub1" class="code" title="subfunction yi = interpola_angulo(x,y,xi)">interpola_angulo</a>(parametrosDuto.x,parametrosDuto.angulo_teta,x);
+0040     rugo        = parametrosDuto.rugo.*ones(ni,ny);
+0041     D           = parametrosDuto.D.*ones(ni,ny);
+0042     PR          = parametrosDuto.PR;
+0043 
+0044 <span class="comment">%% Capturando variáveis de estado</span>
+0045 
+0046     <span class="comment">% Desempacotando variaveis de estado:</span>
+0047     AUX  = y(ix,:);
+0048     PT   = y(ix+1,:);
+0049     q    = y(ix+2,:);
+0050     AUX  = y(ix+3,:);
+0051 
+0052     
+0053 <span class="comment">%% Modelo</span>
+0054     <span class="comment">% P     -&gt; pressão absoluta em Pa</span>
+0055     <span class="comment">% v   -&gt; velocidade media</span>
+0056     P = PR.*PT;
+0057 
+0058     <span class="comment">% Calculando propriedades dos fluidos:</span>
+0059     [prop,aux,aux] = <a href="modelo_fluido.html" class="code" title="function [propL, propG, tensao] = modelo_fluido(P,T,parametros)">modelo_fluido</a>(P,0,parametrosFluido);
+0060 
+0061     Area  = pi.*D.^2./4;
+0062     v  = q./(prop.dens.*Area);
+0063     Per = pi.*D;
+0064 
+0065     [f,Re]   =<a href="fator.html" class="code" title="function [f,Re]=fator(v,dens,visc,D,rugo)">fator</a>  (v,prop.dens,prop.visc,D,rugo);
+0066     tensao  = f.*prop.dens.*(v).*abs(v)./2;
+0067     Gama = Per.*tensao;
+0068     
+0069     FSS=(Gama+9.80665.*Area.*prop.dens.*sin(angulo_teta))./Area;
+0070         
+0071     <span class="comment">% Deteminando o vetor de saida do modelo</span>
+0072        
+0073     F =  [1./Area./prop.C./PR;<span class="keyword">...</span><span class="comment"> % F1</span>
+0074           Area.*(1-prop.C.*v.*abs(v)).*PR;<span class="keyword">...</span><span class="comment"> % F2</span>
+0075           2.*abs(v);<span class="keyword">...</span><span class="comment"> % F3</span>
+0076           Gama+9.80665.*Area.*prop.dens.*sin(angulo_teta)];<span class="keyword">...</span><span class="comment"> % F4</span>
+0077        
+0078 
+0079 <span class="comment">%% Calculando saídas</span>
+0080     <span class="keyword">if</span> nargout&gt;1
+0081 
+0082         saidas.inclinacao   = angulo_teta(:,1)*ones(1,size(y,2));
+0083         saidas.diametro     = D.*ones(nx./ne,size(y,2));
+0084         saidas.alfaL        = ones(size(v));
+0085         saidas.alfaG        = zeros(size(v));
+0086         saidas.pressao      = PT.*PR./1e5;
+0087         saidas.vazaoMassaL  = q;
+0088         saidas.vazaoVolL    = q./prop.dens;
+0089         saidas.velocidadeL  = v;
+0090         saidas.velSomL      = (1./prop.C).^0.5;
+0091         saidas.cargaL       = FSS.*100/1e5;
+0092         saidas.densidadeL   = prop.dens;
+0093         saidas.viscosidadeL = prop.visc.*ones(nx./ne,size(y,2));
+0094         
+0095     <span class="keyword">end</span>
+0096 
+0097 <span class="keyword">end</span>
+0098 
+0099 <a name="_sub1" href="#_subfunctions" class="code">function yi = interpola_angulo(x,y,xi)</a>
+0100 [nxi1,nxi2] = size(xi);
+0101 yi = zeros(nxi1,nxi2);
+0102 nx = length(x);
+0103 
+0104 <span class="keyword">for</span> i=1:nxi1
+0105     <span class="keyword">for</span> j=1:nxi2
+0106         ix2 = find(x==xi(i,j));
+0107         <span class="keyword">if</span> ~isempty(ix2)
+0108             <span class="keyword">if</span> ix2==1,      yi(i,j) = y(1);
+0109             <span class="keyword">elseif</span> ix2==nx, yi(i,j) = y(end);
+0110             <span class="keyword">else</span>            yi(i,j) = 0.5.*(y(ix2)+y(ix2-1));
+0111             <span class="keyword">end</span>
+0112         <span class="keyword">else</span>
+0113             ix2 = find(x&lt;=xi(i,j));
+0114             yi(i,j) = y(ix2(end));
+0115         <span class="keyword">end</span>
+0116     <span class="keyword">end</span>
+0117 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

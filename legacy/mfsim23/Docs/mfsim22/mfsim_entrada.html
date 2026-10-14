@@ -1,0 +1,668 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of mfsim_entrada</title>
+  <meta name="keywords" content="mfsim_entrada">
+  <meta name="description" content="Interface gráfica para simulação de redes de escoamento bifásico.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; mfsim_entrada.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>mfsim_entrada
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Interface gráfica para simulação de redes de escoamento bifásico.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function mfsim_entrada </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Interface gráfica para simulação de redes de escoamento bifásico.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="analisador.html" class="code" title="function analisador(dados,estados,flag)">analisador</a>	Função que permite analisar os autovalores da matriz jacobiana das</li><li><a href="arvore_dados.html" class="code" title="function [detalhesVariaveis, valoresDefault] = arvore_dados">arvore_dados</a>	Função que compõe a estrutura dos dados de entrada e a arvore de dados</li><li><a href="arvore_saidas.html" class="code" title="function [nomes] = arvore_saidas(saidas,nomes)">arvore_saidas</a>	Função que compõe os nomes de todas as saídas do modelo</li><li><a href="mfsim_entrada.html" class="code" title="function mfsim_entrada">mfsim_entrada</a>	Interface gráfica para simulação de redes de escoamento bifásico.</li><li><a href="mfsim_saida.html" class="code" title="function mfsim_saida">mfsim_saida</a>	Interface gráfica para resultados de escoamento bifásico.</li><li><a href="simulador.html" class="code" title="function [dados,estados,saidas,eixos]=simulador(dados,estados,flagSS,flagSS2,flagD,flagRES,flagCD)">simulador</a>	Função que executa a simulação bifásica de escoamento em redes de dutos.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="mfsim.html" class="code" title="function mfsim">mfsim</a>	Interface gráfica para tela de abertura do programa.</li><li><a href="mfsim_entrada.html" class="code" title="function mfsim_entrada">mfsim_entrada</a>	Interface gráfica para simulação de redes de escoamento bifásico.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function gera_menu1</a></li><li><a href="#_sub2" class="code">function gera_menu2(nomeObj)</a></li><li><a href="#_sub3" class="code">function gera_menubar</a></li><li><a href="#_sub4" class="code">function gera_lista(nomeObj, numeroBotao)</a></li><li><a href="#_sub5" class="code">function armazena_dados</a></li><li><a href="#_sub6" class="code">function callback1(src,eventdata,nomeObj,k)</a></li><li><a href="#_sub7" class="code">function callback2(src,eventdata,arg1)</a></li><li><a href="#_sub8" class="code">function dados2 = coloca_dados(dados,valoresDefault,qual)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function mfsim_entrada</a>
+0002 <span class="comment">% Interface gráfica para simulação de redes de escoamento bifásico.</span>
+0003 
+0004 <span class="keyword">global</span> dados detalhesVariaveis nomes saidas estados valoresDefault
+0005 
+0006 <span class="comment">% Capturando estrutura de dados e saidas</span>
+0007 [detalhesVariaveis, valoresDefault] = <a href="arvore_dados.html" class="code" title="function [detalhesVariaveis, valoresDefault] = arvore_dados">arvore_dados</a>;
+0008 
+0009 <span class="keyword">if</span> isempty(dados)
+0010     dados = <a href="#_sub8" class="code" title="subfunction dados2 = coloca_dados(dados,valoresDefault,qual)">coloca_dados</a>(dados,valoresDefault);
+0011 <span class="keyword">end</span>
+0012 <span class="keyword">if</span> isempty(nomes)
+0013     nomes = <a href="arvore_saidas.html" class="code" title="function [nomes] = arvore_saidas(saidas,nomes)">arvore_saidas</a>(saidas,nomes);
+0014 <span class="keyword">end</span>
+0015 
+0016 <span class="comment">% Apresentando parametros do banner</span>
+0017 parametrosBanner.posicao = [0.02, 0.94, 0.96, 0.6];
+0018 parametrosBanner.nomeModulo = <span class="string">'ENTRADA DE DADOS'</span>;
+0019 parametrosBanner.cor = [0 0.5 0.5];
+0020 parametrosBanner.corFonte = [0 0 0];
+0021 parametrosBanner.nomeSoftware = <span class="string">'SDMPFLOW'</span>;
+0022 
+0023 <span class="comment">% Apresentando parametros da área 1</span>
+0024 parametrosArea1.posicao = [0.02, 0.02, 0.10, 0.92];
+0025 parametrosArea1.nomeFrame = <span class="string">'ELEMENTOS'</span>;
+0026 parametrosArea1.cor = [0 0.5 0.5];
+0027 parametrosArea1.corFonte = [1 1 1];
+0028 
+0029 <span class="comment">% Apresentando parametros da área 2</span>
+0030 parametrosArea2.posicao = [0.14, 0.02, 0.10, 0.92];
+0031 parametrosArea2.nomeFrame = <span class="string">'OBJETOS'</span>;
+0032 parametrosArea2.cor = [0 0.5 0.5];
+0033 parametrosArea2.corFonte = [1 1 1];
+0034 
+0035 <span class="comment">% Apresentando parametros da área 3</span>
+0036 parametrosArea3.posicao = [0.26, 0.02, 0.72, 0.92];
+0037 parametrosArea3.nomeFrame = <span class="string">''</span>;
+0038 parametrosArea3.cor = [0.8 0.8 0.8];
+0039 parametrosArea3.corFonte = [0 0 0];
+0040 
+0041 <span class="comment">% Gerando tela</span>
+0042 nome = <span class="string">'ENTRADA'</span>;
+0043 hfig = findall(0,<span class="string">'name'</span>,nome);
+0044 <span class="keyword">if</span> isempty(hfig)
+0045     gera_figura(nome,5);
+0046     gera_banner(gcf, parametrosBanner)
+0047     gera_area(gcf, parametrosArea1)
+0048     gera_area(gcf, parametrosArea2)
+0049     gera_area(gcf, parametrosArea3)
+0050     <a href="#_sub1" class="code" title="subfunction gera_menu1">gera_menu1</a>
+0051     <a href="#_sub2" class="code" title="subfunction gera_menu2(nomeObj)">gera_menu2</a>([])
+0052     <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>([],[])
+0053     <a href="#_sub3" class="code" title="subfunction gera_menubar">gera_menubar</a>
+0054 <span class="keyword">else</span>
+0055     figure(hfig(1))
+0056 <span class="keyword">end</span>
+0057 
+0058 <a name="_sub1" href="#_subfunctions" class="code">function gera_menu1</a>
+0059 <span class="comment">%Menu com os botões do menu principal.</span>
+0060 <span class="comment">%</span>
+0061 <span class="comment">% Essa subfunction recebe os parametros de configuração de um struct e gera</span>
+0062 <span class="comment">% um conjunto de botoes devidamente posicionados na forma de um menu.</span>
+0063 <span class="comment">% Essa subfunctionn trabalha associada com uma subfunction de callback.</span>
+0064 <span class="comment">% PARAMETROS é um struct que possui os seguintes campos:</span>
+0065 <span class="comment">%   PARAMETROS.posicao - vetor de quatro elementos que determina a posição</span>
+0066 <span class="comment">%   do menu de botoes. Os valores variam de 0 a 1.</span>
+0067 <span class="comment">%   PARAMETROS.nomeModulo - cell array com os strings dos nomes dos botões.</span>
+0068 <span class="comment">%   PARAMETROS.fontsize - tamanho da fonte do nome dos botoes</span>
+0069 
+0070 <span class="keyword">global</span> dados detalhesVariaveis
+0071 
+0072 <span class="comment">% Capturando parametros</span>
+0073 posicaoFator1 = 0.03;
+0074 posicaoFator2 = 0.05;
+0075 tamanhoFator1 = 0.08;
+0076 tamanhoFator2 = 0.86;
+0077 
+0078 <span class="comment">% Limpando Objetos</span>
+0079 limpa_objetos({<span class="string">'menu1'</span>});
+0080 
+0081 <span class="comment">% Posicionando Objetos</span>
+0082 tamanhoFigura = get(gcf,<span class="string">'position'</span>);
+0083 tamanhoBotoes = [ tamanhoFator1.*tamanhoFigura(3) 20];
+0084 
+0085 <span class="comment">% Capturando niveis possiveis dos dados</span>
+0086 nomesNivel= fieldnames(dados);
+0087 botoesNumero = length (nomesNivel);
+0088 
+0089 <span class="comment">% Gerando botoes</span>
+0090 <span class="keyword">for</span> i=1:botoesNumero
+0091     botaoNome = detalhesVariaveis.(nomesNivel{i}).nome;
+0092     nomeObj=nomesNivel{i};
+0093     k = iscell(dados.(nomesNivel{i}));
+0094     posicaoBotoes = [ posicaoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0095        (posicaoFator2+tamanhoFator2).*tamanhoFigura(4)-i*tamanhoBotoes(2)];
+0096     uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'pushbutton'</span>,<span class="keyword">...</span>
+0097         <span class="string">'position'</span>,[posicaoBotoes tamanhoBotoes],<span class="string">'string'</span>,botaoNome,<span class="keyword">...</span>
+0098         <span class="string">'UserData'</span>,<span class="string">'menu1'</span>,<span class="string">'Callback'</span>,{@<a href="#_sub6" class="code" title="subfunction callback1(src,eventdata,nomeObj,k)">callback1</a>, nomeObj,-k});
+0099 <span class="keyword">end</span>
+0100 
+0101 <a name="_sub2" href="#_subfunctions" class="code">function gera_menu2(nomeObj)</a>
+0102 <span class="comment">%Menu com os botões do menu secundário.</span>
+0103 <span class="comment">%</span>
+0104 <span class="comment">% Essa subfunction recebe os parametros de configuração de um struct e gera</span>
+0105 <span class="comment">% um conjunto de botoes devidamente posicionados na forma de um menu.</span>
+0106 <span class="comment">% Essa subfunctionn trabalha associada com uma subfunction de callback.</span>
+0107 <span class="comment">% NOMEOBJ é um string do nome do campo.</span>
+0108 <span class="comment">% DADOS é o struct com a arvore de dados.</span>
+0109 <span class="comment">% DETALHESCARIAVEIS é o struct com os detalhes da arvore de dados.</span>
+0110 
+0111 <span class="keyword">global</span> dados detalhesVariaveis
+0112 
+0113 <span class="comment">% Captura parametros</span>
+0114 posicaoFator1 = 0.15;
+0115 posicaoFator2 = 0.05;
+0116 tamanhoFator1 = 0.08;
+0117 tamanhoFator2 = 0.86;
+0118 
+0119 <span class="comment">% Limpando Objetos</span>
+0120 limpa_objetos({<span class="string">'menu2'</span>,<span class="string">'menu3'</span>});
+0121 
+0122 <span class="comment">% Posicionando Objetos</span>
+0123 tamanhoFigura = get(gcf,<span class="string">'position'</span>);
+0124 tamanhoBotoes = [ tamanhoFator1.*tamanhoFigura(3) 20];
+0125 
+0126 <span class="comment">% Ativando o nome primário</span>
+0127 <span class="keyword">if</span> isempty(nomeObj)
+0128    nomeObjaux = fieldnames(dados);
+0129    nomeObj = nomeObjaux{1};
+0130 <span class="keyword">end</span>
+0131 
+0132 <span class="comment">% Calcula numero de botoes</span>
+0133 <span class="keyword">if</span> iscell(dados.(nomeObj)),
+0134     botoesNumero = length (dados.(nomeObj));
+0135 <span class="keyword">else</span>
+0136     botoesNumero = 0;
+0137 <span class="keyword">end</span>
+0138 
+0139 <span class="comment">% Gera objetos</span>
+0140 <span class="keyword">for</span> i=1:botoesNumero
+0141     <span class="keyword">if</span> ~isempty(dados.(nomeObj){i})
+0142         nomeBotao = [detalhesVariaveis.(nomeObj).nome <span class="string">' '</span> num2str(i)];
+0143         posicaoBotoes = [ posicaoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0144            (posicaoFator2+tamanhoFator2).*tamanhoFigura(4)-i*tamanhoBotoes(2)];
+0145         uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'pushbutton'</span>,<span class="keyword">...</span>
+0146             <span class="string">'position'</span>,[posicaoBotoes tamanhoBotoes],<span class="string">'string'</span>,nomeBotao,<span class="keyword">...</span>
+0147             <span class="string">'UserData'</span>,<span class="string">'menu2'</span>,<span class="string">'Callback'</span>,{@<a href="#_sub6" class="code" title="subfunction callback1(src,eventdata,nomeObj,k)">callback1</a>, nomeObj, i});
+0148     <span class="keyword">end</span>
+0149 <span class="keyword">end</span>
+0150 <span class="keyword">if</span> iscell(dados.(nomeObj))
+0151     <span class="keyword">if</span> isempty(dados.(nomeObj){i}), i = i-1; <span class="keyword">end</span>
+0152 <span class="keyword">end</span>
+0153 
+0154 <span class="keyword">if</span> botoesNumero
+0155     <span class="comment">% Gera objetos de comando</span>
+0156     i=i+1;
+0157     nomeBotao = <span class="string">'Adicionar'</span>;
+0158     posicaoBotoes = [ posicaoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0159        (posicaoFator2+tamanhoFator2).*tamanhoFigura(4)-i*tamanhoBotoes(2)];
+0160     uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'pushbutton'</span>,<span class="keyword">...</span>
+0161         <span class="string">'position'</span>,[posicaoBotoes tamanhoBotoes],<span class="string">'string'</span>,nomeBotao,<span class="keyword">...</span>
+0162         <span class="string">'UserData'</span>,<span class="string">'menu3'</span>,<span class="string">'Callback'</span>,{@<a href="#_sub6" class="code" title="subfunction callback1(src,eventdata,nomeObj,k)">callback1</a>, nomeObj,[]});
+0163     i=i+1;
+0164     nomeBotao = <span class="string">'Excluir'</span>;
+0165     posicaoBotoes = [ posicaoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0166        (posicaoFator2+tamanhoFator2).*tamanhoFigura(4)-i*tamanhoBotoes(2)];
+0167     uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'pushbutton'</span>,<span class="keyword">...</span>
+0168         <span class="string">'position'</span>,[posicaoBotoes tamanhoBotoes],<span class="string">'string'</span>,nomeBotao,<span class="keyword">...</span>
+0169         <span class="string">'UserData'</span>,<span class="string">'menu3'</span>,<span class="string">'Callback'</span>,{@<a href="#_sub6" class="code" title="subfunction callback1(src,eventdata,nomeObj,k)">callback1</a>, nomeObj,[]});
+0170     i=i+1;
+0171     nomeBotao = <span class="string">'Salvar'</span>;
+0172     posicaoBotoes = [ posicaoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0173        (posicaoFator2+tamanhoFator2).*tamanhoFigura(4)-i*tamanhoBotoes(2)];
+0174     uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'pushbutton'</span>,<span class="keyword">...</span>
+0175         <span class="string">'position'</span>,[posicaoBotoes tamanhoBotoes],<span class="string">'string'</span>,nomeBotao,<span class="keyword">...</span>
+0176         <span class="string">'UserData'</span>,<span class="string">'menu3'</span>,<span class="string">'Callback'</span>,{@<a href="#_sub6" class="code" title="subfunction callback1(src,eventdata,nomeObj,k)">callback1</a>, nomeObj,[]});
+0177 <span class="keyword">end</span>
+0178 
+0179 <a name="_sub3" href="#_subfunctions" class="code">function gera_menubar</a>
+0180 <span class="comment">%Gera menu de comandos</span>
+0181 <span class="comment">%</span>
+0182 <span class="comment">% Determina as ações do menu do simulador</span>
+0183 
+0184 <span class="comment">% Apagando menus antigos</span>
+0185 delete(findobj(<span class="string">'type'</span>,<span class="string">'menubar'</span>))
+0186 
+0187 <span class="comment">% Gerando menu principal</span>
+0188 h_1(1)=uimenu(<span class="string">'Label'</span>,<span class="string">'Arquivo'</span>);
+0189 h_1(2)=uimenu(<span class="string">'Label'</span>,<span class="string">'Executar'</span>);
+0190 h_1(3)=uimenu(<span class="string">'Label'</span>,<span class="string">'Resultados'</span>);
+0191 h_1(4)=uimenu(<span class="string">'Label'</span>,<span class="string">'Analisar'</span>);
+0192 h_1(5)=uimenu(<span class="string">'Label'</span>,<span class="string">'Ajuda'</span>);
+0193 
+0194 <span class="comment">% Gerando submenus</span>
+0195 h_2(1)  = uimenu(h_1(1),<span class="string">'Label'</span>,<span class="string">'Abrir Simulacao'</span>,             <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,1 });
+0196 h_2(1)  = uimenu(h_1(1),<span class="string">'Label'</span>,<span class="string">'Abrir Tudo'</span>,                  <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,100});
+0197 h_2(2)  = uimenu(h_1(1),<span class="string">'Label'</span>,<span class="string">'Salvar Simulacao'</span>,            <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,2 });
+0198 h_2(2)  = uimenu(h_1(1),<span class="string">'Label'</span>,<span class="string">'Salvar Tudo'</span>,                 <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,200});
+0199 h_2(4)  = uimenu(h_1(1),<span class="string">'Label'</span>,<span class="string">'Sair'</span>,                        <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,4 });
+0200 h_2(5)  = uimenu(h_1(2),<span class="string">'Label'</span>,<span class="string">'Estacionaria Incompresivel'</span>,  <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,5 });
+0201 h_2(6)  = uimenu(h_1(2),<span class="string">'Label'</span>,<span class="string">'Estacionaria Compressivel'</span>,   <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,6 });
+0202 h_2(6)  = uimenu(h_1(2),<span class="string">'Label'</span>,<span class="string">'Dinamica'</span>,                    <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,7 });
+0203 h_2(7)  = uimenu(h_1(2),<span class="string">'Label'</span>,<span class="string">'Completa'</span>,                    <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,8 });
+0204 h_2(71) = uimenu(h_1(2),<span class="string">'Label'</span>,<span class="string">'Atualizar Coef. Arraste Est.'</span>,<span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,15 });
+0205 h_2(8)  = uimenu(h_1(5),<span class="string">'Label'</span>,<span class="string">'Documentação'</span>,                <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,9 });
+0206 h_2(9)  = uimenu(h_1(3),<span class="string">'Label'</span>,<span class="string">'Calcular'</span>,                    <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,10});
+0207 h_2(10) = uimenu(h_1(3),<span class="string">'Label'</span>,<span class="string">'Visualizar'</span>,                  <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,11});
+0208 h_2(10) = uimenu(h_1(4),<span class="string">'Label'</span>,<span class="string">'Padroes de Escoamento'</span>,       <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,12});
+0209 h_2(11) = uimenu(h_1(4),<span class="string">'Label'</span>,<span class="string">'Matriz Jacobiana das EDOs'</span>,   <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,13});
+0210 h_2(12) = uimenu(h_1(4),<span class="string">'Label'</span>,<span class="string">'Autovalores da Jacobiana das EDOs'</span>,   <span class="string">'Callback'</span>,{@<a href="#_sub7" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,14});
+0211 
+0212 <span class="comment">% TODO % Gerar descrição de help about</span>
+0213 <span class="comment">% TODO % Gerar help</span>
+0214 set([h_1(:);h_2(:)],<span class="string">'userdata'</span>,<span class="string">'menubar'</span>)
+0215 
+0216 <a name="_sub4" href="#_subfunctions" class="code">function gera_lista(nomeObj, numeroBotao)</a>
+0217 <span class="comment">%Lista com os dados de entrada do objeto NOMEOBJ.</span>
+0218 <span class="comment">%</span>
+0219 <span class="comment">% Essa subfunction gera uma lista com todas as variaveis de entrada para</span>
+0220 <span class="comment">% o objeto selevionado.</span>
+0221 
+0222 <span class="keyword">global</span> dados detalhesVariaveis
+0223 
+0224 <span class="comment">% Captura posicao dos objetos</span>
+0225 posicaoFator1 = 0.28;
+0226 posicaoFator2 = 0.02;
+0227 tamanhoFator2 = 0.92;
+0228 tamanhoFigura = get(gcf,<span class="string">'position'</span>);
+0229 
+0230 <span class="comment">% Gerando lista primária</span>
+0231 <span class="keyword">if</span> isempty(nomeObj)
+0232    nomeObjaux = fieldnames(dados);
+0233    nomeObj = nomeObjaux{1};
+0234    ehCell=iscell(dados.(nomeObj));
+0235    <span class="keyword">if</span> ehCell
+0236        numeroBotao = 1;
+0237    <span class="keyword">else</span>
+0238        numeroBotao = 0;
+0239    <span class="keyword">end</span>
+0240 <span class="keyword">end</span>
+0241 
+0242 <span class="comment">% Ajustando tela ao tipo de variavel</span>
+0243 <span class="keyword">if</span> numeroBotao&gt;0 
+0244     <span class="keyword">if</span> isempty(dados.(nomeObj){numeroBotao})
+0245         objNames=[];
+0246         nomeFrame = [<span class="string">'PARAMETROS - '</span> detalhesVariaveis.(nomeObj).nome];
+0247     <span class="keyword">else</span>
+0248         objNames=fieldnames(dados.(nomeObj){numeroBotao});
+0249         nomeFrame = [<span class="string">'PARAMETROS - '</span> detalhesVariaveis.(nomeObj).nome <span class="string">' - '</span> num2str(numeroBotao)];
+0250     <span class="keyword">end</span>
+0251 <span class="keyword">else</span>
+0252     objNames=fieldnames(dados.(nomeObj));
+0253     nomeFrame = [<span class="string">'PARAMETROS - '</span> detalhesVariaveis.(nomeObj).nome];
+0254 <span class="keyword">end</span>
+0255 objNumero=length(objNames);
+0256 
+0257 <span class="comment">% Loop para inserir todos os objetos</span>
+0258 <span class="keyword">for</span> i=1:objNumero
+0259     <span class="comment">% Capturando valor</span>
+0260     <span class="keyword">if</span> numeroBotao&gt;0
+0261         objValue = dados.(nomeObj){numeroBotao}.(objNames{i});
+0262     <span class="keyword">else</span>
+0263         objValue = dados.(nomeObj).(objNames{i});
+0264     <span class="keyword">end</span>
+0265     <span class="comment">% Capturando detalhes</span>
+0266     objDescricao = detalhesVariaveis.(nomeObj).(objNames{i}).descricao;
+0267     objUnidade = detalhesVariaveis.(nomeObj).(objNames{i}).unidade;
+0268     objNome = detalhesVariaveis.(nomeObj).(objNames{i}).nome;
+0269     objTipo = detalhesVariaveis.(nomeObj).(objNames{i}).tipo;
+0270     objTamanho = detalhesVariaveis.(nomeObj).(objNames{i}).tamanho;
+0271     
+0272     <span class="comment">% Verificando tipo de unicontrol</span>
+0273     <span class="keyword">if</span> isfield(detalhesVariaveis.(nomeObj).(objNames{i}),<span class="string">'opcoes'</span>)
+0274         objPop =1;
+0275         objOpcoes = detalhesVariaveis.(nomeObj).(objNames{i}).opcoes;
+0276     <span class="keyword">else</span>
+0277         objPop =0; 
+0278         objOpcoes = <span class="string">''</span>;
+0279     <span class="keyword">end</span>
+0280     
+0281     <span class="comment">% Verificando disponibilidade de unicontrol</span>
+0282     <span class="keyword">if</span> strcmp(objTipo,<span class="string">'fixo'</span>)
+0283         objEnable = <span class="string">'off'</span>;
+0284         objColor = [0.7 0.7 0.7];
+0285     <span class="keyword">else</span>
+0286         objEnable = <span class="string">'on'</span>;
+0287         objColor = [1 1 1];
+0288     <span class="keyword">end</span>
+0289 
+0290     <span class="comment">% Posicoes primarias</span>
+0291     tamanho = [ 650 20 ];
+0292     posicao = [ posicaoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0293         (posicaoFator2+tamanhoFator2)<span class="keyword">...</span>
+0294         .*tamanhoFigura(4)-(i+1)*tamanho(2).*1.2 ];
+0295     
+0296     <span class="comment">% Gerando titulo</span>
+0297     <span class="keyword">if</span> i==1
+0298         uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'text'</span>,<span class="string">'FontWeight'</span>,<span class="string">'bold'</span>,<span class="keyword">...</span>
+0299             <span class="string">'position'</span>,[posicao(1) posicao(2)+tamanho(2) tamanho(1) <span class="keyword">...</span>
+0300             tamanho(2)],<span class="string">'string'</span>,nomeFrame,<span class="keyword">...</span>
+0301             <span class="string">'UserData'</span>,nomeObj,<span class="string">'BackgroundColor'</span>,[0.8 0.8 0.8]);
+0302     <span class="keyword">end</span>
+0303     
+0304     <span class="comment">% Gerando objetos</span>
+0305     h1(i)=uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'text'</span>,<span class="keyword">...</span>
+0306         <span class="string">'HorizontalAlignment'</span>,<span class="string">'left'</span>,<span class="keyword">...</span>
+0307         <span class="string">'position'</span>,[posicao tamanho],<span class="keyword">...</span>
+0308         <span class="string">'string'</span>,[objNome <span class="string">' [ '</span> objUnidade <span class="string">' ]:'</span>],<span class="keyword">...</span>
+0309         <span class="string">'UserData'</span>,nomeObj);
+0310     
+0311     <span class="comment">% Determinando tamanho da editbox</span>
+0312     <span class="keyword">if</span> strcmp(objTamanho,<span class="string">'escalar'</span>),
+0313         tamanho = [ 100 20 ];
+0314         posicao(1) = posicao(1) + 200 + 10;    
+0315     <span class="keyword">elseif</span> strcmp(objTamanho,<span class="string">'vetor'</span>),
+0316         tamanho = [ 300 20 ];
+0317         posicao(1) = posicao(1) + 200 + 10;    
+0318     <span class="keyword">end</span>
+0319     
+0320     <span class="comment">% Inserindo objeto de entrada de dados</span>
+0321     <span class="keyword">if</span> objPop,
+0322         h2(i)=uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'popupmenu'</span>,<span class="string">'BackGroundColor'</span>,objColor,<span class="keyword">...</span>
+0323             <span class="string">'position'</span>,[posicao tamanho],<span class="string">'string'</span>,objOpcoes,<span class="keyword">...</span>
+0324             <span class="string">'Value'</span>,objValue,<span class="string">'Enable'</span>, objEnable,<span class="string">'UserData'</span>,nomeObj);
+0325     <span class="keyword">else</span>
+0326         h2(i)=uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'edit'</span>,<span class="string">'BackGroundColor'</span>,objColor,<span class="keyword">...</span>
+0327             <span class="string">'position'</span>,[posicao tamanho],<span class="string">'string'</span>,num2str(objValue),<span class="keyword">...</span>
+0328             <span class="string">'Enable'</span>, objEnable,<span class="string">'UserData'</span>,nomeObj);
+0329     <span class="keyword">end</span>
+0330 
+0331     <span class="comment">% Gerando objeto de descricao</span>
+0332     posicao(1) = posicao(1) + tamanho(1) + 10;
+0333     tamanho = [ 470-tamanho(1) 20 ];    
+0334     h3(i)=uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'text'</span>,<span class="string">'HorizontalAlignment'</span>,<span class="string">'left'</span>,<span class="keyword">...</span>
+0335         <span class="string">'position'</span>,[posicao tamanho],<span class="string">'string'</span>,objDescricao,<span class="keyword">...</span>
+0336         <span class="string">'UserData'</span>,nomeObj);
+0337     
+0338     set([h1(i);h3(i)],<span class="string">'BackGroundColor'</span>,[0.7 0.7 0.7])
+0339 
+0340 <span class="keyword">end</span>
+0341 
+0342 
+0343 <a name="_sub5" href="#_subfunctions" class="code">function armazena_dados</a>
+0344 <span class="comment">%Armazenamento dos dados da tela de configuração</span>
+0345 <span class="comment">%</span>
+0346 <span class="comment">% Salva no arquivo de DADOS todas as variáveis listadas na tela.</span>
+0347 
+0348 <span class="keyword">global</span> dados
+0349 
+0350 <span class="comment">% Gerando lista de niveis possiveis</span>
+0351 ListaNomeObj = fieldnames(dados);
+0352 
+0353 <span class="comment">% Executando loop para determinar qual lista esta disponivel</span>
+0354 nomeObj = [];
+0355 <span class="keyword">for</span> i=1:length(ListaNomeObj)
+0356     nomeObjTeste = ListaNomeObj{i};
+0357     hObjTodos = findall(gcf,<span class="string">'userdata'</span>,nomeObjTeste);
+0358     <span class="keyword">if</span> ~isempty(hObjTodos)
+0359         nomeObj = nomeObjTeste;
+0360     <span class="keyword">end</span>
+0361 <span class="keyword">end</span>    
+0362 
+0363 <span class="keyword">if</span> ~isempty(nomeObj)
+0364     <span class="comment">% Gerando vetores de handles</span>
+0365     hObjTodos = findall(gcf,<span class="string">'userdata'</span>,nomeObj);
+0366     hObjEdit = findall(gcf,<span class="string">'userdata'</span>,nomeObj,<span class="string">'style'</span>,<span class="string">'edit'</span>);
+0367     hObjPop = findall(gcf,<span class="string">'userdata'</span>,nomeObj,<span class="string">'style'</span>,<span class="string">'popupmenu'</span>);
+0368     hObj = sort([hObjEdit;hObjPop]);
+0369     hObjNumero = length(hObj);
+0370     
+0371     <span class="comment">% Determinando o tipo de objeto</span>
+0372     ehCell = iscell(dados.(nomeObj));
+0373     <span class="keyword">if</span> ehCell 
+0374         objNames=fieldnames(dados.(nomeObj){1});
+0375     <span class="keyword">else</span>
+0376         objNames=fieldnames(dados.(nomeObj));
+0377     <span class="keyword">end</span>
+0378 
+0379     <span class="comment">% Capturando informações da lista</span>
+0380     j =1;
+0381     <span class="keyword">for</span> i=1:hObjNumero
+0382         <span class="keyword">if</span> strcmp(get(hObj(i),<span class="string">'Style'</span>),<span class="string">'edit'</span>)
+0383             valores.(objNames{i})=str2num(get(hObj(i),<span class="string">'String'</span>));
+0384             j=j+1;
+0385         <span class="keyword">end</span>
+0386         <span class="keyword">if</span> strcmp(get(hObj(i),<span class="string">'Style'</span>),<span class="string">'popupmenu'</span>)
+0387             valores.(objNames{j})=get(hObj(i),<span class="string">'value'</span>);
+0388             j=j+1;
+0389         <span class="keyword">end</span>
+0390     <span class="keyword">end</span>
+0391 
+0392     <span class="comment">% Atualizando dados</span>
+0393     <span class="keyword">if</span> ehCell
+0394         k=valores.indice;
+0395         dados.(nomeObj){k}=valores;
+0396     <span class="keyword">else</span>
+0397         dados.(nomeObj)=valores;
+0398     <span class="keyword">end</span>
+0399 
+0400     <span class="comment">% Limpando objetos</span>
+0401     delete(hObjTodos)
+0402 <span class="keyword">end</span>
+0403 
+0404 
+0405 <a name="_sub6" href="#_subfunctions" class="code">function callback1(src,eventdata,nomeObj,k)</a>
+0406 <span class="comment">%Callbacks de execuçao dos botoes</span>
+0407 <span class="comment">%</span>
+0408 <span class="comment">% Ações ds botões do menu1, menu2 e menu3.</span>
+0409 
+0410 <span class="keyword">global</span> dados valoresDefault
+0411 
+0412 <span class="comment">% Armazenando dados</span>
+0413 <a href="#_sub5" class="code" title="subfunction armazena_dados">armazena_dados</a>
+0414 
+0415 <span class="comment">% Coletando informacoes dos botoes</span>
+0416 tipoBotao = get(gcbo,<span class="string">'Userdata'</span>);
+0417 nomeBotao = get(gcbo,<span class="string">'String'</span>);
+0418 
+0419 <span class="comment">% Executa comandos do menu1</span>
+0420 <span class="keyword">if</span> strcmp(tipoBotao,<span class="string">'menu1'</span>)
+0421     <span class="comment">% Lipando menus dependentes</span>
+0422     limpa_objetos({<span class="string">'menu2'</span>,<span class="string">'menu3'</span>});
+0423     <span class="keyword">if</span> k==-1 <span class="comment">%Caso objeto de menu1 tenha depedentes</span>
+0424         delete(findall(gcf,<span class="string">'Userdata'</span>,nomeObj))
+0425         <a href="#_sub2" class="code" title="subfunction gera_menu2(nomeObj)">gera_menu2</a>(nomeObj)
+0426         <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>(nomeObj,1)
+0427     <span class="keyword">else</span> <span class="comment">% caso objeto de menu1 não tenha dependentes</span>
+0428         <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>(nomeObj,k)
+0429     <span class="keyword">end</span>
+0430 <span class="keyword">end</span>
+0431 
+0432 <span class="comment">% Executa comandos do menu2</span>
+0433 <span class="keyword">if</span> strcmp(tipoBotao,<span class="string">'menu2'</span>)
+0434     <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>(nomeObj,k)
+0435 <span class="keyword">end</span>
+0436 
+0437 <span class="comment">% Executa comandos do menu3</span>
+0438 <span class="keyword">if</span> strcmp(tipoBotao,<span class="string">'menu3'</span>)
+0439     <span class="comment">%Calcula numero de elementos</span>
+0440     n = length(dados.(nomeObj));
+0441     <span class="comment">% Executa ações</span>
+0442     <span class="keyword">if</span> strcmp(nomeBotao,<span class="string">'Adicionar'</span>)
+0443         <span class="keyword">if</span> isempty(dados.(nomeObj){n}), n=n-1; <span class="keyword">end</span>
+0444         dados.(nomeObj){n+1}=valoresDefault.(nomeObj){1};
+0445         dados.(nomeObj){n+1}.indice = n+1;
+0446         <a href="#_sub2" class="code" title="subfunction gera_menu2(nomeObj)">gera_menu2</a>(nomeObj)
+0447         <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>(nomeObj,n+1)
+0448     <span class="keyword">elseif</span> strcmp(nomeBotao,<span class="string">'Excluir'</span>)
+0449         <span class="keyword">if</span> n&gt;1
+0450             <span class="keyword">for</span> i=1:n-1
+0451                 aux{i} = dados.(nomeObj){i};
+0452             <span class="keyword">end</span>
+0453             dados.(nomeObj)=aux;
+0454             <a href="#_sub2" class="code" title="subfunction gera_menu2(nomeObj)">gera_menu2</a>(nomeObj)
+0455             <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>(nomeObj,n-1)
+0456         <span class="keyword">elseif</span> n==1
+0457             dados.(nomeObj){1}=[];
+0458             <a href="#_sub2" class="code" title="subfunction gera_menu2(nomeObj)">gera_menu2</a>(nomeObj)
+0459             <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>(nomeObj,1)
+0460         <span class="keyword">end</span>
+0461     <span class="keyword">elseif</span> strcmp(nomeBotao,<span class="string">'Salvar'</span>)
+0462         <a href="#_sub5" class="code" title="subfunction armazena_dados">armazena_dados</a>
+0463     <span class="keyword">end</span>
+0464 <span class="keyword">end</span>
+0465 
+0466 <a name="_sub7" href="#_subfunctions" class="code">function callback2(src,eventdata,arg1)</a>
+0467 <span class="comment">%Callbacks de execução do menubar.</span>
+0468 <span class="comment">%</span>
+0469 <span class="comment">% Ações do menubar.</span>
+0470 
+0471 <span class="comment">%Lista de Callbacks para executar os comandos do menubar</span>
+0472 <span class="keyword">global</span> dados saidas estados eixos detalhesVariaveis
+0473 
+0474 <span class="keyword">switch</span> arg1
+0475     <span class="keyword">case</span> 1
+0476         raiz=cd;
+0477         cd files;
+0478         [filename, pathname] = uigetfile({<span class="string">'*.mf1'</span>,<span class="string">'Arquivos de simulacao (*.mf1)'</span>},<span class="string">'Escolha um arquivo de dados'</span>);
+0479         <span class="keyword">if</span> isequal(filename,0)||isequal(pathname,0),
+0480         <span class="keyword">else</span> cd(pathname),load(filename,<span class="string">'-mat'</span>),<span class="keyword">end</span>,
+0481         cd(raiz)
+0482         close(findall(0,<span class="string">'name'</span>,<span class="string">'ENTRADA'</span>))
+0483         close(findall(0,<span class="string">'name'</span>,<span class="string">'SAIDA'</span>))
+0484         <a href="mfsim_entrada.html" class="code" title="function mfsim_entrada">mfsim_entrada</a>
+0485     <span class="keyword">case</span> 100
+0486         raiz=cd;
+0487         cd files;
+0488         [filename, pathname] = uigetfile({<span class="string">'*.mf2'</span>,<span class="string">'Arquivos completos (*.mf2)'</span>},<span class="string">'Escolha um arquivo pacote'</span>);
+0489         <span class="keyword">if</span> isequal(filename,0)||isequal(pathname,0),
+0490         <span class="keyword">else</span> cd(pathname),load(filename,<span class="string">'-mat'</span>),<span class="keyword">end</span>,
+0491         cd(raiz)
+0492         close(findall(0,<span class="string">'name'</span>,<span class="string">'ENTRADA'</span>))
+0493         close(findall(0,<span class="string">'name'</span>,<span class="string">'SAIDA'</span>))
+0494         <a href="mfsim_entrada.html" class="code" title="function mfsim_entrada">mfsim_entrada</a>
+0495     <span class="keyword">case</span> 2
+0496         <a href="#_sub5" class="code" title="subfunction armazena_dados">armazena_dados</a>
+0497         <a href="#_sub1" class="code" title="subfunction gera_menu1">gera_menu1</a>
+0498         <a href="#_sub2" class="code" title="subfunction gera_menu2(nomeObj)">gera_menu2</a>([])
+0499         <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>([],[])
+0500         raiz=cd;
+0501         cd files;
+0502         [filename, pathname] = uiputfile(<span class="string">'*.mf1'</span>,<span class="string">'Salvar simulacao'</span>);
+0503         <span class="keyword">if</span> isequal(filename,0)||isequal(pathname,0),
+0504         <span class="keyword">else</span>
+0505             cd(pathname)
+0506             <span class="keyword">if</span> sum(filename(1,end-3:end)==<span class="string">'.mf1'</span>)==4,
+0507                 save(filename,<span class="string">'dados'</span>,<span class="string">'detalhesVariaveis'</span>,<span class="string">'estados'</span>,<span class="string">'-mat'</span>)
+0508             <span class="keyword">else</span>
+0509                 save([filename <span class="string">'.mf1'</span>],<span class="string">'dados'</span>,<span class="string">'detalhesVariaveis'</span>,<span class="string">'estados'</span>,<span class="string">'-mat'</span>)
+0510             <span class="keyword">end</span>
+0511         <span class="keyword">end</span>
+0512         cd(raiz)
+0513     <span class="keyword">case</span> 200
+0514         <a href="#_sub5" class="code" title="subfunction armazena_dados">armazena_dados</a>
+0515         <a href="#_sub1" class="code" title="subfunction gera_menu1">gera_menu1</a>
+0516         <a href="#_sub2" class="code" title="subfunction gera_menu2(nomeObj)">gera_menu2</a>([])
+0517         <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>([],[])
+0518         raiz=cd;
+0519         cd files;
+0520         [filename, pathname] = uiputfile(<span class="string">'*.mf2'</span>,<span class="string">'Salvar tudo'</span>);
+0521         <span class="keyword">if</span> isequal(filename,0)||isequal(pathname,0),
+0522         <span class="keyword">else</span>
+0523             cd(pathname)
+0524             <span class="keyword">if</span> sum(filename(1,end-3:end)==<span class="string">'.mf2'</span>)==4,
+0525                 save(filename,<span class="string">'dados'</span>,<span class="string">'detalhesVariaveis'</span>,<span class="string">'estados'</span>,<span class="string">'saidas'</span>,<span class="string">'eixos'</span>,<span class="string">'-mat'</span>)
+0526             <span class="keyword">else</span>
+0527                 save([filename <span class="string">'.mf2'</span>],<span class="string">'dados'</span>,<span class="string">'detalhesVariaveis'</span>,<span class="string">'estados'</span>,<span class="string">'saidas'</span>,<span class="string">'eixos'</span>,<span class="string">'-mat'</span>)
+0528             <span class="keyword">end</span>
+0529         <span class="keyword">end</span>
+0530         cd(raiz)
+0531     <span class="keyword">case</span> 4
+0532         close
+0533     <span class="keyword">case</span> 5
+0534         <a href="#_sub5" class="code" title="subfunction armazena_dados">armazena_dados</a>
+0535         [dados,estados,saidas,eixos] = <a href="simulador.html" class="code" title="function [dados,estados,saidas,eixos]=simulador(dados,estados,flagSS,flagSS2,flagD,flagRES,flagCD)">simulador</a>(dados,estados,1,0,0,0);
+0536         hfig = findall(0,<span class="string">'name'</span>,<span class="string">'ENTRADA'</span>);
+0537         <span class="keyword">if</span> ~isempty(hfig)
+0538             figure(hfig)
+0539             <a href="#_sub1" class="code" title="subfunction gera_menu1">gera_menu1</a>
+0540             <a href="#_sub2" class="code" title="subfunction gera_menu2(nomeObj)">gera_menu2</a>([])
+0541             <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>([],[])
+0542         <span class="keyword">else</span>
+0543             <a href="mfsim_entrada.html" class="code" title="function mfsim_entrada">mfsim_entrada</a>
+0544         <span class="keyword">end</span>
+0545     <span class="keyword">case</span> 6
+0546         <a href="#_sub5" class="code" title="subfunction armazena_dados">armazena_dados</a>
+0547         [dados,estados,saidas,eixos] = <a href="simulador.html" class="code" title="function [dados,estados,saidas,eixos]=simulador(dados,estados,flagSS,flagSS2,flagD,flagRES,flagCD)">simulador</a>(dados,estados,0,1,0,0);
+0548         hfig = findall(0,<span class="string">'name'</span>,<span class="string">'ENTRADA'</span>);
+0549         <span class="keyword">if</span> ~isempty(hfig)
+0550             figure(hfig)
+0551             <a href="#_sub1" class="code" title="subfunction gera_menu1">gera_menu1</a>
+0552             <a href="#_sub2" class="code" title="subfunction gera_menu2(nomeObj)">gera_menu2</a>([])
+0553             <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>([],[])
+0554         <span class="keyword">else</span>
+0555             <a href="mfsim_entrada.html" class="code" title="function mfsim_entrada">mfsim_entrada</a>
+0556         <span class="keyword">end</span>
+0557     <span class="keyword">case</span> 7
+0558         <a href="#_sub5" class="code" title="subfunction armazena_dados">armazena_dados</a>
+0559         [dados,estados,saidas,eixos] = <a href="simulador.html" class="code" title="function [dados,estados,saidas,eixos]=simulador(dados,estados,flagSS,flagSS2,flagD,flagRES,flagCD)">simulador</a>(dados,estados,0,0,1,0);
+0560         hfig = findall(0,<span class="string">'name'</span>,<span class="string">'ENTRADA'</span>);
+0561         <span class="keyword">if</span> ~isempty(hfig)
+0562             figure(hfig)
+0563             <a href="#_sub1" class="code" title="subfunction gera_menu1">gera_menu1</a>
+0564             <a href="#_sub2" class="code" title="subfunction gera_menu2(nomeObj)">gera_menu2</a>([])
+0565             <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>([],[])
+0566         <span class="keyword">else</span>
+0567             <a href="mfsim_entrada.html" class="code" title="function mfsim_entrada">mfsim_entrada</a>
+0568         <span class="keyword">end</span>
+0569     <span class="keyword">case</span> 8
+0570         <a href="#_sub5" class="code" title="subfunction armazena_dados">armazena_dados</a>
+0571         [dados,estados,saidas,eixos] = <a href="simulador.html" class="code" title="function [dados,estados,saidas,eixos]=simulador(dados,estados,flagSS,flagSS2,flagD,flagRES,flagCD)">simulador</a>(dados,estados,1,1,1,0);
+0572         hfig = findall(0,<span class="string">'name'</span>,<span class="string">'ENTRADA'</span>);
+0573         <span class="keyword">if</span> ~isempty(hfig)
+0574             figure(hfig)
+0575             <a href="#_sub1" class="code" title="subfunction gera_menu1">gera_menu1</a>
+0576             <a href="#_sub2" class="code" title="subfunction gera_menu2(nomeObj)">gera_menu2</a>([])
+0577             <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>([],[])
+0578         <span class="keyword">else</span>
+0579             <a href="mfsim_entrada.html" class="code" title="function mfsim_entrada">mfsim_entrada</a>
+0580         <span class="keyword">end</span>
+0581     <span class="keyword">case</span> 9
+0582         web([<span class="string">'file:'</span> cd <span class="string">'\Docs\index.html'</span>])
+0583     <span class="keyword">case</span> 10
+0584         [dados,estados,saidas,eixos] = <a href="simulador.html" class="code" title="function [dados,estados,saidas,eixos]=simulador(dados,estados,flagSS,flagSS2,flagD,flagRES,flagCD)">simulador</a>(dados,estados,0,0,0,1);
+0585     <span class="keyword">case</span> 11
+0586         <a href="mfsim_saida.html" class="code" title="function mfsim_saida">mfsim_saida</a>;
+0587     <span class="keyword">case</span> 12
+0588         aux=cd;
+0589         aux=[aux <span class="string">'\Analises'</span>];
+0590         addpath(aux)
+0591         analisaRegimes(dados,estados,saidas);
+0592         
+0593     <span class="keyword">case</span> 13
+0594         <a href="analisador.html" class="code" title="function analisador(dados,estados,flag)">analisador</a>(dados,estados,1)
+0595     <span class="keyword">case</span> 14
+0596         <a href="analisador.html" class="code" title="function analisador(dados,estados,flag)">analisador</a>(dados,estados,2)
+0597     <span class="keyword">case</span> 15
+0598         <a href="#_sub5" class="code" title="subfunction armazena_dados">armazena_dados</a>        
+0599         [dados] = <a href="simulador.html" class="code" title="function [dados,estados,saidas,eixos]=simulador(dados,estados,flagSS,flagSS2,flagD,flagRES,flagCD)">simulador</a>(dados,estados,0,0,0,0,1);
+0600         hfig = findall(0,<span class="string">'name'</span>,<span class="string">'ENTRADA'</span>);
+0601         figure(hfig)
+0602         <a href="#_sub1" class="code" title="subfunction gera_menu1">gera_menu1</a>
+0603         <a href="#_sub2" class="code" title="subfunction gera_menu2(nomeObj)">gera_menu2</a>([])
+0604         <a href="#_sub4" class="code" title="subfunction gera_lista(nomeObj, numeroBotao)">gera_lista</a>([],[])
+0605 
+0606 <span class="keyword">end</span>
+0607 
+0608 <a name="_sub8" href="#_subfunctions" class="code">function dados2 = coloca_dados(dados,valoresDefault,qual)</a>
+0609 
+0610 <span class="keyword">if</span> isempty(dados)
+0611     names = fieldnames(valoresDefault);
+0612     <span class="keyword">for</span> i=1:length(names)
+0613         <span class="keyword">if</span> ~iscell(valoresDefault.(names{i}))
+0614             dados2.(names{i}) = valoresDefault.(names{i});
+0615         <span class="keyword">else</span>
+0616             dados2.(names{i}){1} = [];
+0617         <span class="keyword">end</span>
+0618     <span class="keyword">end</span>
+0619 <span class="keyword">end</span>
+0620</pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

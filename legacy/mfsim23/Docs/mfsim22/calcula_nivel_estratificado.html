@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of calcula_nivel_estratificado</title>
+  <meta name="keywords" content="calcula_nivel_estratificado">
+  <meta name="description" content="Função que determinando altura de líquido /diâmetro para escoamento">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; calcula_nivel_estratificado.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>calcula_nivel_estratificado
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que determinando altura de líquido /diâmetro para escoamento</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [hD,beta]=calcula_nivel_estratificado(alfaG) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que determinando altura de líquido /diâmetro para escoamento
+ estratificado de forma rigorosa</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_duto.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto(t,x,y,parametros,j)">modelo_duto</a>	Função que gera o vetor de coeficientes da matriz da EDP discretizada</li><li><a href="modelo_intermitente.html" class="code" title="function [Sin,ls,lf,lu] = modelo_intermitente(entradas)">modelo_intermitente</a>	Função que determina o fechamento do modelo para padrão de escoamento</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [hD,beta]=calcula_nivel_estratificado(alfaG)</a>
+0002 <span class="comment">% Função que determinando altura de líquido /diâmetro para escoamento</span>
+0003 <span class="comment">% estratificado de forma rigorosa</span>
+0004 
+0005 <span class="comment">% Polinomios</span>
+0006 P_h=[0.00000000000197;<span class="keyword">...</span>
+0007        -3.66048527474641;<span class="keyword">...</span>
+0008        9.15121318685793;<span class="keyword">...</span>
+0009        -8.89104962298284;<span class="keyword">...</span>
+0010        4.18536124761860;<span class="keyword">...</span>
+0011        -1.75567780293538;<span class="keyword">...</span>
+0012        0.98531913309307]';
+0013 
+0014 P_beta=1.0e+002.*<span class="keyword">...</span>
+0015     [0.00000000000056;<span class="keyword">...</span>
+0016      -0.67451330764088;<span class="keyword">...</span>
+0017      1.68628326909991;<span class="keyword">...</span>
+0018      -1.58733054088785;<span class="keyword">...</span>
+0019      0.69471254223251;<span class="keyword">...</span>
+0020      -0.17280444315654;<span class="keyword">...</span>
+0021      0.05824216671205]';
+0022 
+0023 <span class="comment">% Calculando hD</span>
+0024 hD=polyval(P_h,alfaG);
+0025 
+0026 <span class="comment">% Calculando beta</span>
+0027 beta=polyval(P_beta,alfaG);
+0028 
+0029 <span class="comment">% Tratando insonsistências</span>
+0030 beta = max(0,beta);
+0031 beta = min(2.*pi,beta);
+0032 
+0033 Tol=1e-9;
+0034 maxIter=100;
+0035 [nx,ny] = size(alfaG);
+0036 
+0037 <span class="keyword">for</span> i=1:nx
+0038     <span class="keyword">for</span> j=1:ny
+0039         alfaLi = (1-alfaG(i,j));
+0040         <span class="keyword">if</span> alfaLi&gt;(1-1e-6) <span class="comment">% Caso apenas Líquido</span>
+0041             betai=2*pi.*alfaLi;
+0042         <span class="keyword">elseif</span> alfaLi&lt;(1e-6) <span class="comment">% Caso apenas Gás</span>
+0043             betai = 2*pi.*alfaG(i,j);
+0044         <span class="keyword">else</span> <span class="comment">% Caso intermediário</span>
+0045             <span class="comment">% Preparando método</span>
+0046             cont=0;
+0047             erro=1;
+0048             betai=beta(i,j);
+0049             <span class="comment">% Executando Newton-Raphson</span>
+0050             <span class="keyword">while</span> erro&gt;Tol
+0051                 <span class="keyword">if</span> cont&gt;=maxIter;<span class="keyword">break</span>,<span class="keyword">end</span>
+0052                 F0=sin(betai)-betai+2*pi*alfaLi;
+0053                 dF=cos(betai)-1;
+0054                 passo = F0/dF;
+0055                 betai = betai - passo;
+0056                 erro  = abs(passo);
+0057                 cont=cont+1;
+0058             <span class="keyword">end</span>
+0059         <span class="keyword">end</span>
+0060         beta(i,j) = betai;
+0061     <span class="keyword">end</span>
+0062 <span class="keyword">end</span>
+0063 
+0064 <span class="comment">% Calculando hD a partir do angulo de molhamento</span>
+0065 hD=1/2*(1-cos(beta/2));</pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of analisador</title>
+  <meta name="keywords" content="analisador">
+  <meta name="description" content="Função que permite analisar os autovalores da matriz jacobiana das">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; analisador.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>analisador
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que permite analisar os autovalores da matriz jacobiana das</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function analisador(dados,estados,flag) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que permite analisar os autovalores da matriz jacobiana das
+ tubulações discretizadas.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="calculos_iniciais.html" class="code" title="function [parametros]=calculos_iniciais(dados)">calculos_iniciais</a>	Função que executa cálculos iniciais dos parametros a serem utilizadas</li><li><a href="modelo_rede_jacobiana.html" class="code" title="function [J]=modelo_rede_jacobiana(t,X,parametros)">modelo_rede_jacobiana</a>	Função que gera Jacobiana do modelo de redes de escoamento bifásico</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="mfsim_entrada.html" class="code" title="function mfsim_entrada">mfsim_entrada</a>	Interface gráfica para simulação de redes de escoamento bifásico.</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function analisador(dados,estados,flag)</a>
+0002 <span class="comment">% Função que permite analisar os autovalores da matriz jacobiana das</span>
+0003 <span class="comment">% tubulações discretizadas.</span>
+0004 
+0005 <span class="comment">%% Tratamentos Iniciais</span>
+0006 clc, clear functions, warning(<span class="string">'off'</span>)
+0007 <span class="keyword">global</span> parametros
+0008 tic
+0009 tempo_cpu = cputime;
+0010 
+0011 [parametros]=<a href="calculos_iniciais.html" class="code" title="function [parametros]=calculos_iniciais(dados)">calculos_iniciais</a>(dados);
+0012 
+0013 T = estados.T;
+0014 X = estados.X;
+0015 
+0016 <span class="keyword">if</span> length(T)&gt;1
+0017     t = input(<span class="string">'Escreva o instante de tempo para análise (s):'</span>);
+0018     Xt = [interp1(T,X',t)]';
+0019 <span class="keyword">else</span>
+0020     t = 0;
+0021     Xt = X;
+0022 <span class="keyword">end</span>
+0023 
+0024 <span class="keyword">switch</span> flag
+0025     
+0026     <span class="keyword">case</span> 1
+0027         
+0028         [J]=<a href="modelo_rede_jacobiana.html" class="code" title="function [J]=modelo_rede_jacobiana(t,X,parametros)">modelo_rede_jacobiana</a>(t,Xt,parametros);
+0029         
+0030         figure
+0031         h =bar3(J);
+0032         ht(1) = title(<span class="string">'Análise da Jacobiana'</span>);
+0033         he(1) = xlabel(<span class="string">'d/dx'</span>);
+0034         he(2) = ylabel(<span class="string">'F'</span>);
+0035         he(3) = zlabel(<span class="string">'dF/dx'</span>);
+0036 
+0037         figure
+0038         h =bar(J,<span class="string">'stacked'</span>);
+0039         ht(2) = title(<span class="string">'Análise da Jacobiana'</span>);
+0040         he(4) = xlabel(<span class="string">'F'</span>);
+0041         he(5) = ylabel(<span class="string">'sum(dF/dx)'</span>);
+0042        
+0043         set(ht, <span class="string">'fontsize'</span>, 14,<span class="string">'FontWeight'</span>,<span class="string">'bold'</span>)
+0044         set(he, <span class="string">'fontsize'</span>, 12)
+0045 
+0046     <span class="keyword">case</span> 2
+0047         
+0048         [J]=<a href="modelo_rede_jacobiana.html" class="code" title="function [J]=modelo_rede_jacobiana(t,X,parametros)">modelo_rede_jacobiana</a>(t,Xt,parametros);
+0049         
+0050         E = eig(J,<span class="string">'nobalance'</span>);
+0051         E = sort(E);
+0052         Epos = E;
+0053         Eneg = E;
+0054         Epos(E&lt;0)=nan;
+0055         Eneg(E&gt;=0)=nan;
+0056         npos = sum(E&gt;=0);
+0057         nneg = sum(E&lt;0);
+0058         
+0059         Ermax = max(abs(real(E)));
+0060         Eimax = max(abs(imag(E)));
+0061         
+0062         figure
+0063         plot([0 0],[-Eimax Eimax],<span class="string">'-k'</span>)
+0064         hold on
+0065         plot([-Ermax Ermax],[0 0],<span class="string">'-k'</span>)
+0066         h(1)=plot(real(Epos),imag(Epos),<span class="string">'ob'</span>,<span class="string">'MarkerSize'</span>,8,<span class="string">'MarkerEdgeColor'</span>,[0 0 1],<span class="string">'MarkerFaceColor'</span>,[0 0 1]);
+0067         set(gca,<span class="string">'box'</span>,<span class="string">'off'</span>)
+0068         h(2)=plot(real(Eneg),imag(Eneg),<span class="string">'or'</span>,<span class="string">'MarkerSize'</span>,8,<span class="string">'MarkerEdgeColor'</span>,[1 0 0],<span class="string">'MarkerFaceColor'</span>,[1 0 0]);
+0069         axis tight
+0070         
+0071         legend(h,[<span class="string">'Valores Positivos ('</span> num2str(npos) <span class="string">')'</span>], [<span class="string">'Valores Negativos ('</span> num2str(nneg) <span class="string">')'</span>])
+0072         
+0073         ht(1) = title(<span class="string">'Autovalores da Matriz Jacobiana'</span>);
+0074         he(1) = xlabel(<span class="string">'Real'</span>);
+0075         he(2) = ylabel(<span class="string">'Imag'</span>);
+0076 
+0077         set(ht, <span class="string">'fontsize'</span>, 14,<span class="string">'FontWeight'</span>,<span class="string">'bold'</span>)
+0078         set(he, <span class="string">'fontsize'</span>, 12)
+0079 
+0080         
+0081 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

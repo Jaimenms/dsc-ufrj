@@ -1,0 +1,196 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of modelo_valvula</title>
+  <meta name="keywords" content="modelo_valvula">
+  <meta name="description" content="Função que determina pressão a montante da válvula em função da pressão a">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; modelo_valvula.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>modelo_valvula
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que determina pressão a montante da válvula em função da pressão a</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [ZP,saidas,eixos] = modelo_valvula(t,X,E,parametros) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que determina pressão a montante da válvula em função da pressão a
+ jusante e das vazões de líquido e de gás</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_fluido.html" class="code" title="function [propL, propG, tensao] = modelo_fluido(P,T,parametros)">modelo_fluido</a>	Função que descreve as propriedades dos fluidos.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>	Função referente ao modelo de redes de escoamento bifásico</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [Ab,saidasmalha] = modelo_malha(t,X,parametros)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [ZP,saidas,eixos] = modelo_valvula(t,X,E,parametros)</a>
+0002 <span class="comment">% Função que determina pressão a montante da válvula em função da pressão a</span>
+0003 <span class="comment">% jusante e das vazões de líquido e de gás</span>
+0004 
+0005 saidas=[];
+0006 eixos =[];
+0007 ixP  = parametros.valvula.ixP;
+0008 ixqL = parametros.valvula.ixqL;
+0009 ixqG = parametros.valvula.ixqG;
+0010 CV = parametros.valvula.CV;
+0011 PR = parametros.PR;
+0012 NVal = parametros.NVal;
+0013 
+0014 <span class="comment">% Determinando numero de instantes de tempo</span>
+0015 nt = size(X,2);
+0016 
+0017 <span class="comment">% Capturando variaveis</span>
+0018 ix_aux = isnan(ixqL);
+0019 ixqL(ix_aux)=1;
+0020 qL = X(ixqL,:);
+0021 qL(ix_aux,:)=qL(ix_aux,:).*0;
+0022 
+0023 ix_aux = isnan(ixqG);
+0024 ixqG(ix_aux)=1;
+0025 qG = X(ixqG,:);
+0026 qG(ix_aux,:)=qG(ix_aux,:).*0;
+0027 
+0028 P  = E(ixP,:);
+0029 
+0030 <span class="comment">% Calculando vazão total</span>
+0031 qM = qL+qG;
+0032 
+0033 <span class="comment">% Calculando densidade da mistura</span>
+0034 [propL, propG] = <a href="modelo_fluido.html" class="code" title="function [propL, propG, tensao] = modelo_fluido(P,T,parametros)">modelo_fluido</a>(P.*PR,0,parametros.Fluido);
+0035 densM = (qL.*propL.dens+qG.*propG.dens)./qM;
+0036 
+0037 <span class="comment">% Determinando abertura da válvula</span>
+0038 [ab,saidasmalha] = <a href="#_sub1" class="code" title="subfunction [Ab,saidasmalha] = modelo_malha(t,X,parametros)">modelo_malha</a>(t,X,parametros);
+0039 
+0040 <span class="comment">% Determinando queda de pressão</span>
+0041 dP = qM.*abs(qM)./densM./(0.0075.*diag(CV)*ab).^2;
+0042 
+0043 <span class="comment">% Determinando pressão a montante</span>
+0044 ZP = (P.*PR+dP.*1e5)./PR;
+0045 ZP = max(1e-3,ZP);
+0046 
+0047 <span class="keyword">for</span> i=1:NVal
+0048     saidas{i}.Modo  = saidasmalha.MODO(i,:);
+0049     saidas{i}.SP    = saidasmalha.SP(i,:);
+0050     saidas{i}.PV    = saidasmalha.PV(i,:);
+0051     saidas{i}.Erro  = saidasmalha.Erro(i,:);
+0052     saidas{i}.Ab    = saidasmalha.Ab(i,:);
+0053     saidas{i}.ZP    = ZP(i,:).*PR./1e5;
+0054     saidas{i}.dP    = dP(i,:);
+0055     saidas{i}.qL    = qL(i,:);
+0056     saidas{i}.qG    = qG(i,:);
+0057     eixos.X.valor{i}= t;
+0058     eixos.estilo  = <span class="string">'2D'</span>;
+0059     eixos.X.nome  = <span class="string">'Tempo (s)'</span>;
+0060     eixos.X.tipo  = <span class="string">'T'</span>;
+0061 <span class="keyword">end</span>
+0062 
+0063 
+0064 <a name="_sub1" href="#_subfunctions" class="code">function [Ab,saidasmalha] = modelo_malha(t,X,parametros)</a>
+0065 <span class="comment">% Função que modela malhas de controle PID.</span>
+0066 
+0067 <span class="comment">% Declarando as informacoes persistentes</span>
+0068 <span class="keyword">persistent</span> tOld iErroOld dErroOld ErroOld
+0069 
+0070 <span class="comment">% Capturando Parametros das Malhas</span>
+0071 acao = parametros.valvula.acao;
+0072 ContP = parametros.valvula.ContP;
+0073 ContI = parametros.valvula.ContI;
+0074 ContD = parametros.valvula.ContD;
+0075 ContBias = parametros.valvula.ContBias;
+0076 tEVal = parametros.valvula.tEVal;
+0077 Matriz_EVal1=parametros.valvula.Matriz_EVal1;
+0078 Matriz_EVal2=parametros.valvula.Matriz_EVal2;
+0079 Matriz_EVal3=parametros.valvula.Matriz_EVal3;
+0080 ixPV = parametros.valvula.ixPV;
+0081 NVal = parametros.NVal;
+0082 
+0083 AbMan=interpola(t,tEVal,Matriz_EVal1);
+0084 MODO =interpola(t,tEVal,Matriz_EVal2);
+0085 SP   =interpola(t,tEVal,Matriz_EVal3);
+0086 
+0087 <span class="comment">% Partindo algoritmo de controle</span>
+0088 <span class="keyword">if</span> isempty(tOld)
+0089      tOld=0;
+0090      ErroOld  = zeros(NVal,1);
+0091      iErroOld = zeros(NVal,1);
+0092      dErroOld = zeros(NVal,1);
+0093      iErroOld = (AbMan(:,1)-ContBias(:))./(ContP(:).*ContI(:));
+0094 <span class="keyword">end</span>
+0095 
+0096 nt = size(X,2);
+0097 ix_aux = isnan(ixPV);
+0098 ixPV(ix_aux)=1;
+0099 PV = X(ixPV,:);
+0100 PV(ix_aux,:)=PV(ix_aux,:).*0;
+0101 
+0102 
+0103 <span class="comment">% Determinando Derivadas e Integrais do erro</span>
+0104 Erro  = zeros(NVal,nt);
+0105 dErro = zeros(NVal,nt);
+0106 iErro = zeros(NVal,nt);
+0107 AbAuto= zeros(NVal,nt);
+0108 <span class="keyword">if</span> NVal,
+0109         
+0110     Erro = diag(acao)*(PV-SP);
+0111 
+0112     <span class="keyword">for</span> j=1:nt
+0113         <span class="keyword">if</span> t(j)&lt;=tOld
+0114             dErro(:,j)=dErroOld(:);
+0115             iErro(:,j)=iErroOld(:);
+0116         <span class="keyword">else</span>
+0117             <span class="keyword">for</span> i=1:NVal
+0118                 dErro(i,j) = MODO(i,j).*(Erro(i,j) - ErroOld(i))./(t(j)-tOld);
+0119                 iErro(i,j) = MODO(i,j).*(iErroOld(i) + Erro(i,j).*(t(j)-tOld));
+0120                 iErro(i,j) = max(iErro(i,j),-1./(ContP(i).*ContI(i)));
+0121                 iErro(i,j) = min(iErro(i,j),1./(ContP(i).*ContI(i)));
+0122             <span class="keyword">end</span>
+0123             <span class="keyword">if</span> t(j)&gt;tOld
+0124                tOld = t(j);
+0125                ErroOld(:)  = Erro(:,j); 
+0126                dErroOld(:) = dErro(:,j); 
+0127                iErroOld(:) = iErro(:,j); 
+0128             <span class="keyword">end</span>
+0129         <span class="keyword">end</span>
+0130     <span class="keyword">end</span>
+0131 
+0132     <span class="comment">% Aplicando Algoritmo de Controle</span>
+0133     AbAuto = diag(ContP)*(Erro + diag(ContI)*iErro + diag(ContD)*dErro) + ContBias(:)*ones(1,nt);
+0134 
+0135     <span class="comment">% Limitando valvula</span>
+0136     AbAuto = max(AbAuto,0);
+0137     AbAuto = min(AbAuto,1);
+0138 <span class="keyword">end</span>
+0139 
+0140 <span class="comment">% Aplicando modo de controle</span>
+0141 Ab = MODO.*AbAuto + (1-MODO).*AbMan;
+0142 
+0143 saidasmalha.MODO = MODO;
+0144 saidasmalha.SP = SP;
+0145 saidasmalha.PV = PV;
+0146 saidasmalha.Erro = Erro;
+0147 saidasmalha.Ab = Ab;</pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

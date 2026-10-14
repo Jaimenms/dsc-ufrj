@@ -1,0 +1,270 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of modelo_bolhas</title>
+  <meta name="keywords" content="modelo_bolhas">
+  <meta name="description" content="Função que determina o fechamento do modelo para padrão de escoamento">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; modelo_bolhas.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>modelo_bolhas
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que determina o fechamento do modelo para padrão de escoamento</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [Ses,saidas] = modelo_bolhas(entradas) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que determina o fechamento do modelo para padrão de escoamento
+ bolhas.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="fator.html" class="code" title="function [f,Re]=fator(v,dens,visc,D,rugo)">fator</a>	Função que gera fatores de atrito de fanning para as fases</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_duto.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto(t,x,y,parametros,j)">modelo_duto</a>	Função que gera o vetor de coeficientes da matriz da EDP discretizada</li><li><a href="modelo_intermitente.html" class="code" title="function [Sin,ls,lf,lu] = modelo_intermitente(entradas)">modelo_intermitente</a>	Função que determina o fechamento do modelo para padrão de escoamento</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [hD,beta]=alfa2h(alfaG,beta)</a></li><li><a href="#_sub2" class="code">function [hD,beta]=alfa2h2(alfaG)</a></li><li><a href="#_sub3" class="code">function [f_I,f_L,f_G]=fator_I_Est(f_L,Re_L,v_L,densL,viscL,DL,</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [Ses,saidas] = modelo_bolhas(entradas)</a>
+0002 <span class="comment">% Função que determina o fechamento do modelo para padrão de escoamento</span>
+0003 <span class="comment">% bolhas.</span>
+0004 
+0005 <span class="comment">%% Capturando variaveis de entrada</span>
+0006 alfaG = entradas.alfaG;
+0007 alfaL = entradas.alfaL;
+0008 v_L = entradas.v_L;
+0009 v_LS = entradas.v_LS;
+0010 v_G = entradas.v_G;
+0011 v_GS = entradas.v_GS;
+0012 AreaL = entradas.AreaL;
+0013 AreaG = entradas.AreaG;
+0014 D = entradas.D;
+0015 rugo = entradas.rugo;
+0016 angulo_teta = entradas.angulo_teta;
+0017 densL = entradas.densL;
+0018 densG = entradas.densG;
+0019 viscL = entradas.viscL;
+0020 viscG = entradas.viscG;
+0021 CL = entradas.CL;
+0022 CG = entradas.CG;
+0023 tensao = entradas.tensao;
+0024 
+0025 <span class="comment">%% Calculando altura de líquido e angulo de molhamento</span>
+0026 
+0027 <span class="comment">% Calculando h</span>
+0028 beta = 2.*pi;
+0029 hL   = D;
+0030 
+0031 <span class="comment">%% Calculando diametro das bolhas</span>
+0032 
+0033 v_M   = v_GS + v_LS;
+0034 
+0035 f_L =<a href="fator.html" class="code" title="function [f,Re]=fator(v,dens,visc,D,rugo)">fator</a>(v_L,densL,viscL,D,rugo);
+0036 f_M =<a href="fator.html" class="code" title="function [f,Re]=fator(v,dens,visc,D,rugo)">fator</a>(v_M,densL,viscL,D,rugo);
+0037 f_G =0.0;
+0038 
+0039 dbmax = (0.725+4.15.*(v_GS./v_M).^0.5).*(tensao./densL).^(3/5).*(2.*f_M.*v_M.^3./D).^(-2/5);
+0040 
+0041 db = (16.*tensao./9.81./(densL-densG)).^0.5;
+0042 
+0043 db = min(db,dbmax);
+0044 
+0045 vb = (0.51.*db+2.14./db).^0.5;
+0046 
+0047 
+0048 <span class="comment">%% Calculando perímetros</span>
+0049 
+0050 <span class="comment">% Calculando Perímetros</span>
+0051 PerL = pi.*D.*alfaL;
+0052 PerG = pi.*D.*alfaG;
+0053 PerI = pi.*D.^2.*alfaG./db;
+0054 
+0055 
+0056 <span class="comment">%% Calculando diferença de pressão das fases</span>
+0057     
+0058 <span class="comment">% Drew D. A., &amp; Passman S. L., (1999) “Theory of Multicomponent</span>
+0059 <span class="comment">% Fluids”. Applied Mathematical Sciences, 135, Springer.</span>
+0060 dPL = 1/4.*densL.*(v_G-v_L).^2;
+0061 dPG = 0;
+0062 
+0063 ddPLdP    = dPL./densL.*CL;
+0064 ddPGdP    = 0.;
+0065 ddPLdalfaG= 0.;
+0066 ddPGdalfaG= 0.;
+0067 dPI       = 0.;
+0068 
+0069 
+0070 <span class="comment">%% Calculando Fatores de Atrito</span>
+0071 
+0072 
+0073 <span class="comment">% Fluido-Interface</span>
+0074 
+0075 <span class="comment">%Reb = db.*abs(vb).*densL./viscL;</span>
+0076 <span class="comment">%Eo = 9.81.*(densL-densG).*db.^2./tensao;</span>
+0077 <span class="comment">%CD = max(24./Reb.*(1+0.15.*Reb.^0.687),8/3.*Eo./(Eo+4));</span>
+0078 
+0079 CDb = 4/3.*((densL-densG)./densL).*9.81.*db./(vb.^2);
+0080 
+0081 f_I = 1.5.*alfaG.*densL.*CDb./db;
+0082 <span class="comment">%f_I = max(1e-9,f_I);</span>
+0083 
+0084 <span class="comment">%% Calculando Tensoes</span>
+0085 
+0086 <span class="comment">% Fluido-Parede</span>
+0087 tensao_G  = f_G.*densG.*(v_G).*abs(v_G)./2;
+0088 tensao_L  = f_L.*densL.*(v_L).*abs(v_L)./2;
+0089 
+0090 <span class="comment">% FLuido-Interface</span>
+0091 tensao_IG = f_I.*densG.*(v_G-v_L).*abs(v_G-v_L)./2;
+0092 tensao_IL = -tensao_IG;
+0093 
+0094 <span class="comment">%% Calculando fluxo dissipativo</span>
+0095 PerI = max(PerI,1e-9);
+0096 PerL = max(PerL,1e-9);
+0097 PerG = max(PerG,1e-9);
+0098 GamaL = PerI.*tensao_IL+PerL.*tensao_L;
+0099 GamaG = PerI.*tensao_IG+PerG.*tensao_G;
+0100 
+0101 
+0102 <span class="comment">%% Juntando saidas</span>
+0103 Ses.GamaL      =GamaL;
+0104 Ses.GamaG      =GamaG;
+0105 Ses.dPL        =dPL;
+0106 Ses.dPG        =dPG;
+0107 Ses.ddPLdP     =ddPLdP;
+0108 Ses.ddPGdP     =ddPGdP;
+0109 Ses.ddPLdalfaG =ddPLdalfaG;
+0110 Ses.ddPGdalfaG =ddPGdalfaG;
+0111 Ses.dPI        =dPI;
+0112 Ses.hL         =hL;
+0113 Ses.beta       =beta;
+0114 Ses.tensao_G   =tensao_G;
+0115 Ses.tensao_L   =tensao_L;
+0116 
+0117 saidas.db = db; <span class="comment">% Diametro das Bolhas</span>
+0118 
+0119 
+0120 
+0121 <a name="_sub1" href="#_subfunctions" class="code">function [hD,beta]=alfa2h(alfaG,beta)</a>
+0122 <span class="comment">% Determinando altura de líquido /diâmetro para escoamento estratificado de</span>
+0123 <span class="comment">% forma rigorosa</span>
+0124 
+0125 Tol=1e-9;
+0126 maxIter=100;
+0127 [nx,ny] = size(alfaG);
+0128 
+0129 <span class="keyword">for</span> i=1:nx
+0130     <span class="keyword">for</span> j=1:ny
+0131         alfaLi = (1-alfaG(i,j));
+0132         <span class="keyword">if</span> alfaLi&gt;(1-1e-6) <span class="comment">% Caso apenas Líquido</span>
+0133             betai=2*pi;
+0134         <span class="keyword">elseif</span> alfaLi&lt;(1e-6) <span class="comment">% Caso apenas Gás</span>
+0135             betai = 0;
+0136         <span class="keyword">else</span> <span class="comment">% Caso intermediário</span>
+0137             <span class="comment">% Preparando método</span>
+0138             cont=0;
+0139             erro=1;
+0140             betai=beta(i,j);
+0141             <span class="comment">% Executando Newton-Raphson</span>
+0142             <span class="keyword">while</span> erro&gt;Tol
+0143                 <span class="keyword">if</span> cont&gt;=maxIter;<span class="keyword">break</span>,<span class="keyword">end</span>
+0144                 F0=sin(betai)-betai+2*pi*alfaLi;
+0145                 dF=cos(betai)-1;
+0146                 passo = F0/dF;
+0147                 betai = betai - passo;
+0148                 erro  = abs(passo);
+0149                 cont=cont+1;
+0150             <span class="keyword">end</span>
+0151         <span class="keyword">end</span>
+0152         beta(i,j) = betai;
+0153     <span class="keyword">end</span>
+0154 <span class="keyword">end</span>
+0155 
+0156 <span class="comment">% Calculando hD a partir do angulo de molhamento</span>
+0157 hD=1/2*(1-cos(beta/2));
+0158 
+0159 
+0160 <a name="_sub2" href="#_subfunctions" class="code">function [hD,beta]=alfa2h2(alfaG)</a>
+0161 <span class="comment">% Determinando altura de líquido /diâmetro para escoamento estratificado de</span>
+0162 <span class="comment">% forma aproximada</span>
+0163 
+0164 <span class="comment">% Polinomios</span>
+0165 P_h=[0.00000000000197;<span class="keyword">...</span>
+0166        -3.66048527474641;<span class="keyword">...</span>
+0167        9.15121318685793;<span class="keyword">...</span>
+0168        -8.89104962298284;<span class="keyword">...</span>
+0169        4.18536124761860;<span class="keyword">...</span>
+0170        -1.75567780293538;<span class="keyword">...</span>
+0171        0.98531913309307]';
+0172 
+0173 P_beta=1.0e+002.*<span class="keyword">...</span>
+0174     [0.00000000000056;<span class="keyword">...</span>
+0175      -0.67451330764088;<span class="keyword">...</span>
+0176      1.68628326909991;<span class="keyword">...</span>
+0177      -1.58733054088785;<span class="keyword">...</span>
+0178      0.69471254223251;<span class="keyword">...</span>
+0179      -0.17280444315654;<span class="keyword">...</span>
+0180      0.05824216671205]';
+0181 
+0182 <span class="comment">% Calculando hD</span>
+0183 hD=polyval(P_h,alfaG);
+0184 
+0185 <span class="comment">% Calculando beta</span>
+0186 beta=polyval(P_beta,alfaG);
+0187 
+0188 <span class="comment">% Tratando insonsistências</span>
+0189 beta = max(0,beta);
+0190 beta = min(2.*pi,beta);
+0191 
+0192 
+0193 <a name="_sub3" href="#_subfunctions" class="code">function [f_I,f_L,f_G]=fator_I_Est(f_L,Re_L,v_L,densL,viscL,DL,</a><span class="keyword">...</span>
+0194     f_G,Re_G,v_GS,densG,viscG,DG,rugo,D,h,alfaG)
+0195 <span class="comment">% Geraçao dos fator de atrito para a interface no escoamento estratificado</span>
+0196 
+0197 correlacao = 2;
+0198 DG = mac(DG,1e-8);
+0199 <span class="keyword">switch</span> correlacao
+0200     <span class="keyword">case</span> 1 <span class="comment">% Para Escoamento Estratificado Horizontal</span>
+0201         <span class="comment">% Taitel Y., &amp; Duckler A. E., (1976) “A Model For Predicting Flow</span>
+0202         <span class="comment">% Regime Transitions in Horizontal and Near-Horizontal Gas-Liquid</span>
+0203         <span class="comment">% Flow”. AIChE Journal, 22 (1), 47-55.</span>
+0204         f_I = f_G;
+0205     <span class="keyword">case</span> 2 <span class="comment">% Para Escoamento Estratificado Horizontal</span>
+0206         <span class="comment">% Andritsos N., &amp; Hanratty T. J., (1987) “Influence of interfacial</span>
+0207         <span class="comment">% waves in stratified gas-liquid flows”. AIChE Journal, 33 (3),</span>
+0208         <span class="comment">% 444-454.</span>
+0209         <span class="comment">% Spedding P. L., &amp; Hand N. P., (1997) “Prediction in Stratified</span>
+0210         <span class="comment">% Gas-Liquid Co-Current Flow in Horizontal Pipelines”. Int. J.</span>
+0211         <span class="comment">% Heat Mass Transfer, 40 (8), 1923-1935.</span>
+0212         v_GT = 5.5;
+0213         <span class="comment">% Kowalski J. E., (1987) “Wall and Interfacial Shear Stress in</span>
+0214         <span class="comment">% Stratified Flow in a Horizontal Pipe”. AIChE Journal, 33 (2),</span>
+0215         <span class="comment">% 274-281.</span>
+0216         f_L = max(24./Re_L,0.263./(1-alfaG).*(DL./Re_L./D).^0.5);
+0217         <span class="comment">% Andritsos N., &amp; Hanratty T. J., (1987) “Influence of interfacial</span>
+0218         <span class="comment">% waves in stratified gas-liquid flows”. AIChE Journal, 33 (3),</span>
+0219         <span class="comment">% 444-454.</span>
+0220         f_I=f_G.*(1+max(0,15.*(abs(v_GS)./v_GT-1).*(h./D).^0.5));
+0221 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

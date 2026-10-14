@@ -1,0 +1,827 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of calculos_iniciais</title>
+  <meta name="keywords" content="calculos_iniciais">
+  <meta name="description" content="Função que executa cálculos iniciais dos parametros a serem utilizadas">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; calculos_iniciais.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>calculos_iniciais
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que executa cálculos iniciais dos parametros a serem utilizadas</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [parametros]=calculos_iniciais(dados) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que executa cálculos iniciais dos parametros a serem utilizadas 
+ pelas demais rotinas</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_duto.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto(t,x,y,parametros,j)">modelo_duto</a>	Função que gera o vetor de coeficientes da matriz da EDP discretizada</li><li><a href="modelo_duto_BB.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto_BB(t,x,y,parametros,j)">modelo_duto_BB</a>	Função que gera o vetor de coeficientes da matriz da EDP discretizada</li><li><a href="modelo_duto_G.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto_G(t,x,y,parametros,j)">modelo_duto_G</a>	Função que gera o vetor de coeficientes da matriz da EDP discretizada</li><li><a href="modelo_duto_L.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto_L(t,x,y,parametros,j)">modelo_duto_L</a>	Função que gera o vetor de coeficientes da matriz da EDP discretizada</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="analisador.html" class="code" title="function analisador(dados,estados,flag)">analisador</a>	Função que permite analisar os autovalores da matriz jacobiana das</li><li><a href="simulador.html" class="code" title="function [dados,estados,saidas,eixos]=simulador(dados,estados,flagSS,flagSS2,flagD,flagRES,flagCD)">simulador</a>	Função que executa a simulação bifásica de escoamento em redes de dutos.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [E] = consolida_E(tE,tE1,ME1)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [parametros]=calculos_iniciais(dados)</a>
+0002 <span class="comment">% Função que executa cálculos iniciais dos parametros a serem utilizadas</span>
+0003 <span class="comment">% pelas demais rotinas</span>
+0004 
+0005 <span class="keyword">if</span> ~isfield(dados,<span class="string">'tubo'</span>)        ,dados.tubo{1}=[];                 <span class="keyword">end</span>
+0006 <span class="keyword">if</span> ~isfield(dados,<span class="string">'vertice'</span>)     ,dados.vertice{1}=[];              <span class="keyword">end</span>
+0007 <span class="keyword">if</span> ~isfield(dados,<span class="string">'reservatorio'</span>),dados.reservatorio{1}=[];         <span class="keyword">end</span>
+0008 <span class="keyword">if</span> ~isfield(dados,<span class="string">'valvula'</span>)     ,dados.valvula{1}=[];              <span class="keyword">end</span>
+0009 <span class="keyword">if</span> ~isfield(dados,<span class="string">'valvulaRet'</span>)  ,dados.valvulaRet{1}=[];           <span class="keyword">end</span>
+0010 <span class="keyword">if</span> ~isfield(dados,<span class="string">'acoplador'</span>)   ,dados.acoplador{1}=[];            <span class="keyword">end</span>
+0011 
+0012 
+0013 <span class="comment">%% 1- Fluidos</span>
+0014 parametros.Fluido.densL0 = dados.fluido.densidadeL0;
+0015 parametros.Fluido.densG0 = dados.fluido.densidadeG0;
+0016 parametros.Fluido.viscL  = dados.fluido.viscosidadeL;
+0017 parametros.Fluido.viscG  = dados.fluido.viscosidadeG;
+0018 parametros.Fluido.gamaL  = dados.fluido.gamaL;
+0019 parametros.Fluido.gamaG  = dados.fluido.gamaG;
+0020 parametros.Fluido.P0     = dados.fluido.pressao0;
+0021 parametros.Fluido.tensao = dados.fluido.tensao;
+0022 
+0023 
+0024 <span class="comment">%% 2- Simulacao</span>
+0025 ti     = dados.simulador.tempoInicial;
+0026 dt     = dados.simulador.incrementoTempo;
+0027 tf     = dados.simulador.tempoFinal;
+0028 PR     = dados.simulador.pressaoR;
+0029 lista_n=[3 5 8 12]; n=lista_n(dados.simulador.ordemQuadratura);
+0030 parametros.PR = PR;
+0031 T=ti:dt:tf;
+0032 parametros.T = T;
+0033 ne = 4;
+0034 parametros.ne = ne;
+0035 parametros.n = n;
+0036 <span class="keyword">if</span> ~isfield(dados.simulador,<span class="string">'metodo'</span>),
+0037     parametros.metodo = 1;
+0038 <span class="keyword">else</span>
+0039     parametros.metodo = dados.simulador.metodo;
+0040 <span class="keyword">end</span>
+0041 
+0042 <span class="comment">%% 3- Vertices</span>
+0043 NVert=length(dados.vertice);
+0044 <span class="keyword">for</span> i=1:NVert
+0045     iVert(i,1)=dados.vertice{i}.tipo;
+0046     V(i,1)=dados.vertice{i}.volume;
+0047 <span class="keyword">end</span>
+0048 NVertA=sum(iVert==1);
+0049 NVertB=sum(iVert==2);
+0050 iVertA = find(iVert==1);
+0051 iVertB = find(iVert==2);
+0052 
+0053 tE=[];
+0054 aux=0;
+0055 <span class="keyword">for</span> i=1:NVert
+0056     aux=aux+1;
+0057     tE1{aux}= dados.vertice{i}.especificacaoT1;
+0058     ME1{aux}= dados.vertice{i}.especificacao1;
+0059     tE2{aux}= dados.vertice{i}.especificacaoT2;
+0060     ME2{aux}= dados.vertice{i}.especificacao2;
+0061     tE3{aux}= dados.vertice{i}.especificacaoT3;
+0062     ME3{aux}= dados.vertice{i}.especificacao3;
+0063     tE4{aux}= dados.vertice{i}.especificacaoT4;
+0064     ME4{aux}= dados.vertice{i}.especificacao4;
+0065     tE = [tE tE1{aux} tE2{aux} tE3{aux} tE4{aux}];
+0066 <span class="keyword">end</span>
+0067    
+0068 tE=unique([ti tE tf ]);
+0069 [Matriz_E1] = <a href="#_sub1" class="code" title="subfunction [E] = consolida_E(tE,tE1,ME1)">consolida_E</a>(tE,tE1,ME1);
+0070 [Matriz_E2] = <a href="#_sub1" class="code" title="subfunction [E] = consolida_E(tE,tE1,ME1)">consolida_E</a>(tE,tE2,ME2);
+0071 [Matriz_E3] = <a href="#_sub1" class="code" title="subfunction [E] = consolida_E(tE,tE1,ME1)">consolida_E</a>(tE,tE3,ME3);
+0072 [Matriz_E4] = <a href="#_sub1" class="code" title="subfunction [E] = consolida_E(tE,tE1,ME1)">consolida_E</a>(tE,tE4,ME4);
+0073 
+0074 Matriz_E=[];
+0075 <span class="keyword">for</span> i=1:size(Matriz_E1,1)
+0076     Matriz_E=[Matriz_E;<span class="keyword">...</span>
+0077               Matriz_E1(i,:);<span class="keyword">...</span>
+0078               Matriz_E2(i,:);<span class="keyword">...</span>
+0079               Matriz_E3(i,:);<span class="keyword">...</span>
+0080               Matriz_E4(i,:)];
+0081 <span class="keyword">end</span>
+0082 
+0083 parametros.V           = V;
+0084 parametros.tE         = tE;
+0085 parametros.Matriz_E   = Matriz_E;
+0086 parametros.iVert       = iVert;
+0087 parametros.iVertA      = iVertA;
+0088 parametros.iVertB      = iVertB;
+0089 parametros.NVert       = NVert;
+0090 parametros.NVertA      = NVertA;
+0091 parametros.NVertB      = NVertB;
+0092 
+0093 <span class="comment">%% 4- Dutos</span>
+0094 m=length(dados.tubo);
+0095 parametros.m = m;
+0096 <span class="keyword">for</span> i=1:m
+0097     x = dados.tubo{i}.x;
+0098     y = dados.tubo{i}.y;
+0099     z = dados.tubo{i}.z;
+0100     nx = length(x);
+0101     deltaX = x(2:nx)-x(1:(nx-1));
+0102     deltaY = y(2:nx)-y(1:(nx-1));
+0103     deltaZ = z(2:nx)-z(1:(nx-1));
+0104     vNk=dados.tubo{i}.numeroElementos;
+0105     hk=[];
+0106     Ank=[];
+0107     Nohx=x(:,1);
+0108     Nohy=y(:,1);
+0109     Nohz=z(:,1);
+0110     <span class="keyword">for</span> j=1:(nx-1)
+0111         dL=sqrt(deltaX(j).^2+deltaY(j).^2+deltaZ(j).^2);
+0112         dAn=asin(deltaZ(j)./dL);
+0113         dh = dL./vNk(j);
+0114 
+0115         hk = [hk dh.*ones(1,vNk(j))];
+0116         Ank = [Ank dAn.*ones(1,vNk(j))];
+0117 
+0118         Nohx=[Nohx x(j)+deltaX(j).*[(1/vNk(j)):(1/vNk(j)):1]];
+0119         Nohy=[Nohy y(j)+deltaY(j).*[(1/vNk(j)):(1/vNk(j)):1]];
+0120         Nohz=[Nohz z(j)+deltaZ(j).*[(1/vNk(j)):(1/vNk(j)):1]];
+0121     <span class="keyword">end</span>
+0122     N{i}=vNk(:);
+0123     Nk(i,1)=sum(vNk);
+0124     An{i}=Ank(:);
+0125     h{i}=hk(:);
+0126     L(i,1)=sum(hk);
+0127     NohX{i}=Nohx(:);
+0128     NohY{i}=Nohy(:);
+0129     NohZ{i}=Nohz(:);
+0130     D(i,1) = dados.tubo{i}.diametro;
+0131     rugo(i,1)=dados.tubo{i}.rugosidade./1e6;
+0132     SegL{i}=sqrt(deltaX.^2+deltaY.^2+deltaZ.^2);
+0133     SegZ{i}=z;
+0134     xx{i}=cumsum([0;hk(:)]);
+0135 
+0136     parametros.D(i,1) = D(i);
+0137     parametros.L(i,1) = L(i);
+0138     parametros.rugo(i,1) = rugo(i);
+0139     parametros.Duto{i}.x  = xx{i};
+0140     parametros.Duto{i}.PR = PR;
+0141     parametros.Duto{i}.D = D(i);
+0142     parametros.Duto{i}.angulo_teta = An{i};
+0143     parametros.Duto{i}.rugo = rugo(i);
+0144     parametros.Duto{i}.Nk = Nk(i);
+0145     parametros.Duto{i}.L = L(i);
+0146     parametros.Duto{i}.regime = dados.tubo{i}.regime;
+0147     parametros.regime(i,1) = dados.tubo{i}.regime;
+0148     parametros.Duto{i}.N=N{i};
+0149     parametros.Duto{i}.angulo_teta=An{i};
+0150     parametros.Duto{i}.h=h{i};
+0151     parametros.Duto{i}.NohX=NohX{i};
+0152     parametros.Duto{i}.NohY=NohY{i};
+0153     parametros.Duto{i}.NohZ=NohZ{i};
+0154     vIn = dados.tubo{i}.verticeOrigem;
+0155     vOut = dados.tubo{i}.verticeDestino;
+0156     parametros.Duto{i}.vIn=vIn;
+0157     parametros.Duto{i}.vOut=vOut;
+0158     parametros.Duto{i}.Fluido = parametros.Fluido;
+0159     auxZ = NohZ{i};
+0160     parametros.Vertice{vIn}.z =auxZ(1);
+0161     parametros.Vertice{vOut}.z =auxZ(end);
+0162     parametros.Z(vIn,1)=auxZ(1);
+0163     parametros.Z(vOut,1)=auxZ(end);
+0164     
+0165 <span class="keyword">end</span>
+0166 parametros.NohX = NohX;
+0167 parametros.NohY = NohY;
+0168 parametros.NohZ = NohZ;
+0169 parametros.SegL = SegL;
+0170 parametros.SegZ = SegZ;
+0171 parametros.Nk = Nk;
+0172 parametros.h = h;
+0173 
+0174 
+0175 <span class="comment">%% 5- Rede</span>
+0176 ME  = zeros(NVert,m);
+0177 MS  = zeros(NVert,m);
+0178 <span class="keyword">for</span> i=1:NVert
+0179     <span class="keyword">for</span> j=1:m
+0180         iDestino = dados.tubo{j}.verticeDestino;
+0181         iOrigem = dados.tubo{j}.verticeOrigem; 
+0182         ME(i,j)=(iDestino==i);
+0183         MS(i,j)=(iOrigem==i);
+0184     <span class="keyword">end</span>
+0185 <span class="keyword">end</span>
+0186 parametros.MS = MS;
+0187 parametros.ME = ME;
+0188 
+0189 
+0190 <span class="comment">%% 7- Matrizes Seletoras</span>
+0191 
+0192 <span class="comment">% Vetores Importantes:</span>
+0193 <span class="comment">%   W{k} -&gt; vetor de estados reduzidos do duto</span>
+0194 <span class="comment">%   Y{k} -&gt; vetor de estados do duto</span>
+0195 <span class="comment">%   Ya   -&gt; vetor de estados do vertice tipo A</span>
+0196 <span class="comment">%   X    -&gt; vetor de estados da rede</span>
+0197 <span class="comment">%   U    -&gt; vetor de estados aumentados da rede</span>
+0198 
+0199 <span class="comment">% Matrizes seletoras</span>
+0200 <span class="comment">%   Sw{k}-&gt; transforma o vetor de estados do duto no vetor de estados</span>
+0201 <span class="comment">%           reduzidos do duto</span>
+0202 <span class="comment">%   Sxa  -&gt; transforma o vetor de estados da rede no vetor de estados de</span>
+0203 <span class="comment">%           vertices do tipo A</span>
+0204 <span class="comment">%   Sya  -&gt; transforma o vetor de estados dos vertices no vetor de estados da</span>
+0205 <span class="comment">%           rede</span>
+0206 
+0207 <span class="comment">%   Seb  -&gt; transforma especificaçoes de vertices do tipo B no vetor de estados</span>
+0208 <span class="comment">%           da rede</span>
+0209 
+0210 
+0211 <span class="comment">% Indicadores do vetor de estados do duto</span>
+0212 <span class="comment">%   IndY{k}.tipo -&gt; indica qual o estado do duto usando o seguinte código</span>
+0213 <span class="comment">%                1: se é uma fração de área de gás em um nó do duto</span>
+0214 <span class="comment">%                2: se é uma pressão em um nó do duto</span>
+0215 <span class="comment">%                3: se é uma vazão de líquido em um nó do duto</span>
+0216 <span class="comment">%                4: se é uma vazão de gás em um nó do duto</span>
+0217 <span class="comment">%   IndY{k}.indice -&gt; indica qual o índice do nó correspondente ao estado do duto</span>
+0218 <span class="comment">%   IndY{k}.CC   -&gt; indica qual o tipo de condição de contorno associada ao estado</span>
+0219 <span class="comment">%                1: ausência de C.C.</span>
+0220 <span class="comment">%                2: C.C. do tipo Dirichlet</span>
+0221 <span class="comment">%                3: C.C. do tipo von Neumann</span>
+0222 <span class="comment">%   IndY{k}.CC_vertice -&gt; indica qual o vertice que transfere a condição de contorno associada ao estado</span>
+0223 <span class="comment">%   IndY{k}.inlet -&gt; indica se as variaveis correspondem a estados da</span>
+0224 <span class="comment">%   entrada dos dutos. 1 se sim e 0 se não.</span>
+0225 <span class="comment">%   IndY{k}.outlet -&gt; indica se as variaveis correspondem a estados da</span>
+0226 <span class="comment">%   entrada dos dutos. 1 se sim e 0 se não.</span>
+0227 
+0228 <span class="comment">% Determinando numero de estados por duto</span>
+0229 Ny = (Nk(:)+1).*ne;
+0230 
+0231 <span class="keyword">for</span> k=1:m
+0232     IndY{k}.tipo(1:4:Ny(k),1) = 1;
+0233     IndY{k}.tipo(2:4:Ny(k),1) = 2;
+0234     IndY{k}.tipo(3:4:Ny(k),1) = 3;
+0235     IndY{k}.tipo(4:4:Ny(k),1) = 4;
+0236 <span class="keyword">end</span>
+0237 <span class="keyword">for</span> k=1:m
+0238     IndY{k}.indice(1:4:Ny(k),1) = 1:(Nk(k)+1);
+0239     IndY{k}.indice(2:4:Ny(k),1) = 1:(Nk(k)+1);
+0240     IndY{k}.indice(3:4:Ny(k),1) = 1:(Nk(k)+1);
+0241     IndY{k}.indice(4:4:Ny(k),1) = 1:(Nk(k)+1);
+0242 <span class="keyword">end</span>
+0243 <span class="keyword">for</span> k=1:m
+0244     IndY{k}.CC = ones(Ny(k),1);
+0245     IndY{k}.CC(1,1)          = dados.tubo{k}.tipocondicaoContornoE1;
+0246     IndY{k}.CC(2,1)          = dados.tubo{k}.tipocondicaoContornoE2;
+0247     IndY{k}.CC(3,1)          = dados.tubo{k}.tipocondicaoContornoE3;
+0248     IndY{k}.CC(4,1)          = dados.tubo{k}.tipocondicaoContornoE4;
+0249     IndY{k}.CC(Nk(k)*ne+1,1) = dados.tubo{k}.tipocondicaoContornoS1;
+0250     IndY{k}.CC(Nk(k)*ne+2,1) = dados.tubo{k}.tipocondicaoContornoS2;
+0251     IndY{k}.CC(Nk(k)*ne+3,1) = dados.tubo{k}.tipocondicaoContornoS3;
+0252     IndY{k}.CC(Nk(k)*ne+4,1) = dados.tubo{k}.tipocondicaoContornoS4;
+0253     
+0254     <span class="keyword">if</span> ~isfield(dados.tubo{k},<span class="string">'modelo'</span>)
+0255         dados.tubo{k}.modelo = 1;
+0256     <span class="keyword">end</span>
+0257         
+0258     <span class="keyword">switch</span> dados.tubo{k}.modelo
+0259     <span class="keyword">case</span> 2
+0260         IndY{k}.CC(1,1) = 1;
+0261         IndY{k}.CC(Nk(k)*ne+1,1) = 1;
+0262     <span class="keyword">case</span> 3
+0263         IndY{k}.CC(1,1) = 1;
+0264         IndY{k}.CC(Nk(k)*ne+1,1) = 1;
+0265         IndY{k}.CC(4,1) = 1;
+0266         IndY{k}.CC(Nk(k)*ne+4,1) = 1;
+0267     <span class="keyword">case</span> 4
+0268         IndY{k}.CC(1,1) = 1;
+0269         IndY{k}.CC(Nk(k)*ne+1,1) = 1;
+0270         IndY{k}.CC(3,1) = 1;
+0271         IndY{k}.CC(Nk(k)*ne+3,1) = 1;
+0272     <span class="keyword">end</span>
+0273     
+0274 <span class="keyword">end</span>
+0275 
+0276 <span class="keyword">for</span> k=1:m
+0277     IndY{k}.inlet (1:Ny(k),1)       = 0;
+0278     IndY{k}.inlet (1:4,1)           = 1;
+0279     IndY{k}.outlet(1:Ny(k),1)       = 0;
+0280     IndY{k}.outlet((Ny(k)-3):<span class="keyword">end</span>,1) = 1;
+0281 <span class="keyword">end</span>
+0282 
+0283 
+0284 <span class="keyword">for</span> k=1:m
+0285     IndY{k}.CC_vertice(1:Ny(k),1)=0;
+0286     IndY{k}.CC_verticeA(1:Ny(k),1)=0;
+0287     IndY{k}.CC_verticeB(1:Ny(k),1)=0;
+0288     ix = find(MS(:,k));
+0289     <span class="keyword">for</span> j = 1:4,           <span class="keyword">if</span> IndY{k}.CC(j,1)==2, IndY{k}.CC_vertice(j,1)=ix; <span class="keyword">end</span>, <span class="keyword">end</span>
+0290     <span class="keyword">for</span> j = 1:4,           <span class="keyword">if</span> IndY{k}.CC(j,1)==2&amp;&amp;sum(iVertA==ix)&gt;0, IndY{k}.CC_verticeA(j,1)=find(iVertA==ix); <span class="keyword">end</span>, <span class="keyword">end</span>
+0291     <span class="keyword">for</span> j = 1:4,           <span class="keyword">if</span> IndY{k}.CC(j,1)==2&amp;&amp;sum(iVertB==ix)&gt;0, IndY{k}.CC_verticeB(j,1)=find(iVertB==ix); <span class="keyword">end</span>, <span class="keyword">end</span>
+0292     ix = find(ME(:,k));
+0293     <span class="keyword">for</span> j = 4*Nk(k)+(1:4), <span class="keyword">if</span> IndY{k}.CC(j,1)==2, IndY{k}.CC_vertice(j,1)=ix; <span class="keyword">end</span>, <span class="keyword">end</span>
+0294     <span class="keyword">for</span> j = 4*Nk(k)+(1:4), <span class="keyword">if</span> IndY{k}.CC(j,1)==2&amp;&amp;sum(iVertA==ix)&gt;0, IndY{k}.CC_verticeA(j,1)=find(iVertA==ix); <span class="keyword">end</span>, <span class="keyword">end</span>
+0295     <span class="keyword">for</span> j = 4*Nk(k)+(1:4), <span class="keyword">if</span> IndY{k}.CC(j,1)==2&amp;&amp;sum(iVertB==ix)&gt;0, IndY{k}.CC_verticeB(j,1)=find(iVertB==ix); <span class="keyword">end</span>, <span class="keyword">end</span>
+0296 <span class="keyword">end</span>
+0297 
+0298 
+0299 <span class="keyword">for</span> k=1:m <span class="comment">% modificando matriz seletora de CC para retirar estados não utilizados pelos modelos</span>
+0300     <span class="keyword">switch</span> dados.tubo{k}.modelo
+0301     <span class="keyword">case</span> 2
+0302         <span class="keyword">for</span> i=1:(Nk(k)+1)
+0303             IndY{k}.CC(4*(i-1)+1,1) = 2;
+0304         <span class="keyword">end</span>
+0305     <span class="keyword">case</span> 3
+0306         <span class="keyword">for</span> i=1:(Nk(k)+1)
+0307             IndY{k}.CC(4*(i-1)+1,1) = 2;
+0308             IndY{k}.CC(4*(i-1)+4,1) = 2;
+0309         <span class="keyword">end</span>
+0310     <span class="keyword">case</span> 4
+0311         <span class="keyword">for</span> i=1:(Nk(k)+1)
+0312             IndY{k}.CC(4*(i-1)+1,1) = 2;
+0313             IndY{k}.CC(4*(i-1)+3,1) = 2;
+0314         <span class="keyword">end</span>
+0315     <span class="keyword">end</span>
+0316 <span class="keyword">end</span>
+0317 
+0318 parametros.IndY = IndY;
+0319 
+0320 <span class="comment">% Indicadores do vetor de estados aumentados da rede</span>
+0321 <span class="comment">%   IndU.elemento -&gt; indica qual elemento correspondente ao estado da rede</span>
+0322 <span class="comment">%                1: se corresponde a uma variável de duto</span>
+0323 <span class="comment">%                2: se corresponde a uma variável de vértice tipo A</span>
+0324 <span class="comment">%   IndU.tipo -&gt; indica qual o estado da rede usando o seguinte código</span>
+0325 <span class="comment">%                1: se é uma fração de área de gás em um nó do duto</span>
+0326 <span class="comment">%                2: se é uma pressão em um nó do duto</span>
+0327 <span class="comment">%                3: se é uma vazão de líquido em um nó do duto</span>
+0328 <span class="comment">%                4: se é uma vazão de gás em um nó do duto</span>
+0329 <span class="comment">%                5: se é um hold-up de vértice tipo A</span>
+0330 <span class="comment">%                6: se é uma pressão de vértice tipo A</span>
+0331 <span class="comment">%   IndU.indice -&gt; indica qual o índice do elemento correspondente ao estado da rede</span>
+0332 <span class="comment">%   IndU.noh    -&gt; indica qual o noh do estado da rede (caso seja variavel</span>
+0333 <span class="comment">%   de linha)</span>
+0334 <span class="comment">%   IndU.CC   -&gt; indica qual o tipo de condição de contorno associada ao estado</span>
+0335 <span class="comment">%                1: ausência de C.C.</span>
+0336 <span class="comment">%                2: C.C. do tipo Dirichlet</span>
+0337 <span class="comment">%                3: C.C. do tipo von Neumann</span>
+0338 
+0339 <span class="comment">% Determinando o numero total de estados aumentados da rede</span>
+0340 Nu = sum(Ny) + 2.*NVertA;
+0341 
+0342 IndU.elemento = zeros(Nu,1);
+0343 IndU.elemento(1:sum(Ny),1)=1;
+0344 IndU.elemento(sum(Ny)+(1:(2*NVertA)),1)=2;
+0345 IndU.tipo = zeros(Nu,1);
+0346 IndU.noh = zeros(Nu,1);
+0347 <span class="keyword">for</span> i=1:ne:Nu,
+0348     IndU.tipo(i+(1:ne)-1,1)=[1;2;3;4];
+0349 <span class="keyword">end</span>
+0350 <span class="keyword">for</span> i=1:2:(2*NVertA),
+0351     IndU.tipo(sum(Ny)+i-1+(1:2) ,1)=[5;6];
+0352 <span class="keyword">end</span>
+0353 aux = 0;
+0354 <span class="keyword">for</span> i=1:m,
+0355     IndU.indice(aux+(1:Ny(i)),1)=i;
+0356     aux = aux+Ny(i);
+0357 <span class="keyword">end</span>
+0358 <span class="keyword">for</span> i=1:NVertA,
+0359     IndU.indice(aux+(1:2),1)=i;
+0360     aux = aux+2;
+0361 <span class="keyword">end</span>
+0362 aux = 0;
+0363 <span class="keyword">for</span> i=1:m,
+0364     <span class="keyword">for</span> j=1:(Nk(i)+1)
+0365         IndU.noh(aux+(1:ne),1)=j;
+0366         aux = aux+ne;
+0367     <span class="keyword">end</span>
+0368 <span class="keyword">end</span>
+0369 
+0370 aux = 0;
+0371 IndU.CC = zeros(Nu,1);
+0372 <span class="keyword">for</span> k=1:m
+0373     IndU.CC(aux+(1:Ny(k)),1) = IndY{k}.CC;
+0374     aux = aux+Ny(k);
+0375 <span class="keyword">end</span>
+0376 parametros.IndU = IndU;
+0377 
+0378 
+0379 <span class="comment">% Indicadores do vetor de estados da rede</span>
+0380 <span class="comment">%   IndX.elemento -&gt; indica qual elemento correspondente ao estado da rede</span>
+0381 <span class="comment">%                1: se corresponde a uma variável de duto</span>
+0382 <span class="comment">%                2: se corresponde a uma variável de vértice tipo A</span>
+0383 <span class="comment">%   IndX.tipo -&gt; indica qual o estado da rede usando o seguinte código</span>
+0384 <span class="comment">%                1: se é uma fração de área de gás em um nó do duto</span>
+0385 <span class="comment">%                2: se é uma pressão em um nó do duto</span>
+0386 <span class="comment">%                3: se é uma vazão de líquido em um nó do duto</span>
+0387 <span class="comment">%                4: se é uma vazão de gás em um nó do duto</span>
+0388 <span class="comment">%                5: se é um hold-up de vértice tipo A</span>
+0389 <span class="comment">%                6: se é uma pressão de vértice tipo A</span>
+0390 <span class="comment">%   IndX.indice -&gt; indica qual o índice do elemento correspondente ao estado da rede</span>
+0391 <span class="comment">%   IndX.noh    -&gt; indica qual o noh do estado da rede (caso seja variavel</span>
+0392 <span class="comment">%   de linha)</span>
+0393 
+0394 <span class="comment">% Determinando numero de estados reduzidos por duto</span>
+0395 NDir=[];
+0396 <span class="keyword">for</span> k=1:m
+0397     NDir(k,1)= sum(IndY{k}.CC==2);
+0398 <span class="keyword">end</span>
+0399 NNeu=[];
+0400 <span class="keyword">for</span> k=1:m
+0401     NNeu(k,1) = sum(IndY{k}.CC==3);
+0402 <span class="keyword">end</span>
+0403 Nw = Ny-NDir-NNeu;
+0404 
+0405 <span class="comment">% Determinando o numero total de estados</span>
+0406 Nx = sum(Nw) + 2.*NVertA;
+0407 
+0408 ix = IndU.CC~=2&amp;IndU.CC~=3;
+0409 IndX.elemento(:,1) = IndU.elemento(ix);
+0410 IndX.tipo(:,1) = IndU.tipo(ix);
+0411 IndX.indice(:,1) = IndU.indice(ix);
+0412 IndX.noh(:,1) = IndU.noh(ix);
+0413 parametros.IndX=IndX;
+0414 
+0415 <span class="comment">% Gerando Sx{k}</span>
+0416 j=1;
+0417 <span class="keyword">for</span> k=1:m
+0418     Sxk=zeros(Nw(k),Nx);
+0419     <span class="keyword">for</span> i=1:Nw(k)
+0420         Sxk(i,j)=1;
+0421         j=j+1;
+0422     <span class="keyword">end</span>
+0423     Sx{k}=Sxk;
+0424 <span class="keyword">end</span>
+0425 
+0426 <span class="comment">% Gerando Sw{k}</span>
+0427 <span class="keyword">for</span> k=1:m
+0428     Swk=eye(Ny(k));
+0429     Swk(:,IndY{k}.CC==2|IndY{k}.CC==3)=[];
+0430     Sw{k}=Swk;
+0431 <span class="keyword">end</span>
+0432 
+0433 <span class="comment">% Gerando Se</span>
+0434 <span class="keyword">for</span> k=1:m
+0435     aux=0;
+0436     Sek = zeros(Ny(k),NVert*4);
+0437     <span class="keyword">for</span> i=1:Ny(k)
+0438         ix = IndY{k}.CC_vertice(i);
+0439         iy = IndY{k}.tipo(i);
+0440         <span class="keyword">if</span> ix~=0
+0441             Sek(i,4*(ix-1)+iy)=1;
+0442         <span class="keyword">end</span>
+0443     <span class="keyword">end</span>
+0444     Se{k}=Sek;
+0445 <span class="keyword">end</span>
+0446 
+0447 <span class="comment">% Gerando Sneu</span>
+0448 <span class="keyword">for</span> k=1:m
+0449     Sneuk = zeros(Ny(k),Ny(k));
+0450     <span class="keyword">for</span> i=1:4,
+0451         <span class="keyword">if</span> IndY{k}.CC(i,1)==3, Sneuk(i,i+4)=1;<span class="keyword">end</span>
+0452     <span class="keyword">end</span>
+0453     <span class="keyword">for</span> i=Nk(k)*ne+(1:4)
+0454         <span class="keyword">if</span> IndY{k}.CC(i,1)==3, Sneuk(i,i-4)=1;<span class="keyword">end</span>
+0455     <span class="keyword">end</span>
+0456     ix = IndY{k}.CC==2|IndY{k}.CC==3;
+0457     Sneuk(:,ix)=[];
+0458     Sneu{k}=Sneuk;
+0459 <span class="keyword">end</span>
+0460 
+0461 <span class="comment">% Gerando Sxa</span>
+0462 Sxa = eye(Nx);
+0463 Sxa(IndX.elemento~=2,:)=[];
+0464 
+0465 <span class="comment">% Gerando SVert</span>
+0466 SVert1 = zeros(4*NVert,Nx);
+0467 SVert2 = eye(4*NVert,4*NVert);
+0468 <span class="keyword">for</span> i = 1:NVert
+0469     <span class="keyword">if</span> iVert(i)==1
+0470         aux = find(i==iVertA);
+0471         SVert1((i-1)*4+1,sum(Nw)+(aux-1)*4+1) = 1;
+0472         SVert1((i-1)*4+2,sum(Nw)+(aux-1)*4+2) = 1;
+0473         SVert2((i-1)*4+1,(i-1)*4+1) = 0;
+0474         SVert2((i-1)*4+2,(i-1)*4+2) = 0;
+0475     <span class="keyword">end</span>
+0476 <span class="keyword">end</span>
+0477 parametros.SVert1 =SVert1 ;
+0478 parametros.SVert2 =SVert2 ;
+0479 
+0480 
+0481 
+0482 <span class="comment">%% 8- Vetores de seleção</span>
+0483 
+0484 <span class="comment">% Vetor de seleção completa de estados</span>
+0485 <span class="keyword">for</span> k=1:m
+0486     SYk = [(Sw{k}*Sx{k}+Sneu{k}*Sx{k}) Se{k}]; <span class="comment">%(Ny(k) x (Nx + 4*NvertB)</span>
+0487     SY{k} =SYk;
+0488 <span class="keyword">end</span>
+0489 
+0490 <span class="comment">% Vetor de seleção para evitar fluxo reverso</span>
+0491 ixCheck =[];
+0492 <span class="keyword">for</span> i=1:m
+0493    <span class="keyword">if</span> ~isfield(dados.tubo{i},<span class="string">'check'</span>),
+0494        dados.tubo{i}.check = 1;
+0495    <span class="keyword">end</span>
+0496    <span class="keyword">if</span> dados.tubo{i}.check==1
+0497        aux = sum(Nw(1:i));
+0498        ixCheck =[ixCheck;aux-1]; <span class="comment">% Líquido</span>
+0499        ixCheck =[ixCheck;aux];  <span class="comment">% Gás</span>
+0500    <span class="keyword">end</span>
+0501 <span class="keyword">end</span>
+0502 
+0503 <span class="comment">% Empacotando parametros</span>
+0504 parametros.SY=SY;
+0505 parametros.Sw=Sw;
+0506 parametros.Sxa=Sxa;
+0507 parametros.ixCheck = ixCheck;
+0508 parametros.Sneu = Sneu;
+0509 
+0510 <span class="keyword">for</span> k=1:m
+0511     <span class="keyword">switch</span> dados.tubo{k}.modelo
+0512         <span class="keyword">case</span> 1
+0513         parametros.modelo{k}=@<a href="modelo_duto.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto(t,x,y,parametros,j)">modelo_duto</a>;
+0514         <span class="keyword">case</span> 2
+0515         parametros.modelo{k}=@<a href="modelo_duto_BB.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto_BB(t,x,y,parametros,j)">modelo_duto_BB</a>;
+0516         <span class="keyword">case</span> 3
+0517         parametros.modelo{k}=@<a href="modelo_duto_L.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto_L(t,x,y,parametros,j)">modelo_duto_L</a>;
+0518         <span class="keyword">case</span> 4
+0519         parametros.modelo{k}=@<a href="modelo_duto_G.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto_G(t,x,y,parametros,j)">modelo_duto_G</a>;
+0520         <span class="keyword">case</span> 5
+0521         parametros.modelo{k}=@modelo_duto_BB2;            
+0522     <span class="keyword">end</span>
+0523 <span class="keyword">end</span>
+0524 
+0525 
+0526 
+0527 <span class="comment">%% 9- Especificacoes Valvulas</span>
+0528 <span class="keyword">if</span> ~isfield(dados,<span class="string">'valvula'</span>), dados.valvula{1}=[]; <span class="keyword">end</span>
+0529 NVal = length(dados.valvula);
+0530 <span class="keyword">if</span> isempty(dados.valvula{end}), NVal = NVal-1; <span class="keyword">end</span>
+0531 indice = [];
+0532 CV=[];
+0533 tEVal=[];
+0534 SVal1 =  zeros(NVert.*4,NVal);
+0535 SVal2 =  eye(NVert.*4);
+0536 ixP = [];
+0537 ixPV= [];
+0538 ixqL=[];
+0539 ixqG=[];
+0540 linha=[];
+0541 tipoPV = [];
+0542 nohPV  = [];
+0543 linhaPV= [];
+0544 acao   = [];
+0545 ContP  = [];
+0546 ContI  = [];
+0547 ContD  = [];
+0548 ContBias = [];
+0549 <span class="keyword">for</span> i=1:NVal
+0550     indice(i,1)=dados.valvula{i}.vertice;
+0551     linha(i)=find(ME(indice(i),:));
+0552     CV(i,1)  =dados.valvula{i}.CV;
+0553     tipoPV(i,1) =dados.valvula{i}.tipoPV;
+0554     <span class="keyword">if</span> isempty(dados.valvula{i}.nohPV),    nohPV(i,1)  =5;   <span class="keyword">else</span>  nohPV(i,1)   =dados.valvula{i}.nohPV;     <span class="keyword">end</span>
+0555     <span class="keyword">if</span> isempty(dados.valvula{i}.linhaPV),  linhaPV(i,1)  =1; <span class="keyword">else</span>  linhaPV(i,1) =dados.valvula{i}.linhaPV;   <span class="keyword">end</span>
+0556     <span class="keyword">if</span> isempty(dados.valvula{i}.acao),     acao(i,1)  =1;    <span class="keyword">else</span>  acao(i,1)    =dados.valvula{i}.acao;      <span class="keyword">end</span>
+0557     <span class="keyword">if</span> isempty(dados.valvula{i}.ContP),    ContP(i,1)  =0;   <span class="keyword">else</span>  ContP(i,1)   =dados.valvula{i}.ContP;     <span class="keyword">end</span>
+0558     <span class="keyword">if</span> isempty(dados.valvula{i}.ContI),    ContI(i,1)  =0;   <span class="keyword">else</span>  ContI(i,1)   =dados.valvula{i}.ContI;     <span class="keyword">end</span>
+0559     <span class="keyword">if</span> isempty(dados.valvula{i}.ContD),    ContD(i,1)  =0;   <span class="keyword">else</span>  ContD(i,1)   =dados.valvula{i}.ContD;     <span class="keyword">end</span>
+0560     <span class="keyword">if</span> isempty(dados.valvula{i}.ContBias), ContBias(i,1)  =0;<span class="keyword">else</span>  ContBias(i,1) =dados.valvula{i}.ContBias; <span class="keyword">end</span>
+0561     
+0562     tE1Val{i}=dados.valvula{i}.especificacaoT1;
+0563     ME1Val{i}=dados.valvula{i}.especificacao1;
+0564     tE2Val{i}=dados.valvula{i}.especificacaoT2;
+0565     ME2Val{i}=dados.valvula{i}.especificacao2;
+0566     tE3Val{i}=dados.valvula{i}.especificacaoT3;
+0567     ME3Val{i}=dados.valvula{i}.especificacao3;
+0568     
+0569     tEVal = [tEVal tE1Val{i} tE2Val{i} tE3Val{i}];
+0570     
+0571     SVal1((indice(i)-1)*4+2,i)=1;
+0572     SVal2((indice(i)-1)*4+2,(indice(i)-1)*4+2)=0;
+0573     ixP(i,1)  = (indice(i)-1)*4+2;
+0574     
+0575     auxL  = IndX.noh==(Nk(linha(i))+1)&amp;IndX.tipo==3&amp;IndX.elemento==1&amp;IndX.indice==linha(i);
+0576     auxG  = IndX.noh==(Nk(linha(i))+1)&amp;IndX.tipo==4&amp;IndX.elemento==1&amp;IndX.indice==linha(i);
+0577     auxPV  = IndX.noh==nohPV(i,1)&amp;IndX.tipo==tipoPV(i,1)&amp;IndX.elemento==1&amp;IndX.indice==linhaPV(i,1);
+0578     <span class="keyword">if</span> sum(auxL)==0, ixqL(i,1) = nan; <span class="keyword">else</span> ixqL(i,1) = find(auxL); <span class="keyword">end</span>
+0579     <span class="keyword">if</span> sum(auxG)==0, ixqG(i,1) = nan; <span class="keyword">else</span> ixqG(i,1) = find(auxG); <span class="keyword">end</span>
+0580     <span class="keyword">if</span> sum(auxPV)==0, ixPV(i,1) = nan; <span class="keyword">else</span> ixPV(i,1) = find(auxPV); <span class="keyword">end</span>
+0581    
+0582 <span class="keyword">end</span>
+0583 
+0584 tEVal=unique([ti tEVal tf ]);
+0585 <span class="keyword">if</span> NVal&gt;0
+0586     [Matriz_EVal1] = <a href="#_sub1" class="code" title="subfunction [E] = consolida_E(tE,tE1,ME1)">consolida_E</a>(tEVal,tE1Val,ME1Val);
+0587     [Matriz_EVal2] = <a href="#_sub1" class="code" title="subfunction [E] = consolida_E(tE,tE1,ME1)">consolida_E</a>(tEVal,tE2Val,ME2Val);
+0588     [Matriz_EVal3] = <a href="#_sub1" class="code" title="subfunction [E] = consolida_E(tE,tE1,ME1)">consolida_E</a>(tEVal,tE3Val,ME3Val);
+0589 <span class="keyword">else</span>
+0590     tEVal=[];
+0591     [Matriz_EVal1] =[];
+0592     [Matriz_EVal2] =[];
+0593     [Matriz_EVal3] =[];
+0594 <span class="keyword">end</span>
+0595 parametros.NVal=NVal;
+0596 parametros.valvula.tEVal = tEVal;
+0597 parametros.valvula.Matriz_EVal1  = Matriz_EVal1;
+0598 parametros.valvula.Matriz_EVal2  = Matriz_EVal2;
+0599 parametros.valvula.Matriz_EVal3  = Matriz_EVal3;
+0600 parametros.valvula.indice=indice;
+0601 parametros.valvula.CV = CV;
+0602 parametros.valvula.SVal1=SVal1;
+0603 parametros.valvula.SVal2=SVal2;
+0604 parametros.valvula.ixP=ixP;
+0605 parametros.valvula.ixPV=ixPV;
+0606 parametros.valvula.ixqL=ixqL;
+0607 parametros.valvula.ixqG=ixqG;
+0608 parametros.valvula.tipoPV=tipoPV;
+0609 parametros.valvula.nohPV=nohPV;
+0610 parametros.valvula.linhaPV=linhaPV;
+0611 parametros.valvula.acao=acao;
+0612 parametros.valvula.ContP=ContP;
+0613 parametros.valvula.ContI=ContI;
+0614 parametros.valvula.ContD=ContD;
+0615 parametros.valvula.ContBias=ContBias;
+0616 
+0617 
+0618 <span class="comment">%% 10- Especificacoes Valvulas de Retenção</span>
+0619 <span class="keyword">if</span> ~isfield(dados,<span class="string">'valvulaRet'</span>), dados.valvulaRet{1}=[]; <span class="keyword">end</span>
+0620 NValRet = length(dados.valvulaRet);
+0621 <span class="keyword">if</span> isempty(dados.valvulaRet{end}), NValRet = NValRet-1; <span class="keyword">end</span>
+0622 indice=[];
+0623 CV=[];
+0624 SValRet1 =  zeros(NVert.*4,NValRet);
+0625 SValRet2 =  zeros(NVert.*4,NValRet);
+0626 SValRet3 =  eye(NVert.*4);
+0627 ixP = [];
+0628 ixH=[];
+0629 ixPext=[];
+0630 linha=[];
+0631 dPMin = [];
+0632 <span class="keyword">for</span> i=1:NValRet
+0633     <span class="keyword">if</span> isfield(dados.valvulaRet{i},<span class="string">'dPMin'</span>)
+0634         dPMin(i,1) = dados.valvulaRet{i}.dPMin;
+0635     <span class="keyword">else</span>
+0636         dPMin(i,1) = 0.;
+0637     <span class="keyword">end</span>
+0638 
+0639     indice(i,1)=dados.valvulaRet{i}.vertice;
+0640     linha(i)=find(ME(indice(i),:));
+0641     CV(i,1)  =dados.valvulaRet{i}.CV;
+0642     SValRet1((indice(i)-1)*4+3,i)=1;
+0643     SValRet2((indice(i)-1)*4+4,i)=1;
+0644     SValRet3((indice(i)-1)*4+3,(indice(i)-1)*4+3)=0;
+0645     SValRet3((indice(i)-1)*4+4,(indice(i)-1)*4+4)=0;
+0646     
+0647     aux = (indice(i)==iVertA);
+0648     ixH(i,1)     = sum(Nw)+(aux-1)*2+1;
+0649     ixP(i,1)     = sum(Nw)+(aux-1)*2+2;
+0650     ixPext(i,1)  = (indice(i)-1)*4+2;
+0651             
+0652 <span class="keyword">end</span>
+0653 parametros.NValRet=NValRet;
+0654 parametros.valvulaRet.indice=indice;
+0655 parametros.valvulaRet.CV = CV;
+0656 parametros.valvulaRet.SValRet1=SValRet1;
+0657 parametros.valvulaRet.SValRet2=SValRet2;
+0658 parametros.valvulaRet.SValRet3=SValRet3;
+0659 parametros.valvulaRet.ixP=ixP;
+0660 parametros.valvulaRet.ixH=ixH;
+0661 parametros.valvulaRet.ixPext=ixPext;
+0662 parametros.valvulaRet.dPMin=dPMin;
+0663 
+0664 
+0665 <span class="comment">%% 11- Especificacoes Reservatorio</span>
+0666 <span class="keyword">if</span> ~isfield(dados,<span class="string">'reservatorio'</span>), dados.reservatorio{1}=[]; <span class="keyword">end</span>
+0667 NRes = length(dados.reservatorio);
+0668 <span class="keyword">if</span> isempty(dados.reservatorio{end}), NRes = NRes-1; <span class="keyword">end</span>
+0669 vertice=[];
+0670 ixP = [];
+0671 IPL=[];
+0672 IPG=[];
+0673 PRes=[];
+0674 linha=[];
+0675 SRes1 =  zeros(NVert.*4,NRes);
+0676 SRes2 =  zeros(NVert.*4,NRes);
+0677 SRes3 =  eye(NVert.*4);
+0678 <span class="keyword">for</span> i=1:NRes
+0679     vertice(i,1)=dados.reservatorio{i}.vertice;
+0680     IPL(i,1)=dados.reservatorio{i}.IPL;
+0681     IPG(i,1)=dados.reservatorio{i}.IPG;
+0682     PRes(i,1) =dados.reservatorio{i}.P;
+0683     linha(i)=find(MS(vertice(i),:));
+0684     SRes1((vertice(i)-1)*4+3,i)=1;
+0685     SRes2((vertice(i)-1)*4+4,i)=1;
+0686     SRes3((vertice(i)-1)*4+3,(vertice(i)-1)*4+3)=0;
+0687     SRes3((vertice(i)-1)*4+4,(vertice(i)-1)*4+4)=0;
+0688     IndX.noh==1&amp;IndX.tipo==2&amp;IndX.elemento==1&amp;IndX.indice==linha(i)
+0689     ixP(i,1) = find(IndX.noh==1&amp;IndX.tipo==2&amp;IndX.elemento==1&amp;IndX.indice==linha(i));
+0690 <span class="keyword">end</span>
+0691 parametros.NRes=NRes;
+0692 parametros.reservatorio.vertice=vertice;
+0693 parametros.reservatorio.ixP=ixP;
+0694 parametros.reservatorio.IPL=IPL;
+0695 parametros.reservatorio.IPG=IPG;
+0696 parametros.reservatorio.PRes = PRes;
+0697 parametros.reservatorio.SRes1=SRes1;
+0698 parametros.reservatorio.SRes2=SRes2;
+0699 parametros.reservatorio.SRes3=SRes3;
+0700 
+0701 
+0702 <span class="comment">%% 12- Acoplador</span>
+0703 
+0704 <span class="comment">% Gerando seletor de especificações de acoplamento</span>
+0705 Nacop = length(dados.acoplador);
+0706 <span class="keyword">if</span> isempty(dados.acoplador{end}), Nacop = Nacop-1; <span class="keyword">end</span>
+0707 
+0708 verticeE=[];
+0709 verticeS=[];
+0710 linhaE=[];
+0711 linhaS=[];
+0712 <span class="keyword">for</span> i=1:Nacop
+0713     verticeE(i)=dados.acoplador{i}.verticeE;
+0714     verticeS(i)=dados.acoplador{i}.verticeS;
+0715     linhaE(i)=find(ME(verticeE(i),:));
+0716     linhaS(i)=find(MS(verticeS(i),:));
+0717 <span class="keyword">end</span>
+0718 parametros.acoplador.verticeE=verticeE;
+0719 parametros.acoplador.verticeS=verticeS;
+0720 parametros.acoplador.linhaE=linhaE;
+0721 parametros.acoplador.linhaS=linhaS;
+0722 
+0723 Sc1 =  zeros(NVert.*4,Nx);
+0724 Sc2 =  eye(NVert.*4);
+0725 <span class="keyword">for</span> i=1:Nacop
+0726     <span class="comment">% Forçando pressão no vertice E igual a pressão no noh 1 da linha S</span>
+0727     ix = IndX.noh==1&amp;IndX.tipo==2&amp;IndX.elemento==1&amp;IndX.indice==linhaS(i);
+0728     Sc1((verticeE(i)-1)*4+2,ix)=1;
+0729     Sc2((verticeE(i)-1)*4+2,(verticeE(i)-1)*4+2)=0;
+0730 <span class="keyword">end</span>
+0731 parametros.Sc1=Sc1;
+0732 parametros.Sc2=Sc2;
+0733 
+0734 Sc3 =  zeros(NVert.*4,Nx);
+0735 Sc4 =  eye(NVert.*4);
+0736 <span class="keyword">for</span> i=1:Nacop
+0737     <span class="comment">% Forçando vazões no vertice S igual a vazões no noh final da linha E</span>
+0738     ix = IndX.noh==(Nk(linhaE(i))+1)&amp;IndX.tipo==3&amp;IndX.elemento==1&amp;IndX.indice==linhaE(i);
+0739     Sc3((verticeS(i)-1)*4+3,ix)=1;
+0740     Sc4((verticeS(i)-1)*4+3,(verticeS(i)-1)*4+3)=0;
+0741     ix = IndX.noh==(Nk(linhaE(i))+1)&amp;IndX.tipo==4&amp;IndX.elemento==1&amp;IndX.indice==linhaE(i);
+0742     Sc3((verticeS(i)-1)*4+4,ix)=1;
+0743     Sc4((verticeS(i)-1)*4+4,(verticeS(i)-1)*4+4)=0;
+0744 <span class="keyword">end</span>
+0745 parametros.Sc3=Sc3;
+0746 parametros.Sc4=Sc4;
+0747 
+0748 
+0749 <span class="comment">%% Subfunções</span>
+0750 
+0751 <a name="_sub1" href="#_subfunctions" class="code">function [E] = consolida_E(tE,tE1,ME1)</a>
+0752 <span class="comment">% Organizador da matriz de especificacoes</span>
+0753 
+0754 tEMax = max(tE);
+0755 tEMin = min(tE);
+0756 NV = length(tE1);
+0757 E=[];
+0758 <span class="keyword">for</span> i=1:NV
+0759     auxt1 = tE1{i};
+0760     auxE1 = ME1{i};
+0761     <span class="keyword">if</span> isempty(auxE1)
+0762         auxt1 = -1;
+0763         auxE1 = -1;
+0764     <span class="keyword">end</span>
+0765     <span class="keyword">if</span> length(auxE1)==1
+0766         auxt1 = [tEMin tEMax];
+0767         auxE1 = [auxE1 auxE1];
+0768     <span class="keyword">else</span>
+0769         <span class="keyword">if</span> auxt1(end)&lt;tEMax
+0770             auxt1(end+1) = tEMax;
+0771             auxE1(end+1) = auxE1(end);
+0772         <span class="keyword">end</span>
+0773         <span class="keyword">if</span> auxt1(1)&lt;tEMin
+0774             auxt1(1) = tEMin;
+0775         <span class="keyword">end</span>
+0776     <span class="keyword">end</span>
+0777     E = [ E; interpola(tE,auxt1,auxE1)];
+0778 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of mfsim</title>
+  <meta name="keywords" content="mfsim">
+  <meta name="description" content="Interface gráfica para tela de abertura do programa.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; mfsim.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>mfsim
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Interface gráfica para tela de abertura do programa.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function mfsim </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Interface gráfica para tela de abertura do programa.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="mfreg.html" class="code" title="function mfreg">mfreg</a>	Interface gráfica para análise dos padrões de escoamento.</li><li><a href="mfsim_entrada.html" class="code" title="function mfsim_entrada">mfsim_entrada</a>	Interface gráfica para simulação de redes de escoamento bifásico.</li><li><a href="mfsim_saida.html" class="code" title="function mfsim_saida">mfsim_saida</a>	Interface gráfica para resultados de escoamento bifásico.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function menu(parametros)</a></li><li><a href="#_sub2" class="code">function callback(src,eventdata,action)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function mfsim</a>
+0002 <span class="comment">% Interface gráfica para tela de abertura do programa.</span>
+0003 
+0004 <span class="comment">% Definindo parametros de configurção da tela</span>
+0005 parametrosBanner.posicao = [0.02, 0.85, 0.96, 0.6];
+0006 parametrosBanner.nomeModulo = <span class="string">'PAINEL DE CONTROLE'</span>;
+0007 parametrosBanner.cor = [0 0.5 0.5];
+0008 parametrosBanner.corFonte = [0 0 0];
+0009 parametrosBanner.nomeSoftware = <span class="string">'SDMPFLOW'</span>;
+0010 parametrosMenu.posicao = [0.275, 0.3, 0.45, 0.2];
+0011 parametrosMenu.nomeModulo = <span class="keyword">...</span>
+0012     {<span class="string">'ENTRADA'</span>,<span class="string">'PADROES'</span>,<span class="string">'SAIDA'</span>};
+0013 parametrosMenu.fontSize = 11; 
+0014 nome = <span class="string">'SDMPFLOW'</span>;
+0015 texto = <span class="string">'desenvolvido por Jaime Souza'</span>;
+0016 
+0017 hfig = findall(0,<span class="string">'name'</span>,nome);
+0018 <span class="comment">% Gerando tela</span>
+0019 <span class="keyword">if</span> isempty(hfig)
+0020     gera_figura(<span class="string">'SDMPFLOW'</span>);
+0021     image(imread(<span class="string">'image'</span>,<span class="string">'jpg'</span>)), axis off
+0022     gera_banner(gcf, parametrosBanner);
+0023     <a href="#_sub1" class="code" title="subfunction menu(parametros)">menu</a>(parametrosMenu);
+0024     uicontrol(gcf,<span class="string">'Style'</span>,<span class="string">'text'</span>,<span class="string">'String'</span>,texto,<span class="string">'FontSize'</span>,8,<span class="keyword">...</span>
+0025         <span class="string">'backgroundcolor'</span>,[1 1 1],<span class="string">'position'</span>,[330 20 200 20]);
+0026 <span class="keyword">else</span>
+0027     figure(hfig(1))
+0028 <span class="keyword">end</span>
+0029 
+0030 
+0031 <a name="_sub1" href="#_subfunctions" class="code">function menu(parametros)</a>
+0032 <span class="comment">%Menu com os botões de ação.</span>
+0033 <span class="comment">%</span>
+0034 <span class="comment">% Essa subfunction recebe os parametros de configuração de um struct e gera</span>
+0035 <span class="comment">% um conjunto de botoes devidamente posicionados na forma de um menu.</span>
+0036 <span class="comment">% Essa subfunctionn trabalha associada com uma subfunction de callback.</span>
+0037 <span class="comment">% PARAMETROS é um struct que possui os seguintes campos:</span>
+0038 <span class="comment">%   PARAMETROS.posicao - vetor de quatro elementos que determina a posição</span>
+0039 <span class="comment">%   do menu de botoes. Os valores variam de 0 a 1.</span>
+0040 <span class="comment">%   PARAMETROS.nomeModulo - cell array com os strings dos nomes dos botões.</span>
+0041 <span class="comment">%   PARAMETROS.fontsize - tamanho da fonte do nome dos botoes</span>
+0042 
+0043 <span class="comment">% Capturando parametros</span>
+0044 posicaoFator1 = parametros.posicao(1);
+0045 posicaoFator2 = parametros.posicao(2);
+0046 tamanhoFator1 = parametros.posicao(3);
+0047 tamanhoFator2 = parametros.posicao(4);
+0048 nomeBotoes = parametros.nomeModulo;
+0049 fontSize = parametros.fontSize;
+0050 
+0051 <span class="comment">% Determinando tamanhos</span>
+0052 tamanhoFigura = get(gcf,<span class="string">'position'</span>);
+0053 numeroBotoes = length(nomeBotoes);
+0054 tamanhoBotoes = [ tamanhoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0055     tamanhoFator2.*tamanhoFigura(4)/numeroBotoes];
+0056 
+0057 <span class="comment">% Gerando objetos</span>
+0058 <span class="keyword">for</span> i=1:numeroBotoes
+0059     posicaoBotoes = [ posicaoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0060        (posicaoFator2+tamanhoFator2).*tamanhoFigura(4)-i*tamanhoBotoes(2)];
+0061     uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'pushbutton'</span>,<span class="keyword">...</span>
+0062         <span class="string">'position'</span>,[posicaoBotoes tamanhoBotoes],<span class="string">'string'</span>,nomeBotoes{i},<span class="keyword">...</span>
+0063         <span class="string">'UserData'</span>,<span class="string">'menu1'</span>,<span class="string">'Callback'</span>,@callback1,<span class="string">'FontSize'</span>,fontSize,<span class="keyword">...</span>
+0064         <span class="string">'Callback'</span>,{@<a href="#_sub2" class="code" title="subfunction callback(src,eventdata,action)">callback</a>,i});
+0065 <span class="keyword">end</span>
+0066 
+0067 <a name="_sub2" href="#_subfunctions" class="code">function callback(src,eventdata,action)</a>
+0068 <span class="comment">%Callbacks dos botoes do menu.</span>
+0069 <span class="comment">%</span>
+0070 <span class="comment">% Executa as ações para cada botao.</span>
+0071 <span class="comment">% SRC e EVENT não são utilizados nessa subfunction.</span>
+0072 <span class="comment">% ACTION é o flag o indice que determina qual o botão que está acionando o</span>
+0073 <span class="comment">% callback.</span>
+0074 
+0075 <span class="keyword">switch</span> action
+0076     <span class="keyword">case</span> 1
+0077         <span class="comment">% Função de organização de dados de entrada e execução.</span>
+0078         <a href="mfsim_entrada.html" class="code" title="function mfsim_entrada">mfsim_entrada</a>
+0079     <span class="keyword">case</span> 2
+0080         <span class="comment">% Função de visuazação de resultados.</span>
+0081         <a href="mfreg.html" class="code" title="function mfreg">mfreg</a>
+0082     <span class="keyword">case</span> 3
+0083         <span class="comment">% Função de visuazação de resultados.</span>
+0084         <a href="mfsim_saida.html" class="code" title="function mfsim_saida">mfsim_saida</a>
+0085 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

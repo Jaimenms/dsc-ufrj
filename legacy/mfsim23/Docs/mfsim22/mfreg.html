@@ -1,0 +1,577 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of mfreg</title>
+  <meta name="keywords" content="mfreg">
+  <meta name="description" content="Interface gráfica para análise dos padrões de escoamento.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; mfreg.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>mfreg
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Interface gráfica para análise dos padrões de escoamento.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function mfreg </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Interface gráfica para análise dos padrões de escoamento.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="arvore_dados.html" class="code" title="function [detalhesVariaveis, valoresDefault] = arvore_dados">arvore_dados</a>	Função que compõe a estrutura dos dados de entrada e a arvore de dados</li><li><a href="determinaAlfaEstavel.html" class="code" title="function [hD_est,hD_anu,alfaG_est,alfaG_anu,alfaG_bol]=determinaAlfaEstavel(entradas)">determinaAlfaEstavel</a>	Função que determina frações de área para modelos de Taitel, Pots e Zuber</li><li><a href="identificaRegimeEstavel.html" class="code" title="function [fl,reg1,reg2,fatores,fatoresC] = identificaRegimeEstavel(entradas)">identificaRegimeEstavel</a>	Função que executa a IPE e gera as variáveis identificadoras para fraçõe</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="mfsim.html" class="code" title="function mfsim">mfsim</a>	Interface gráfica para tela de abertura do programa.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function analisaRegimesEstavel(dados)</a></li><li><a href="#_sub2" class="code">function menu(parametros)</a></li><li><a href="#_sub3" class="code">function callback2(src,eventdata,arg1)</a></li><li><a href="#_sub4" class="code">function h = gera_figura(nome,pos)</a></li><li><a href="#_sub5" class="code">function gera_area(hfig, parametros)</a></li><li><a href="#_sub6" class="code">function gera_banner(hfig,parametros)</a></li><li><a href="#_sub7" class="code">function gera_lista(nomeObj)</a></li><li><a href="#_sub8" class="code">function [detalhesVariaveis, valoresDefault] = arvore_dados</a></li><li><a href="#_sub9" class="code">function armazena_dados</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function mfreg</a>
+0002 <span class="comment">% Interface gráfica para análise dos padrões de escoamento.</span>
+0003 
+0004 warning off
+0005 <span class="keyword">global</span> dadosPadroes detalhesPadroes
+0006 
+0007 <span class="comment">% Criando Arvore</span>
+0008 aux=cd;
+0009 aux=[aux <span class="string">'\Analises'</span>];
+0010 addpath(aux)
+0011 
+0012 <span class="comment">% Apresentando parametros do banner</span>
+0013 parametrosBanner.posicao = [0.02, 0.94, 0.96, 0.6];
+0014 parametrosBanner.nomeModulo = <span class="string">'ANALISE DO ESCOAMENTO'</span>;
+0015 parametrosBanner.cor = [0 0.5 0.5];
+0016 parametrosBanner.corFonte = [0 0 0];
+0017 parametrosBanner.nomeSoftware = <span class="string">'SDMPFLOW'</span>;
+0018 
+0019 <span class="comment">% Apresentando parametros da área</span>
+0020 parametrosArea.posicao = [0.02, 0.02, 0.96, 0.92];
+0021 parametrosArea.nomeFrame = <span class="string">'Dados de Entrada'</span>;
+0022 parametrosArea.cor = [0.8 0.8 0.8];
+0023 parametrosArea.corFonte = [0 0 0];
+0024 
+0025 <span class="comment">% Apresentando parametros do menu</span>
+0026 parametrosMenu.posicao = [0.1, 0.1, 0.8, 0.15];
+0027 parametrosMenu.nomeModulo = <span class="keyword">...</span>
+0028     {<span class="string">'EXECUTAR'</span>};
+0029 parametrosMenu.fontSize = 10; 
+0030 
+0031 <span class="comment">% Gerando tela</span>
+0032 nome = <span class="string">'PADROES'</span>;
+0033 hfig = findall(0,<span class="string">'name'</span>,nome);
+0034 <span class="keyword">if</span> isempty(hfig)
+0035     <a href="#_sub4" class="code" title="subfunction h = gera_figura(nome,pos)">gera_figura</a>(nome,10);
+0036     <a href="#_sub6" class="code" title="subfunction gera_banner(hfig,parametros)">gera_banner</a>(gcf, parametrosBanner)
+0037     <a href="#_sub5" class="code" title="subfunction gera_area(hfig, parametros)">gera_area</a>(gcf, parametrosArea)
+0038     <a href="#_sub7" class="code" title="subfunction gera_lista(nomeObj)">gera_lista</a>(<span class="string">'padrao'</span>)
+0039     <a href="#_sub2" class="code" title="subfunction menu(parametros)">menu</a>(parametrosMenu)
+0040     
+0041 <span class="keyword">else</span>
+0042     figure(hfig(1))
+0043 <span class="keyword">end</span>
+0044 
+0045 
+0046 <a name="_sub1" href="#_subfunctions" class="code">function analisaRegimesEstavel(dados)</a>
+0047 <span class="comment">% Função que executa o CASO B</span>
+0048 
+0049 <span class="comment">% Capturando dados</span>
+0050 dados = dados.padrao;
+0051 
+0052 <span class="comment">% Desempacotando variaveis dos dutos</span>
+0053 parametros.angulo_teta = dados.angulo_teta./180.*pi;
+0054 parametros.D           = dados.diametro;
+0055 parametros.rugo        = dados.rugosidade;
+0056 parametros.tensao      = dados.tensao;
+0057 parametros.densL       = dados.densidadeL;
+0058 parametros.densG       = dados.densidadeG;
+0059 parametros.viscL       = dados.viscosidadeL;
+0060 parametros.viscG       = dados.viscosidadeG;
+0061 
+0062 Area = pi.*parametros.D.^2./4;
+0063 
+0064 np = dados.np; <span class="comment">% Numero de pontos</span>
+0065 
+0066 <span class="comment">% Vetores de mapeamento</span>
+0067 vg=10.^linspace(log10(dados.vGMin),log10(dados.vGMax),np);
+0068 vl=10.^linspace(log10(dados.vLMin),log10(dados.vLMax),np);
+0069 VG = vg(:)*ones(1,np);
+0070 VL = ones(np,1)*(vl(:)');
+0071 
+0072 <span class="comment">% Estados</span>
+0073 entradas.v_LS = VL;
+0074 entradas.v_GS = VG;
+0075 
+0076 <span class="comment">%Parametros Duto</span>
+0077 entradas.D     = dados.diametro.*ones(size(VL));
+0078 entradas.rugo  = dados.rugosidade;
+0079 entradas.angulo_teta = dados.angulo_teta./180.*pi.*ones(size(VL));
+0080 
+0081 <span class="comment">% Parametros Fluido</span>
+0082 entradas.densL = dados.densidadeL.*ones(size(VL));
+0083 entradas.densG = dados.densidadeG.*ones(size(VL));
+0084 entradas.viscL = dados.viscosidadeL.*ones(size(VL));
+0085 entradas.viscG = dados.viscosidadeG.*ones(size(VL));
+0086 entradas.tensao = dados.tensao;
+0087 
+0088 [hD_est,hD_anu,alfaG_est,alfaG_anu,alfaG_bol]=<a href="determinaAlfaEstavel.html" class="code" title="function [hD_est,hD_anu,alfaG_est,alfaG_anu,alfaG_bol]=determinaAlfaEstavel(entradas)">determinaAlfaEstavel</a>(entradas);
+0089 entradas.alfaG_est = alfaG_est;
+0090 entradas.alfaG_anu = alfaG_anu;
+0091 entradas.alfaG_bol = alfaG_bol;
+0092 entradas.hD_est    = hD_est;
+0093 [fl, reg1] = <a href="identificaRegimeEstavel.html" class="code" title="function [fl,reg1,reg2,fatores,fatoresC] = identificaRegimeEstavel(entradas)">identificaRegimeEstavel</a>(entradas);
+0094 
+0095 <span class="comment">% Gerando Números de Froude</span>
+0096 FL = (parametros.densL./(parametros.densL-parametros.densG)./<span class="keyword">...</span>
+0097     9.81./parametros.D).^0.5.*VL;
+0098 FG = (parametros.densG./(parametros.densL-parametros.densG)./<span class="keyword">...</span>
+0099     9.81./parametros.D).^0.5.*VG;
+0100 
+0101 <span class="comment">% Plotando regimes em função das velocidades</span>
+0102 figure
+0103 CMAP = [0 0.7 0.25;0 0.3 0.6;0 0.3 0.9;0.5 0.5 0.5];
+0104 surf(VG,VL,real(reg1))
+0105 axis tight
+0106 set(gca,<span class="string">'View'</span>, [0 90],<span class="string">'CLim'</span>,[1 4])
+0107 colormap(CMAP)
+0108 a=colorbar;
+0109 set(a,<span class="string">'YLim'</span>,[1 4],<span class="string">'YTickLabel'</span>,[<span class="string">'             '</span>;<span class="string">'Anular       '</span>;<span class="string">'Bolhas       '</span>;<span class="string">'             '</span>;<span class="string">'Intermitente '</span>;<span class="string">'Estratificado'</span>])
+0110 shading flat
+0111 set(gca,<span class="string">'YScale'</span>,<span class="string">'log'</span>,<span class="string">'XScale'</span>,<span class="string">'log'</span>)
+0112 xlabel(<span class="string">'Vel. Sup. Gás (m/s)'</span>,<span class="string">'FontSize'</span>,12)
+0113 ylabel(<span class="string">'Vel. Sup. Líquido (m/s)'</span>,<span class="string">'FontSize'</span>,12)
+0114 title(<span class="string">'Flowmap'</span>,<span class="string">'Fontsize'</span>,14)
+0115 xlim([dados.vGMin dados.vGMax])
+0116 ylim([dados.vLMin dados.vLMax])
+0117 
+0118 figure
+0119 CMAP = [0 0.7 0.25;0 0.3 0.6;0 0.3 0.9;0.5 0.5 0.5];
+0120 surf(VG.*Area.*parametros.densG,VL.*Area.*parametros.densL,real(reg1))
+0121 axis tight
+0122 set(gca,<span class="string">'View'</span>, [0 90],<span class="string">'CLim'</span>,[1 4])
+0123 colormap(CMAP)
+0124 a=colorbar;
+0125 set(a,<span class="string">'YLim'</span>,[1 4],<span class="string">'YTickLabel'</span>,[<span class="string">'             '</span>;<span class="string">'Anular       '</span>;<span class="string">'Bolhas       '</span>;<span class="string">'             '</span>;<span class="string">'Intermitente '</span>;<span class="string">'Estratificado'</span>])
+0126 shading flat
+0127 set(gca,<span class="string">'YScale'</span>,<span class="string">'log'</span>,<span class="string">'XScale'</span>,<span class="string">'log'</span>)
+0128 xlabel(<span class="string">'Vazão Gás (kg/s)'</span>,<span class="string">'FontSize'</span>,12)
+0129 ylabel(<span class="string">'Vazão Líquido (kg/s)'</span>,<span class="string">'FontSize'</span>,12)
+0130 title(<span class="string">'Flowmap'</span>,<span class="string">'Fontsize'</span>,14)
+0131 
+0132 <span class="comment">% Plotando regimes em função dos Numeros de Froude</span>
+0133 figure
+0134 CMAP = [0 0.7 0.25;0 0.3 0.6;0 0.3 0.9;0.5 0.5 0.5];
+0135 surf(FG,FL,real(reg1))
+0136 axis tight
+0137 set(gca,<span class="string">'View'</span>, [0 90],<span class="string">'CLim'</span>,[1 4])
+0138 colormap(CMAP)
+0139 a=colorbar;
+0140 set(a,<span class="string">'YLim'</span>,[1 4],<span class="string">'YTickLabel'</span>,[<span class="string">'             '</span>;<span class="string">'Anular       '</span>;<span class="string">'Bolhas       '</span>;<span class="string">'             '</span>;<span class="string">'Intermitente '</span>;<span class="string">'Estratificado'</span>])
+0141 shading flat
+0142 set(gca,<span class="string">'YScale'</span>,<span class="string">'log'</span>,<span class="string">'XScale'</span>,<span class="string">'log'</span>)
+0143 xlabel(<span class="string">'Froude Gás (-)'</span>,<span class="string">'FontSize'</span>,12)
+0144 ylabel(<span class="string">'Froude Líquido (-)'</span>,<span class="string">'FontSize'</span>,12)
+0145 title(<span class="string">'Flowmap'</span>,<span class="string">'Fontsize'</span>,14)
+0146 FLmin = min(min(FL));
+0147 FGmin = min(min(FG));
+0148 FLmax = max(max(FL));
+0149 FGmax = max(max(FG));
+0150 xlim([FGmin FGmax])
+0151 ylim([FLmin FLmax])
+0152 
+0153 figure
+0154 surf(VL,VG,alfaG_est)
+0155 xlabel(<span class="string">'Vel. Sup. Líquido (m/s)'</span>,<span class="string">'Fontsize'</span>,12)
+0156 ylabel(<span class="string">'Vel. Sup. Gás (m/s)'</span>,<span class="string">'Fontsize'</span>,12)
+0157 zlabel(<span class="string">'Alfa_G Est. (-)'</span>,<span class="string">'Fontsize'</span>,12)
+0158 title(<span class="string">'Fração de área de gás (estratificado)'</span>,<span class="string">'Fontsize'</span>,14)
+0159 shading interp
+0160 
+0161 figure
+0162 surf(VL,VG,alfaG_anu)
+0163 xlabel(<span class="string">'Vel. Sup. Líquido (m/s)'</span>,<span class="string">'Fontsize'</span>,12)
+0164 ylabel(<span class="string">'Vel. Sup. Gás (m/s)'</span>,<span class="string">'Fontsize'</span>,12)
+0165 zlabel(<span class="string">'Alfa_G Anular (-)'</span>,<span class="string">'Fontsize'</span>,12)
+0166 title(<span class="string">'Fração de área de gás (anular)'</span>,<span class="string">'Fontsize'</span>,14)
+0167 shading interp
+0168 
+0169 figure
+0170 surf(VL,VG,alfaG_bol)
+0171 xlabel(<span class="string">'Vel. Sup. Líquido (m/s)'</span>,<span class="string">'Fontsize'</span>,12)
+0172 ylabel(<span class="string">'Vel. Sup. Gás (m/s)'</span>,<span class="string">'Fontsize'</span>,12)
+0173 zlabel(<span class="string">'Alfa_G Bolhas (-)'</span>,<span class="string">'Fontsize'</span>,12)
+0174 title(<span class="string">'Fração de área de gás (bolhas)'</span>,<span class="string">'Fontsize'</span>,14)
+0175 shading interp
+0176 
+0177 
+0178 <span class="comment">%% Funçoes Auxiliares</span>
+0179 
+0180 <a name="_sub2" href="#_subfunctions" class="code">function menu(parametros)</a>
+0181 <span class="comment">% Function Auxiliar que gera o menu</span>
+0182 <span class="comment">% Capturando parametros</span>
+0183 posicaoFator1 = parametros.posicao(1);
+0184 posicaoFator2 = parametros.posicao(2);
+0185 tamanhoFator1 = parametros.posicao(3);
+0186 tamanhoFator2 = parametros.posicao(4);
+0187 nomeBotoes = parametros.nomeModulo;
+0188 fontSize = parametros.fontSize;
+0189 <span class="comment">% Determinando tamanhos</span>
+0190 tamanhoFigura = get(gcf,<span class="string">'position'</span>);
+0191 numeroBotoes = length(nomeBotoes);
+0192 tamanhoBotoes = [ tamanhoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0193     tamanhoFator2.*tamanhoFigura(4)/numeroBotoes];
+0194 <span class="comment">% Gerando objetos</span>
+0195 <span class="keyword">for</span> i=1:numeroBotoes
+0196     posicaoBotoes = [ posicaoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0197        (posicaoFator2+tamanhoFator2).*tamanhoFigura(4)-i*tamanhoBotoes(2)];
+0198     uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'pushbutton'</span>,<span class="keyword">...</span>
+0199         <span class="string">'position'</span>,[posicaoBotoes tamanhoBotoes],<span class="string">'string'</span>,nomeBotoes{i},<span class="keyword">...</span>
+0200         <span class="string">'UserData'</span>,<span class="string">'menu1'</span>,<span class="string">'FontSize'</span>,fontSize,<span class="keyword">...</span>
+0201         <span class="string">'Callback'</span>,{@<a href="#_sub3" class="code" title="subfunction callback2(src,eventdata,arg1)">callback2</a>,i});
+0202 <span class="keyword">end</span>
+0203 
+0204 <a name="_sub3" href="#_subfunctions" class="code">function callback2(src,eventdata,arg1)</a>
+0205 <span class="comment">% Function Auxiliar que gera os Callbacks</span>
+0206 <span class="keyword">global</span> dadosPadroes
+0207 <span class="keyword">switch</span> arg1
+0208     <span class="keyword">case</span> 1
+0209         <a href="#_sub9" class="code" title="subfunction armazena_dados">armazena_dados</a>
+0210         <a href="#_sub7" class="code" title="subfunction gera_lista(nomeObj)">gera_lista</a>(<span class="string">'padrao'</span>)
+0211         <a href="#_sub1" class="code" title="subfunction analisaRegimesEstavel(dados)">analisaRegimesEstavel</a>(dadosPadroes);
+0212 <span class="keyword">end</span>
+0213 
+0214 <a name="_sub4" href="#_subfunctions" class="code">function h = gera_figura(nome,pos)</a>
+0215 <span class="comment">% Function Auxiliar que gera a figura</span>
+0216 <span class="keyword">if</span> nargin==0, nome = <span class="string">''</span>; <span class="keyword">end</span>
+0217 <span class="keyword">if</span> nargin&lt;2,  pos = [] ;<span class="keyword">end</span>
+0218 fig_= zeros(10,4);
+0219 y = .45;                        <span class="comment">%   screen dependent constant</span>
+0220 fig_(1,:) = [0,  y, .5,   y];   <span class="comment">%   upper left</span>
+0221 fig_(2,:) = [.5, y, .5,   y];   <span class="comment">%   upper right</span>
+0222 fig_(3,:) = [0,  0, .5,   y];   <span class="comment">%   lower left</span>
+0223 fig_(4,:) = [.5, 0, .5,   y];   <span class="comment">%   lower right</span>
+0224 fig_(5,:) = [0,  0.06,  1, 2*y];   <span class="comment">%   full screen</span>
+0225 fig_(6,:) = [0,  0, .5, 2*y];   <span class="comment">%   left  half screen</span>
+0226 fig_(7,:) = [.5, 0, .5, 2*y];   <span class="comment">%   right half screen</span>
+0227 fig_(8,:) = [0,  y,  1,   y];   <span class="comment">%   upper half screen</span>
+0228 fig_(9,:) = [0,  0,  1,   y];   <span class="comment">%   lower half screen</span>
+0229 fig_(10,:) = [.25, 0.1*y, .5, 2*(0.9*y)];   <span class="comment">%   center half screen</span>
+0230 h=[];
+0231 <span class="keyword">if</span> length(pos)==1,     pos = fig_(pos,:); <span class="keyword">end</span>
+0232 <span class="keyword">if</span> isempty(findall(0,<span class="string">'name'</span>,nome))
+0233     units = get(0,<span class="string">'Units'</span>);
+0234     h = figure(<span class="string">'name'</span>,nome,<span class="string">'numbertitle'</span>,<span class="string">'off'</span>,<span class="keyword">...</span>
+0235     <span class="string">'color'</span>,[1 1 1],<span class="string">'menubar'</span>,<span class="string">'none'</span>,<span class="string">'Units'</span>,<span class="string">'normalized'</span>,<span class="keyword">...</span>
+0236     <span class="string">'toolbar'</span>,<span class="string">'none'</span>);
+0237     <span class="keyword">if</span> ~isempty(pos)
+0238         set(h,<span class="string">'Position'</span>,pos)
+0239     <span class="keyword">end</span>
+0240     set(h,<span class="string">'Units'</span>,units)
+0241 <span class="keyword">end</span>
+0242 
+0243 <a name="_sub5" href="#_subfunctions" class="code">function gera_area(hfig, parametros)</a>
+0244 <span class="comment">% Function Auxiliar que gera a area</span>
+0245 posicaoFator1 = parametros.posicao(1);
+0246 posicaoFator2 = parametros.posicao(2);
+0247 tamanhoFator1 = parametros.posicao(3);
+0248 tamanhoFator2 = parametros.posicao(4);
+0249 nomeFrame = parametros.nomeFrame;
+0250 corFrame = parametros.cor;
+0251 corFonte = parametros.corFonte;
+0252 tamanhoFigura = get(hfig,<span class="string">'position'</span>);
+0253 tamanhoFrame = [ tamanhoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0254     tamanhoFator2.*tamanhoFigura(4) ];
+0255 posicaoFrame = [ posicaoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0256     posicaoFator2.*tamanhoFigura(4) ];
+0257 uicontrol(hfig,<span class="string">'style'</span>,<span class="string">'frame'</span>,<span class="string">'position'</span>,[posicaoFrame tamanhoFrame],<span class="keyword">...</span>
+0258     <span class="string">'BackGroundColor'</span>,corFrame);
+0259 uicontrol(hfig,<span class="string">'style'</span>,<span class="string">'text'</span>,<span class="string">'FontWeight'</span>,<span class="string">'bold'</span>,<span class="keyword">...</span>
+0260     <span class="string">'position'</span>,[posicaoFrame(1)+1 posicaoFrame(2)+tamanhoFrame(2)-22 <span class="keyword">...</span>
+0261     tamanhoFrame(1)-2 20],<span class="string">'string'</span>,nomeFrame,<span class="string">'BackGroundColor'</span>,corFrame,<span class="keyword">...</span>
+0262     <span class="string">'ForeGroundColor'</span>,corFonte);
+0263 
+0264 <a name="_sub6" href="#_subfunctions" class="code">function gera_banner(hfig,parametros)</a>
+0265 <span class="comment">% Function Auxiliar que gera o banner</span>
+0266 posicaoFator1 = parametros.posicao(1);
+0267 posicaoFator2 = parametros.posicao(2);
+0268 tamanhoFator1 = parametros.posicao(3);
+0269 tamanhoFator2 = parametros.posicao(4);
+0270 nomeModulo = parametros.nomeModulo;
+0271 corFrame = parametros.cor;
+0272 corFonte = parametros.corFonte;
+0273 nomeSoftware = parametros.nomeSoftware;
+0274 tamanhoFigura = get(hfig,<span class="string">'position'</span>);
+0275 tamanhoFrame = [ tamanhoFator1.*tamanhoFigura(3) 10 ];
+0276 posicaoFrame = [ posicaoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0277     posicaoFator2.*tamanhoFigura(4)+tamanhoFrame(2)/2 ];
+0278 uicontrol(hfig,<span class="string">'style'</span>,<span class="string">'text'</span>,<span class="string">'FontSize'</span>,20,<span class="string">'FontWeight'</span>,<span class="string">'bold'</span>,<span class="keyword">...</span>
+0279     <span class="string">'position'</span>,[posicaoFrame(1) posicaoFrame(2)+tamanhoFrame(2) <span class="keyword">...</span>
+0280     tamanhoFrame(1)/2 30],<span class="string">'string'</span>,nomeSoftware,<span class="keyword">...</span>
+0281     <span class="string">'HorizontalAlignment'</span>,<span class="string">'left'</span>,<span class="string">'BackGroundColor'</span>,[1 1 1],<span class="keyword">...</span>
+0282     <span class="string">'ForeGroundColor'</span>,corFonte);
+0283 uicontrol(hfig,<span class="string">'style'</span>,<span class="string">'frame'</span>,<span class="string">'position'</span>,[posicaoFrame tamanhoFrame],<span class="keyword">...</span>
+0284     <span class="string">'BackGroundColor'</span>,corFrame);
+0285 uicontrol(hfig,<span class="string">'style'</span>,<span class="string">'text'</span>,<span class="string">'FontSize'</span>,14,<span class="string">'FontWeight'</span>,<span class="string">'bold'</span>,<span class="keyword">...</span>
+0286     <span class="string">'position'</span>,[posicaoFrame(1)+tamanhoFrame(1)/2 posicaoFrame(2)+tamanhoFrame(2) <span class="keyword">...</span>
+0287     tamanhoFrame(1)/2 20],<span class="string">'string'</span>,nomeModulo,<span class="keyword">...</span>
+0288     <span class="string">'HorizontalAlignment'</span>,<span class="string">'right'</span>,<span class="string">'BackGroundColor'</span>,[1 1 1],<span class="keyword">...</span>
+0289     <span class="string">'ForeGroundColor'</span>,corFonte);
+0290 
+0291 <a name="_sub7" href="#_subfunctions" class="code">function gera_lista(nomeObj)</a>
+0292 <span class="comment">% Function Auxiliar que gera a lista</span>
+0293 <span class="keyword">global</span> dadosPadroes detalhesPadroes
+0294 posicaoFator1 = 0.05;
+0295 posicaoFator2 = 0.02;
+0296 tamanhoFator2 = 0.92;
+0297 tamanhoFigura = get(gcf,<span class="string">'position'</span>);
+0298 <span class="keyword">if</span> isempty(detalhesPadroes)
+0299     [detalhesPadroes, dadosPadroes] = <a href="arvore_dados.html" class="code" title="function [detalhesVariaveis, valoresDefault] = arvore_dados">arvore_dados</a>;
+0300 <span class="keyword">end</span>
+0301 objNames=fieldnames(dadosPadroes.(nomeObj));
+0302 objNumero=length(objNames);
+0303 <span class="keyword">for</span> i=1:objNumero
+0304     objValue = dadosPadroes.(nomeObj).(objNames{i});
+0305     objDescricao = detalhesPadroes.(nomeObj).(objNames{i}).descricao;
+0306     objUnidade = detalhesPadroes.(nomeObj).(objNames{i}).unidade;
+0307     objNome = detalhesPadroes.(nomeObj).(objNames{i}).nome;
+0308     objTipo = detalhesPadroes.(nomeObj).(objNames{i}).tipo;
+0309     objTamanho = detalhesPadroes.(nomeObj).(objNames{i}).tamanho;
+0310     <span class="keyword">if</span> isfield(detalhesPadroes.(nomeObj).(objNames{i}),<span class="string">'opcoes'</span>)
+0311         objPop =1;
+0312         objOpcoes = detalhesPadroes.(nomeObj).(objNames{i}).opcoes;
+0313     <span class="keyword">else</span>
+0314         objPop =0; 
+0315         objOpcoes = <span class="string">''</span>;
+0316     <span class="keyword">end</span>
+0317     <span class="keyword">if</span> strcmp(objTipo,<span class="string">'fixo'</span>)
+0318         objEnable = <span class="string">'off'</span>;
+0319         objColor = [0.7 0.7 0.7];
+0320     <span class="keyword">else</span>
+0321         objEnable = <span class="string">'on'</span>;
+0322         objColor = [1 1 1];
+0323     <span class="keyword">end</span>
+0324     tamanho = [ 200 20 ];
+0325     posicao = [ posicaoFator1.*tamanhoFigura(3) <span class="keyword">...</span>
+0326         (posicaoFator2+tamanhoFator2)<span class="keyword">...</span>
+0327         .*tamanhoFigura(4)-(i+1)*tamanho(2).*1.2 ];
+0328     nomeFrame = <span class="string">''</span>;
+0329     <span class="keyword">if</span> i==1
+0330         uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'text'</span>,<span class="string">'FontWeight'</span>,<span class="string">'bold'</span>,<span class="keyword">...</span>
+0331             <span class="string">'position'</span>,[posicao(1) posicao(2)+tamanho(2) tamanho(1) <span class="keyword">...</span>
+0332             tamanho(2)],<span class="string">'string'</span>,nomeFrame,<span class="keyword">...</span>
+0333             <span class="string">'UserData'</span>,nomeObj,<span class="string">'BackgroundColor'</span>,[0.8 0.8 0.8]);
+0334     <span class="keyword">end</span>
+0335     h1(i)=uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'text'</span>,<span class="keyword">...</span>
+0336         <span class="string">'HorizontalAlignment'</span>,<span class="string">'left'</span>,<span class="keyword">...</span>
+0337         <span class="string">'position'</span>,[posicao tamanho],<span class="keyword">...</span>
+0338         <span class="string">'string'</span>,[objNome <span class="string">' [ '</span> objUnidade <span class="string">' ]:'</span>],<span class="keyword">...</span>
+0339         <span class="string">'UserData'</span>,nomeObj);
+0340     <span class="keyword">if</span> strcmp(objTamanho,<span class="string">'escalar'</span>),
+0341         tamanho = [ 100 20 ];
+0342         posicao(1) = posicao(1) + 200 + 10;    
+0343     <span class="keyword">elseif</span> strcmp(objTamanho,<span class="string">'vetor'</span>),
+0344         tamanho = [ 150 20 ];
+0345         posicao(1) = posicao(1) + 200 + 10;    
+0346     <span class="keyword">end</span>
+0347     <span class="keyword">if</span> objPop,
+0348         h2(i)=uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'popupmenu'</span>,<span class="string">'BackGroundColor'</span>,objColor,<span class="keyword">...</span>
+0349             <span class="string">'position'</span>,[posicao tamanho],<span class="string">'string'</span>,objOpcoes,<span class="keyword">...</span>
+0350             <span class="string">'Value'</span>,objValue,<span class="string">'Enable'</span>, objEnable,<span class="string">'UserData'</span>,nomeObj);
+0351     <span class="keyword">else</span>
+0352         h2(i)=uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'edit'</span>,<span class="string">'BackGroundColor'</span>,objColor,<span class="keyword">...</span>
+0353             <span class="string">'position'</span>,[posicao tamanho],<span class="string">'string'</span>,num2str(objValue),<span class="keyword">...</span>
+0354             <span class="string">'Enable'</span>, objEnable,<span class="string">'UserData'</span>,nomeObj);
+0355     <span class="keyword">end</span>
+0356     posicao(1) = posicao(1) + tamanho(1) + 10;
+0357     tamanho = [ 350-tamanho(1) 20 ];    
+0358     h3(i)=uicontrol(gcf,<span class="string">'style'</span>,<span class="string">'text'</span>,<span class="string">'HorizontalAlignment'</span>,<span class="string">'left'</span>,<span class="keyword">...</span>
+0359         <span class="string">'position'</span>,[posicao tamanho],<span class="string">'string'</span>,objDescricao,<span class="keyword">...</span>
+0360         <span class="string">'UserData'</span>,nomeObj);
+0361     set([h1(i);h3(i)],<span class="string">'BackGroundColor'</span>,[0.7 0.7 0.7])
+0362 <span class="keyword">end</span>
+0363 
+0364 
+0365 <span class="comment">%% Funçoes de Especificação e Captura de Dados</span>
+0366 
+0367 <a name="_sub8" href="#_subfunctions" class="code">function [detalhesVariaveis, valoresDefault] = arvore_dados</a>
+0368 <span class="comment">%Compositor da estrutura dos dados de entrada.</span>
+0369 
+0370 <span class="comment">% Valor padrao</span>
+0371 valoresDefault.padrao.densidadeL=860.;
+0372 valoresDefault.padrao.densidadeG=90;
+0373 valoresDefault.padrao.viscosidadeL=0.008;
+0374 valoresDefault.padrao.viscosidadeG=2e-5;
+0375 valoresDefault.padrao.tensao=0.03;
+0376 valoresDefault.padrao.rugosidade=0;
+0377 valoresDefault.padrao.diametro=0.1;
+0378 valoresDefault.padrao.angulo_teta=0;
+0379 valoresDefault.padrao.np=100;
+0380 valoresDefault.padrao.vGMin=0.001;
+0381 valoresDefault.padrao.vLMin=0.01;
+0382 valoresDefault.padrao.vGMax=50;
+0383 valoresDefault.padrao.vLMax=10;
+0384 
+0385 <span class="comment">% Detalhes</span>
+0386 detalhesVariaveis.padrao.nome = <span class="string">'Padrão de Escoamento'</span>;
+0387 detalhesVariaveis.padrao.tamanho = <span class="string">'escalar'</span>;
+0388 
+0389 detalhesVariaveis.padrao.rugosidade.unidade=<span class="string">'10^-6 m'</span>;
+0390 detalhesVariaveis.padrao.rugosidade.nome=<span class="string">'Rugosidade'</span>;
+0391 detalhesVariaveis.padrao.rugosidade.descricao=<span class="keyword">...</span>
+0392     <span class="string">'Valor da rugosidade na superficie interna do duto.'</span>;
+0393 detalhesVariaveis.padrao.rugosidade.tipo=<span class="string">'usuario'</span>;
+0394 detalhesVariaveis.padrao.rugosidade.tamanho=<span class="string">'escalar'</span>;
+0395 
+0396 detalhesVariaveis.padrao.diametro.unidade=<span class="string">'m'</span>;
+0397 detalhesVariaveis.padrao.diametro.nome=<span class="string">'Diâmetro'</span>;
+0398 detalhesVariaveis.padrao.diametro.descricao=<span class="keyword">...</span>
+0399     <span class="string">'Valor do diametro interno da tubulação.'</span>;
+0400 detalhesVariaveis.padrao.diametro.tipo=<span class="string">'usuario'</span>;
+0401 detalhesVariaveis.padrao.diametro.tamanho=<span class="string">'escalar'</span>;
+0402 
+0403 detalhesVariaveis.padrao.angulo_teta.unidade=<span class="string">'graus'</span>;
+0404 detalhesVariaveis.padrao.angulo_teta.nome=<span class="string">'Inclinação'</span>;
+0405 detalhesVariaveis.padrao.angulo_teta.descricao=<span class="keyword">...</span>
+0406     <span class="string">'Inclinação do duto (+ -&gt; ascendente) [-90 90]'</span>;
+0407 detalhesVariaveis.padrao.angulo_teta.tipo=<span class="string">'usuario'</span>;
+0408 detalhesVariaveis.padrao.angulo_teta.tamanho=<span class="string">'escalar'</span>;
+0409 
+0410 detalhesVariaveis.padrao.densidadeL.unidade=<span class="string">'kg/m³'</span>;
+0411 detalhesVariaveis.padrao.densidadeL.nome=<span class="string">'Densidade (líquido)'</span>;
+0412 detalhesVariaveis.padrao.densidadeL.descricao=<span class="keyword">...</span>
+0413     <span class="string">'Densidade média da fase líquida.'</span>;
+0414 detalhesVariaveis.padrao.densidadeL.tipo=<span class="string">'usuario'</span>;
+0415 detalhesVariaveis.padrao.densidadeL.tamanho=<span class="string">'escalar'</span>;
+0416 
+0417 detalhesVariaveis.padrao.densidadeG.unidade=<span class="string">'kg/m³'</span>;
+0418 detalhesVariaveis.padrao.densidadeG.nome=<span class="string">'Densidade (gás)'</span>;
+0419 detalhesVariaveis.padrao.densidadeG.descricao=<span class="keyword">...</span>
+0420     <span class="string">'Densidade média da fase gasosa.'</span>;
+0421 detalhesVariaveis.padrao.densidadeG.tipo=<span class="string">'usuario'</span>;
+0422 detalhesVariaveis.padrao.densidadeG.tamanho=<span class="string">'escalar'</span>;
+0423 
+0424 detalhesVariaveis.padrao.viscosidadeL.unidade=<span class="string">'Pa.s'</span>;
+0425 detalhesVariaveis.padrao.viscosidadeL.nome=<span class="string">'Viscosidade Dinâmica (líquido)'</span>;
+0426 detalhesVariaveis.padrao.viscosidadeL.descricao=<span class="keyword">...</span>
+0427     <span class="string">'Viscosidade média da fase líquida.'</span>;
+0428 detalhesVariaveis.padrao.viscosidadeL.tipo=<span class="string">'usuario'</span>;
+0429 detalhesVariaveis.padrao.viscosidadeL.tamanho=<span class="string">'escalar'</span>;
+0430 
+0431 detalhesVariaveis.padrao.viscosidadeG.unidade=<span class="string">'Pa.s'</span>;
+0432 detalhesVariaveis.padrao.viscosidadeG.nome=<span class="string">'Viscosidade Dinâmica (gás)'</span>;
+0433 detalhesVariaveis.padrao.viscosidadeG.descricao=<span class="keyword">...</span>
+0434     <span class="string">'Viscosidade média da fase gasosa.'</span>;
+0435 detalhesVariaveis.padrao.viscosidadeG.tipo=<span class="string">'usuario'</span>;
+0436 detalhesVariaveis.padrao.viscosidadeG.tamanho=<span class="string">'escalar'</span>;
+0437 
+0438 detalhesVariaveis.padrao.tensao.unidade=<span class="string">'Pa.m'</span>;
+0439 detalhesVariaveis.padrao.tensao.nome=<span class="string">'Tensao interfacial'</span>;
+0440 detalhesVariaveis.padrao.tensao.descricao=<span class="keyword">...</span>
+0441     <span class="string">'Tensao da interface gás-líquido.'</span>;
+0442 detalhesVariaveis.padrao.tensao.tipo=<span class="string">'usuario'</span>;
+0443 detalhesVariaveis.padrao.tensao.tamanho=<span class="string">'escalar'</span>;
+0444 
+0445 detalhesVariaveis.padrao.vGMin.unidade=<span class="string">'Pa.m'</span>;
+0446 detalhesVariaveis.padrao.vGMin.nome=<span class="string">'Vel. sup. Mín. Gás'</span>;
+0447 detalhesVariaveis.padrao.vGMin.descricao=<span class="keyword">...</span>
+0448     <span class="string">'Velocidade superficial mínima do gás.'</span>;
+0449 detalhesVariaveis.padrao.vGMin.tipo=<span class="string">'usuario'</span>;
+0450 detalhesVariaveis.padrao.vGMin.tamanho=<span class="string">'escalar'</span>;
+0451 
+0452 detalhesVariaveis.padrao.vGMax.unidade=<span class="string">'Pa.m'</span>;
+0453 detalhesVariaveis.padrao.vGMax.nome=<span class="string">'Vel. sup. Máx. Gás'</span>;
+0454 detalhesVariaveis.padrao.vGMax.descricao=<span class="keyword">...</span>
+0455     <span class="string">'Velocidade superficial máxima do gás.'</span>;
+0456 detalhesVariaveis.padrao.vGMax.tipo=<span class="string">'usuario'</span>;
+0457 detalhesVariaveis.padrao.vGMax.tamanho=<span class="string">'escalar'</span>;
+0458 
+0459 detalhesVariaveis.padrao.vLMin.unidade=<span class="string">'m/s'</span>;
+0460 detalhesVariaveis.padrao.vLMin.nome=<span class="string">'Vel. sup. Mín. Líquido'</span>;
+0461 detalhesVariaveis.padrao.vLMin.descricao=<span class="keyword">...</span>
+0462     <span class="string">'Velocidade superficial mínima do líquido.'</span>;
+0463 detalhesVariaveis.padrao.vLMin.tipo=<span class="string">'usuario'</span>;
+0464 detalhesVariaveis.padrao.vLMin.tamanho=<span class="string">'escalar'</span>;
+0465 
+0466 detalhesVariaveis.padrao.vLMax.unidade=<span class="string">'m/s'</span>;
+0467 detalhesVariaveis.padrao.vLMax.nome=<span class="string">'Vel. sup. Máx. Líquido'</span>;
+0468 detalhesVariaveis.padrao.vLMax.descricao=<span class="keyword">...</span>
+0469     <span class="string">'Velocidade superficial máxima do líquido.'</span>;
+0470 detalhesVariaveis.padrao.vLMax.tipo=<span class="string">'usuario'</span>;
+0471 detalhesVariaveis.padrao.vLMax.tamanho=<span class="string">'escalar'</span>;
+0472 
+0473 detalhesVariaveis.padrao.np.unidade=<span class="string">'-'</span>;
+0474 detalhesVariaveis.padrao.np.nome=<span class="string">'Numero de pontos'</span>;
+0475 detalhesVariaveis.padrao.np.descricao=<span class="keyword">...</span>
+0476     <span class="string">'Numero de pontos de pesquisa.'</span>;
+0477 detalhesVariaveis.padrao.np.tipo=<span class="string">'usuario'</span>;
+0478 detalhesVariaveis.padrao.np.tamanho=<span class="string">'escalar'</span>;
+0479 
+0480 <a name="_sub9" href="#_subfunctions" class="code">function armazena_dados</a>
+0481 <span class="comment">% Function Auxiliar que executa o armazenamento das variaveis</span>
+0482 <span class="keyword">global</span> dadosPadroes
+0483 <span class="comment">% Gerando lista de niveis possiveis</span>
+0484 ListaNomeObj = fieldnames(dadosPadroes);
+0485 <span class="comment">% Executando loop para determinar qual lista esta disponivel</span>
+0486 nomeObj = [];
+0487 <span class="keyword">for</span> i=1:length(ListaNomeObj)
+0488     nomeObjTeste = ListaNomeObj{i};
+0489     hObjTodos = findall(gcf,<span class="string">'userdata'</span>,nomeObjTeste);
+0490     <span class="keyword">if</span> ~isempty(hObjTodos)
+0491         nomeObj = nomeObjTeste;
+0492     <span class="keyword">end</span>
+0493 <span class="keyword">end</span>    
+0494 <span class="keyword">if</span> ~isempty(nomeObj)
+0495     <span class="comment">% Gerando vetores de handles</span>
+0496     hObjTodos = findall(gcf,<span class="string">'userdata'</span>,nomeObj);
+0497     hObjEdit = findall(gcf,<span class="string">'userdata'</span>,nomeObj,<span class="string">'style'</span>,<span class="string">'edit'</span>);
+0498     hObjPop = findall(gcf,<span class="string">'userdata'</span>,nomeObj,<span class="string">'style'</span>,<span class="string">'popupmenu'</span>);
+0499     hObj = sort([hObjEdit;hObjPop]);
+0500     hObjNumero = length(hObj);
+0501     <span class="comment">% Determinando o tipo de objeto</span>
+0502     ehCell = iscell(dadosPadroes.(nomeObj));
+0503     <span class="keyword">if</span> ehCell 
+0504         objNames=fieldnames(dadosPadroes.(nomeObj){1});
+0505     <span class="keyword">else</span>
+0506         objNames=fieldnames(dadosPadroes.(nomeObj));
+0507     <span class="keyword">end</span>
+0508     <span class="comment">% Capturando informações da lista</span>
+0509     j =1;
+0510     <span class="keyword">for</span> i=1:hObjNumero
+0511         <span class="keyword">if</span> strcmp(get(hObj(i),<span class="string">'Style'</span>),<span class="string">'edit'</span>)
+0512             valores.(objNames{i})=str2num(get(hObj(i),<span class="string">'String'</span>));
+0513             j=j+1;
+0514         <span class="keyword">end</span>
+0515         <span class="keyword">if</span> strcmp(get(hObj(i),<span class="string">'Style'</span>),<span class="string">'popupmenu'</span>)
+0516             valores.(objNames{j})=get(hObj(i),<span class="string">'value'</span>);
+0517             j=j+1;
+0518         <span class="keyword">end</span>
+0519     <span class="keyword">end</span>
+0520     <span class="comment">% Atualizando dados</span>
+0521     <span class="keyword">if</span> ehCell
+0522         k=valores.indice;
+0523         dadosPadroes.(nomeObj){k}=valores;
+0524     <span class="keyword">else</span>
+0525         dadosPadroes.(nomeObj)=valores;
+0526     <span class="keyword">end</span>
+0527     <span class="comment">% Limpando objetos</span>
+0528     delete(hObjTodos)
+0529 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

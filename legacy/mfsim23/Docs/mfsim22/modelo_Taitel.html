@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of modelo_Taitel</title>
+  <meta name="keywords" content="modelo_Taitel">
+  <meta name="description" content="Modelo simplificado de Taitel para escoamento estratificado">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; modelo_Taitel.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>modelo_Taitel
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Modelo simplificado de Taitel para escoamento estratificado</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [vSL,X,Y] = modelo_Taitel(hD,vSG,densL,densG,viscL,viscG,angulo,D,regL,regG) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Modelo simplificado de Taitel para escoamento estratificado</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="determinaAlfaEstavel.html" class="code" title="function [hD_est,hD_anu,alfaG_est,alfaG_anu,alfaG_bol]=determinaAlfaEstavel(entradas)">determinaAlfaEstavel</a>	Função que determina frações de área para modelos de Taitel, Pots e Zuber</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [vLS, X, Y] = modelo_Lockhart_Taitel(vGS,hD,DP,ETA,viscL,viscG,rohL,rohG,CL,CG,n,m,g)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [vSL,X,Y] = modelo_Taitel(hD,vSG,densL,densG,viscL,viscG,angulo,D,regL,regG)</a>
+0002 <span class="comment">% Modelo simplificado de Taitel para escoamento estratificado</span>
+0003 
+0004 <span class="comment">% Parametros para calculo do fator de atrito</span>
+0005 ixL1=find(regL==1);
+0006 ixL2=find(regL==2);
+0007 ixG1=find(regG==1);
+0008 ixG2=find(regG==2);
+0009 
+0010 CL = zeros(size(regL));
+0011 CG = zeros(size(regG));
+0012 n = zeros(size(regL));
+0013 m = zeros(size(regG));
+0014 
+0015 CL(ixL1) = 16;    <span class="comment">% laminar</span>
+0016 CL(ixL2) = 0.046; <span class="comment">% turbulento</span>
+0017 CG(ixG1) = 16;    <span class="comment">% laminar</span>
+0018 CG(ixG2) = 0.046; <span class="comment">% turbulento</span>
+0019 n(ixL1) = 1;      <span class="comment">% laminar</span>
+0020 n(ixL2) = 0.2;    <span class="comment">% turbulento</span>
+0021 m(ixL1) = 1;      <span class="comment">% laminar</span>
+0022 m(ixL2) = 0.2;    <span class="comment">% turbulento</span>
+0023 
+0024 <span class="comment">% Constantes</span>
+0025 g = 9.81;
+0026 
+0027 <span class="comment">% Calculando velocidade da fase liquida dados hD e velocidade da fase gás</span>
+0028 [vSL,X,Y] = <a href="#_sub1" class="code" title="subfunction [vLS, X, Y] = modelo_Lockhart_Taitel(vGS,hD,DP,ETA,viscL,viscG,rohL,rohG,CL,CG,n,m,g)">modelo_Lockhart_Taitel</a>(vSG,hD,D,-angulo,viscL,viscG,densL,densG,CL,CG,n,m,g);
+0029 
+0030 
+0031 <a name="_sub1" href="#_subfunctions" class="code">function [vLS, X, Y] = modelo_Lockhart_Taitel(vGS,hD,DP,ETA,viscL,viscG,rohL,rohG,CL,CG,n,m,g)</a>
+0032 <span class="comment">% Sub-Função para determinação da velocidade superficial do líquido</span>
+0033 
+0034 <span class="comment">% Calculando viscosidades cinematicas</span>
+0035 nuL = viscL./rohL;
+0036 nuG = viscG./rohG;
+0037 
+0038 <span class="comment">% Calculando informações geométricas</span>
+0039 betah = 2.*acos(1-2.*hD);
+0040 alfaL = (betah-sin(betah))./2./pi;
+0041 alfa = 1-alfaL;
+0042 PerL = betah./2 .* DP    ; <span class="comment">%Líquido</span>
+0043 PerG = pi*DP - PerL    ; <span class="comment">%Gás</span>
+0044 PerI = DP.*sin(betah/2); <span class="comment">% Interface</span>
+0045 Area  = (pi/4).*DP.^2; <span class="comment">% Área da seçao</span>
+0046 AreaG = Area.*alfa;     <span class="comment">% Área de gás na seção</span>
+0047 AreaL = Area-AreaG;    <span class="comment">% Área de líquido na seção</span>
+0048 
+0049 <span class="comment">% Reynolds</span>
+0050 Re_GS = DP.*abs(vGS).*rohG./viscG;
+0051 
+0052 <span class="comment">% Fator de atrito superficial da fase gás</span>
+0053 f_GS  = CG.*Re_GS.^(-m);
+0054 
+0055 <span class="comment">% Tensao no gas</span>
+0056 tensao_GS = f_GS.*rohG.*(vGS).*abs(vGS)./2;
+0057 
+0058 <span class="comment">% Calcular Coeficiente Y (modelo_lockhart-Martinelli)</span>
+0059 Y = (rohL-rohG).*g.*sin(ETA)./(4./DP.*tensao_GS);
+0060 
+0061 <span class="comment">% Adimensionais</span>
+0062 At  = pi./4;
+0063 ALt = (pi - acos(2.*hD-1) + (2.*hD-1).*(1-(2.*hD-1).^2).^0.5)./4;
+0064 AGt = (     acos(2.*hD-1) - (2.*hD-1).*(1-(2.*hD-1).^2).^0.5)./4;
+0065 SLt = (pi - acos(2.*hD-1));
+0066 SGt = (     acos(2.*hD-1));
+0067 SIt = (                                (1-(2.*hD-1).^2).^0.5);
+0068 uLt = At./ALt;
+0069 uGt = At./AGt;
+0070 DGt = 4.*AGt./(SGt + SIt);
+0071 DLt = 4.*ALt./(SLt      );
+0072 
+0073 <span class="comment">% Calcular FI e LAMBDA</span>
+0074 FI = (SGt./AGt+SIt./ALt+SIt./AGt).*(uGt.*DGt).^(-m).*uGt.^2;
+0075 LAMBDA = (uLt.*DLt).^(-n).*uLt.^2.*SLt./ALt;
+0076 
+0077 <span class="comment">% Calcular Coeficiente X (modelo_lockhart-Martinelli)</span>
+0078 X2 = ((4.*Y+FI)./LAMBDA);
+0079 
+0080 <span class="comment">% Calcular velocidade do líquido</span>
+0081 X2(find(X2&lt;0))=nan;
+0082 X=sqrt(X2);
+0083 tensao_LS = X2.*tensao_GS;
+0084 vLS = (tensao_LS./CL).^(1/(2-n)).*(DP.*rohL./viscL).^(n/(2-n)).*(rohL./2).^(1/(n-2));</pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

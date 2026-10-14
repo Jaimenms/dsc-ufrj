@@ -1,0 +1,6 @@
+*.mf2  binary
+*.npz  binary
+*.npy  binary
+*.pdf  binary
+*.png  binary
+*.ipynb -diff

@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of modelo_valvulaRet</title>
+  <meta name="keywords" content="modelo_valvulaRet">
+  <meta name="description" content="Função que determina as vazões de líquido e de gás em função da pressão">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; modelo_valvulaRet.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>modelo_valvulaRet
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que determina as vazões de líquido e de gás em função da pressão</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [ZL,ZG,saidas,eixos] = modelo_valvulaRet(t,X,E,parametros) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que determina as vazões de líquido e de gás em função da pressão
+ a montante da válvula, da pressão a jusante e do hold-up do vértice a
+ montante.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_fluido.html" class="code" title="function [propL, propG, tensao] = modelo_fluido(P,T,parametros)">modelo_fluido</a>	Função que descreve as propriedades dos fluidos.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>	Função referente ao modelo de redes de escoamento bifásico</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [ZL,ZG,saidas,eixos] = modelo_valvulaRet(t,X,E,parametros)</a>
+0002 <span class="comment">% Função que determina as vazões de líquido e de gás em função da pressão</span>
+0003 <span class="comment">% a montante da válvula, da pressão a jusante e do hold-up do vértice a</span>
+0004 <span class="comment">% montante.</span>
+0005 
+0006 <span class="comment">% Iniciando variaveis</span>
+0007 saidas=[];
+0008 eixos =[];
+0009 nt = length(t);
+0010 
+0011 <span class="comment">% Coletando parametros</span>
+0012 
+0013 <span class="comment">% indices</span>
+0014 ixP     = parametros.valvulaRet.ixP; <span class="comment">% coleta pressões de vertices dinamicos</span>
+0015 ixH     = parametros.valvulaRet.ixH; <span class="comment">% coleta hold-up de vertices dinamicos</span>
+0016 ixPext  = parametros.valvulaRet.ixPext; <span class="comment">% coleta pressões externas de vertices dinamicos</span>
+0017 
+0018 <span class="comment">% parametros</span>
+0019 CV = parametros.valvulaRet.CV;
+0020 PR = parametros.PR;
+0021 NValRet = parametros.NValRet;
+0022 dPMin = parametros.valvulaRet.dPMin;
+0023 
+0024 <span class="comment">% Tratando entradas</span>
+0025 P_Mon = X(ixP,:);
+0026 P_Jus = E(ixPext,:);
+0027 HG = X(ixH,:);
+0028 HL = 1-HG;
+0029 
+0030 <span class="comment">% Determinando diferença de pressão</span>
+0031 dP = (P_Mon-P_Jus).*PR./1e5; <span class="comment">% bar</span>
+0032 
+0033 P_Mean = (P_Mon+P_Jus)./2;
+0034 
+0035 <span class="comment">% Determinando densidade da mistura</span>
+0036 [propL, propG] = <a href="modelo_fluido.html" class="code" title="function [propL, propG, tensao] = modelo_fluido(P,T,parametros)">modelo_fluido</a>(P_Mean.*PR,0,parametros.Fluido);
+0037 densM = (HL.*propL.dens+HG.*propG.dens);
+0038 
+0039 <span class="comment">% Calculando vazões</span>
+0040 qM = 0.0075.*diag(CV)*(sign(dP).*((densM.*abs(dP)).^0.5));
+0041 qL = HL.*qM;
+0042 qG = HG.*qM;
+0043 
+0044 ZL = zeros(size(dP));
+0045 ZG = ZL;
+0046 
+0047 <span class="comment">% Verificando onde check está ativa</span>
+0048 <span class="keyword">if</span> NValRet
+0049     ix = dP&gt;(dPMin*ones(1,nt));
+0050     <span class="comment">% Determinando vazoes</span>
+0051     ZL(ix) = qL(ix);
+0052     ZG(ix) = qG(ix);
+0053 <span class="keyword">end</span>
+0054 
+0055 <span class="keyword">for</span> i=1:NValRet
+0056     saidas{i}.ZP    = P_Mon(i,:).*PR./1e5;
+0057     saidas{i}.dP    = dP(i,:);
+0058     saidas{i}.qL    = ZL(i,:);
+0059     saidas{i}.qG    = ZG(i,:);
+0060     eixos.X.valor{i}= t;
+0061     eixos.estilo  = <span class="string">'2D'</span>;
+0062     eixos.X.nome  = <span class="string">'Tempo (s)'</span>;
+0063     eixos.X.tipo  = <span class="string">'T'</span>;
+0064 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of modelo_vertice</title>
+  <meta name="keywords" content="modelo_vertice">
+  <meta name="description" content="Função que determina o modelo dos vertices dinamicos">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; modelo_vertice.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>modelo_vertice
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que determina o modelo dos vertices dinamicos</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [dWvdt,saidas,eixos] = modelo_vertice(t,Y,Ya,E,parametros) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que determina o modelo dos vertices dinamicos</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_fluido.html" class="code" title="function [propL, propG, tensao] = modelo_fluido(P,T,parametros)">modelo_fluido</a>	Função que descreve as propriedades dos fluidos.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>	Função referente ao modelo de redes de escoamento bifásico</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [F] = sigmoidal(x1,x2)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [dWvdt,saidas,eixos] = modelo_vertice(t,Y,Ya,E,parametros)</a>
+0002 <span class="comment">% Função que determina o modelo dos vertices dinamicos</span>
+0003 
+0004 <span class="comment">% Desempacotando parametros</span>
+0005 ne = parametros.ne;
+0006 V = parametros.V;
+0007 Nk = parametros.Nk;
+0008 iVertA = parametros.iVertA;
+0009 NVert = parametros.NVert;
+0010 NVertA = parametros.NVertA;
+0011 PR = parametros.PR;
+0012 m = parametros.m;
+0013 
+0014 nt = size(Y{1},2);
+0015 
+0016 <span class="comment">% Calculando as vazoes nas extremidades dos dutos</span>
+0017 QLs=zeros(NVert,nt);
+0018 QGs=zeros(NVert,nt);
+0019 QLe=zeros(NVert,nt);
+0020 QGe=zeros(NVert,nt);
+0021 <span class="keyword">for</span> i=1:m
+0022     y=Y{i};
+0023     vIn=parametros.Duto{i}.vIn;
+0024     vOut=parametros.Duto{i}.vOut;    
+0025     QLs(vIn,:)=QLs(vIn,:)-y(3,:);
+0026     QGs(vIn,:)=QGs(vIn,:)-y(4,:);
+0027     QLe(vOut,:)=QLe(vOut,:)+y(Nk(i).*ne+3,:);
+0028     QGe(vOut,:)=QGe(vOut,:)+y(Nk(i).*ne+4,:);
+0029     saidas{vIn}.holdupL       = 1-y(1,:);
+0030     saidas{vIn}.holdupG       = y(1,:);
+0031     saidas{vIn}.pressao       = y(2,:).*PR./1e5;
+0032     saidas{vIn}.vazaoMassaL   = QLs(vIn,:);
+0033     saidas{vIn}.vazaoMassaG   = QGs(vIn,:);
+0034     saidas{vOut}.holdupL      = 1-y(Nk(i).*ne+1,:);
+0035     saidas{vOut}.holdupG      = y(Nk(i).*ne+1,:);
+0036     saidas{vOut}.pressao      = y(Nk(i).*ne+2,:);
+0037     saidas{vOut}.vazaoMassaL  = QLe(vOut,:);
+0038     saidas{vOut}.vazaoMassaG  = QGe(vOut,:);
+0039 <span class="keyword">end</span>
+0040 
+0041 <span class="comment">% Capturando as especificacoes dos vertices dinamicos</span>
+0042 ALFA= E(1:4:<span class="keyword">end</span>,:);
+0043 PT  = E(2:4:<span class="keyword">end</span>,:);
+0044 QL  = E(3:4:<span class="keyword">end</span>,:);
+0045 QG  = E(4:4:<span class="keyword">end</span>,:);
+0046 
+0047 <span class="comment">% Gerando os balanços</span>
+0048 dQL = QLe+QLs+QL;
+0049 dQG = QGe+QGs+QG;
+0050 
+0051 <span class="comment">% Calculando dinamica dos vertices tipo A</span>
+0052 dWvdt=[];
+0053 <span class="keyword">for</span> i=1:NVertA
+0054 
+0055     <span class="comment">% Calculado pressao dos vertices</span>
+0056     PA(i,:) = PT(iVertA(i),:).*PR;
+0057 
+0058     <span class="comment">% Calculando propriedades dos fluidos:</span>
+0059     [propL,propG,tensao] = <a href="modelo_fluido.html" class="code" title="function [propL, propG, tensao] = modelo_fluido(P,T,parametros)">modelo_fluido</a>(PA(i,:),0,parametros.Fluido);
+0060     densLA(i,:)=propL.dens;
+0061     densGA(i,:)=propG.dens;
+0062     ddensLdPA(i,:)=propL.C;
+0063     ddensGdPA(i,:)=propG.C;
+0064     
+0065     <span class="comment">% Capturando informações dos vertices A</span>
+0066     VA     = V (iVertA(i));    
+0067     ALFAA(i,:)  = ALFA(iVertA(i),:);
+0068     ALFALA(i,:) = 1-ALFAA(i,:);
+0069 
+0070     
+0071     dQLA = dQL(iVertA(i),:);
+0072     dQGA = dQG(iVertA(i),:);
+0073 
+0074     <span class="comment">% Parametros do modelo dos vertices</span>
+0075     CVLA = ALFALA(i,:)./densLA(i,:).*ddensLdPA(i,:);
+0076     CVGA = ALFAA(i,:) ./densGA(i,:).*ddensGdPA(i,:);
+0077     CVTA = CVLA + CVGA;
+0078 
+0079     BVLA = dQLA./VA./densLA(i,:);
+0080     BVGA = dQGA./VA./densGA(i,:);
+0081 
+0082     BVTA = BVLA + BVGA;
+0083 
+0084     dPTAdt = BVTA./CVTA./PR;
+0085     dALFAAdt = BVGA-CVGA.*BVTA./CVTA;
+0086     
+0087     dWvdt(2*(i-1)+1,:) = dALFAAdt;
+0088     dWvdt(2*(i-1)+2,:) = dPTAdt;
+0089 <span class="keyword">end</span>
+0090         
+0091 <span class="comment">% Calculando saidas secundarias</span>
+0092 <span class="keyword">for</span> i=1:NVert
+0093     eixos.X.valor{i}= t;
+0094     eixos.estilo  = <span class="string">'2D'</span>;
+0095     eixos.X.nome  = <span class="string">'Tempo (s)'</span>;
+0096     eixos.X.tipo  = <span class="string">'T'</span>;        
+0097 <span class="keyword">end</span>
+0098 
+0099 
+0100 <span class="comment">%% Subfuncoes</span>
+0101 <a name="_sub1" href="#_subfunctions" class="code">function [F] = sigmoidal(x1,x2)</a>
+0102 <span class="comment">% Função que gera uma saída sigmoidal para eliminação de descontinuidades</span>
+0103 <span class="comment">% em chaveamento de modelos. A Função tem o seguintes comportamento:</span>
+0104 <span class="comment">% Se x1 = x2, então F = 0.5</span>
+0105 <span class="comment">% Se x1 &gt; X2, então F tende a 1</span>
+0106 <span class="comment">% Se x1 &lt; x2, então F tende a 0</span>
+0107 
+0108 <span class="comment">% variável de entrada:</span>
+0109 <span class="comment">% x1, x2 -&gt; coordenadas</span>
+0110 
+0111 <span class="comment">% variável de saída:</span>
+0112 <span class="comment">% F -&gt; resultado da função</span>
+0113 
+0114 <span class="comment">% Parâmetros:</span>
+0115 <span class="comment">% fator Exp -&gt; determina a curvatura da função</span>
+0116 fatorExp = 2e6;
+0117 
+0118 <span class="comment">% Cálculo:</span>
+0119 F= 1./(1+exp(-fatorExp.*(x1-x2)));
+0120</pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

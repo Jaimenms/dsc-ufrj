@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of montaRegime</title>
+  <meta name="keywords" content="montaRegime">
+  <meta name="description" content="Função que consolida as variaveis de fechamento em função do padrão de">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; montaRegime.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>montaRegime
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que consolida as variaveis de fechamento em função do padrão de</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [S] = montaRegime(fl,San,Ses,Sbo,Sin,check) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que consolida as variaveis de fechamento em função do padrão de
+ escoamento.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_duto.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto(t,x,y,parametros,j)">modelo_duto</a>	Função que gera o vetor de coeficientes da matriz da EDP discretizada</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function S=monta(S,Si,flagi,campos,checki)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [S] = montaRegime(fl,San,Ses,Sbo,Sin,check)</a>
+0002 <span class="comment">% Função que consolida as variaveis de fechamento em função do padrão de</span>
+0003 <span class="comment">% escoamento.</span>
+0004 
+0005 campos=fieldnames(Ses);
+0006 aux = zeros(size(fl.Est));
+0007 <span class="keyword">for</span> j=1:length(campos)
+0008     S.(campos{j})=aux;
+0009 <span class="keyword">end</span>
+0010 
+0011 S=<a href="#_sub1" class="code" title="subfunction S=monta(S,Si,flagi,campos,checki)">monta</a>(S,Ses,fl.Est,campos,check.Est);
+0012 S=<a href="#_sub1" class="code" title="subfunction S=monta(S,Si,flagi,campos,checki)">monta</a>(S,San,fl.Anu,campos,check.Anu);
+0013 S=<a href="#_sub1" class="code" title="subfunction S=monta(S,Si,flagi,campos,checki)">monta</a>(S,Sin,fl.Int,campos,check.Int);
+0014 S=<a href="#_sub1" class="code" title="subfunction S=monta(S,Si,flagi,campos,checki)">monta</a>(S,Sbo,fl.Bub,campos,check.Bub);
+0015 
+0016 S.ddPLdalfaG(find(isnan(S.ddPLdalfaG)))=0;
+0017 S.ddPGdalfaG(find(isnan(S.ddPGdalfaG)))=0;
+0018 S.dPL(find(isnan(S.dPL)))=0;
+0019 S.dPG(find(isnan(S.dPG)))=0;
+0020 S.dPI(find(isnan(S.dPI)))=0;
+0021 S.ddPLdP(find(isnan(S.ddPLdP)))=0;
+0022 S.ddPGdP(find(isnan(S.ddPGdP)))=0;    
+0023 
+0024 <a name="_sub1" href="#_subfunctions" class="code">function S=monta(S,Si,flagi,campos,checki)</a>
+0025 
+0026 <span class="keyword">if</span> checki
+0027     ix = find(flagi&gt;0.1|isnan(flagi));
+0028     <span class="keyword">for</span> j=1:length(campos)
+0029         S.(campos{j})(ix) = S.(campos{j})(ix)+flagi(ix).*Si.(campos{j});
+0030     <span class="keyword">end</span>
+0031 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

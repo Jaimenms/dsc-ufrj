@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of modelo_fluido</title>
+  <meta name="keywords" content="modelo_fluido">
+  <meta name="description" content="Função que descreve as propriedades dos fluidos.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; modelo_fluido.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>modelo_fluido
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que descreve as propriedades dos fluidos.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [propL, propG, tensao] = modelo_fluido(P,T,parametros) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que descreve as propriedades dos fluidos.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_duto.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto(t,x,y,parametros,j)">modelo_duto</a>	Função que gera o vetor de coeficientes da matriz da EDP discretizada</li><li><a href="modelo_duto_G.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto_G(t,x,y,parametros,j)">modelo_duto_G</a>	Função que gera o vetor de coeficientes da matriz da EDP discretizada</li><li><a href="modelo_duto_L.html" class="code" title="function [F,saidas,FSS,A,B,ixModel]=modelo_duto_L(t,x,y,parametros,j)">modelo_duto_L</a>	Função que gera o vetor de coeficientes da matriz da EDP discretizada</li><li><a href="modelo_valvula.html" class="code" title="function [ZP,saidas,eixos] = modelo_valvula(t,X,E,parametros)">modelo_valvula</a>	Função que determina pressão a montante da válvula em função da pressão a</li><li><a href="modelo_valvulaRet.html" class="code" title="function [ZL,ZG,saidas,eixos] = modelo_valvulaRet(t,X,E,parametros)">modelo_valvulaRet</a>	Função que determina as vazões de líquido e de gás em função da pressão</li><li><a href="modelo_vertice.html" class="code" title="function [dWvdt,saidas,eixos] = modelo_vertice(t,Y,Ya,E,parametros)">modelo_vertice</a>	Função que determina o modelo dos vertices dinamicos</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [propL, propG, tensao] = modelo_fluido(P,T,parametros)</a>
+0002 <span class="comment">% Função que descreve as propriedades dos fluidos.</span>
+0003 
+0004 <span class="comment">%    [PROPL,PROPG, TENSAO] = modelo_fluido(P,T,parametros), para a</span>
+0005 <span class="comment">%    matriz M-por-N P correspondente aos estados de pressão, para a matriz</span>
+0006 <span class="comment">%    M-por-N T correspondente aos estados de temperatura e para o struct</span>
+0007 <span class="comment">%    parametros retorna O escalar TENSAO que corresponde à tensao</span>
+0008 <span class="comment">%    interfacial dos fluidos e os structs PROPL e PROPG com as seguintes</span>
+0009 <span class="comment">%    estruturas:</span>
+0010 <span class="comment">%      PROPL.dens    -&gt; densidade da fase líquida</span>
+0011 <span class="comment">%      PROPG.dens    -&gt; densidade da fase gas</span>
+0012 <span class="comment">%      PROPL.C       -&gt; derivada da densidade pela pressão da fase líquida</span>
+0013 <span class="comment">%      PROPG.C       -&gt; derivada da densidade pela pressão da fase gás</span>
+0014 <span class="comment">%      PROPL.ddensdT -&gt; derivada da densidade pela temp. da fase líquida</span>
+0015 <span class="comment">%      PROPG.ddensdT -&gt; derivada da densidade pela temp. da fase gás</span>
+0016 <span class="comment">%      PROPL.visc    -&gt; viscosidade da fase líquida</span>
+0017 <span class="comment">%      PROPG.visc    -&gt; viscosidade da fase gás</span>
+0018 <span class="comment">%    Sendo o struct de parametros de composto por:</span>
+0019 <span class="comment">%      viscG  -&gt; viscosidade do gas</span>
+0020 <span class="comment">%      gamaG  -&gt; constante politropica do gas</span>
+0021 <span class="comment">%      densG0 -&gt; densidade do gas no estado padrao</span>
+0022 <span class="comment">%      viscL  -&gt; viscosidade do liquido</span>
+0023 <span class="comment">%      gamaL  -&gt; constante politropica do liquido</span>
+0024 <span class="comment">%      densL0 -&gt; densidade do liquido no estado padrao</span>
+0025 <span class="comment">%      P0     -&gt; pressão no estado padrão</span>
+0026 <span class="comment">%      tensao -&gt; tensao interfacial</span>
+0027 
+0028 <span class="comment">% Considerando expansão adiabática</span>
+0029 propL.dens=parametros.densL0.*(P./parametros.P0).^(1/parametros.gamaL);
+0030 propG.dens=parametros.densG0.*(P./parametros.P0).^(1/parametros.gamaG);
+0031 propL.C=propL.dens./(P.*parametros.gamaL);
+0032 propG.C=propG.dens./(P.*parametros.gamaG);
+0033 
+0034 <span class="comment">% TODO - Definir derivada com temperatura</span>
+0035 PROPL.ddensdT = P.*0;
+0036 PROPG.ddensdT = P.*0;
+0037 
+0038 uns = ones(size(P));
+0039 tensao = parametros.tensao.*uns;
+0040 propL.visc = parametros.viscL.*uns;
+0041 propG.visc = parametros.viscG.*uns;
+0042 
+0043 propL.velSom = (propL.dens./parametros.gamaL./P).^(-0.5);
+0044 propG.velSom = (propG.dens./parametros.gamaG./P).^(-0.5);</pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

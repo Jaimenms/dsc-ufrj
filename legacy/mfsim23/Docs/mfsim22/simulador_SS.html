@@ -1,0 +1,242 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of simulador_SS</title>
+  <meta name="keywords" content="simulador_SS">
+  <meta name="description" content="Função que executa a simulação bifásica estacionária em redes de dutos.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; simulador_SS.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>simulador_SS
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que executa a simulação bifásica estacionária em redes de dutos.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [X0]=simulador_SS(parametros,dados) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que executa a simulação bifásica estacionária em redes de dutos.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="modelo_rede_SS.html" class="code" title="function [F,x,alfa]=modelo_rede_SS(t,x,parametros)">modelo_rede_SS</a>	Função referente ao modelo de redes de escoamento bifásico simplificado</li><li><a href="solver_sea.html" class="code" title="function [X1,saidas,flag]=solver_sea(options,FUN,t,X1,parametros)">solver_sea</a>	Função que resolve um sist. alg. linear (Newton-Raphson).</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="simulador.html" class="code" title="function [dados,estados,saidas,eixos]=simulador(dados,estados,flagSS,flagSS2,flagD,flagRES,flagCD)">simulador</a>	Função que executa a simulação bifásica de escoamento em redes de dutos.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [Wk0,Ya0] = gera_CI(x,parametros,dados)</a></li><li><a href="#_sub2" class="code">function [AG,PT,QL,QG] = busca_Ei(parametros)</a></li><li><a href="#_sub3" class="code">function [M,E,e,N,S] = monta_Rede(parametros)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [X0]=simulador_SS(parametros,dados)</a>
+0002 <span class="comment">% Função que executa a simulação bifásica estacionária em redes de dutos.</span>
+0003 
+0004 
+0005 <span class="comment">% Preparando a rede estacionária em função do nível de discretização</span>
+0006 [M,E,e,N,S] = <a href="#_sub3" class="code" title="subfunction [M,E,e,N,S] = monta_Rede(parametros)">monta_Rede</a>(parametros);
+0007 
+0008 <span class="comment">% Desempacotando variaveis</span>
+0009 parametros.M = M;
+0010 parametros.E = E;
+0011 parametros.e = e;
+0012 parametros.N = N;
+0013 parametros.S = S;
+0014 
+0015 <span class="comment">% Configurando Newton-Raphson</span>
+0016 options.maxIter = 50;
+0017 options.Delta = 1e-3;
+0018 options.Delta2 = 1e-6;
+0019 options.Tol = 1e-9;
+0020 
+0021 <span class="comment">% Fornecendo estimativas iniciais para alfa</span>
+0022 alfa0 = [0.1 0.25 0.5 0.75 0.9 0.01 0.99];
+0023 
+0024 nalfa=length(alfa0);
+0025 
+0026 
+0027 <span class="comment">% Executando busca de estados estacionarios</span>
+0028 isComplexo=1;isOut=1;aux=0;
+0029 flag=1;
+0030 <span class="keyword">while</span> flag||isComplexo || isOut
+0031     <span class="comment">% Atualiza Contador</span>
+0032     <span class="keyword">if</span> aux&gt;1,close,<span class="keyword">end</span>
+0033     aux=aux+1;
+0034     <span class="keyword">if</span> aux&gt;nalfa,disp(<span class="string">'Não possui SS'</span>),<span class="keyword">break</span>,<span class="keyword">end</span>
+0035 
+0036     <span class="comment">% Estimativas iniciais:</span>
+0037     <span class="comment">%   Alfa</span>
+0038     parametros.alfa0 = alfa0(aux);
+0039     <span class="comment">%   Demais variáveis</span>
+0040     [F,x]=<a href="modelo_rede_SS.html" class="code" title="function [F,x,alfa]=modelo_rede_SS(t,x,parametros)">modelo_rede_SS</a>([],[],parametros);
+0041 
+0042     <span class="comment">% Executa newton-raphson</span>
+0043     [x,aux2,flag]=<a href="solver_sea.html" class="code" title="function [X1,saidas,flag]=solver_sea(options,FUN,t,X1,parametros)">solver_sea</a>(options,<span class="string">'modelo_rede_SS'</span>,[],x,parametros);
+0044     flag=1-flag;
+0045 
+0046     <span class="comment">% Gera novos alfas</span>
+0047     [F,x,alfa]=<a href="modelo_rede_SS.html" class="code" title="function [F,x,alfa]=modelo_rede_SS(t,x,parametros)">modelo_rede_SS</a>([],x,parametros);
+0048 
+0049     <span class="comment">% Testa novos alfas</span>
+0050     isOut=~isempty(find(alfa&lt;0|alfa&gt;1,1));
+0051     isComplexo=~isreal(alfa);
+0052 <span class="keyword">end</span>
+0053 
+0054 <span class="comment">% Gerando vetor de estados da rede</span>
+0055 [Wk0,Ya0] = <a href="#_sub1" class="code" title="subfunction [Wk0,Ya0] = gera_CI(x,parametros,dados)">gera_CI</a>(x,parametros,dados);
+0056 X0=[Wk0;Ya0];
+0057 
+0058 
+0059 <a name="_sub1" href="#_subfunctions" class="code">function [Wk0,Ya0] = gera_CI(x,parametros,dados)</a>
+0060 <span class="comment">% Gera o vetor de estados da rede a partir da saída do simulador</span>
+0061 <span class="comment">% estacionario</span>
+0062 
+0063 <span class="comment">% Desempacotando variaveis</span>
+0064 Sw = parametros.Sw;
+0065 m = parametros.m;
+0066 NVertA = parametros.NVertA;
+0067 iVertA = parametros.iVertA;
+0068 Nk = parametros.Nk;
+0069 N = parametros.N;
+0070 S = parametros.S;
+0071 
+0072 <span class="comment">% Separando variaveis</span>
+0073 alfa_SS=x(0*N+0*S+(1:S));
+0074 qL_SS  =x(0*N+1*S+(1:S));
+0075 qG_SS  =x(0*N+2*S+(1:S));
+0076 p_SS   =x(0*N+3*S+(1:N));
+0077 
+0078 Wk0=[];
+0079 Ya0=[];
+0080 <span class="keyword">for</span> i=1:m
+0081     Wk0_aux=[];
+0082     Yk0=[];
+0083     vIn = dados.tubo{i}.verticeOrigem;
+0084     vOut = dados.tubo{i}.verticeDestino;
+0085     ix = 0:4:4*Nk(i);
+0086     Yk0(ix+1,1)=ones(Nk(i)+1,1).*alfa_SS(i);
+0087     Yk0(ix+2,1)=linspace(p_SS(vIn),p_SS(vOut),Nk(i)+1);
+0088     Yk0(ix+3,1)=ones(Nk(i)+1,1).*qL_SS(i);
+0089     Yk0(ix+4,1)=ones(Nk(i)+1,1).*qG_SS(i);
+0090     Wk0_aux=Sw{i}'*Yk0;
+0091     Wk0=[Wk0;Wk0_aux];
+0092 <span class="keyword">end</span>
+0093 <span class="keyword">for</span> i=1:NVertA
+0094     alfa_aux=[];
+0095     <span class="keyword">for</span> j=1:m
+0096         vIn = dados.tubo{j}.verticeOrigem;
+0097         vOut = dados.tubo{j}.verticeDestino;
+0098         <span class="keyword">if</span> vIn==iVertA(i)||vOut==iVertA(i)
+0099             alfa_aux=[alfa_aux alfa_SS(j)];
+0100         <span class="keyword">end</span>
+0101     <span class="keyword">end</span>
+0102     Ya0((i-1)*2+1,:)=mean(alfa_aux);
+0103     Ya0((i-1)*2+2,:)=p_SS(iVertA(i));
+0104 <span class="keyword">end</span>
+0105 
+0106 
+0107 <a name="_sub2" href="#_subfunctions" class="code">function [AG,PT,QL,QG] = busca_Ei(parametros)</a>
+0108 
+0109 Matriz_E = parametros.Matriz_E;
+0110 
+0111 AG = Matriz_E(1:4:<span class="keyword">end</span>,1);
+0112 PT = Matriz_E(2:4:<span class="keyword">end</span>,1);
+0113 QL = Matriz_E(3:4:<span class="keyword">end</span>,1);
+0114 QG = Matriz_E(4:4:<span class="keyword">end</span>,1);
+0115 
+0116 <a name="_sub3" href="#_subfunctions" class="code">function [M,E,e,N,S] = monta_Rede(parametros)</a>
+0117 <span class="comment">% Prepara as matrizes e variaveis utilizadas na simulacao estacionaria</span>
+0118 
+0119 <span class="comment">% Captura variaveis</span>
+0120 NVert = parametros.NVert;
+0121 iVert = parametros.iVert;
+0122 iVertA = parametros.iVertA;
+0123 iVertB = parametros.iVertB;
+0124 MS = parametros.MS;
+0125 ME = parametros.ME;
+0126 m = parametros.m;
+0127 
+0128 <span class="comment">% Determina tamanhos da rede</span>
+0129 N = NVert; <span class="comment">%Numero de Vértices</span>
+0130 S = m; <span class="comment">%Numero de tubos</span>
+0131 
+0132 M = ME-MS; <span class="comment">% Matriz de incidência</span>
+0133 
+0134 <span class="comment">% Determinando a matriz de especificaçoes do simulador</span>
+0135 E=zeros(0,3*(N+S));
+0136 
+0137 <span class="comment">% Determina Especificações</span>
+0138 [AG,PT,QL,QG] = <a href="#_sub2" class="code" title="subfunction [AG,PT,QL,QG] = busca_Ei(parametros)">busca_Ei</a>(parametros);
+0139 
+0140 <span class="comment">% Ativa especificações</span>
+0141 iy=1;
+0142 <span class="keyword">for</span> i=1:NVert
+0143     <span class="comment">% Especificando vertices do tipo A quanto a Vazão</span>
+0144     <span class="keyword">if</span> iVert(i)==1
+0145         <span class="comment">% Liquido</span>
+0146         E(iy,3*S+1*N+i)=1;
+0147         <span class="keyword">if</span> QL(i)==-1
+0148             e(iy,1)=0;
+0149         <span class="keyword">else</span>
+0150             e(iy,1)=QL(i);
+0151         <span class="keyword">end</span>
+0152         iy = iy+1;
+0153         <span class="comment">% Gas</span>
+0154         E(iy,3*S+2*N+i)=1;        
+0155         <span class="keyword">if</span> QG(i)==-1
+0156             e(iy,1)=0;
+0157         <span class="keyword">else</span>
+0158             e(iy,1)=QG(i);
+0159         <span class="keyword">end</span>
+0160         iy = iy+1;        
+0161     <span class="keyword">end</span>
+0162     <span class="comment">% Especificando vertices do tipo B quanto a Pressão</span>
+0163     <span class="keyword">if</span> iVert(i)==2
+0164         <span class="keyword">if</span> PT(i)&gt;0
+0165             E(iy,3*S+0*N+i)=1;
+0166             e(iy,1)=PT(i);
+0167             iy = iy+1;
+0168         <span class="keyword">end</span>
+0169     <span class="keyword">end</span>
+0170     <span class="comment">% Especificando vertices do tipo B quanto a Hold-up</span>
+0171     <span class="keyword">if</span> iVert(i)==2
+0172         <span class="keyword">if</span> PT(i)&gt;0
+0173             aux=find(M(i,:)==-1);
+0174             <span class="keyword">for</span> k=1:length(aux)
+0175                 E(iy,aux(k))=1;
+0176                 e(iy,1)=AG(i);
+0177                 iy = iy+1;
+0178             <span class="keyword">end</span>
+0179         <span class="keyword">end</span>
+0180     <span class="keyword">end</span>
+0181     <span class="comment">% Especificando vertices do tipo B quanto a Vazao</span>
+0182     <span class="keyword">if</span> iVert(i)==2
+0183         <span class="keyword">if</span> PT(i)&lt;=0
+0184             <span class="comment">% Liquido</span>
+0185             E(iy,3*S+1*N+i)=1;
+0186             e(iy,1)=QL(i);
+0187             iy = iy+1;
+0188             <span class="comment">% Gas</span>
+0189             E(iy,3*S+2*N+i)=1;        
+0190             e(iy,1)=QG(i);
+0191             iy = iy+1;        
+0192         <span class="keyword">end</span>
+0193     <span class="keyword">end</span>
+0194 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

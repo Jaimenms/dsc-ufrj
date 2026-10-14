@@ -1,0 +1,279 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of simulador</title>
+  <meta name="keywords" content="simulador">
+  <meta name="description" content="Função que executa a simulação bifásica de escoamento em redes de dutos.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">mfsim22</a> &gt; simulador.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for mfsim22&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>simulador
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Função que executa a simulação bifásica de escoamento em redes de dutos.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [dados,estados,saidas,eixos]=simulador(dados,estados,flagSS,flagSS2,flagD,flagRES,flagCD) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Função que executa a simulação bifásica de escoamento em redes de dutos.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="calculos_iniciais.html" class="code" title="function [parametros]=calculos_iniciais(dados)">calculos_iniciais</a>	Função que executa cálculos iniciais dos parametros a serem utilizadas</li><li><a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>	Função referente ao modelo de redes de escoamento bifásico</li><li><a href="simulador_SS.html" class="code" title="function [X0]=simulador_SS(parametros,dados)">simulador_SS</a>	Função que executa a simulação bifásica estacionária em redes de dutos.</li><li><a href="solver_sea.html" class="code" title="function [X1,saidas,flag]=solver_sea(options,FUN,t,X1,parametros)">solver_sea</a>	Função que resolve um sist. alg. linear (Newton-Raphson).</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="mfsim_entrada.html" class="code" title="function mfsim_entrada">mfsim_entrada</a>	Interface gráfica para simulação de redes de escoamento bifásico.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function dados = XY2dados(X,Y,dados,parametros)</a></li><li><a href="#_sub2" class="code">function    [X,Y] = dados2XY(dados,parametros)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [dados,estados,saidas,eixos]=simulador(dados,estados,flagSS,flagSS2,flagD,flagRES,flagCD)</a>
+0002 <span class="comment">% Função que executa a simulação bifásica de escoamento em redes de dutos.</span>
+0003 
+0004 <span class="comment">%% Tratamentos Iniciais</span>
+0005 clc, clear functions, warning(<span class="string">'off'</span>)
+0006 <span class="keyword">global</span> parametros
+0007 tic
+0008 tempo_cpu = cputime;
+0009 
+0010 disp(<span class="string">'(1) Executando cálculos iniciais'</span>)
+0011 [parametros]=<a href="calculos_iniciais.html" class="code" title="function [parametros]=calculos_iniciais(dados)">calculos_iniciais</a>(dados);
+0012 disp(<span class="string">'Cálculos iniciais executados com sucesso'</span>)
+0013 disp(<span class="string">'  '</span>)
+0014 
+0015 disp(<span class="string">'(2) Desempacotando variaveis'</span>)
+0016 T = parametros.T;
+0017 Tol    = dados.simulador.tolerancia;
+0018 Delta  = dados.simulador.delta;
+0019 Delta2 = dados.simulador.delta2;
+0020 maxIter= dados.simulador.maxIter;
+0021 
+0022 ode = dados.simulador.tipoOde;
+0023 disp(<span class="string">'Variaveis desempacotadas com sucesso'</span>)
+0024 disp(<span class="string">'  '</span>)
+0025 
+0026 <span class="keyword">if</span> ~exist(<span class="string">'flagCD'</span>),flagCD=0;<span class="keyword">end</span>
+0027 
+0028 <span class="comment">%% Executando simulação estacionária</span>
+0029 <span class="keyword">if</span> flagSS
+0030 
+0031     disp(<span class="string">'(3) Gerando estimativa inicial'</span>)
+0032     [X0]=<a href="simulador_SS.html" class="code" title="function [X0]=simulador_SS(parametros,dados)">simulador_SS</a>(parametros,dados);    
+0033     disp(<span class="string">'Estimativa inicial gerada com sucesso'</span>)
+0034     disp(<span class="string">'  '</span>)
+0035 
+0036     clear functions
+0037 
+0038     disp(<span class="string">'(4) Gerando saidas secudarias do estado estacionario'</span>)
+0039     [dXdt,Y0,saidas,eixos]=<a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>(0,X0,parametros);
+0040 
+0041     disp(<span class="string">'Saidas do estado estacionario organizadas com sucesso'</span>)
+0042     disp(<span class="string">'  '</span>)
+0043 
+0044     disp(<span class="string">'(5) Atualizando condições iniciais'</span>)
+0045     dados = <a href="#_sub1" class="code" title="subfunction dados = XY2dados(X,Y,dados,parametros)">XY2dados</a>(X0,Y0,dados,parametros);
+0046     disp(<span class="string">'Condições iniciais atualizadas com sucesso'</span>)
+0047     disp(<span class="string">'   '</span>)
+0048 
+0049     T = 0;
+0050     X = X0;
+0051     
+0052     estados.T = T;
+0053     estados.X = X;
+0054     
+0055     disp(<span class="string">'Tempo Real          : ESTACIONÁRIA'</span>)
+0056     disp([<span class="string">'Tempo Transcorrido : '</span> num2str(toc) <span class="string">' s'</span>])
+0057     disp([<span class="string">'Tempo de Máquina   : '</span> num2str(cputime-tempo_cpu) <span class="string">' s'</span>])
+0058     
+0059 <span class="keyword">end</span>
+0060 
+0061 <span class="comment">%% Executando simulação estacionária tipo 2</span>
+0062 <span class="keyword">if</span> flagSS2
+0063 
+0064     disp(<span class="string">'(6) Capturando de condicões iniciais'</span>)
+0065     [X0] = <a href="#_sub2" class="code" title="subfunction    [X,Y] = dados2XY(dados,parametros)">dados2XY</a>(dados,parametros);    
+0066     disp(<span class="string">'Condicões iniciais capturadas com sucesso'</span>)
+0067     disp(<span class="string">'  '</span>)
+0068 
+0069     disp(<span class="string">'(7) Determinando estado estacionario'</span>)
+0070     options.Tol    = Tol;
+0071     options.Delta  = Delta;
+0072     options.Delta2 = Delta2;
+0073     options.maxIter= maxIter;
+0074     [X0]=<a href="solver_sea.html" class="code" title="function [X1,saidas,flag]=solver_sea(options,FUN,t,X1,parametros)">solver_sea</a>(options,@<a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>,0,X0,parametros);
+0075     disp(<span class="string">'Estado estacionario determinado com sucesso'</span>)
+0076     disp(<span class="string">'  '</span>)
+0077     
+0078     disp(<span class="string">'(8) Gerando saidas secudarias do estado estacionario'</span>)
+0079     [dXdt,Y0,saidas,eixos]=<a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>(0,X0,parametros);
+0080     disp(<span class="string">'Saidas do estado estacionario organizadas com sucesso'</span>)
+0081     disp(<span class="string">'  '</span>)
+0082 
+0083     disp(<span class="string">'(9) Atualizando condições iniciais'</span>)
+0084     dados = <a href="#_sub1" class="code" title="subfunction dados = XY2dados(X,Y,dados,parametros)">XY2dados</a>(X0,Y0,dados,parametros);
+0085     disp(<span class="string">'Condições iniciais atualizadas com sucesso'</span>)
+0086     disp(<span class="string">'   '</span>)
+0087     
+0088     T = 0;
+0089     X = X0;
+0090     
+0091     estados.T = T;
+0092     estados.X = X;
+0093 
+0094     disp(<span class="string">'Tempo Real          : ESTACIONÁRIA'</span>)
+0095     disp([<span class="string">'Tempo Transcorrido : '</span> num2str(toc) <span class="string">' s'</span>])
+0096     disp([<span class="string">'Tempo de Máquina   : '</span> num2str(cputime-tempo_cpu) <span class="string">' s'</span>])
+0097     
+0098 <span class="keyword">end</span>
+0099 
+0100 <span class="comment">%% Executando simulação Dinâmica</span>
+0101 <span class="keyword">if</span> flagD
+0102     disp(<span class="string">'(10) Capturando de condicões iniciais'</span>)
+0103     [X0] = <a href="#_sub2" class="code" title="subfunction    [X,Y] = dados2XY(dados,parametros)">dados2XY</a>(dados,parametros);    
+0104     disp(<span class="string">'Condicões iniciais capturadas com sucesso'</span>)
+0105     disp(<span class="string">'  '</span>)
+0106 
+0107     disp(<span class="string">'(11) Iniciando integraçao do modelo'</span>)
+0108     
+0109 
+0110     
+0111     nx = length(parametros.IndX.tipo);
+0112     nnMat = zeros(nx,1);
+0113     nnMat(parametros.IndX.tipo==1)=1;
+0114     nnMat(parametros.IndX.tipo==2)=1;
+0115     nnMat(parametros.IndX.tipo==5)=1;
+0116 
+0117     opt = odeset(<span class="string">'MaxStep'</span>,dados.simulador.maxStep,<span class="keyword">...</span>
+0118         <span class="string">'AbsTol'</span>,dados.simulador.absTol.*ones(nx,1),<span class="keyword">...</span>
+0119         <span class="string">'Vectorized'</span>,<span class="string">'on'</span>,<span class="keyword">...</span>
+0120         <span class="string">'MaxOrder'</span>,5, <span class="keyword">...</span>
+0121         <span class="string">'BDF'</span>,<span class="string">'off'</span>,<span class="keyword">...</span>
+0122         <span class="string">'normcontrol'</span>,<span class="string">'off'</span>,<span class="string">'OutputFcn'</span>,@odeprogressbar,<span class="keyword">...</span>
+0123         <span class="string">'NonNegative'</span>,find(nnMat),<span class="keyword">...</span>
+0124         <span class="string">'RelTol'</span>,dados.simulador.relTol);
+0125 <span class="comment">%       'Jacobian','modelo_rede_jacobiana');%</span>
+0126 
+0127     
+0128     T = dados.simulador.tempoInicial:dados.simulador.incrementoTempo:dados.simulador.tempoFinal;
+0129 
+0130     <span class="keyword">switch</span> ode
+0131         <span class="keyword">case</span> 1
+0132             [T,X] = ode45(@<a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>,T,X0,opt,parametros);
+0133         <span class="keyword">case</span> 2
+0134             [T,X] = ode23(@<a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>,T,X0,opt,parametros);
+0135         <span class="keyword">case</span> 3
+0136             [T,X] = ode113(@<a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>,T,X0,opt,parametros);
+0137         <span class="keyword">case</span> 4
+0138             [T,X] = ode15s(@<a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>,T,X0,opt,parametros);
+0139         <span class="keyword">case</span> 5
+0140             [T,X] = ode23s(@<a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>,T,X0,opt,parametros);
+0141         <span class="keyword">case</span> 6
+0142             [T,X] = ode23t(@<a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>,T,X0,opt,parametros);
+0143         <span class="keyword">case</span> 7
+0144             [T,X] = ode23tb(@<a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>,T,X0,opt,parametros);
+0145     <span class="keyword">end</span>
+0146     T=T';    X=X';
+0147     disp(<span class="string">'Integraçao do modelo do modelo executada com sucesso'</span>)
+0148     disp(<span class="string">'  '</span>)
+0149 
+0150     disp(<span class="string">'(12) Atualizando condições iniciais'</span>)
+0151     [dXdt,Y,saidas,eixos]=<a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>(T(end),X(:,end),parametros);
+0152     
+0153     dados = <a href="#_sub1" class="code" title="subfunction dados = XY2dados(X,Y,dados,parametros)">XY2dados</a>(X(:,end),Y,dados,parametros);
+0154     disp(<span class="string">'Condições iniciais atualizadas com sucesso'</span>)
+0155     disp(<span class="string">'   '</span>)
+0156     
+0157     estados.T = T;
+0158     estados.X = X;
+0159     disp([<span class="string">'Tempo Real        : '</span> num2str(T(end)-T(1))])
+0160     disp([<span class="string">'Tempo Transcorrido: '</span> num2str(toc) <span class="string">' s'</span>])
+0161     disp([<span class="string">'Tempo de Máquina  : '</span> num2str(cputime-tempo_cpu) <span class="string">' s'</span>])
+0162 
+0163 <span class="keyword">end</span>
+0164 
+0165 <span class="keyword">if</span> flagRES
+0166     <span class="comment">%% Tratamentos finais</span>
+0167     disp(<span class="string">'(13) Organizando saidas do simulador dinamico'</span>)
+0168     [dXdt,Y,saidas,eixos]=<a href="modelo_rede.html" class="code" title="function [dXdt,Y,saidas,eixos]=modelo_rede(t,X,parametros)">modelo_rede</a>(estados.T,estados.X,parametros);
+0169     disp(<span class="string">'Saidas do simulador dinamico organizadas com sucesso.'</span>)
+0170     disp(<span class="string">'  '</span>)
+0171 <span class="keyword">end</span>
+0172 
+0173 
+0174 <span class="comment">%% Subfunções</span>
+0175 <a name="_sub1" href="#_subfunctions" class="code">function dados = XY2dados(X,Y,dados,parametros)</a>
+0176 
+0177 Nk = parametros.Nk;
+0178 m = parametros.m;
+0179 NVertA = parametros.NVertA;
+0180 iVertA=parametros.iVertA;
+0181 Sxa = parametros.Sxa;
+0182 
+0183 Ya=Sxa*X;
+0184 <span class="keyword">for</span> i=1:NVertA
+0185     dados.vertice{iVertA(i)}.condicaoInicial1 = Ya((i-1)*2+1);
+0186     dados.vertice{iVertA(i)}.condicaoInicial2 = Ya((i-1)*2+2);
+0187 <span class="keyword">end</span>
+0188 <span class="keyword">for</span> i=1:m
+0189     y=Y{i};
+0190     ix = 0:4:4*Nk(i);
+0191     dados.tubo{i}.condicaoInicial1=[];
+0192     dados.tubo{i}.condicaoInicial2=[];
+0193     dados.tubo{i}.condicaoInicial3=[];
+0194     dados.tubo{i}.condicaoInicial4=[];
+0195     dados.tubo{i}.condicaoInicial1(1,:)=y(ix+1);
+0196     dados.tubo{i}.condicaoInicial2(1,:)=y(ix+2);
+0197     dados.tubo{i}.condicaoInicial3(1,:)=y(ix+3);
+0198     dados.tubo{i}.condicaoInicial4(1,:)=y(ix+4);
+0199 <span class="keyword">end</span>
+0200 
+0201 
+0202 <a name="_sub2" href="#_subfunctions" class="code">function    [X,Y] = dados2XY(dados,parametros)</a>
+0203     
+0204 m = parametros.m;
+0205 Nk = parametros.Nk;
+0206 NVertA = parametros.NVertA;
+0207 iVert = parametros.iVert;
+0208 Sw = parametros.Sw;
+0209 ne = parametros.ne;
+0210 
+0211 iVertA=find(iVert==1);
+0212 
+0213 W=[];
+0214 Wv=[];
+0215 <span class="keyword">for</span> i=1:m
+0216     Swk = Sw{i};
+0217     y=[];
+0218     auxy=0:ne:ne*Nk(i);
+0219     y(auxy+1,:) = dados.tubo{i}.condicaoInicial1(:);
+0220     y(auxy+2,:) = dados.tubo{i}.condicaoInicial2(:);
+0221     y(auxy+3,:) = dados.tubo{i}.condicaoInicial3(:);
+0222     y(auxy+4,:) = dados.tubo{i}.condicaoInicial4(:);
+0223     W = [W;Swk'*y];
+0224     Y{i} = y;
+0225     
+0226 <span class="keyword">end</span>
+0227 <span class="keyword">for</span> i=1:NVertA
+0228     Wv(2*(i-1)+1,1) = dados.vertice{iVertA(i)}.condicaoInicial1;
+0229     Wv(2*(i-1)+2,1) = dados.vertice{iVertA(i)}.condicaoInicial2;
+0230 <span class="keyword">end</span>
+0231 X = [W;Wv];</pre></div>
+<hr><address>Generated on Thu 13-Aug-2009 15:25:49 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

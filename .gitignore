@@ -1,0 +1,21 @@
+# ambientes e caches
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+
+# dados grandes: fora do git, fixados pelo MANIFEST.sha256 (tools/manifest.py)
+notebooks/data/*.npz
+legacy/DSc_JAIME_v92.DOC
+
+# saídas de corridas e diagnósticos (scratch é arquivada fora do pacote)
+scratch/*.npz
+scratch/*.log
+scratch/*.txt
+scratch/*.png
+scratch/*.npy
+scratch/nblogs/
+runs/
+archive/**/*.tar.gz
