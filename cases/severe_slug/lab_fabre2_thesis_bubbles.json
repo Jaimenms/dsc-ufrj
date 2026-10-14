@@ -278,10 +278,11 @@
      }
     },
     "ic": {
-     "arrays": {
-      "key": "1",
-      "file": "lab_fabre2_thesis_bubbles.ic.npz"
-     }
+     "recipe": "shut_in",
+     "s_elbow0": 26.0,
+     "alpha_line": 0.5,
+     "alpha_riser": 0.01,
+     "P_out_bar": 1.013
     }
    }
   ]

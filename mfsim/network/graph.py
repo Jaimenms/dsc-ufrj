@@ -309,13 +309,17 @@ class Network:
         pipes = []
         for i, p in enumerate(self.pipes):
             model_id, regime_id, extra = p.model.to_legacy()
+            ic = p.ic
+            if ic is None and p.ic_recipe is not None:
+                from ..initial.recipes import materialize
+                ic = materialize(p.ic_recipe, p.points, p.n_elements, p.grading, self.fluid, self.reference.PR)
             extra.update(p.scheme.to_legacy_extra())
             v_in = collapse.get(p.v_from, p.v_from); v_out = collapse.get(p.v_to, p.v_to)
             pipes.append(LPipe(index=int(p.id) if p.id.isdigit() else i + 1, v_in=index[v_in], v_out=index[v_out],
                                x=p.points[:, 0].copy(), y=p.points[:, 1].copy(), z=p.points[:, 2].copy(), n_elements=np.asarray(p.n_elements, int),
                                D=p.D, roughness=p.roughness, model=model_id, regime=regime_id,
                                bc_in=tuple(k.legacy for k in p.ports_in), bc_out=tuple(k.legacy for k in p.ports_out),
-                               ic=None if p.ic is None else np.asarray(p.ic, float), extra=extra,
+                               ic=None if ic is None else np.asarray(ic, float), extra=extra,
                                grading=None if p.grading is None else list(p.grading)))
         valves = [Valve(vertex=index[e.v_to], CV=e.CV, opening=e.opening.to_legacy(), mode=e.mode.to_legacy() if e.mode else 0.0,
                         setpoint=e.setpoint.to_legacy() if e.setpoint else 1.0, **{k: e.pid.get(k) for k in ("pv_node", "pv_pipe", "action", "Kp", "Ki", "Kd", "bias")},

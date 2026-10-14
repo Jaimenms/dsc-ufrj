@@ -36,6 +36,39 @@ uv run python tools/make_nb.py notebooks_src/nb_10_1_1_estratificado.py --execut
 | `mfsim/cases/` | casos do capítulo 10 e gerador do caso de severe slug |
 | `mfsim/plotting.py`, `mfsim/notebook_utils.py` | figuras no estilo da tese |
 
+## Casos em JSON (`mfsim-case/1`) e grafo da rede
+
+Reorganização em curso (plano em `~/.claude/plans/keen-splashing-mango.md`; fases 0 e 1
+feitas em 2026-10-13). Todas as entradas de um caso cabem num ficheiro JSON:
+`fluid`, `reference` (PR e faixas `state_ref`), `time`, `library` (blocos `models` e
+`schemes` reutilizáveis por `"$ref"`), `network` (`vertices` de tipo `boundary`,
+`junction` ou `tank`; `edges` de tipo `pipe`, `connector`, `choke`, `reservoir`,
+`check_valve`, todas com `from`/`to`), `integration`. Unidades SI; especificações no
+tempo como escalar, `{"t": [...], "v": [...]}` ou `{"ramp": [t1, t2], "from": a, "to": b}`;
+pressões como `"P"` (Pa) ou `"PT"` (P/PR). A condição inicial de um duto é uma receita
+(`{"recipe": "blocked" | "shut_in", ...}`, `mfsim/initial/recipes.py`) ou arrays num
+npz ao lado (`{"arrays": {"file": ..., "key": ...}}`).
+
+- `cases/chapter10/*.json`: os 11 casos da tese exportados dos .mf2 por
+  `uv run python -m mfsim.io.legacy_mf2` (com a composição do 10.3.2a e as correções de
+  `load_chapter10_case`; `meta.provenance`); `load_chapter10_json(chave)` lê-os.
+- `cases/severe_slug/*.json`: referência (config recomendada com arrasto físico de
+  bolhas), variantes e os casos de laboratório, exportados das corridas gravadas
+  (`uv run python -m mfsim.cases.severe_slug --export-runs`); casos novos por
+  `generate(**parâmetros de severe_slug_case)` ou pela linha de comando
+  (`python -m mfsim.cases.severe_slug --out x.json --param D=0.05 ...`).
+- `mfsim.io.case_from_json(caminho)` devolve o `Case` que `simulate`/`build_model`
+  consomem; `case_to_json(case_ou_grafo, caminho)` grava. O grafo (`mfsim/network/graph.py`:
+  `Vertex` → `BoundaryVertex`/`JunctionVertex`/`TankVertex`; `Edge` → `Pipe`/`Connector`/
+  `Choke`/`Reservoir`/`CheckValve`) converte-se sem perda para o `Case` legado: o legado
+  deixava implícitas as junções de choke (`Jc<v>`) e de reservatório (`Jr<v>`), que o
+  grafo explicita. `tests/test_json_roundtrip.py` verifica, em todos os casos, que grafo e
+  JSON reconstroem o mesmo modelo (rhs bit-idêntico).
+- Rede de segurança (fase 0): `tests/golden/` gerados por `tools/golden_generate.py`
+  (nível A = hash bit a bit, `policy.json`, `CHANGELOG.md`), `tools/manifest.py`
+  (`MANIFEST.sha256` dos dados fora do git), `mfsim/runs.py` (carregador único das corridas
+  gravadas; `gammaL = 100` por omissão, como o notebook), `uv run pytest -m nightly`.
+
 ## Modelo e layout de estados
 
 Variáveis nodais `[alphaG, PT = P/PR, qL, qG]`; condições de contorno Dirichlet

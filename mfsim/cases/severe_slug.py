@@ -205,22 +205,9 @@ def severe_slug_case(
                                 rhoG=np.array([rhoG_]), muL=np.array([fluid.muL]), muG=np.array([fluid.muG]),
                                 CL=np.array([CL_]), CG=np.array([CG_]), sigma=np.array([fluid.sigma]), beta=beta, hD=hD)
             pocket_alpha = float(np.clip(equilibrium_fractions(inp)[2][0], 0.3, 0.95))
-        aG0 = np.where(s_nodes < s_front - 1e-9, pocket_alpha, 0.0)
-        aG0 = np.where(s_nodes > s_top + 1e-9, 0.0, aG0)   # horizontal de saída
-        P = np.empty(n_nodes)
-        P[-1] = P_out_bar * 1e5
-        for i in range(n_nodes - 2, -1, -1):
-            rhoL_, rhoG_, _, _ = fluid.props(P[i + 1])
-            if s_nodes[i] < s_front - 1e-9:
-                rho_h = rhoG_          # no bolsão estratificado a pressão (do gás) é quase uniforme
-            else:
-                a = 0.5 * (aG0[i] + aG0[i + 1])
-                rho_h = (1 - a) * rhoL_ + a * rhoG_
-            P[i] = P[i + 1] + rho_h * G * (z_nodes[i + 1] - z_nodes[i])
-            if s_nodes[i] < s_front - 1e-9 <= s_nodes[i + 1]:
-                P[i] += dP_margin_bar * 1e5          # salto de pressão na frente de líquido
-        qG0 = np.where(s_nodes < s_front - 1e-9, qG, 0.0)
-        ic_full = np.stack([aG0, P / PR, np.full(n_nodes, qL), qG0], axis=1)
+        from ..initial.recipes import blocked_ic
+        ic_full, P, aG0 = blocked_ic(s_nodes, z_nodes, s_front=s_front, s_top=s_top, pocket_alpha=pocket_alpha, P_out=P_out_bar * 1e5,
+                                     dP_margin=dP_margin_bar * 1e5, qL=qL, qG=qG, fluid=fluid, PR=PR)
         if single_pipe:
             pipes[0].ic = ic_full
             if upstream_volume > 0:
@@ -239,7 +226,7 @@ def severe_slug_case(
                     vtx = next(v for v in vertices if v.index == pipe.v_out)
                     vtx.HG0 = float(np.interp(s_off, s_nodes, aG0))
                     vtx.PT0 = float(np.interp(s_off, s_nodes, P / PR))
-        case_meta_extra = dict(pocket_alpha=pocket_alpha, s_front=s_front)
+        case_meta_extra = dict(pocket_alpha=pocket_alpha, s_front=s_front, s_top=s_top)
     else:
         case_meta_extra = {}
     case_meta_extra.update(elbow_radius=elbow_radius, n_elbow=n_elbow, s_elbow0=s_elbow0, grading_down=grading_down, grading_riser=grading_riser,
@@ -252,16 +239,9 @@ def severe_slug_case(
         s_nodes = mesh["s"]
         z_nodes = mesh["xyz"][:, 2]
         n_nodes = s_nodes.size
-        s_riser0 = s_elbow0
-        aG0 = np.where(s_nodes < s_riser0 - 1e-9, alpha_line0, alpha_riser0)
-        P = np.empty(n_nodes)
-        P[-1] = P_out_bar * 1e5
-        for i in range(n_nodes - 2, -1, -1):
-            rhoL_, rhoG_, _, _ = fluid.props(P[i + 1])
-            a = 0.5 * (aG0[i] + aG0[i + 1])
-            rho_mix = (1 - a) * rhoL_ + a * rhoG_
-            P[i] = P[i + 1] + rho_mix * G * (z_nodes[i + 1] - z_nodes[i])
-        pipes[0].ic = np.stack([aG0, P / PR, np.zeros(n_nodes), np.zeros(n_nodes)], axis=1)
+        from ..initial.recipes import shut_in_ic
+        pipes[0].ic = shut_in_ic(s_nodes, z_nodes, s_elbow0=s_elbow0, alpha_line=alpha_line0, alpha_riser=alpha_riser0,
+                                 P_out=P_out_bar * 1e5, fluid=fluid, PR=PR)
     case.meta = dict(L_h1=L_h1, L_down=L_down, slope_down_deg=slope_down_deg, H_riser=H_riser, L_h2=L_h2,
                      qL=qL, qG=qG, P_out_bar=P_out_bar, **case_meta_extra)
     # faixas esperadas dos estados (para tolerâncias absolutas uniformes, tol_range):
@@ -318,7 +298,66 @@ def export_run_cases(out_dir=CASES_DIR, runs=None):
                                    backend="jax" if o["jax"] else "numpy", first_step=1e-3, max_order=2, newton_tol=1e-3)
         case.meta = dict(case.meta, run=run_name, generator="severe_slug_case", generator_params={k: v for k, v in run.meta.items()
                          if k not in ("n_steps", "n_rejected", "cpu", "parcial", "note")})
+        from ..network.graph import Network
+        net = Network.from_legacy_case(case)
+        if not run.meta.get("network", False) and run.meta.get("start", "blocked") in ("blocked", "shut_in"):
+            # duto único: a condição inicial fica como receita (ficheiro auto-contido)
+            m = case.meta; pipe = net.pipes[0]
+            if run.meta.get("start", "blocked") == "blocked":
+                pipe.ic_recipe = {"recipe": "blocked", "s_front": float(m["s_front"]), "s_top": float(m["s_top"]), "pocket_alpha": float(m["pocket_alpha"]),
+                                  "P_out_bar": float(m["P_out_bar"]), "dP_margin_bar": float(run.meta.get("dP_margin", 0.3)), "qL": float(m["qL"]), "qG": float(m["qG"])}
+            else:
+                pipe.ic_recipe = {"recipe": "shut_in", "s_elbow0": float(m["s_elbow0"]), "alpha_line": 0.5, "alpha_riser": 0.01, "P_out_bar": float(m["P_out_bar"])}
+            pipe.ic = None
         path = os.path.join(out_dir, f"{name}.json")
-        case_to_json(case, path, ic_file=f"{name}.ic.npz")
+        case_to_json(net, path, ic_file=f"{name}.ic.npz")
         written.append(path)
     return written
+
+
+def generate(**kw):
+    """Grafo (`Network`) de um caso de intermitência severa a partir dos parâmetros de
+    `severe_slug_case` (geometria, vazões, partida, opções em `extra`), com a condição inicial
+    como receita quando é duto único. É a forma de criar casos novos em JSON:
+
+        net = generate(D=0.05, L_down=300.0, ..., start="blocked")
+        case_to_json(net, "cases/severe_slug/novo.json")
+    """
+    from ..io.spec import case_to_json  # noqa: F401  (documentação)
+    from ..network.graph import Network
+    case = severe_slug_case(**kw)
+    net = Network.from_legacy_case(case)
+    m = case.meta
+    if kw.get("single_pipe", True) and kw.get("start", "guess") in ("blocked", "shut_in"):
+        pipe = net.pipes[0]
+        if kw.get("start") == "blocked":
+            pipe.ic_recipe = {"recipe": "blocked", "s_front": float(m["s_front"]), "s_top": float(m["s_top"]), "pocket_alpha": float(m["pocket_alpha"]),
+                              "P_out_bar": float(m["P_out_bar"]), "dP_margin_bar": float(kw.get("dP_margin_bar", 0.3)), "qL": float(m["qL"]), "qG": float(m["qG"])}
+        else:
+            pipe.ic_recipe = {"recipe": "shut_in", "s_elbow0": float(m["s_elbow0"]), "alpha_line": float(kw.get("alpha_line0", 0.5)),
+                              "alpha_riser": float(kw.get("alpha_riser0", 0.01)), "P_out_bar": float(m["P_out_bar"])}
+        pipe.ic = None
+    net.meta = dict(m, generator="severe_slug_case", generator_params={k: (v if not hasattr(v, "tolist") else v.tolist()) for k, v in kw.items() if k != "fluid"})
+    return net
+
+
+if __name__ == "__main__":
+    import argparse, json as _json
+    from ..io.spec import case_to_json
+    ap = argparse.ArgumentParser(description="Gera um caso de intermitência severa em JSON a partir dos parâmetros de severe_slug_case.")
+    ap.add_argument("--out", required=True)
+    ap.add_argument("--param", nargs="*", default=[], help="chave=valor (JSON) de severe_slug_case, ex.: D=0.05 start=blocked 'extra={\"conservative\": true}'")
+    ap.add_argument("--export-runs", action="store_true", help="reexporta os casos das corridas de referência (cases/severe_slug)")
+    a = ap.parse_args()
+    if a.export_runs:
+        for p in export_run_cases():
+            print("escrito", p)
+    else:
+        kw = {}
+        for item in a.param:
+            k, v = item.split("=", 1)
+            try:
+                kw[k] = _json.loads(v)
+            except _json.JSONDecodeError:
+                kw[k] = v
+        case_to_json(generate(**kw), a.out); print("escrito", a.out)
