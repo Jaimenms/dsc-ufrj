@@ -22,7 +22,15 @@ class Results:
         pipes = []
         for pb in model.pipes:
             pipes.append({"x": pb.scheme.x_nodes, "theta": pb.scheme.theta_nodes, "Y": [], "out": {}})
-        vert = [dict(holdupG=[], pressao=[], vazaoMassaL=[], vazaoMassaG=[]) for _ in range(model.NV)]
+        # saídas só dos vértices de fronteira e dos tanques (as junções são internas às arestas)
+        shown = [vi for vi in range(model.NV) if model.vertices[vi].kind != "junction"]
+        vert = [dict(holdupG=[], pressao=[], vazaoMassaL=[], vazaoMassaG=[]) for _ in shown]
+        vidx = {}
+        for k, vi in enumerate(shown):
+            vid = model.vertices[vi].id
+            vidx[vid] = k
+            if vid.lstrip("-").isdigit():
+                vidx.setdefault(int(vid), k)
         elems = {"valves": {}, "reservoirs": {}, "check_valves": {}}
         for it in range(nt):
             E, Ys, info, X = model.assemble(self.T[it], self.X[:, it])
@@ -30,19 +38,19 @@ class Results:
                 if hasattr(pb.scheme, "to_primitive"):
                     Y = pb.scheme.to_primitive(Y)
                 pipes[k]["Y"].append(Y)
-            for vi in range(model.NV):
-                v = model.vertices[vi]
+            for k_v, vi in enumerate(shown):
                 QL = QG = 0.0
-                for kp in model.pipes_in[vi]:
+                for kp in model.arriving[vi]:
                     QL += Ys[kp][model.pipes[kp].outlet_q_node, 2]
                     QG += Ys[kp][model.pipes[kp].outlet_q_node, 3]
-                for kp in model.pipes_out[vi]:
+                for kp in model.leaving[vi]:
                     QL -= Ys[kp][model.pipes[kp].inlet_q_node, 2]
                     QG -= Ys[kp][model.pipes[kp].inlet_q_node, 3]
-                vert[vi]["holdupG"].append(E[vi, 0])
-                vert[vi]["pressao"].append(E[vi, 1] * model.PR / 1e5)
-                vert[vi]["vazaoMassaL"].append(QL)
-                vert[vi]["vazaoMassaG"].append(QG)
+                row = model.report_row[vi]           # junção que desdobra o vértice (choke/reservatório), se houver
+                vert[k_v]["holdupG"].append(E[row, 0])
+                vert[k_v]["pressao"].append(E[row, 1] * model.PR / 1e5)
+                vert[k_v]["vazaoMassaL"].append(QL)
+                vert[k_v]["vazaoMassaG"].append(QG)
             for key in ("valves", "reservoirs", "check_valves"):
                 for d in info[key]:
                     store = elems[key].setdefault(d["vertex"], {})
@@ -66,8 +74,9 @@ class Results:
             pipes[k]["out"]["qL"] = Yarr[:, :, 2].T
             pipes[k]["out"]["qG"] = Yarr[:, :, 3].T
             pipes[k]["out"]["P_bar"] = Yarr[:, :, 1].T * model.PR / 1e5
-        for vi in range(model.NV):
-            vert[vi] = {kk: np.array(vv) for kk, vv in vert[vi].items()}
+        for k_v in range(len(vert)):
+            vert[k_v] = {kk: np.array(vv) for kk, vv in vert[k_v].items()}
+        self._vertex_index = vidx
         for key in elems:
             for v in elems[key]:
                 elems[key][v] = {kk: np.array(vv) for kk, vv in elems[key][v].items()}
@@ -96,7 +105,8 @@ class Results:
         return self.pipes[k]
 
     def vertex(self, index):
-        return self.vertices[self.model.vpos[index]]
+        """Saídas do vértice com o id dado (ou índice legado inteiro)."""
+        return self.vertices[self._vertex_index[index]]
 
     def final_state(self):
         return self.X[:, -1]

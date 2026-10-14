@@ -7,6 +7,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+UNSPECIFIED = -1.0      # valor de uma especificação ausente (sentinela legada do struct `dados`)
+
 
 class Schedule(ABC):
     """Função do tempo usada nas especificações de vértices e aberturas de chokes."""
@@ -25,10 +27,19 @@ class Schedule(ABC):
     def breakpoints(self):
         return np.zeros(0)
 
+    @property
+    def values(self):
+        """Valores assumidos (para escalas de estado)."""
+        return np.zeros(0)
+
+    @property
+    def is_specified(self):
+        return True
+
     @staticmethod
     def from_legacy(spec) -> "Schedule":
         if spec is None:
-            raise ValueError("especificação ausente")
+            return Unspecified()
         if np.isscalar(spec):
             return Constant(float(spec))
         t, v = spec
@@ -45,11 +56,33 @@ class Schedule(ABC):
 
 
 @dataclass(frozen=True)
+class Unspecified(Schedule):
+    """Especificação ausente: vale UNSPECIFIED em todo o tempo (a rede trata o slot como livre)."""
+
+    def __call__(self, t):
+        return UNSPECIFIED
+
+    def to_legacy(self):
+        return None
+
+    def to_json(self):
+        return None
+
+    @property
+    def is_specified(self):
+        return False
+
+
+@dataclass(frozen=True)
 class Constant(Schedule):
     value: float
 
     def __call__(self, t):
         return self.value
+
+    @property
+    def values(self):
+        return np.array([self.value], float)
 
     def to_legacy(self):
         return float(self.value)
@@ -67,6 +100,10 @@ class PiecewiseLinear(Schedule):
 
     def __call__(self, t):
         return np.interp(t, self.t, self.v)
+
+    @property
+    def values(self):
+        return np.asarray(self.v, float)
 
     def to_legacy(self):
         return (np.asarray(self.t, float), np.asarray(self.v, float))
@@ -90,6 +127,10 @@ class Ramp(Schedule):
 
     def __call__(self, t):
         return np.interp(t, [self.t1, self.t2], [self.start, self.end])
+
+    @property
+    def values(self):
+        return np.array([self.start, self.end], float)
 
     def to_legacy(self):
         return (np.array([self.t1, self.t2]), np.array([self.start, self.end]))

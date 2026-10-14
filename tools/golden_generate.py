@@ -32,7 +32,7 @@ GOLDEN = ROOT / "tests" / "golden"
 DATA = ROOT / "notebooks" / "data"
 sys.path.insert(0, str(ROOT))
 
-GROUPS = ("chapter10", "variants", "severe", "results", "runs_meta", "notebook_text", "nightly")
+GROUPS = ("network", "chapter10", "variants", "severe", "results", "runs_meta", "notebook_text", "nightly")
 NB_KW = {"10.3.2a": dict(rtol=1e-3, atol=1e-5), "10.3.2b": dict(rtol=1e-3, atol=1e-5)}   # kwargs dos notebooks em run_case
 
 
@@ -335,7 +335,57 @@ def notebook_text(path) -> str:
     return normalize_text("\n".join(parts))
 
 
-GENERATORS = dict(notebook_text=gen_notebook_text, chapter10=gen_chapter10, variants=gen_variants, severe=gen_severe, results=gen_results, runs_meta=gen_runs_meta, nightly=gen_nightly)
+def _network_arrays(prefix, model, t):
+    """Especificações, diagnósticos dos elementos, rhs, layout e rotinas de apoio de um modelo
+    (nível A: a montagem da rede sobre o grafo tem de reproduzir isto bit a bit)."""
+    X0 = model.initial_state()
+    E, info = model.specifications(t, X0)
+    out = {f"{prefix}/X0": X0, f"{prefix}/E": np.asarray(E, float), f"{prefix}/rhs": model.rhs(t, X0),
+           f"{prefix}/rhs_pert": model.rhs(t, X0 * (1 + 0.02 * np.sin(np.arange(X0.size)))),
+           f"{prefix}/state_scales": model.state_scales(X0), f"{prefix}/state_slots": model.state_slots(),
+           f"{prefix}/sparsity": np.asarray(model.jac_sparsity(), dtype=float).astype(np.int8),
+           f"{prefix}/breakpoints": model.spec_breakpoints(), f"{prefix}/boundary_net_fluxes": np.asarray(model.boundary_net_fluxes(t, X0), float),
+           f"{prefix}/E_t": np.asarray(model.time_inputs(t)[0], float), f"{prefix}/opt_t": np.asarray(model.time_inputs(t)[1], float)}
+    for grp in ("valves", "reservoirs", "check_valves"):
+        rows = info.get(grp, [])
+        if rows:
+            keys = sorted(k for k in rows[0] if k != "vertex")
+            out[f"{prefix}/info_{grp}"] = np.array([[float(r[k]) for k in keys] for r in rows], float)
+            out[f"{prefix}/info_{grp}_vertex"] = np.array([int(r["vertex"]) for r in rows])
+    if model.conservative:
+        out[f"{prefix}/transform"] = model.transform(X0); out[f"{prefix}/transform_jac"] = model.transform_jacobian(X0).toarray()
+    return out
+
+
+def gen_network():
+    """Montagem da rede: todos os casos do capítulo 10 (com variantes de esquema no 10.1.1 e 10.3.1),
+    os casos JSON do severe slug e duas corridas em rede."""
+    import copy
+    from mfsim.cases import CHAPTER10, load_chapter10_case
+    from mfsim.io.spec import case_from_json
+    from mfsim.simulation import build_model
+    out = {}
+    for key in CHAPTER10:
+        case, _ = load_chapter10_case(key); t = case.settings.t0 + 1.0
+        out.update(_network_arrays(f"ch10/{key}", build_model(case), t))
+    for key, methods in (("10.1.1", ("fd_central", "fd_upwind", "petrov_galerkin")), ("10.3.1", ("fv_upwind",))):
+        for m in methods:
+            case, _ = load_chapter10_case(key); c = copy.deepcopy(case); c.settings.method = m
+            if m == "fv_upwind":
+                for pp in c.pipes:
+                    pp.extra.update(conservative=True)
+            out.update(_network_arrays(f"ch10/{key}_{m}", build_model(c), c.settings.t0 + 1.0))
+    for f in sorted((ROOT / "cases" / "severe_slug").glob("*.json")):
+        case = case_from_json(str(f)); out.update(_network_arrays(f"severe/{f.stem}", build_model(case), 1.0))
+    from mfsim.runs import load_run
+    for name in ("severe_slug_blocked_network_v001", "severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys"):
+        p = DATA / f"{name}.npz"
+        if p.exists():
+            run = load_run(str(p)); out.update(_network_arrays(f"runs/{name}", run.model, 1.0))
+    return {"network.npz": out}
+
+
+GENERATORS = dict(network=gen_network, notebook_text=gen_notebook_text, chapter10=gen_chapter10, variants=gen_variants, severe=gen_severe, results=gen_results, runs_meta=gen_runs_meta, nightly=gen_nightly)
 
 
 # ----------------------------------------------------------------------------- escrita

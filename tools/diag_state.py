@@ -40,7 +40,7 @@ sel = T >= t0 - 1e-9
 Ys = []
 for it in np.flatnonzero(sel):
     E = np.array([[tb(T[it]) for tb in row] for row in model.tables])
-    Ys.append(pb.assemble(X[it, pb.offset:pb.offset+pb.n_states], E[model.vpos[pb.pipe.v_in]], E[model.vpos[pb.pipe.v_out]]))
+    Ys.append(pb.assemble(X[it, pb.offset:pb.offset+pb.n_states], E[pb.i_from], E[pb.i_to]))
 Ys = np.array(Ys); Td = T[sel]
 np.set_printoptions(precision=3, linewidth=230, suppress=True)
 print("t:", Td[0], "->", Td[-1], "saídas:", Td.size, "| theta:", np.rad2deg(sch.theta_nodes).round(0))

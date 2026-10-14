@@ -105,12 +105,12 @@ def test_network_vertices_conserve_mass():
     sys_net = acc[0:2 * npipes:2].sum(axis=0) + acc[2 * npipes::2].sum(axis=0)
     mL = sum(mass_balance(res, k, "L")[0] for k in range(npipes))
     for vi in model.vA:
-        v = model.vertices[vi]; iH, iP = model.vertex_A_index(v.index)
+        v = model.vertices[vi]; iH, iP = model.vertex_A_index(v.id)
         mL = mL + v.volume * (1 - X[iH]) * model.fluid.rhoL(np.maximum(X[iP] * model.PR, 1e3))
     assert abs(mL[-1] - mL[0]) > 1e-3
     assert abs((mL[-1] - mL[0]) - sys_net[-1]) < 1e-8 * mL[0]
     # e cada vértice segue a sua própria integral
     for k, vi in enumerate(model.vA):
-        v = model.vertices[vi]; iH, iP = model.vertex_A_index(v.index)
+        v = model.vertices[vi]; iH, iP = model.vertex_A_index(v.id)
         mv = v.volume * (1 - X[iH]) * model.fluid.rhoL(np.maximum(X[iP] * model.PR, 1e3))
         assert abs((mv[-1] - mv[0]) - acc[2 * npipes + 2 * k, -1]) < 1e-9 * mL[0]

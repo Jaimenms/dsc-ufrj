@@ -96,7 +96,6 @@ def test_models_jax_vs_numpy(key):
     """Coeficientes F e termos conservativos dos modelos com bk=JAX iguais aos do numpy
     (deriva com derivadas por diferenças finitas em ambos, como o teste de rede)."""
     from mfsim.cases import load_chapter10_case
-    from mfsim.models import MODEL_BY_LEGACY_ID
     from mfsim.models.base import PipeParams
     from mfsim.simulation import build_model
     case, raw = load_chapter10_case(key)
@@ -105,14 +104,14 @@ def test_models_jax_vs_numpy(key):
     for pb, Y in zip(model.pipes, Ys):
         p = pb.model.params
         p2 = PipeParams(**{**p.__dict__, "bb_derivatives": "fd"})
-        m_np = MODEL_BY_LEGACY_ID[pb.pipe.model](model.fluid, p2)
-        m_jx = MODEL_BY_LEGACY_ID[pb.pipe.model](model.fluid, p2, bk=JAX)
+        m_np = type(pb.model)(model.fluid, p2)
+        m_jx = type(pb.model)(model.fluid, p2, bk=JAX)
         th = pb.scheme.theta_nodes
         Yj = JAX.asarray(Y)
         F_np = m_np.coefficients(Y, th); F_jx = m_jx.coefficients(Yj, JAX.asarray(th))
-        _close(F_jx, F_np, f"{key} duto {pb.pipe.index} F")
+        _close(F_jx, F_np, f"{key} duto {pb.pipe.id} F")
         F_jit = jax.jit(m_jx.coefficients)(Yj, JAX.asarray(th))
-        _close(F_jit, F_np, f"{key} duto {pb.pipe.index} F jit")
+        _close(F_jit, F_np, f"{key} duto {pb.pipe.id} F jit")
         t_np = m_np.conservative_terms(Y, th); t_jx = m_jx.conservative_terms(Yj, JAX.asarray(th))
         for k in t_np:
             if k in ("inp", "S", "flags"):

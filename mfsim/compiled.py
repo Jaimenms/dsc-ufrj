@@ -1,6 +1,6 @@
 """Lado direito da rede compilado (JAX) com Jacobiana por diferenciação automática.
 
-`CompiledNetwork(model)` reconstrói o mesmo `NetworkModel` com o backend JAX (uma só
+`CompiledNetwork(model)` reconstrói o mesmo `NetworkSystem` (sobre o mesmo grafo) com o backend JAX (uma só
 implementação da física, dos esquemas e da rede) e expõe
 
     rhs(t, x) -> dx/dt       (numpy, igual a NetworkModel.rhs a precisão de máquina)
@@ -17,16 +17,15 @@ from __future__ import annotations
 import numpy as np
 
 from .backend import get_backend
-from .network.model import NetworkModel
+from .network.system import NetworkSystem
 
 
 class CompiledNetwork:
-    def __init__(self, model: NetworkModel):
+    def __init__(self, model: NetworkSystem):
         import jax
         self.model = model
         self.backend = get_backend("jax")
-        self.system = NetworkModel(model.case, method=model.method, scheme_settings=model.scheme_settings,
-                                   bk=self.backend)
+        self.system = NetworkSystem(model.network, scheme_settings=model.scheme_settings, bk=self.backend)
         if self.system.n_states != model.n_states:
             raise RuntimeError("CompiledNetwork: layout de estados diferente do modelo numpy")
         self.rhs_jit = jax.jit(self.system.rhs_core)

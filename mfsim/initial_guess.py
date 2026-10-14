@@ -19,7 +19,7 @@ from .closures.regime import (
 )
 from .geometry import stratified_level
 from .models.base import G, SLOT_ALPHA, SLOT_P, SLOT_QG, SLOT_QL
-from .network.specs import UNSPECIFIED
+from .network.schedules import UNSPECIFIED
 
 
 def _equilibrium_alpha(model, P, qL, qG, theta):
@@ -52,7 +52,7 @@ def _equilibrium_alpha(model, P, qL, qG, theta):
 
 def initial_guess(network, t=None):
     """Vetor de estados inicial estimado para a rede `network` (NetworkModel)."""
-    t = network.settings.t0 if t is None else t
+    t = network.t0 if t is None else t
     E = np.array([[tb(t) for tb in row] for row in network.tables], dtype=float)
     PR = network.PR
     X = np.zeros(network.n_states)
@@ -61,16 +61,16 @@ def initial_guess(network, t=None):
     PT_ref = float(np.mean(P_specs)) if P_specs else network.fluid.P0 / PR
     # pressões nos vértices: especificadas ou propagadas de jusante para montante
     PT_vertex = {i: (E[i, SLOT_P] if (E[i, SLOT_P] != UNSPECIFIED and E[i, SLOT_P] > 0
-                                      and network.vertices[i].kind == "B") else None)
+                                      and network.vertices[i].kind != "tank") else None)
                  for i in range(network.NV)}
     # vazões por duto: da especificação do vértice de origem ou herdadas de montante
     q_pipe = {}
     for _ in range(len(network.pipes) + 1):
         for pb in network.pipes:
-            vin = network.vpos[pb.pipe.v_in]
+            vin = pb.i_from
             qL = E[vin, SLOT_QL] if E[vin, SLOT_QL] != UNSPECIFIED else None
             qG = E[vin, SLOT_QG] if E[vin, SLOT_QG] != UNSPECIFIED else None
-            if network.vertices[vin].kind == "A" or qL is None or qG is None or (qL <= 0 and qG <= 0):
+            if network.vertices[vin].kind == "tank" or qL is None or qG is None or (qL <= 0 and qG <= 0):
                 ups = [q_pipe[k] for k in network.pipes_in[vin] if k in q_pipe]
                 if ups:
                     qL, qG = (sum(u[0] for u in ups), sum(u[1] for u in ups))
@@ -81,7 +81,7 @@ def initial_guess(network, t=None):
     for _ in range(len(network.pipes) + 1):
         for k in reversed(range(len(network.pipes))):
             pb = network.pipes[k]
-            vout = network.vpos[pb.pipe.v_out]
+            vout = pb.i_to
             PT_out = PT_vertex.get(vout)
             if PT_out is None:
                 downs = [PT_pipe_in[j] for j in network.pipes_out[vout] if j in PT_pipe_in]
@@ -99,8 +99,8 @@ def initial_guess(network, t=None):
             PT_pipe_in[k] = (PT_out * PR + rho_mix * G * (z[-1] - z[0]) + 1.0 * pb.mesh["L"]) / PR
             pb._guess = (PT_out, aG0, qL, qG)
     for pb in network.pipes:
-        vin = network.vpos[pb.pipe.v_in]
-        vout = network.vpos[pb.pipe.v_out]
+        vin = pb.i_from
+        vout = pb.i_to
         PT_out, aG0, qL, qG = pb._guess
         x = pb.scheme.x_nodes
         theta = pb.scheme.theta_nodes
@@ -123,7 +123,7 @@ def initial_guess(network, t=None):
         X[pb.offset:pb.offset + pb.n_states] = Y.ravel()[pb.free]
     for k, vi in enumerate(network.vA):
         v = network.vertices[vi]
-        iH, iP = network.vertex_A_index(v.index)
+        iH, iP = network.vertex_A_index(v.id)
         aG, PT = [], []
         for kp in network.pipes_in[vi] + network.pipes_out[vi]:
             pb = network.pipes[kp]

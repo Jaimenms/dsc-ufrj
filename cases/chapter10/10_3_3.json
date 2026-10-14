@@ -139,19 +139,32 @@
    },
    {
     "id": "Jc4",
-    "kind": "junction"
+    "kind": "junction",
+    "spec": {
+     "PT": 0.88632
+    }
    },
    {
     "id": "Jc8",
-    "kind": "junction"
+    "kind": "junction",
+    "spec": {
+     "PT": 0.15
+    }
    },
    {
     "id": "Jc14",
-    "kind": "junction"
+    "kind": "junction",
+    "spec": {
+     "PT": 1.7328
+    }
    },
    {
     "id": "Jr1",
-    "kind": "junction"
+    "kind": "junction",
+    "spec": {
+     "qL": 8.0,
+     "qG": 1.0
+    }
    }
   ],
   "edges": [

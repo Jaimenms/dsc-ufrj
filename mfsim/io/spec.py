@@ -90,6 +90,8 @@ def _vertex_to_json(v, PR):
             d["ic"] = {"HG": v.HG0, "PT": v.PT0}
     elif isinstance(v, BoundaryVertex):
         d["spec"] = _spec_to_json(v.spec, PR)
+    elif isinstance(v, JunctionVertex) and v.spec:
+        d["spec"] = _spec_to_json(v.spec, PR)
     return d
 
 
@@ -99,7 +101,7 @@ def _vertex_from_json(d, PR):
         ic = d.get("ic") or {}
         return TankVertex(id=str(d["id"]), volume=float(d.get("volume", 1e-3)), spec=_spec_from_json(d.get("spec"), PR), HG0=ic.get("HG"), PT0=ic.get("PT"))
     if kind == "junction":
-        return JunctionVertex(id=str(d["id"]))
+        return JunctionVertex(id=str(d["id"]), spec=_spec_from_json(d.get("spec"), PR) if d.get("spec") else {})
     return BoundaryVertex(id=str(d["id"]), spec=_spec_from_json(d.get("spec"), PR))
 
 

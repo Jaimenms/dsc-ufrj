@@ -32,7 +32,7 @@ for tag, single, vol in [(sys.argv[1], True, 0.05)] + [(t, False, v) for t, v in
     q_out = p_last["out"]["qL"][-1]
     # riser: duto 2 (0-based) na rede, ou células do riser no duto único
     if single:
-        p0 = res.pipe(0); x = p0["x"]; s0 = model.case.meta["s_elbow0"]; ib = int(np.argmin(np.abs(x - s0))); aG_base = p0["out"]["alphaG"][ib + 5]
+        p0 = res.pipe(0); x = p0["x"]; s0 = model.meta["s_elbow0"]; ib = int(np.argmin(np.abs(x - s0))); aG_base = p0["out"]["alphaG"][ib + 5]
     else:
         aG_base = res.pipe(2)["out"]["alphaG"][1]
     # massa total de líquido: dutos + vértices dinâmicos
@@ -40,7 +40,7 @@ for tag, single, vol in [(sys.argv[1], True, 0.05)] + [(t, False, v) for t, v in
     for k, pb in enumerate(model.pipes):
         m, n, e = mass_balance(res, k, "L"); mass += m
     for vi in model.vA:
-        iH, iP = model.vertex_A_index(model.vertices[vi].index); v = model.vertices[vi]
+        iH, iP = model.vertex_A_index(model.vertices[vi].id); v = model.vertices[vi]
         rhoL = fluid.rhoL(np.maximum(X[iP] * model.PR, 1e3)); mass += v.volume * (1 - X[iH]) * rhoL
     accum = run_.acc
     npipes = len(model.pipes)

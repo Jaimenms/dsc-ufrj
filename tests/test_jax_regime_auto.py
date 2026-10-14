@@ -160,7 +160,7 @@ def test_regime_auto_options_match_numpy(extra):
         assert np.all(np.isfinite(jac_j(0.0, x)))
     # partição da unidade dos pesos (com e sem indicadores fracionários)
     E = np.array([[tb(0.0) for tb in row] for row in model.tables])
-    Y = pb.assemble(X0[pb.offset:pb.offset + pb.n_states], E[model.vpos[pb.pipe.v_in]], E[model.vpos[pb.pipe.v_out]])
+    Y = pb.assemble(X0[pb.offset:pb.offset + pb.n_states], E[pb.i_from], E[pb.i_to])
     inp, _, _ = pb.model.local_state(Y, pb.scheme.theta_nodes)
     S, flags, eq = pb.model.closures(inp)
     assert np.allclose(flags.Est + flags.Anu + flags.Bub + flags.Int, 1.0, atol=1e-12)

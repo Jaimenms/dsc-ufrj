@@ -8,11 +8,13 @@ Arestas: `Pipe` (duto discretizado: geometria, malha, modelo, esquema, portas, c
 inicial) e as de comprimento zero `Connector` (acoplamento), `Choke` (válvula),
 `Reservoir` (IPR) e `CheckValve` (retenção), todas com `v_from` e `v_to`.
 
-Nesta fase o grafo é a representação de entrada (JSON) e converte-se, sem perda, para o
-`Case` legado que o `NetworkModel` consome (`Network.to_legacy_case`); a conversão
-inversa `Network.from_legacy_case` insere as junções que o legado deixava implícitas
-(choke "no vértice de destino" e reservatório "no vértice de origem"). O round-trip
-legado -> grafo -> legado é a identidade (teste), logo a numérica não muda.
+O grafo é a representação que a rede consome (`network.system.NetworkSystem`, com
+resolução de portas em `network.ports`) e a que os casos JSON descrevem. O `Case` legado
+(`network.data`) converte-se sem perda por `Network.from_legacy_case`, que insere as
+junções que o legado deixava implícitas (choke "no vértice de destino" -> `Jc<v>`,
+reservatório "no vértice de origem" -> `Jr<v>`; a junção herda as especificações do
+vértice legado para as portas que a aresta não fornece); `to_legacy_case` é a inversa
+(round-trip = identidade, teste).
 """
 from __future__ import annotations
 
@@ -55,7 +57,11 @@ class BoundaryVertex(Vertex):
 
 @dataclass
 class JunctionVertex(Vertex):
-    """Junção algébrica entre um duto e uma aresta de comprimento zero (sem estados)."""
+    """Junção algébrica entre um duto e uma aresta de comprimento zero (sem estados).
+    `spec` (opcional) dá os valores das portas que a aresta não fornece (nos casos
+    convertidos do legado, as especificações do vértice que a junção desdobra)."""
+
+    spec: dict = field(default_factory=dict)
 
     @property
     def kind(self):
@@ -247,13 +253,14 @@ class Network:
                               model=ModelSpec.from_legacy(p.model, p.regime, e), scheme=SchemeSpec.from_legacy(s.method, e),
                               ports_in=tuple(PortKind.from_legacy(c) for c in p.bc_in), ports_out=tuple(PortKind.from_legacy(c) for c in p.bc_out),
                               ic=None if p.ic is None else np.asarray(p.ic, float)))
+        legacy_spec = {v.id: dict(v.spec) for v in vertices}
         for vid, e in choke_at.items():
-            vertices.append(JunctionVertex(id=f"Jc{vid}"))
+            vertices.append(JunctionVertex(id=f"Jc{vid}", spec=legacy_spec.get(vid, {})))
             edges.append(Choke(id=f"choke_{vid}", v_from=f"Jc{vid}", v_to=vid, CV=float(e.CV), opening=Schedule.from_legacy(e.opening),
                                mode=Schedule.from_legacy(e.mode), setpoint=Schedule.from_legacy(e.setpoint),
                                pid=dict(pv_type=e.pv_type, pv_node=e.pv_node, pv_pipe=e.pv_pipe, action=e.action, Kp=e.Kp, Ki=e.Ki, Kd=e.Kd, bias=e.bias)))
         for vid, e in res_at.items():
-            vertices.append(JunctionVertex(id=f"Jr{vid}"))
+            vertices.append(JunctionVertex(id=f"Jr{vid}", spec=legacy_spec.get(vid, {})))
             edges.append(Reservoir(id=f"reservoir_{vid}", v_from=vid, v_to=f"Jr{vid}", IPL=float(e.IPL), IPG=float(e.IPG), P=float(e.P)))
         couplings = {str(c.v_up): str(c.v_down) for c in case.couplings}
         for e in case.check_valves:

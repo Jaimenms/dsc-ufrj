@@ -95,7 +95,7 @@ def plot_elements(res, raw=None):
 
 def plot_vertices(res, raw=None, indices=None):
     model = res.model
-    indices = indices or [v.index for v in model.vertices]
+    indices = indices or [v.id for v in model.vertices if v.kind != "junction"]
     leg = raw["saidas"]["vertice"] if raw else None
     T = np.asarray(raw["estados"]["T"]).ravel() if raw else None
     fig, axes = plt.subplots(1, 3, figsize=(12, 3.2))

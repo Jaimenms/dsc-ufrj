@@ -30,8 +30,8 @@ for name in sys.argv[1:]:
     pb = model.pipes[0]; sch = pb.scheme; mod = pb.model
     it = np.flatnonzero(sel)[::10]
     Ymean = np.mean([pb.assemble(X_run[pb.offset:pb.offset+pb.n_states, i],
-                                 np.array([[tb_(T[i]) for tb_ in row] for row in model.tables])[model.vpos[pb.pipe.v_in]],
-                                 np.array([[tb_(T[i]) for tb_ in row] for row in model.tables])[model.vpos[pb.pipe.v_out]]) for i in it], axis=0)
+                                 np.array([[tb_(T[i]) for tb_ in row] for row in model.tables])[pb.i_from],
+                                 np.array([[tb_(T[i]) for tb_ in row] for row in model.tables])[pb.i_to]) for i in it], axis=0)
     inp, _, _ = mod.local_state(Ymean, sch.theta_nodes)
     fl, _ = identify_regime(inp, k_switch=1e6, eq=equilibrium_fractions(inp))
     th_ = np.rad2deg(sch.theta_nodes); k = int(np.flatnonzero(np.abs(th_ - mb.get("slope", -3.0)) < 0.5)[len(np.flatnonzero(np.abs(th_ - mb.get("slope", -3.0)) < 0.5)) // 2])

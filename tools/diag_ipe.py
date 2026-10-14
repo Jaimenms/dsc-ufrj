@@ -36,7 +36,7 @@ sel = T >= t0 - 1e-9
 rows = []
 for it in np.flatnonzero(sel):
     E = np.array([[tb(T[it]) for tb in row] for row in model.tables])
-    Y = pb.assemble(X[it, pb.offset:pb.offset+pb.n_states], E[model.vpos[pb.pipe.v_in]], E[model.vpos[pb.pipe.v_out]])
+    Y = pb.assemble(X[it, pb.offset:pb.offset+pb.n_states], E[pb.i_from], E[pb.i_to])
     inp, P, Area = mod.local_state(Y, sch.theta_nodes)
     eq = equilibrium_fractions(inp, smooth=p.ipe_smooth)
     fl, fac = identify_regime(inp, k_switch=p.k_switch, eq=eq, smooth=p.ipe_smooth, local=p.ipe_local)

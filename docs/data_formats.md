@@ -66,3 +66,25 @@ notebooks, tempos normalizados), `nightly` (referência 3000 s, gas lift 2000 s)
 `uv run pytest` (≈ 3 min); noturna: `uv run pytest -m nightly`. Os dados fora do git
 (`notebooks/data`, `.mf2`, arquivo) são fixados por `MANIFEST.sha256`
 (`uv run python tools/manifest.py --check`).
+
+## Montagem da rede sobre o grafo (`network/system.py`, `network/ports.py`)
+
+O sistema de EDOs é montado diretamente sobre o `Network`: o vetor de estados tem os
+nós livres de cada duto (na ordem do grafo) e, no fim, (HG, PT) por tanque — o layout
+legado, logo as comparações com `estados.X` do MATLAB mantêm-se. As portas (alphaG, PT,
+qL, qG) de cada vértice formam o vetor de especificações E, preenchido por: tabelas dos
+vértices (`Schedule`; ausente = UNSPECIFIED), vazões externas dos tanques não
+especificadas = 0, os passos das arestas de comprimento zero em ordem topológica
+(`ConnectorPressure`, `ChokeStep`, `ReservoirStep`, `CheckValveStep`, `ConnectorFlows`;
+desempate pela ordem legada das classes e das arestas) e, por fim, os estados dos
+tanques. A pressão de um vértice lida por uma aresta é o estado do primeiro nó de um
+duto que parte dele (diretamente ou pela junção de um reservatório), senão a porta PT;
+as vazões que chegam a um vértice são as do último nó dos dutos que lá chegam
+diretamente ou pela junção de um choke. Cada porta tem um só escritor (conflitos dão
+`ValueError` na construção). Uma `JunctionVertex` pode trazer `spec` com os valores das
+portas que a aresta não fornece — nos casos convertidos do legado são as especificações
+do vértice que a junção desdobra (`Jc<v>`, `Jr<v>`), e é assim que o estado estacionário
+inicial e a estimativa inicial ficam iguais aos de antes. Nas saídas por
+vértice (`Results.vertex`), um vértice desdobrado em junção é representado pela linha da
+sua junção (pressão a montante do choke, vazões do reservatório), como o vértice legado e a
+tese reportavam (`NetworkSystem.report_row`).

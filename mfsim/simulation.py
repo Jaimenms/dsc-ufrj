@@ -46,7 +46,7 @@ def state_bounds(model):
             lo_s[slots == 0] = a_min; hi_s[slots == 0] = a_max
         lo_s[slots == 1] = 1e-4
     for k, vi in enumerate(model.vA):
-        iH, iP = model.vertex_A_index(model.vertices[vi].index)
+        iH, iP = model.vertex_A_index(model.vertices[vi].id)
         if getattr(model, "conservative", False):
             lo[iH], hi[iH] = -min(0.005, 0.5 * model.fluid.gammaG / model.fluid.gammaL), 1.005     # undershoot/overshoot admitidos (como nas células conservativas)
         else:

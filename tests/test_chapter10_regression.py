@@ -23,7 +23,7 @@ def _run(key, tol):
             if m.any():
                 rng = np.ptp(Xl[seg][m])
                 d = np.max(np.abs(X[seg][m] - Xl[seg][m]))
-                assert d <= tol * max(rng, 1e-12), f"{key} duto {pb.pipe.index} slot {s}: {d:.2e} > {tol} x {rng:.2e}"
+                assert d <= tol * max(rng, 1e-12), f"{key} duto {pb.pipe.id} slot {s}: {d:.2e} > {tol} x {rng:.2e}"
 
 
 @pytest.mark.parametrize("key,tol", [("10.1.1", 0.01), ("10.2.1A", 0.01), ("10.2.1B", 0.01), ("10.2.2", 0.02)])

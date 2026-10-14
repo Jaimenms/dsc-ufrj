@@ -100,15 +100,25 @@
    },
    {
     "id": "Jc4",
-    "kind": "junction"
+    "kind": "junction",
+    "spec": {
+     "PT": 0.1
+    }
    },
    {
     "id": "Jc6",
-    "kind": "junction"
+    "kind": "junction",
+    "spec": {
+     "PT": 0.5
+    }
    },
    {
     "id": "Jr1",
-    "kind": "junction"
+    "kind": "junction",
+    "spec": {
+     "qL": 17.0,
+     "qG": 1.0
+    }
    }
   ],
   "edges": [
