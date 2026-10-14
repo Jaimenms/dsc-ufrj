@@ -26,7 +26,7 @@ def test_tracked_inputs_unchanged():
     from manifest import sha256_of
 
     exp = _expected()
-    tracked = {k: v for k, v in exp.items() if k.startswith("legacy/mfsim23/Files/") or k.endswith(".pdf")}
+    tracked = {k: v for k, v in exp.items() if k.startswith("thesis/data/") or k.endswith(".pdf")}
     assert tracked, "manifesto sem entradas legadas"
     for rel, h in tracked.items():
         assert (ROOT / rel).exists(), rel

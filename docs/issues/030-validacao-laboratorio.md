@@ -56,7 +56,7 @@ Fontes com geometria, vazões e ciclo medidos (PDFs obtidos em 2026-10-13):
 | Tengesdal (2002), tese TUSSP, instalação grande | ar–óleo (SG 0.856, 18.9 cSt a 40 °C), 3", linha 19.8 m (+ tanques até 85 m efetivos) a −1°, riser 14.6 m | teste 1: vSL 0.32 / vSG 0.35 m/s → 79 s, ΔP 101 kPa (121–222); teste 2: vSL 0.2 / vSG 0.68 → 66 s, 101 kPa |
 | Sancho (IST, 2015), tabela 5 de Malekzadeh et al. (2012) | ar–água, 2", linha 100 m a −2°, riser 15.5 m | 38 casos com período e tipo, mas sem as vazões na versão obtida (não usada) |
 
-Casos montados com `severe_slug_case` (`archive/scratch_2026-10/sh/val_launch3.sh`; hoje `mfsim run cases/severe_slug/lab_*.json --backend jax`; opções novas do
+Casos montados com `severe_slug_case` (`val_launch3.sh`, histórico do git até ao commit 22ecbc9; hoje `mfsim run cases/severe_slug/lab_*.json --backend jax`; opções novas do
 `severe_D.py`: `rhoG0`, `P0`, `sigma`, `muG`, `P_gas_ref` = pressão em que vSG é
 dada, `dt_out`, `L_h2`, `roughness`, `bubble_drag`, `t_ramp`), partida de linha
 fechada (`start="shut_in"`, rampa de 20 s; a partida bloqueada com 0.05 bar de

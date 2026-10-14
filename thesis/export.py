@@ -18,7 +18,7 @@ from mfsim.io.spec import case_to_json
 
 DEFAULT_OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cases", "chapter10")
 
-# chave do caso -> ficheiro .mf2 original (legacy/mfsim23/Files)
+# chave do caso -> ficheiro .mf2 original (thesis/data)
 MF2_SOURCES = {
     "10.1.1": "CASO10-1-1.mf2",
     "10.1.2": "CASO10-1-2.mf2",
@@ -32,7 +32,7 @@ MF2_SOURCES = {
     "10.3.2b": "CASO10-3-2b.mf2",
     "10.3.3": "CASO10-3-3b.mf2",
 }
-NOTE = "convertido de legacy/mfsim23/Files por thesis.export (network_from_mf2: correções e composição do 10.3.2a)"
+NOTE = "convertido de thesis/data por thesis.export (network_from_mf2: correções e composição do 10.3.2a)"
 
 
 def network_from_mf2(key, **kw):

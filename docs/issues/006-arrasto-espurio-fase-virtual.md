@@ -6,7 +6,7 @@
 | área | esquema numérico |
 | estado | feito (2026-10-13); `relax_target = "noslip"` na configuração recomendada |
 | onde | `scheme.options.relax_target = "noslip"` (só no modo conservativo) |
-| dados | `severe_slug_blocked_conservative_arc_tol_noslip.npz`; experimento `archive/scratch_2026-10/py/plug_ring.py` |
+| dados | `severe_slug_blocked_conservative_arc_tol_noslip.npz`; experimento `generators/column.py` + `runs/issues/column_*` (notebook `issues/nb_joelho_malha_acustica`) |
 
 ## Antes
 
@@ -47,7 +47,7 @@ de 1 % era arrastado como 44 % do tubo à velocidade do gás.
 *Texto movido de `docs/severe_slug.md` (secção «Arrasto espúrio da fase virtual») em 2026-10-14.*
 
 **Arrasto espúrio nas células cheias de líquido** (experimento
-`archive/scratch_2026-10/py/plug_ring.py`, seção correspondente no `nb_severe_slug`): uma coluna de
+script `plug_ring.py` da antiga scratch, histórico do git até ao commit 22ecbc9; hoje `generators/column.py`): uma coluna de
 20 m do modelo a dois fluidos cheia de líquido, com fechamento estratificado e um
 degrau de 0.2 bar entre pressões fixas, trava em 0.49 kg/s, enquanto o líquido
 monofásico acelera a 3.6 kg/s em 3 s. O balanço de momento mostra GammaL =

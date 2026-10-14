@@ -24,8 +24,7 @@ from .simulation import build_model
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUN_DIRS = tuple(
-    os.path.join(ROOT, d)
-    for d in ("runs", os.path.join("notebooks", "data"), os.path.join("archive", "scratch_2026-10", "npz"))
+    os.path.join(ROOT, d) for d in ("runs", os.path.join("notebooks", "data"))
 )  # absolutos: os notebooks e os testes correm noutras pastas
 INFO_KEYS = ("n_steps", "n_rejected", "cpu", "cpu_total", "n_rhs", "n_jac", "success", "error", "note")
 
@@ -120,7 +119,7 @@ class Run:
 
 def find_run(name) -> str:
     """Caminho de uma corrida: o próprio caminho, ou `<nome>.npz` / `severe_D_<nome>.npz` em
-    `runs/`, `notebooks/data/` e `archive/scratch_2026-10/npz/`."""
+    `runs/` e `notebooks/data/`."""
     name = str(name)
     if os.path.exists(name):
         return name

@@ -22,16 +22,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PATTERNS = [
     "notebooks/data/*.npz",
-    "legacy/mfsim23/Files/*.mf2",
-    "legacy/*.pdf",
-    "legacy/*.DOC",
-    "archive/scratch_2026-10/npz/*.npz",
-    "archive/data_v1_2026-10/*.npz",
-    "archive/scratch_2026-10/logs/*",
-    "archive/scratch_2026-10/nblogs/*",
-    "archive/scratch_2026-10/cmp/*",
-    "archive/scratch_2026-10/cmp2/*",
-    "archive/**/*.tar.gz",
+    "thesis/data/*.mf2",
+    "docs/*.pdf",
     "tests/golden/**/*.npz",
 ]
 MANIFEST_SHA = ROOT / "MANIFEST.sha256"

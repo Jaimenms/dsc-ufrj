@@ -6,7 +6,7 @@
 | área | esquema numérico / rede |
 | estado | feito (2026-10-13) |
 | onde | célula fantasma do esquema escalonado; `ports.in/out.alphaG = "dirichlet"` lê a fração do vértice |
-| dados | `tests/test_reversal.py` (demonstração em `archive/scratch_2026-10/py/reversal_demo.py`) |
+| dados | `tests/test_reversal.py` (demonstração `reversal_demo.py` no histórico do git até ao commit 22ecbc9) |
 
 ## Antes
 
@@ -47,7 +47,7 @@ Dirichlet) ou copiada da célula vizinha quando é "ausente"; o fluxo de massa n
 face de contorno usa o fantasma como doador quando ele é imposto, e as faces de
 contorno com fração imposta usam o estado do lado doador (célula em saída,
 vértice em entrada) para os fechamentos, em vez da média. Demonstração em
-`tests/test_reversal.py` (`archive/scratch_2026-10/py/reversal_demo.py`): duto entre dois vértices
+`tests/test_reversal.py` (`reversal_demo.py`, histórico do git até ao commit 22ecbc9): duto entre dois vértices
 de pressão, diferença de pressão que troca de sinal em 60–100 s, separador com
 αG = 0 — com a fração imposta, a inversão enche o duto com o líquido do separador
 (frente nítida, balanço fechado); com a fração livre, o que volta tem a

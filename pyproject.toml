@@ -25,6 +25,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["mfsim", "generators", "thesis"]
+exclude = ["thesis/data"]  # os .mf2 (36 MB) não vão na roda
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

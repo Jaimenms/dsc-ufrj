@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import scipy.io as sio
 
-LEGACY_DIR = Path(__file__).resolve().parent.parent / "legacy" / "mfsim23" / "Files"
+LEGACY_DIR = Path(__file__).resolve().parent / "data"  # os .mf2 da tese (thesis/data/README.md)
 
 
 def _to_py(obj):

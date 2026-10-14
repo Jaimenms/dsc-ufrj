@@ -95,7 +95,7 @@ com os defaults do driver) e só o conversor o usa: `uv run python tools/convert
 [--out-dir]` (`convert_run`) reescreve em v2 com `case_json`, `info_json` e proveniência da
 conversão. As 76 corridas de `notebooks/data` foram convertidas no lugar (T/X/acc
 bit-idênticos; modelos reconstruídos iguais ao golden `runs_meta`), com cópias v1 em
-`archive/data_v1_2026-10/` (fora do git, no manifesto); os quatro
+cópias v1 removidas em 2026-10-14); os quatro
 `severe_slug_run*.npz` sem `meta` completo ficam em v1 e o notebook lê-os diretamente.
 As 80 trajetórias históricas **não são reproduzíveis bit a bit** pelo código atual
 (dinâmica caótica: 15 % de desvio pontual a 150 s) e são tratadas como dados; a

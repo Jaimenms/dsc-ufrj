@@ -6,7 +6,7 @@
 | área | reprodução da tese |
 | estado | feito (2026-10-12/13) |
 | onde | `thesis/mf2.py` (leitor dos .mf2, fora do simulador), `thesis/export.py` (exportador com as correções), `cases/chapter10/*.json` (fonte dos casos; descrição em `meta`) |
-| dados | `legacy/mfsim23/Files/*.mf2`; notebooks `nb_10_*` |
+| dados | `thesis/data/*.mf2` (código MATLAB original no histórico do git até ao commit 22ecbc9); notebooks `notebooks_src/thesis/` |
 
 ## Antes
 

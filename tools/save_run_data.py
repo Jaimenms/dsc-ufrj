@@ -1,4 +1,4 @@
-"""Converte uma corrida do antigo driver (`runs/<tag>.npz` ou `archive/scratch_2026-10/npz/severe_D_<tag>.npz`,
+"""Converte uma corrida do antigo driver (`runs/<tag>.npz` ou `runs/severe_D_<tag>.npz`,
 com `opts`; passos e CPU lidos do `log` ao lado em `logs/` quando existe) em `notebooks/data/<nome>.npz`
 no formato v2 (`tools/legacy_runs.py: convert_run`).
 uso: uv run python tools/save_run_data.py <tag> <nome>"""
@@ -17,10 +17,7 @@ tag, name = sys.argv[1], sys.argv[2]
 src = find_run(tag)
 # passos e CPU do log do driver (ficheiros antigos não os guardam no npz)
 info = {}
-for log in (
-    os.path.splitext(src)[0] + ".log",
-    os.path.join("archive", "scratch_2026-10", "logs", f"severe_D_{tag}.log"),
-):
+for log in (os.path.splitext(src)[0] + ".log",):
     if os.path.exists(log):
         text = open(log).read()
         for key, pat in (

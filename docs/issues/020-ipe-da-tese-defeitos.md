@@ -6,7 +6,7 @@
 | área | fechamentos / identificação de padrão |
 | estado | feito (2026-10-13); correções sempre ativas (sem efeito quando os indicadores são 0/1) |
 | onde | `mfsim/closures/regime.py` (`identify_regime`, `equilibrium_fractions`) |
-| dados | diagnóstico denso em `archive/scratch_2026-10/tools/diag_ipe.py`; `tests/test_jax_regime_auto.py` |
+| dados | diagnóstico denso `diag_ipe.py` (histórico do git até ao commit 22ecbc9); `tests/test_jax_regime_auto.py` |
 
 ## Antes
 

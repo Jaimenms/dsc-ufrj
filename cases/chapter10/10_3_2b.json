@@ -7,7 +7,7 @@
    "section": "10.3.2",
    "title": "Poço com gas lift - cenário 2 (com intermitência)",
    "figures": "Figs. 10.41-10.46",
-   "note": "convertido de legacy/mfsim23/Files por thesis.export (network_from_mf2: correções e composição do 10.3.2a)"
+   "note": "convertido de thesis/data por thesis.export (network_from_mf2: correções e composição do 10.3.2a)"
   },
   "description": "Choke de gás 75%->15% entre 100 e 150 s."
  },

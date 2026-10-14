@@ -6,7 +6,7 @@
 | área | integrador |
 | estado | feito (2026-10-13); substituída na prática por `tol_range` (034) com o mesmo efeito |
 | onde | `integration.atol_P`, `atol_q`, `max_newton`; `scheme.options.art_visc` |
-| dados | `..._arc_av05.npz`, `..._arc_fast1.npz`, `..._arc_fast2.npz`; sondas em `archive/scratch_2026-10/py/restart_{ring,probe}.py` |
+| dados | `..._arc_av05.npz`, `..._arc_fast1.npz`, `..._arc_fast2.npz`; sondas `restart_ring.py`/`restart_probe.py` (histórico do git até ao commit 22ecbc9) |
 
 ## Antes
 
@@ -49,7 +49,7 @@ acústico do tampão e do bolsão), Newton com ≈ 6 iterações por não-suavid
 fechamentos (Jacobiana nova a cada passo não muda nada). GPU não ajuda (100–200
 estados, custo dominado por latência de chamadas numpy, não por vazão);
 paralelismo só entre simulações. Alavancas que funcionaram, medidas em janelas
-de reinício na fase cara (`archive/scratch_2026-10/py/restart_ring.py`, `archive/scratch_2026-10/py/restart_probe.py`)
+de reinício na fase cara (`restart_ring.py`, `restart_probe.py`; histórico do git até ao commit 22ecbc9)
 e confirmadas em simulações completas de 3000 s (mesmo ciclo, balanço exato):
 
 | configuração (malha grossa, arco, conservativa) | passos | CPU |

@@ -75,7 +75,7 @@ formulação adotada (`StaggeredFVScheme._rhs_drift`, numpy e JAX):
   cortada e a derivada automática é zero, o que derrubava o coeficiente no piso
   e fazia o lado direito explodir).
 
-Verificação no poço 10.3.1 (`tests/test_fv_drift.py`, `archive/scratch_2026-10/py/well_fv.py`,
+Verificação no poço 10.3.1 (`tests/test_fv_drift.py`, script `well_fv.py` no histórico do git até ao commit 22ecbc9,
 figura `notebooks/figs_well_fv.png`): estacionário com resíduo 1e−11 e todos os
 autovalores da Jacobiana negativos (a primeira versão, com o sinal do coeficiente
 trocado, tinha autovalores +4400 e parava em 3 ms); transiente de fechamento e

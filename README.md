@@ -59,10 +59,11 @@ uv run python tools/convert_runs.py antiga.npz --out-dir runs/            # corr
   carregar, ao exportar e por `mfsim validate`. Uma variante herda o caso base com
   `"$extends"` e traz só o que muda (as de `cases/severe_slug` têm poucas linhas);
   `--set caminho=valor` varia um caso sem ficheiro novo.
-- **Dados.** As 76 corridas históricas de `notebooks/data` estão em v2 (cópias v1 em
-  `archive/data_v1_2026-10/`); os dados fora do git são fixados por `MANIFEST.sha256`
-  (`uv run python tools/manifest.py --check`). A antiga `scratch/` e os diagnósticos
-  pontuais estão em `archive/scratch_2026-10/` (índice em `INDEX.md`); nada foi apagado.
+- **Dados.** As 76 corridas históricas de `notebooks/data` estão em v2; os dados fora do git
+  (`notebooks/data`) e os `.mf2` da tese (`thesis/data`) são fixados por `MANIFEST.sha256`
+  (`uv run python tools/manifest.py --check`). A antiga `scratch/`, os diagnósticos, as cópias v1 e
+  os notebooks anteriores foram removidos em 2026-10-14 (os ficheiros versionados ficam no
+  histórico do git até ao commit 22ecbc9).
 
 ## Estrutura
 
@@ -79,12 +80,12 @@ uv run python tools/convert_runs.py antiga.npz --out-dir runs/            # corr
 | `mfsim/simulation.py`, `results.py` | `build_model`, `simulate`, `steady_state`; `Results` com as saídas da tese por duto e por vértice |
 | `mfsim/io/`, `mfsim/initial/` | casos em JSON (`spec.py`; `$extends`/`$ref`/`$include` em `extends.py`; schema e `validate.py`); receitas de condição inicial (bloqueada, linha fechada) |
 | `mfsim/runs.py`, `analysis.py`, `cli.py` | corridas gravadas v2 (`load_run`, `save_run`, `Run.case`/`network`/`res`); assinaturas de ciclo e análises (varredura, riser, laboratório); `mfsim run\|steady\|stats\|scan\|riser\|val\|validate\|nb` |
-| `thesis/` | ponte com o MFSIM da tese, **fora do simulador**: leitura dos `.mf2` (`mf2.py`: `load_mf2`, `chapter10_case`, `legacy_results`), registo legado e conversão para o grafo (`record.py`), exportação para JSON (`python -m thesis.export --chapter10`), apoio aos notebooks de reprodução (`notebook_utils.py`) |
+| `thesis/` | ponte com o MFSIM da tese, **fora do simulador**: os `.mf2` originais em `thesis/data/` e a sua leitura (`mf2.py`: `load_mf2`, `chapter10_case`, `legacy_results`), registo legado e conversão para o grafo (`record.py`), exportação para JSON (`python -m thesis.export --chapter10`), apoio aos notebooks de reprodução (`notebook_utils.py`) |
 | `mfsim/plotting.py`, `notebook_utils.py` | figuras no estilo da tese e apoio aos notebooks |
 | `cases/`, `generators/` | JSON: `examples/hello_world`, `chapter10/` (11 casos da tese), `severe_slug/` (referência, variantes como `$extends`, laboratório); geradores fora do simulador (`generators/severe_slug.py`: parâmetros físicos → JSON; `generators/column.py`: coluna de líquido da issue 006), `cases/studies/` com os seus casos |
 | `batches/` | lotes de corridas em JSON executados por `mfsim batch` para `runs/`: `thesis.json` (casos da tese tal e qual, sensibilidades de malha, formulação 2 do 10.1.1) e `issues.json` (coluna de líquido, capítulo 10 em numpy e JAX, estacionários, poço de deriva, gas lift 16 000 s) |
 | `tools/`, `tests/`, `notebooks_src/` | `golden_generate` (referências de regressão), `manifest`, `make_nb`, migração do dialeto antigo (`legacy_runs`, `convert_runs`, `severe_run`, `save_run_data`, `export_severe_cases`); testes com `tests/golden/` (nível A = bit a bit, B = tolerância, C = assinaturas de ciclo; `CHANGELOG.md`); fontes dos notebooks: `thesis/` reproduz os casos da tese tal e qual (um por secção), `issues/` ilustra as correções e melhorias (um por grupo de issues, cada um a apontar para `docs/issues/`); nenhum simula, todos leem `runs/` e `notebooks/data` |
-| `legacy/`, `archive/` | `.mf2` e código MATLAB originais; arquivo da antiga `scratch/`, dos diagnósticos e das corridas v1 |
+| `docs/` | documentação (índice abaixo), índice de issues e o texto da tese (`docs/thesis.pdf`) |
 
 ## Documentação
 
@@ -96,7 +97,7 @@ uv run python tools/convert_runs.py antiga.npz --out-dir runs/            # corr
 - [docs/severe_slug.md](docs/severe_slug.md) — intermitência severa: o caso, a configuração recomendada e o mapa dos temas para as issues.
 - [docs/lab_validation.md](docs/lab_validation.md) — validação com dados de laboratório (Jansen, Fabre, Tengesdal): casos, comandos e resultado em uma linha.
 - [docs/findings_for_paper.md](docs/findings_for_paper.md) — achados para o artigo (resumo).
-- `archive/scratch_2026-10/INDEX.md` — índice do arquivo; `tests/golden/CHANGELOG.md` — registo das referências de regressão.
+- `tests/golden/CHANGELOG.md` — registo das referências de regressão; `docs/thesis.pdf` — a tese.
 
 ## Reorganização do código (2026-10)
 
@@ -111,7 +112,7 @@ outputs de texto) está verde (14/14) em 2026-10-14.
 | 0 | git, manifesto dos dados, referências de regressão (níveis A/B/C), `mfsim.runs` | `v0-baseline`, `v0-results-snapshot` |
 | 1 | opções tipadas, grafo + especificações no tempo, JSON `mfsim-case/1` e conversão dos `.mf2`, receitas de condição inicial; round-trip bit-idêntico | — |
 | 2 | backend único: fluido, fechamentos, padrão, modelos, discretizações e rede numa só implementação; `compiled.py`; módulos JAX duplicados apagados; numpy bit-idêntico, JAX paridade 1e−14, desempenho ≤ 1.1× | `v2-backend` |
-| 3 | CLI, corridas npz v2, `tools/` revistas e `archive/scratch_2026-10` (nada apagado) | — |
+| 3 | CLI, corridas npz v2, `tools/` revistas e `scratch/` arquivada (arquivo removido em 2026-10-14; histórico do git até ao commit 22ecbc9) | — |
 | 4 | notebooks pelo carregador único e API pública, re-executados; outputs de texto iguais ou explicados (células JAX) | `v4-notebooks` |
 | 5 | compatibilidade removida; documentação dividida em `docs/`; rede montada diretamente sobre o grafo (`system.py` + `ports.py`, junções explícitas) com o golden `network` bit-idêntico; `Network` de ponta a ponta e registo legado só como formato de entrada | `v5-refactored`, `v5-network-native` |
 | 6 | caminho único de execução (`simulate` só lê o caso), corridas só em v2 com as 76 históricas convertidas, schema com validação, herança `$extends`, `--set`, primeiro caso documentado | `v6-single-driver` |
