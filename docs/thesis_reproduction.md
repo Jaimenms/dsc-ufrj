@@ -30,7 +30,6 @@ pressurização lenta do anular entre os ciclos (cerca de 1 min de CPU por caso)
 
 ## Observações sobre os arquivos originais
 
-* `dados.tubo.condicaoInicial*` contém o estado **final** da simulação; o estado
-  inicial está em `estados.X[:,0]`.
-* `CASO10-1-4`: o resultado gravado corresponde a uma versão anterior do atrito
-  de Beggs & Brill; `CASO10-3-1`: padrão intermitente (como no texto).
+Em [issues/001](issues/001-reproducao-capitulo-10.md): condição inicial gravada = estado
+final, "upwind" original = diferenças regressivas em todas as variáveis, estado estacionário
+discreto não único, ficheiros 10.1.4/10.3.1/10.3.2a.

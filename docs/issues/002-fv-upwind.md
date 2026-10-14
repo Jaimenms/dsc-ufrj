@@ -42,7 +42,25 @@ Precisou de um conjunto de ingredientes para a fase que desaparece (003) e da fo
 conservativa para fechar o balanço de massa (004); a primeira versão com limitadores
 "generosos" de fração produzia ciclos falsos por destruição de massa.
 
+## Detalhe
+
+*Texto movido de `docs/severe_slug.md` (secção «Intermitência severa») em 2026-10-14.*
+
+Geometria linha–riser (`mfsim/cases/severe_slug.py`): 20 m horizontais, 300 m
+descendentes a −3°, riser de 20 m e 5 m até o separador (4 bar), D = 50 mm,
+vSL = 0.3 m/s, vSG ≈ 0.1 m/s. Um único duto com padrão estratificado na linha e
+bolhas nos trechos quase verticais (`regime_vertical`), esquema `fv_upwind`,
+partida transiente a partir de uma estimativa inicial.
+
+Resultado: ciclo-limite de intermitência severa (18 ciclos em 8000 s com
+período ≈ 312 s na malha fina; 24 ciclos com período ≈ 230 s na malha grossa) —
+bloqueio do riser por líquido e pressurização da linha, *blowdown* (fração de gás
+no riser de 0 a 0.9 em ~20 s) com picos de líquido na saída de 10–20× a
+alimentação, reenchimento e repetição; balanço de massa de líquido fechado em
+~2 % (verificado no notebook). A trajetória gravada está em
+`notebooks/data/severe_slug_run.npz` (malha fina, 8000 s, ~80 min de CPU) e
+`notebooks/data/severe_slug_run_long.npz` (malha grossa, 8000 s, ~50 min).
+
 ## Referências
 
-[docs/severe_slug.md](../severe_slug.md) § "Intermitência severa"; `tests/test_fv_single.py`,
-`tests/test_conservative_residual.py`.
+[docs/severe_slug.md](../severe_slug.md) (visão geral). O texto integral está na secção «Detalhe» acima. Testes: `tests/test_conservative_residual.py`, `tests/test_fv_single.py`.

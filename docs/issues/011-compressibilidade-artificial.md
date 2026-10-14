@@ -29,4 +29,4 @@ a singularidade do mapa de massas está em αG = −γG/γL (−0.0105 com γL =
 
 ## Referências
 
-[docs/severe_slug.md](../severe_slug.md) § "Ingredientes numéricos"; [docs/lab_validation.md](../lab_validation.md) achado 3.
+Detalhe em [003](003-fase-que-desaparece.md) e [031](031-numerica-a-1-atm.md).

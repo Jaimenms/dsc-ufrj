@@ -38,6 +38,31 @@ Opção `physical`: vb de Mendelson, C_D = 4/3 g db Δρ/(ρL vb²), força por 
 A correção não muda o severe slug de campo (os resultados anteriores mantêm-se) e passa a
 ser a recomendada.
 
+## Detalhe
+
+*Texto movido de `docs/lab_validation.md` (secção «Validação com dados de laboratório (item 8) — Achado 1») em 2026-10-14.*
+
+**Achado 1 — fechamento de bolhas da tese.** Na primeira corrida (Jansen, fechamentos
+da tese, partida bloqueada) o modelo dá período 75 s contra 46.6 s medidos e
+**não há blowout**: o gás atravessa o riser a 4 m/s com 2–4 % de fração em
+"bolhas" (força interfacial −0.1 N/m, igual ao empuxo). O `modelo_bolhas.m` da
+tese (porte fiel) tem
+
+- velocidade terminal `vb = sqrt(0.51 db + 2.14/db)`: é a forma de Mendelson /
+  Fan–Tsuchiya `sqrt(2.14 σ/(ρL db) + 0.505 g db)` sem g e sem σ/ρL → vb ≈ 14 m/s
+  e C_D ≈ 7·10⁻⁴ (ar–água, db = 11 mm);
+- tensão interfacial `f_I ρG Δv|Δv|/2` com `f_I = 1.5 αG ρL C_D/db`: a força fica
+  proporcional a ρG αG² (dimensionalmente inconsistente; o arrasto de bolhas
+  escala com ρL e αG).
+
+No caso de campo (5 bar, 5 cm) os dois erros compensam-se (escorregamento de
+equilíbrio 0.5–1 m/s a 10–30 % de gás); a 1 atm e 2.5 cm dão 4 m/s. Nova opção
+`PipeParams.bubble_drag="fisico"` (numpy e JAX, bandeira por nó propagada ao
+corpo do slug do intermitente): vb de Mendelson, C_D = 4/3 g db Δρ/(ρL vb²),
+força por volume 3/4 C_D αG ρL |vr| vr/db — na velocidade terminal o arrasto
+iguala o empuxo (`tests/test_bubble_drag.py`: 0.26 m/s contra 4 m/s da tese).
+O padrão continua `"tese"`; o caso de campo deve ser reavaliado com a opção.
+
 ## Referências
 
-[docs/lab_validation.md](../lab_validation.md) achado 1; 030.
+[docs/lab_validation.md](../lab_validation.md) (visão geral). O texto integral está na secção «Detalhe» acima. Ver também 030.

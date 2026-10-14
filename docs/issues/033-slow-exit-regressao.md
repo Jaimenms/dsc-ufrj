@@ -25,6 +25,16 @@ JSON. À escala de laboratório ele voltou a ser indispensável (031).
 Gas lift intermitente (choke a 12 % e 10 %, 16 000 s) volta a correr: ciclos de *heading* de
 ≈ 4000 s, produção entre 0.2 e 23 kg/s; é um dos casos da suíte noturna.
 
+## Detalhe
+
+*Texto movido de `docs/jax_backend.md` (secção «Lado direito em JAX para toda a tese — Regressão encontrada») em 2026-10-14.*
+
+Regressão encontrada e corrigida nessa verificação: o padrão `slow_exit`
+(recálculo da Jacobiana dentro do Newton quando a convergência é lenta) tinha
+sido desligado durante o trabalho do severe slug e isso quebrava o caso de gas
+lift (evento da válvula de retenção): voltou a ser ligado por padrão; os scripts
+do severe slug o desligam explicitamente.
+
 ## Referências
 
-[docs/jax_backend.md](../jax_backend.md) (regressão encontrada na verificação JAX).
+[docs/jax_backend.md](../jax_backend.md) (visão geral). O texto integral está na secção «Detalhe» acima.

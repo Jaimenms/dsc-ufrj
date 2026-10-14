@@ -26,6 +26,19 @@ O caso 10.2.2, que usava o filtro em quatro arestas, reproduz o MATLAB exatament
 antes: o filtro **nunca atuava** nessa trajetória. Sem ramos em valores o lado direito ficou
 puro, o que é o que permite o `jit` e a Jacobiana por diferenciação automática (036).
 
+## Detalhe
+
+*Texto movido de `docs/severe_slug.md` (secção «Filtro anti-refluxo removido») em 2026-10-14.*
+
+O código original tinha um filtro nas saídas dos dutos marcados com `check`
+(forçava as vazões de saída acima de 1e−6 kg/s e anulava derivadas negativas).
+Era um remendo para contornar a falta de informação de fração nas extremidades
+em refluxo. Foi removido do modelo (numpy e JAX); o campo `check` continua a ser
+lido dos arquivos originais mas não tem efeito. O caso 10.2.2, que o usava em
+quatro arestas, reproduz o MATLAB exatamente como antes (o filtro nunca atuava
+nessa trajetória). O refluxo passa a ser resolvido pelas equações e pelo
+tratamento das extremidades descrito a seguir.
+
 ## Referências
 
-[docs/severe_slug.md](../severe_slug.md) § "Filtro anti-refluxo removido".
+[docs/severe_slug.md](../severe_slug.md) (visão geral). O texto integral está na secção «Detalhe» acima.

@@ -4,6 +4,8 @@
 
 ## Achados para o artigo (resumo)
 
+*Detalhe em [issues/004](issues/004-formulacao-conservativa.md), [008](issues/008-joelho-em-arco.md) e [003](issues/003-fase-que-desaparece.md).*
+
 1. **Conservação de massa vs variáveis de estado.** A integração temporal das
    equações de massa na forma primitiva (dαG/dt, dP/dt) perde massa em degraus,
    um por *blowdown* (2–6 % do líquido alimentado; 8–12 % do gás), mesmo com

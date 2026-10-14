@@ -89,9 +89,9 @@ uv run mfsim convert-runs antiga.npz --out-dir runs/                       # cor
 - [docs/hello_world.md](docs/hello_world.md) — primeiro caso: um duto e duas fronteiras em JSON, correr, ler os resultados, o mesmo caso em Python, variar com `--set`/`$extends`.
 - [docs/data_formats.md](docs/data_formats.md) — casos em JSON (`mfsim-case/1`, schema, herança), grafo e montagem da rede, corridas gravadas (v2, conversão de v1), referências de regressão e manifesto.
 - [docs/thesis_reproduction.md](docs/thesis_reproduction.md) — modelo e layout de estados, reprodução do capítulo 10, gas lift com intermitência forte, observações sobre os ficheiros originais.
-- [docs/jax_backend.md](docs/jax_backend.md) — backend único numpy/JAX, `CompiledNetwork`, paridade e desempenho.
-- [docs/severe_slug.md](docs/severe_slug.md) — intermitência severa: esquema escalonado conservativo, rede com vértices dinâmicos, identificação automática de padrão, itens 1–7 do modelo físico, fronteira de Bøe/Taitel.
-- [docs/lab_validation.md](docs/lab_validation.md) — validação com dados de laboratório (Jansen, Fabre, Tengesdal; item 8).
+- [docs/jax_backend.md](docs/jax_backend.md) — backend único numpy/JAX: como usar, garantias de paridade (detalhe nas issues 036–038).
+- [docs/severe_slug.md](docs/severe_slug.md) — intermitência severa: o caso, a configuração recomendada e o mapa dos temas para as issues.
+- [docs/lab_validation.md](docs/lab_validation.md) — validação com dados de laboratório (Jansen, Fabre, Tengesdal): casos, comandos e resultado em uma linha.
 - [docs/findings_for_paper.md](docs/findings_for_paper.md) — achados para o artigo (resumo).
 - `archive/scratch_2026-10/INDEX.md` — índice do arquivo; `tests/golden/CHANGELOG.md` — registo das referências de regressão.
 

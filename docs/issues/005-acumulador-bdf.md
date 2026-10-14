@@ -29,4 +29,4 @@ verificação. Todos os resultados posteriores reportam o balanço com esta medi
 
 ## Referências
 
-[docs/severe_slug.md](../severe_slug.md) § "Conservação de massa"; `tests/test_conservative_residual.py`.
+Detalhe em [004](004-formulacao-conservativa.md) (secção «Detalhe»); `tests/test_conservative_residual.py`.

@@ -39,4 +39,4 @@ caso, com os valores efetivos gravados na corrida.
 
 ## Referências
 
-[docs/severe_slug.md](../severe_slug.md) § "Ingredientes numéricos" e "Aceleração"; [docs/data_formats.md](../data_formats.md).
+Detalhe em [003](003-fase-que-desaparece.md) e [035](035-config-rapida.md); opções em [docs/data_formats.md](../data_formats.md).

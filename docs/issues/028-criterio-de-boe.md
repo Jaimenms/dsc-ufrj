@@ -29,6 +29,17 @@ Forma das fontes, vSL ≥ P·vSG / (ρL·g·(1 − αG)·L), com vSG à pressão
   clássico e penetração contínua).
 - Todos os pontos da varredura (029) ficam dentro da região (vSL_mín 0.009–0.061).
 
+## Detalhe
+
+*Texto movido de `docs/lab_validation.md` (secção «Validação com dados de laboratório (item 8) — Achado 2») em 2026-10-14.*
+
+**Achado 2 — critério de Bøe.** A função `boe_criterion` dividia L por sin|θ|, o
+que não consta das fontes; corrigida para a forma de Taitel (1986) / Jansen et
+al. (1996) (ver o item 5 e a tabela da varredura, recalculadas). Com a forma
+correta o caso 2 de Fabre fica no limiar (vSL_mín ≈ 0.13) e o caso 1 fora
+(0.31 > 0.13), coerente com os tipos observados (ciclo clássico e penetração
+contínua).
+
 ## Referências
 
-[docs/lab_validation.md](../lab_validation.md) achado 2; [docs/severe_slug.md](../severe_slug.md) § "Fronteira".
+[docs/lab_validation.md](../lab_validation.md) (visão geral). O texto integral está na secção «Detalhe» acima.

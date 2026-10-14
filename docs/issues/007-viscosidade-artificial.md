@@ -43,6 +43,32 @@ A viscosidade de malha só atrasa o início do modo do tampão nas fases de reen
 comprimento de onda é o do tampão, não o da malha); a causa residual foi resolvida pelo alvo
 `noslip` (006).
 
+## Detalhe
+
+*Texto movido de `docs/severe_slug.md` (secção «Intermitência severa — Modo acústico») em 2026-10-14.*
+
+**Modo acústico do tampão de líquido e viscosidade artificial.** A causa
+residual do *chattering* (diagnóstico com saída a cada 5 ms) é um modo acústico
+do tampão de líquido que se forma na base do riser após cada *blowdown* (≈ 8 m
+de líquido entre o bolsão da linha e o gás do riser): vazão de líquido e pressão
+oscilam a ≈ 16–20 Hz = c/2L (c = 258 m/s com o expoente 100). O esquema
+escalonado com gradiente de pressão centrado não amortece acústica, o BDF2
+quase não dissipa e o controlador de passo resolve a oscilação; o líquido
+monofásico nas mesmas células é estável (a excitação vem das interfaces
+gás–líquido). Remédio numérico: viscosidade artificial linear ν = C·c·h nas
+equações de momento (`art_visc`, C = 0.01; some com h → 0 e a taxa ν·k² é
+desprezível para ondas longas). Efeito (mesmo ciclo e balanço exato em todos):
+grossa uniforme 112 → 85.7 mil passos (20 min), grossa graduada 166 → 145 mil
+(35 min), fina uniforme 262 → 202 mil (58 min); a fina graduada, antes inviável,
+passa a rodar (303 mil passos, 83 min — continua a mais cara: o modo do tampão
+volta nas fases de reenchimento, com comprimento de onda ≫ h, fora do alcance da
+viscosidade de malha). As cinco trajetórias dão 5 blowdowns em 3000 s com
+intervalo de 680–730 s e pressão de entrada 4.15–5.86 bar; os picos de líquido
+crescem com a resolução no pescoço (6.7, 8.6, 9.1 e 10.2 kg/s para grossa,
+fina, grossa graduada e fina graduada). A regularização hiperbólica (`low_void_regime=2` + δ = 1.2) não altera o
+custo nem o ciclo na malha grossa (85.4 mil passos) — fica como opção. BDF1
+(Euler implícito) nas fases de toque foi testado e é igual ou pior.
+
 ## Referências
 
-[docs/severe_slug.md](../severe_slug.md) § "Modo acústico do tampão de líquido e viscosidade artificial".
+[docs/severe_slug.md](../severe_slug.md) (visão geral). O texto integral está na secção «Detalhe» acima.

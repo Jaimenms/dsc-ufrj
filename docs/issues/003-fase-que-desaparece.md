@@ -44,7 +44,23 @@ dezenas de segundos.
 A relaxação da fase ausente com alvo na fração real tinha um efeito colateral (arrasto
 espúrio da fase virtual, 006), corrigido com `relax_target = "noslip"`.
 
+## Detalhe
+
+*Texto movido de `docs/severe_slug.md` (secção «Intermitência severa — Ingredientes numéricos») em 2026-10-14.*
+
+Ingredientes numéricos que se mostraram necessários (todos em
+`mfsim/discretization/staggered.py` e `mfsim/integrators/implicit.py`):
+coeficientes de massa com a fração de gás real da célula (compressibilidade do
+gás some quando a fase some; acumulação de líquido vai para a pressão);
+relaxação da vazão da fase ausente para a condição sem escorregamento com base
+na célula doadora (chaveamento abrupto — a mistura suave "vaza" fração da célula
+vizinha e sustenta fluxo de fase inexistente); chaveamento *upwind* com largura
+adaptativa às vazões locais; recuo do BDF2 para BDF1 quando estados são
+projetados nos limites físicos; recálculo da Jacobiana quando o Newton converge
+lentamente; compressibilidade artificial do líquido (expoente 100) para reduzir
+a rigidez acústica. Limitadores "generosos" de fração de gás produzem ciclos
+falsos por destruição de massa — o balanço de massa deve ser sempre verificado.
+
 ## Referências
 
-[docs/severe_slug.md](../severe_slug.md) § "Ingredientes numéricos";
-[docs/findings_for_paper.md](../findings_for_paper.md) ponto 3.
+[docs/severe_slug.md](../severe_slug.md) (visão geral). O texto integral está na secção «Detalhe» acima.

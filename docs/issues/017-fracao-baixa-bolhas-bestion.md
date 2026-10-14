@@ -38,6 +38,25 @@ Na malha grossa a regularização não muda o custo nem o ciclo (85.4 mil passos
 85.7); com Bestion o custo sobe 1.6× (41.4k passos) sem mudar o ciclo, por isso a
 recomendação passou a ser a massa virtual (018), que é física.
 
+## Detalhe
+
+*Texto movido de `docs/severe_slug.md` (secção «Intermitência severa — Hiperbolicidade») em 2026-10-14.*
+
+**Hiperbolicidade dos fechamentos** (seção própria no notebook). Autovalores da
+matriz quase-linear (`TwoFluidModel.eigenvalues`): o fechamento estratificado é
+mal posto para αG ≲ 0.003 **mesmo sem escorregamento** (limite de camada de gás
+muito fina, |Im λ| ≈ 2–4 m/s), e é exatamente aí que toda célula cheia de
+líquido é avaliada (αG cortado em 1e−3); o de bolhas é mal posto em baixa fração
+com escorregamento (caso clássico). Tensão superficial não resolve: é dispersiva
+(3ª ordem), não altera as características, e com σ = 0.05 N/m o corte capilar é
+milimétrico. O que torna o mapa inteiro hiperbólico: padrão de bolhas abaixo de
+αG = 1 % (`low_void_regime=2`, `low_void_alpha`) **mais** o termo de pressão
+interfacial de Bestion/CATHARE com δ ≥ 1 (`interfacial_pressure`, derivadas em αG
+e P incluídas). Nos testes de 80 s na malha fina graduada essa regularização
+reduziu o *chattering* à metade (amplitude e frequência) mas não o eliminou;
+relaxação mais longa, bandas mais largas e chaveamentos de gás mais largos
+pioram.
+
 ## Referências
 
-[docs/severe_slug.md](../severe_slug.md) § "Hiperbolicidade dos fechamentos".
+[docs/severe_slug.md](../severe_slug.md) (visão geral). O texto integral está na secção «Detalhe» acima.

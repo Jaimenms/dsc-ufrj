@@ -48,6 +48,15 @@ diretamente com o que está gravado. Cinco factos que não estão no texto da te
 - Cada caso é agora um ficheiro JSON autocontido (`cases/chapter10/`), reexecutável com
   qualquer integrador e com o backend JAX.
 
+## Detalhe
+
+*Texto movido de `docs/thesis_reproduction.md` (secção «Observações sobre os arquivos originais») em 2026-10-14.*
+
+* `dados.tubo.condicaoInicial*` contém o estado **final** da simulação; o estado
+  inicial está em `estados.X[:,0]`.
+* `CASO10-1-4`: o resultado gravado corresponde a uma versão anterior do atrito
+  de Beggs & Brill; `CASO10-3-1`: padrão intermitente (como no texto).
+
 ## Referências
 
-[docs/thesis_reproduction.md](../thesis_reproduction.md); notebooks `notebooks_src/nb_10_*.py`.
+[docs/thesis_reproduction.md](../thesis_reproduction.md) (visão geral). O texto integral está na secção «Detalhe» acima.

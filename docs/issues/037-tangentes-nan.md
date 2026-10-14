@@ -37,4 +37,4 @@ diferenciação automática divergem, e os testes de paridade comparam longe das
 
 ## Referências
 
-[docs/severe_slug.md](../severe_slug.md) § "Lado direito em JAX" e "Identificação automática"; [docs/jax_backend.md](../jax_backend.md).
+Detalhe em [036](036-lado-direito-jax.md) e [020](020-ipe-da-tese-defeitos.md); [docs/jax_backend.md](../jax_backend.md) (visão geral).

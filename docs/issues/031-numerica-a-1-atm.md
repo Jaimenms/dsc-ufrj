@@ -40,6 +40,32 @@ Jansen completa 600 s em 98k passos. Alargar a banda de chaveamento do gás (`q_
 também passa, com o dobro dos passos e período 7 % diferente, o que fixa a incerteza
 numérica do período de laboratório em ±7–10 %.
 
+## Detalhe
+
+*Texto movido de `docs/lab_validation.md` (secção «Validação com dados de laboratório (item 8) — Achado 3») em 2026-10-14.*
+
+**Achado 3 — numérica a 1 atm.** Três problemas só aparecem a escala de
+laboratório: (i) a banda de undershoot de αG do modo conservativo (−0.005)
+cruzava a singularidade do mapa de massas em αG = −γG/γL quando γL = 1000
+(singularidade em −0.001; o caso de campo usa γL = 100, singularidade em −0.0105)
+e a pressão da célula colapsava para o piso de 100 Pa com o passo a rastejar
+(`state_bounds` agora usa −min(0.005, 0.5 γG/γL); os casos de laboratório
+passaram a γL = 100 como o de campo); (ii) na fase quase estática de
+pressurização da linha (vazões de gás de 10⁻⁵ kg/s a trocar de sinal nas faces
+junto ao bolsão, num tubo de 1" a 1 atm o gás tem 10⁻⁷ kg por célula) a
+Jacobiana reutilizada fica desatualizada e o Newton estagna perto da tolerância
+(17–20 iterações, 35–40 % de rejeições, passo de 10⁻⁵ s sem nada a mudar no
+estado): o recálculo da Jacobiana dentro do Newton quando a convergência é lenta
+(`ImplicitBDF.slow_exit`, opção `slow` do `severe_D.py`, já usada nos casos de
+rede com eventos) resolve-o — Tengesdal passa de rastejo em 408 s para 800 s em
+50k passos; alargar a banda de chaveamento do gás (`fsw_G` 0.3) também passa,
+com o dobro dos passos e período 7 % diferente; (iii) numa corrida com γL = 1000
+(Tengesdal, arrasto físico) apareceu um tabuleiro de xadrez em αG no topo do
+riser (células alternadas anular/bolhas a 0.9 de fração) antes do colapso de
+pressão — não voltou a aparecer com γL = 100. O integrador ganhou um diagnóstico
+do passo rastejante (componentes dominantes do erro local e da última atualização
+de Newton quando h < 10⁻³ s) e o `severe_D.py` grava a trajetória parcial em falha.
+
 ## Referências
 
-[docs/lab_validation.md](../lab_validation.md) achado 3.
+[docs/lab_validation.md](../lab_validation.md) (visão geral). O texto integral está na secção «Detalhe» acima.

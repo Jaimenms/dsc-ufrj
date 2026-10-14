@@ -27,6 +27,20 @@ vazões das faces (estados); a fração nas faces só entra no momento. A difus�
 da dinâmica do momento (velocidade doadora, relaxação da fase ausente, limitador), não da
 interpolação de α. Fica documentado para não ser repetido.
 
+## Detalhe
+
+*Texto movido de `docs/severe_slug.md` (secção «Reconstrução de α nas faces») em 2026-10-14.*
+
+**MUSCL/TVD da fração de área nas faces** (`alpha_face="muscl"`, numpy e JAX:
+declive minmod a partir da célula doadora; `fv_order=2` faz o mesmo para a
+velocidade doadora). Não dá nitidez à frente: na malha grossa o ciclo é igual
+(intervalo 775 s contra 765 s) e a largura mediana da transição 0.1–0.9 de αG no
+riser fica em 2.9 m com e sem reconstrução (1.7 m na malha fina). No esquema
+escalonado os fluxos de massa são as vazões das faces (estados); a fração nas
+faces só entra no momento. A difusão da frente vem da dinâmica do momento
+(velocidade doadora, relaxação da fase ausente, limitador), não da interpolação
+de α.
+
 ## Referências
 
-[docs/severe_slug.md](../severe_slug.md) § "Reconstrução de α nas faces".
+[docs/severe_slug.md](../severe_slug.md) (visão geral). O texto integral está na secção «Detalhe» acima.

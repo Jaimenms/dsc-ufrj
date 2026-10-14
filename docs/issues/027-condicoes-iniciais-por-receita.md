@@ -34,6 +34,15 @@ as corridas de 3000 s passaram a cobrir 4–5 blowdowns e tornaram viáveis os e
 sensibilidade (016–024). A sobrepressão inicial muda o primeiro blowdown mas não o ciclo
 (linha longa: 0.3 e 0.1 bar dão 3916 e 3928 s).
 
+## Detalhe
+
+*Texto movido de `docs/severe_slug.md` (secção «Intermitência severa — Condição inicial») em 2026-10-14.*
+
+**Condição inicial "bloqueada"** (`start="blocked"`): bolsão de gás estratificado
+na linha na fração de equilíbrio (0.746, igual à observada no ciclo), riser cheio
+de líquido, pressões hidrostáticas e bolsão a uma margem (0.3 bar) acima da
+frente de líquido — o ciclo começa em poucos minutos em vez de ~2500 s.
+
 ## Referências
 
-[docs/severe_slug.md](../severe_slug.md) § "Condição inicial bloqueada"; [docs/data_formats.md](../data_formats.md).
+[docs/severe_slug.md](../severe_slug.md) (visão geral). O texto integral está na secção «Detalhe» acima.
