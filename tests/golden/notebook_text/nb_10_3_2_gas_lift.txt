@@ -28,4 +28,4 @@ Figuras da tese: Figs. 10.36-10.40
 tempo de CPU: <t>s
 
 ### célula 8
-JAX: <t>s (348 passos; compilação <t>s, uma vez por modelo) | numpy: <t>s (342 passos) | diferença máxima relativa dos estados 2.1e-02
+JAX: <t>s (347 passos; compilação <t>s, uma vez por modelo) | numpy: <t>s (342 passos) | diferença máxima relativa dos estados 2.2e-02

@@ -89,3 +89,13 @@ Regressão encontrada e corrigida nessa verificação: o padrão `slow_exit`
 sido desligado durante o trabalho do severe slug e isso quebrava o caso de gas
 lift (evento da válvula de retenção): voltou a ser ligado por padrão; os scripts
 do severe slug o desligam explicitamente.
+
+**Nota da fase 5 (rede sobre o grafo, 2026-10-14).** Com o `NetworkSystem` montado sobre o
+grafo, o rhs JAX ficou bit-idêntico ao anterior em todas as chamadas de uma integração
+(10.3.2b: 2999 chamadas), mas a Jacobiana (`jacfwd`) dos casos com válvula de retenção
+difere 1 ulp em 3 entradas (equação do tanque em relação à pressão do duto a jusante): o
+tangente da pressão lida pela válvula deixa de passar por um `set`/leitura de E e o XLA
+funde o grafo de outra forma. Consequência: as células JAX dos notebooks de gas lift
+seguem outra sequência de passos (10.3.2: 348 → 347 passos; gas lift intermitente 12 %:
+2860 → 2914), registada em `tests/golden/CHANGELOG.md`; os goldens noturnos de gas lift
+(2000 s) e a referência de 3000 s não mudaram.
