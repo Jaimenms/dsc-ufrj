@@ -1,0 +1,166 @@
+{
+ "schema": "mfsim-case/1",
+ "name": "chapter10_10.1.4",
+ "meta": {
+  "provenance": {
+   "source": "CASO10-1-4.mf2",
+   "section": "10.1.4",
+   "title": "Escoamento horizontal via modelo a 3 equações",
+   "figures": "Fig. 10.17",
+   "note": "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (inclui as correções de load_chapter10_case)"
+  },
+  "description": "Cenário de 10.1.1 com o modelo de mistura (Beggs & Brill)."
+ },
+ "fluid": {
+  "type": "polytropic",
+  "rhoL0": 860.0,
+  "rhoG0": 80.0,
+  "muL": 0.008,
+  "muG": 2e-05,
+  "gammaL": 1000.0,
+  "gammaG": 1.2,
+  "P0": 10000000.0,
+  "sigma": 0.03
+ },
+ "reference": {
+  "PR": 10000000.0
+ },
+ "time": {
+  "t0": 0.0,
+  "tf": 3000.0,
+  "dt_out": 10.0
+ },
+ "network": {
+  "vertices": [
+   {
+    "id": "1",
+    "kind": "boundary",
+    "spec": {
+     "qL": 0.5,
+     "qG": {
+      "t": [
+       0.0,
+       150.0,
+       180.0,
+       3000.0
+      ],
+      "v": [
+       0.1,
+       0.1,
+       0.13,
+       0.13
+      ]
+     }
+    }
+   },
+   {
+    "id": "2",
+    "kind": "boundary",
+    "spec": {
+     "PT": 1.0
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "1",
+    "type": "pipe",
+    "from": "1",
+    "to": "2",
+    "D": 0.1,
+    "roughness": 0.001,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1000.0,
+        0.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 50
+      }
+     ]
+    },
+    "model": {
+     "type": "drift_flux_bb",
+     "regime": {
+      "type": "automatic",
+      "k_switch": 1000000.0,
+      "smooth": false,
+      "local": false
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "galerkin",
+     "options": {}
+    },
+    "ports": {
+     "in": {
+      "alphaG": "free",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "1",
+      "file": "10_1_4.ic.npz"
+     }
+    }
+   }
+  ]
+ },
+ "integration": {
+  "integrator": "bdf",
+  "quadrature_order": 2,
+  "max_step": 10.0,
+  "atol": 0.001,
+  "rtol": 0.1,
+  "backend": "numpy",
+  "tol_range": null,
+  "first_step": 0.001,
+  "max_order": 2,
+  "max_newton": 12,
+  "newton_tol": 0.001,
+  "slow_exit": false
+ }
+}

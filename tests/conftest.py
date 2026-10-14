@@ -74,3 +74,20 @@ def data_dir():
     if not DATA.exists() or not any(DATA.glob("*.npz")):
         pytest.skip("notebooks/data ausente")
     return DATA
+
+
+def assert_same_model(case_a, case_b, X=None, t=1.0):
+    """Os dois casos constroem o mesmo modelo: n_states, estado inicial, rhs (no estado e num
+    estado perturbado), escalas, esparsidade e breakpoints bit-idênticos."""
+    from mfsim.simulation import build_model
+    ma, mb = build_model(case_a), build_model(case_b)
+    Xa = ma.initial_state() if X is None else np.asarray(X, float)
+    Xb = mb.initial_state() if X is None else np.asarray(X, float)
+    assert ma.n_states == mb.n_states
+    assert np.array_equal(Xa, Xb)
+    rng = np.random.default_rng(1); Xp = Xa * (1 + 0.02 * rng.standard_normal(Xa.size))
+    fa = np.concatenate([ma.rhs(t, Xa), ma.rhs(t + 7.0, Xp)]); fb = np.concatenate([mb.rhs(t, Xb), mb.rhs(t + 7.0, Xp)])
+    assert np.array_equal(fa, fb), f"rhs difere: máx {np.max(np.abs(fa - fb)):.3e}"
+    assert np.array_equal(ma.state_scales(Xa), mb.state_scales(Xb))
+    assert np.array_equal(np.asarray(ma.jac_sparsity(), float), np.asarray(mb.jac_sparsity(), float))
+    assert [tb.breakpoints.tolist() for row in ma.tables for tb in row] == [tb.breakpoints.tolist() for row in mb.tables for tb in row]

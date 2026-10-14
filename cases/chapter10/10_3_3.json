@@ -1,0 +1,873 @@
+{
+ "schema": "mfsim-case/1",
+ "name": "chapter10_10.3.3",
+ "meta": {
+  "provenance": {
+   "source": "CASO10-3-3b.mf2",
+   "section": "10.3.3",
+   "title": "Poço offshore",
+   "figures": "Figs. 10.48-10.54",
+   "note": "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (inclui as correções de load_chapter10_case)"
+  },
+  "description": "Poço + linha de produção (3500 m horizontal + trecho descendente) + riser de 1500 m, gas lift com linha de gás e anular; choke de gás 100%->80% entre 100 e 200 s."
+ },
+ "fluid": {
+  "type": "polytropic",
+  "rhoL0": 850.0,
+  "rhoG0": 80.0,
+  "muL": 0.012,
+  "muG": 8e-05,
+  "gammaL": 1000.0,
+  "gammaG": 1.25,
+  "P0": 10000000.0,
+  "sigma": 0.071
+ },
+ "reference": {
+  "PR": 10000000.0
+ },
+ "time": {
+  "t0": 0.0,
+  "tf": 3000.0,
+  "dt_out": 5.0
+ },
+ "network": {
+  "vertices": [
+   {
+    "id": "1",
+    "kind": "boundary",
+    "spec": {
+     "qL": 8.0,
+     "qG": 1.0
+    }
+   },
+   {
+    "id": "2",
+    "kind": "boundary",
+    "spec": {
+     "PT": 1.7328
+    }
+   },
+   {
+    "id": "3",
+    "kind": "boundary",
+    "spec": {
+     "qL": 8.0,
+     "qG": 1.0
+    }
+   },
+   {
+    "id": "4",
+    "kind": "boundary",
+    "spec": {
+     "PT": 0.88632
+    }
+   },
+   {
+    "id": "5",
+    "kind": "boundary",
+    "spec": {
+     "qL": 8.0,
+     "qG": 1.0
+    }
+   },
+   {
+    "id": "6",
+    "kind": "boundary",
+    "spec": {
+     "PT": 0.81437
+    }
+   },
+   {
+    "id": "7",
+    "kind": "boundary",
+    "spec": {
+     "qL": 8.0,
+     "qG": 1.0
+    }
+   },
+   {
+    "id": "8",
+    "kind": "boundary",
+    "spec": {
+     "PT": 0.15
+    }
+   },
+   {
+    "id": "9",
+    "kind": "boundary",
+    "spec": {
+     "PT": 1.6092,
+     "qL": 0.0
+    }
+   },
+   {
+    "id": "10",
+    "kind": "boundary",
+    "spec": {
+     "PT": 2.0174
+    }
+   },
+   {
+    "id": "11",
+    "kind": "boundary",
+    "spec": {
+     "qL": 0.0,
+     "qG": 1.0
+    }
+   },
+   {
+    "id": "12",
+    "kind": "boundary",
+    "spec": {
+     "PT": 1.985
+    }
+   },
+   {
+    "id": "13",
+    "kind": "boundary",
+    "spec": {
+     "qL": 0.0,
+     "qG": 1.0
+    }
+   },
+   {
+    "id": "14",
+    "kind": "boundary",
+    "spec": {
+     "PT": 1.7328
+    }
+   },
+   {
+    "id": "Jc4",
+    "kind": "junction"
+   },
+   {
+    "id": "Jc8",
+    "kind": "junction"
+   },
+   {
+    "id": "Jc14",
+    "kind": "junction"
+   },
+   {
+    "id": "Jr1",
+    "kind": "junction"
+   }
+  ],
+  "edges": [
+   {
+    "id": "1",
+    "type": "pipe",
+    "from": "Jr1",
+    "to": "2",
+    "D": 0.12705,
+    "roughness": 9.999999999999999e-05,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        300.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 10
+      }
+     ]
+    },
+    "model": {
+     "type": "single_liquid",
+     "regime": {
+      "type": "fixed",
+      "regime": "stratified_smooth"
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fd_central",
+     "options": {}
+    },
+    "ports": {
+     "in": {
+      "alphaG": "free",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "1",
+      "file": "10_3_3.ic.npz"
+     }
+    }
+   },
+   {
+    "id": "2",
+    "type": "pipe",
+    "from": "3",
+    "to": "Jc4",
+    "D": 0.12705,
+    "roughness": 9.999999999999999e-05,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        300.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        1800.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 10
+      }
+     ]
+    },
+    "model": {
+     "type": "drift_flux_bb",
+     "regime": {
+      "type": "fixed",
+      "regime": "intermittent"
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fd_central",
+     "options": {}
+    },
+    "ports": {
+     "in": {
+      "alphaG": "free",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "2",
+      "file": "10_3_3.ic.npz"
+     }
+    }
+   },
+   {
+    "id": "3",
+    "type": "pipe",
+    "from": "5",
+    "to": "6",
+    "D": 0.12705,
+    "roughness": 9.999999999999999e-05,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        1800.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        3500.0,
+        1800.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        4500.0,
+        1700.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 7
+      },
+      {
+       "n": 3
+      }
+     ]
+    },
+    "model": {
+     "type": "drift_flux_bb",
+     "regime": {
+      "type": "fixed",
+      "regime": "intermittent"
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fd_central",
+     "options": {}
+    },
+    "ports": {
+     "in": {
+      "alphaG": "free",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "3",
+      "file": "10_3_3.ic.npz"
+     }
+    }
+   },
+   {
+    "id": "4",
+    "type": "pipe",
+    "from": "7",
+    "to": "Jc8",
+    "D": 0.12705,
+    "roughness": 9.999999999999999e-05,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        4500.0,
+        1700.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        4500.0,
+        3200.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 10
+      }
+     ]
+    },
+    "model": {
+     "type": "drift_flux_bb",
+     "regime": {
+      "type": "fixed",
+      "regime": "intermittent"
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fd_central",
+     "options": {}
+    },
+    "ports": {
+     "in": {
+      "alphaG": "free",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "4",
+      "file": "10_3_3.ic.npz"
+     }
+    }
+   },
+   {
+    "id": "5",
+    "type": "pipe",
+    "from": "9",
+    "to": "10",
+    "D": 0.05082,
+    "roughness": 0.0,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        4600.0,
+        3200.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        4500.0,
+        3200.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 5
+      }
+     ]
+    },
+    "model": {
+     "type": "single_gas",
+     "regime": {
+      "type": "fixed",
+      "regime": "stratified_smooth"
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fd_central",
+     "options": {}
+    },
+    "ports": {
+     "in": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "dirichlet",
+      "qG": "free"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "5",
+      "file": "10_3_3.ic.npz"
+     }
+    }
+   },
+   {
+    "id": "6",
+    "type": "pipe",
+    "from": "11",
+    "to": "12",
+    "D": 0.05082,
+    "roughness": 0.0,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        4500.0,
+        3200.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        4500.0,
+        1700.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        3500.0,
+        1800.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        1800.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 5
+      },
+      {
+       "n": 5
+      },
+      {
+       "n": 5
+      }
+     ]
+    },
+    "model": {
+     "type": "single_gas",
+     "regime": {
+      "type": "fixed",
+      "regime": "stratified_smooth"
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fd_central",
+     "options": {}
+    },
+    "ports": {
+     "in": {
+      "alphaG": "free",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "6",
+      "file": "10_3_3.ic.npz"
+     }
+    }
+   },
+   {
+    "id": "7",
+    "type": "pipe",
+    "from": "13",
+    "to": "Jc14",
+    "D": 0.12705,
+    "roughness": 0.0,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        1800.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        300.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 5
+      }
+     ]
+    },
+    "model": {
+     "type": "single_gas",
+     "regime": {
+      "type": "fixed",
+      "regime": "stratified_smooth"
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fd_central",
+     "options": {}
+    },
+    "ports": {
+     "in": {
+      "alphaG": "free",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "7",
+      "file": "10_3_3.ic.npz"
+     }
+    }
+   },
+   {
+    "id": "choke_4",
+    "type": "choke",
+    "from": "Jc4",
+    "to": "4",
+    "CV": 30.0,
+    "opening": 1.0,
+    "mode": 0.0,
+    "setpoint": 1.0
+   },
+   {
+    "id": "choke_8",
+    "type": "choke",
+    "from": "Jc8",
+    "to": "8",
+    "CV": 30.0,
+    "opening": {
+     "t": [
+      0.0,
+      100.0,
+      200.0,
+      3000.0
+     ],
+     "v": [
+      1.0,
+      1.0,
+      0.8,
+      0.8
+     ]
+    },
+    "mode": 0.0,
+    "setpoint": 1.0
+   },
+   {
+    "id": "choke_14",
+    "type": "choke",
+    "from": "Jc14",
+    "to": "14",
+    "CV": 5.0,
+    "opening": 1.0,
+    "mode": 0.0,
+    "setpoint": 1.0
+   },
+   {
+    "id": "reservoir_1",
+    "type": "reservoir",
+    "from": "1",
+    "to": "Jr1",
+    "IPL": 0.3018867924528302,
+    "IPG": 0.0,
+    "P_bar": 225.0
+   },
+   {
+    "id": "connector_2_3",
+    "type": "connector",
+    "from": "2",
+    "to": "3"
+   },
+   {
+    "id": "connector_4_5",
+    "type": "connector",
+    "from": "4",
+    "to": "5"
+   },
+   {
+    "id": "connector_6_7",
+    "type": "connector",
+    "from": "6",
+    "to": "7"
+   },
+   {
+    "id": "connector_10_11",
+    "type": "connector",
+    "from": "10",
+    "to": "11"
+   },
+   {
+    "id": "connector_12_13",
+    "type": "connector",
+    "from": "12",
+    "to": "13"
+   },
+   {
+    "id": "connector_14_3",
+    "type": "connector",
+    "from": "14",
+    "to": "3"
+   }
+  ]
+ },
+ "integration": {
+  "integrator": "bdf",
+  "quadrature_order": 2,
+  "max_step": 5.0,
+  "atol": 0.01,
+  "rtol": 0.0001,
+  "backend": "numpy",
+  "tol_range": null,
+  "first_step": 0.001,
+  "max_order": 2,
+  "max_newton": 12,
+  "newton_tol": 0.001,
+  "slow_exit": false
+ }
+}

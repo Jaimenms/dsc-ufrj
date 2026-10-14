@@ -1,0 +1,306 @@
+{
+ "schema": "mfsim-case/1",
+ "name": "lab_tengesdal1",
+ "meta": {
+  "L_h1": 65.0,
+  "L_down": 19.81,
+  "slope_down_deg": -1.0,
+  "H_riser": 14.63,
+  "L_h2": 1.0,
+  "qL": 1.2491758140694793,
+  "qG": 0.0019153542709885408,
+  "P_out_bar": 1.013,
+  "elbow_radius": 0.0,
+  "n_elbow": 0,
+  "s_elbow0": 84.81,
+  "grading_down": 1.0,
+  "grading_riser": 1.0,
+  "upstream_volume": 0.0,
+  "run": "severe_slug_lab_teng1_fisico",
+  "generator": "severe_slug_case",
+  "generator_params": {
+   "gammaG": 1.0,
+   "gammaL": 100.0,
+   "L_h1": 65.0,
+   "n_h1": 20,
+   "vSL": 0.32,
+   "vSG": 0.35,
+   "L_down": 19.81,
+   "P_out": 1.013,
+   "H_riser": 14.63,
+   "slope": -1.0,
+   "tf": 800.0,
+   "n_down": 40,
+   "n_riser": 30,
+   "relax_time": 0.05,
+   "switch_frac": 0.5,
+   "rtol": 0.003,
+   "start": "shut_in",
+   "conservative": true,
+   "elbow_radius": 0.0,
+   "n_elbow": 0,
+   "vertical_blend": 20.0,
+   "grading_down": 1.0,
+   "grading_riser": 1.0,
+   "art_visc": 0.05,
+   "low_void_regime": 2,
+   "high_void_regime": 1,
+   "high_void_alpha": 0.9,
+   "interfacial_pressure": 0.0,
+   "max_newton": 20,
+   "atol_P": null,
+   "atol_q": null,
+   "network": false,
+   "vertex_volume": 0.05,
+   "tol_range": 0.01,
+   "jax": true,
+   "regime": 4,
+   "regime_vertical": 2,
+   "k_switch": 1000000.0,
+   "ipe_smooth": false,
+   "ipe_local": false,
+   "fv_order": 1,
+   "alpha_face": "upwind",
+   "relax_target": "noslip",
+   "model": 1,
+   "drift_relax": 0.05,
+   "upstream_volume": 0.0,
+   "fi_mult": 1.0,
+   "fi_vgt": 5.5,
+   "virtual_mass": 0.5,
+   "vm_lambda": 1.0,
+   "bubble_drag": "fisico",
+   "t_ramp": 20.0,
+   "fsw": 0.02,
+   "fsw_G": 0.02,
+   "slow": true,
+   "dP_margin": 0.3,
+   "D": 0.0762,
+   "rhoL": 856.0,
+   "muL": 0.026,
+   "rhoG0": 1.2,
+   "muG": 1.8e-05,
+   "P0": 101300.0,
+   "sigma": 0.03,
+   "P_gas_ref": 1.013,
+   "L_h2": 1.0,
+   "dt_out": 0.5,
+   "roughness": 1e-05
+  }
+ },
+ "fluid": {
+  "type": "polytropic",
+  "rhoL0": 856.0,
+  "rhoG0": 1.2,
+  "muL": 0.026,
+  "muG": 1.8e-05,
+  "gammaL": 100.0,
+  "gammaG": 1.0,
+  "P0": 101300.0,
+  "sigma": 0.03
+ },
+ "reference": {
+  "PR": 1000000.0,
+  "state_ref": {
+   "PT": 0.4363925661932,
+   "qG": 0.09576771354942704,
+   "qL": 24.983516281389587
+  }
+ },
+ "time": {
+  "t0": 0.0,
+  "tf": 800.0,
+  "dt_out": 0.5
+ },
+ "network": {
+  "vertices": [
+   {
+    "id": "1",
+    "kind": "boundary",
+    "spec": {
+     "qL": {
+      "t": [
+       0.0,
+       20.0
+      ],
+      "v": [
+       0.0,
+       1.2491758140694793
+      ]
+     },
+     "qG": {
+      "t": [
+       0.0,
+       20.0
+      ],
+      "v": [
+       0.0,
+       0.0019153542709885408
+      ]
+     }
+    }
+   },
+   {
+    "id": "2",
+    "kind": "boundary",
+    "spec": {
+     "PT": 0.10129999999999999
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "1",
+    "type": "pipe",
+    "from": "1",
+    "to": "2",
+    "D": 0.0762,
+    "roughness": 1e-05,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        65.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        84.80698284104811,
+        -0.34573217152258634
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        84.80698284104811,
+        14.284267828477414
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        85.80698284104811,
+        14.284267828477414
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 20
+      },
+      {
+       "n": 40
+      },
+      {
+       "n": 30
+      },
+      {
+       "n": 2
+      }
+     ]
+    },
+    "model": {
+     "type": "two_fluid",
+     "regime": {
+      "type": "fixed",
+      "regime": "stratified_smooth",
+      "vertical": {
+       "regime": "bubble",
+       "angle_deg": 45.0,
+       "blend_deg": 20.0
+      },
+      "low_void": {
+       "regime": "bubble",
+       "alpha": 0.01
+      },
+      "high_void": {
+       "regime": "annular",
+       "alpha": 0.9
+      }
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "physical"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.5,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     },
+     "extra": {
+      "vertex_volume": 0.05
+     }
+    },
+    "scheme": {
+     "type": "fv_upwind",
+     "options": {
+      "alpha_face": "upwind",
+      "art_visc": 0.05,
+      "conservative": true,
+      "q_switch_G": 3.8307085419770816e-05,
+      "q_switch_L": 0.024983516281389586,
+      "relax_target": "noslip",
+      "relax_time": 0.05,
+      "switch_frac": 0.5
+     }
+    },
+    "ports": {
+     "in": {
+      "alphaG": "neumann",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "1",
+      "file": "lab_tengesdal1.ic.npz"
+     }
+    }
+   }
+  ]
+ },
+ "integration": {
+  "integrator": "implicit",
+  "quadrature_order": 2,
+  "max_step": null,
+  "atol": 1e-06,
+  "rtol": 0.003,
+  "backend": "jax",
+  "tol_range": 0.01,
+  "first_step": 0.001,
+  "max_order": 2,
+  "max_newton": 20,
+  "newton_tol": 0.001,
+  "slow_exit": true
+ }
+}

@@ -11,6 +11,8 @@ onde L é o comprimento do trecho descendente, P a pressão na base do riser.
 
 from __future__ import annotations
 
+import os
+
 import numpy as np
 
 from ..fluid import Fluid
@@ -277,3 +279,46 @@ def superficial_velocities(case):
     P = case.meta["P_out_bar"] * 1e5
     rhoL, rhoG, _, _ = fl.props(P)
     return case.meta["qL"] / rhoL / A, case.meta["qG"] / rhoG / A
+
+
+# ----------------------------------------------------------------------------- JSON
+CASES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "cases", "severe_slug")
+
+# corridas gravadas que definem os casos de referência (nome em notebooks/data -> nome do JSON)
+REFERENCE_RUNS = {
+    "severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys": "reference",
+    "severe_slug_blocked_conservative_arc_tol_hv_vm_lv": "reference_thesis_bubbles",
+    "severe_slug_blocked_regime6_local": "reference_auto_regime",
+    "severe_slug_blocked_conservative_arc_boe_bub_rules": "long_line_2bar",
+    "severe_slug_blocked_network_v005": "reference_network",
+    "severe_slug_lab_fabre1_fisico": "lab_fabre1",
+    "severe_slug_lab_fabre2_fisico": "lab_fabre2",
+    "severe_slug_lab_fabre2_tese": "lab_fabre2_thesis_bubbles",
+    "severe_slug_lab_jansen_fisico": "lab_jansen",
+    "severe_slug_lab_jansen_tese": "lab_jansen_thesis_bubbles",
+    "severe_slug_lab_teng1_fisico": "lab_tengesdal1",
+}
+
+
+def export_run_cases(out_dir=CASES_DIR, runs=None):
+    """Exporta para JSON os casos das corridas gravadas (via `mfsim.runs.case_from_meta`),
+    com o `meta` da corrida e as opções do integrador na secção `integration`."""
+    from ..io.spec import case_to_json
+    from ..runs import integrator_opts_from_meta, load_run
+    os.makedirs(out_dir, exist_ok=True)
+    written = []
+    for run_name, name in (runs or REFERENCE_RUNS).items():
+        run = load_run(run_name)
+        case = run.case
+        case.name = name
+        o = integrator_opts_from_meta(run.meta)
+        case.settings.integrator = "implicit"
+        case.settings.rtol = o["rtol"]
+        case.settings.extra.update(tol_range=o["tol_range"], max_newton=o["max_newton"], slow_exit=o["slow"],
+                                   backend="jax" if o["jax"] else "numpy", first_step=1e-3, max_order=2, newton_tol=1e-3)
+        case.meta = dict(case.meta, run=run_name, generator="severe_slug_case", generator_params={k: v for k, v in run.meta.items()
+                         if k not in ("n_steps", "n_rejected", "cpu", "parcial", "note")})
+        path = os.path.join(out_dir, f"{name}.json")
+        case_to_json(case, path, ic_file=f"{name}.ic.npz")
+        written.append(path)
+    return written

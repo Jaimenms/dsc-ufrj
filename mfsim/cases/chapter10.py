@@ -6,6 +6,7 @@ MATLAB para comparação). As descrições resumem o texto da tese.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 
 from ..io_legacy import load_case
@@ -84,4 +85,24 @@ def load_chapter10_case(key, **kw):
         case_b.valves = [valve_tables.get(v.vertex, v) for v in case_b.valves]
         case_b.name = case.name
         case = case_b
+    return case, raw
+
+
+CASES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "cases", "chapter10")
+
+
+def chapter10_json_path(key):
+    return os.path.join(CASES_DIR, key.replace(".", "_") + ".json")
+
+
+def load_chapter10_json(key):
+    """O mesmo caso a partir do JSON exportado (`cases/chapter10/<chave>.json`); devolve
+    (case, raw) como `load_chapter10_case` (raw = dados do .mf2 para comparação)."""
+    from ..io.spec import case_from_json
+    from ..io_legacy import load_mf2
+    path = chapter10_json_path(key)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"{path}: exportar com `uv run python -m mfsim.io.legacy_mf2`")
+    case = case_from_json(path)
+    raw = load_mf2(CHAPTER10[key].file)
     return case, raw

@@ -1,0 +1,303 @@
+{
+ "schema": "mfsim-case/1",
+ "name": "lab_fabre2",
+ "meta": {
+  "L_h1": 1.0,
+  "L_down": 25.0,
+  "slope_down_deg": -0.57,
+  "H_riser": 13.5,
+  "L_h2": 1.0,
+  "qL": 0.26296091335243743,
+  "qG": 0.0004864391799335977,
+  "P_out_bar": 1.013,
+  "elbow_radius": 0.0,
+  "n_elbow": 0,
+  "s_elbow0": 26.0,
+  "grading_down": 1.0,
+  "grading_riser": 1.0,
+  "upstream_volume": 0.0,
+  "run": "severe_slug_lab_fabre2_fisico",
+  "generator": "severe_slug_case",
+  "generator_params": {
+   "gammaG": 1.0,
+   "gammaL": 100.0,
+   "L_h1": 1.0,
+   "n_h1": 2,
+   "vSL": 0.13,
+   "vSG": 0.2,
+   "L_down": 25.0,
+   "P_out": 1.013,
+   "H_riser": 13.5,
+   "slope": -0.57,
+   "tf": 1200.0,
+   "n_down": 50,
+   "n_riser": 27,
+   "relax_time": 0.05,
+   "switch_frac": 0.5,
+   "rtol": 0.003,
+   "start": "shut_in",
+   "conservative": true,
+   "elbow_radius": 0.0,
+   "n_elbow": 0,
+   "vertical_blend": 20.0,
+   "grading_down": 1.0,
+   "grading_riser": 1.0,
+   "art_visc": 0.05,
+   "low_void_regime": 2,
+   "high_void_regime": 1,
+   "high_void_alpha": 0.9,
+   "interfacial_pressure": 0.0,
+   "max_newton": 20,
+   "atol_P": null,
+   "atol_q": null,
+   "network": false,
+   "vertex_volume": 0.05,
+   "tol_range": 0.01,
+   "jax": true,
+   "regime": 4,
+   "regime_vertical": 2,
+   "k_switch": 1000000.0,
+   "ipe_smooth": false,
+   "ipe_local": false,
+   "fv_order": 1,
+   "alpha_face": "upwind",
+   "relax_target": "noslip",
+   "model": 1,
+   "drift_relax": 0.05,
+   "upstream_volume": 0.0,
+   "fi_mult": 1.0,
+   "fi_vgt": 5.5,
+   "virtual_mass": 0.5,
+   "vm_lambda": 1.0,
+   "bubble_drag": "fisico",
+   "t_ramp": 20.0,
+   "dP_margin": 0.3,
+   "D": 0.0508,
+   "rhoL": 998.0,
+   "muL": 0.001,
+   "rhoG0": 1.2,
+   "muG": 1.8e-05,
+   "P0": 101300.0,
+   "sigma": 0.072,
+   "P_gas_ref": 1.013,
+   "L_h2": 1.0,
+   "dt_out": 0.5,
+   "roughness": 1e-05
+  }
+ },
+ "fluid": {
+  "type": "polytropic",
+  "rhoL0": 998.0,
+  "rhoG0": 1.2,
+  "muL": 0.001,
+  "muG": 1.8e-05,
+  "gammaL": 100.0,
+  "gammaG": 1.0,
+  "P0": 101300.0,
+  "sigma": 0.072
+ },
+ "reference": {
+  "PR": 1000000.0,
+  "state_ref": {
+   "PT": 0.446637494995,
+   "qG": 0.024321958996679886,
+   "qL": 5.259218267048748
+  }
+ },
+ "time": {
+  "t0": 0.0,
+  "tf": 1200.0,
+  "dt_out": 0.5
+ },
+ "network": {
+  "vertices": [
+   {
+    "id": "1",
+    "kind": "boundary",
+    "spec": {
+     "qL": {
+      "t": [
+       0.0,
+       20.0
+      ],
+      "v": [
+       0.0,
+       0.26296091335243743
+      ]
+     },
+     "qG": {
+      "t": [
+       0.0,
+       20.0
+      ],
+      "v": [
+       0.0,
+       0.0004864391799335977
+      ]
+     }
+    }
+   },
+   {
+    "id": "2",
+    "kind": "boundary",
+    "spec": {
+     "PT": 0.10129999999999999
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "1",
+    "type": "pipe",
+    "from": "1",
+    "to": "2",
+    "D": 0.0508,
+    "roughness": 1e-05,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        25.998762882707087,
+        -0.2487053159593589
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        25.998762882707087,
+        13.25129468404064
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        26.998762882707087,
+        13.25129468404064
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 2
+      },
+      {
+       "n": 50
+      },
+      {
+       "n": 27
+      },
+      {
+       "n": 2
+      }
+     ]
+    },
+    "model": {
+     "type": "two_fluid",
+     "regime": {
+      "type": "fixed",
+      "regime": "stratified_smooth",
+      "vertical": {
+       "regime": "bubble",
+       "angle_deg": 45.0,
+       "blend_deg": 20.0
+      },
+      "low_void": {
+       "regime": "bubble",
+       "alpha": 0.01
+      },
+      "high_void": {
+       "regime": "annular",
+       "alpha": 0.9
+      }
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "physical"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.5,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     },
+     "extra": {
+      "vertex_volume": 0.05
+     }
+    },
+    "scheme": {
+     "type": "fv_upwind",
+     "options": {
+      "alpha_face": "upwind",
+      "art_visc": 0.05,
+      "conservative": true,
+      "q_switch_G": 9.728783598671955e-06,
+      "q_switch_L": 0.005259218267048749,
+      "relax_target": "noslip",
+      "relax_time": 0.05,
+      "switch_frac": 0.5
+     }
+    },
+    "ports": {
+     "in": {
+      "alphaG": "neumann",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "1",
+      "file": "lab_fabre2.ic.npz"
+     }
+    }
+   }
+  ]
+ },
+ "integration": {
+  "integrator": "implicit",
+  "quadrature_order": 2,
+  "max_step": null,
+  "atol": 1e-06,
+  "rtol": 0.003,
+  "backend": "jax",
+  "tol_range": 0.01,
+  "first_step": 0.001,
+  "max_order": 2,
+  "max_newton": 20,
+  "newton_tol": 0.001,
+  "slow_exit": false
+ }
+}

@@ -1,0 +1,535 @@
+{
+ "schema": "mfsim-case/1",
+ "name": "chapter10_10.2.2",
+ "meta": {
+  "provenance": {
+   "source": "CASO10-2-2.mf2",
+   "section": "10.2.2",
+   "title": "Rede com ciclo",
+   "figures": "Figs. 10.26-10.30",
+   "note": "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (inclui as correções de load_chapter10_case)"
+  },
+  "description": "Cinco dutos de 200 m (10 elementos) formando um ciclo; dutos 4 e 5 com D=0.05 m; vértices dinâmicos nas junções."
+ },
+ "fluid": {
+  "type": "polytropic",
+  "rhoL0": 860.0,
+  "rhoG0": 80.0,
+  "muL": 0.008,
+  "muG": 2e-05,
+  "gammaL": 1000.0,
+  "gammaG": 1.2,
+  "P0": 10000000.0,
+  "sigma": 0.03
+ },
+ "reference": {
+  "PR": 10000000.0
+ },
+ "time": {
+  "t0": 0.0,
+  "tf": 3000.0,
+  "dt_out": 10.0
+ },
+ "network": {
+  "vertices": [
+   {
+    "id": "1",
+    "kind": "boundary",
+    "spec": {
+     "qL": 0.5,
+     "qG": {
+      "t": [
+       0.0,
+       150.0,
+       180.0,
+       3000.0
+      ],
+      "v": [
+       0.1,
+       0.1,
+       0.13,
+       0.13
+      ]
+     }
+    }
+   },
+   {
+    "id": "2",
+    "kind": "tank",
+    "volume": 0.001,
+    "spec": {
+     "qL": 0.0,
+     "qG": 0.0
+    },
+    "ic": {
+     "HG": 0.443213692874057,
+     "PT": 1.0001404988971223
+    }
+   },
+   {
+    "id": "3",
+    "kind": "tank",
+    "volume": 0.001,
+    "spec": {
+     "qL": 0.0,
+     "qG": 0.0
+    },
+    "ic": {
+     "HG": 0.44322535840267,
+     "PT": 1.000070250019191
+    }
+   },
+   {
+    "id": "4",
+    "kind": "boundary",
+    "spec": {
+     "PT": 1.0
+    }
+   },
+   {
+    "id": "5",
+    "kind": "tank",
+    "volume": 0.001,
+    "spec": {
+     "qL": 0.0,
+     "qG": 0.0
+    },
+    "ic": {
+     "HG": 0.4432206369646872,
+     "PT": 1.0000702500649006
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "1",
+    "type": "pipe",
+    "from": "1",
+    "to": "2",
+    "D": 0.1,
+    "roughness": 0.001,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        200.0,
+        0.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 10
+      }
+     ]
+    },
+    "model": {
+     "type": "two_fluid",
+     "regime": {
+      "type": "fixed",
+      "regime": "stratified_smooth"
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fd_central",
+     "options": {}
+    },
+    "ports": {
+     "in": {
+      "alphaG": "free",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "1",
+      "file": "10_2_2.ic.npz"
+     }
+    }
+   },
+   {
+    "id": "2",
+    "type": "pipe",
+    "from": "2",
+    "to": "3",
+    "D": 0.1,
+    "roughness": 0.001,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        200.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        200.0,
+        400.0,
+        0.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 25
+      }
+     ]
+    },
+    "model": {
+     "type": "two_fluid",
+     "regime": {
+      "type": "fixed",
+      "regime": "stratified_smooth"
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fd_central",
+     "options": {}
+    },
+    "ports": {
+     "in": {
+      "alphaG": "dirichlet",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "2",
+      "file": "10_2_2.ic.npz"
+     }
+    }
+   },
+   {
+    "id": "3",
+    "type": "pipe",
+    "from": "3",
+    "to": "4",
+    "D": 0.1,
+    "roughness": 0.001,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        200.0,
+        400.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        600.0,
+        0.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 10
+      }
+     ]
+    },
+    "model": {
+     "type": "two_fluid",
+     "regime": {
+      "type": "fixed",
+      "regime": "stratified_smooth"
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fd_central",
+     "options": {}
+    },
+    "ports": {
+     "in": {
+      "alphaG": "dirichlet",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "3",
+      "file": "10_2_2.ic.npz"
+     }
+    }
+   },
+   {
+    "id": "4",
+    "type": "pipe",
+    "from": "2",
+    "to": "5",
+    "D": 0.05,
+    "roughness": 0.001,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        200.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        -200.0,
+        400.0,
+        0.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 10
+      }
+     ]
+    },
+    "model": {
+     "type": "two_fluid",
+     "regime": {
+      "type": "fixed",
+      "regime": "stratified_smooth"
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fd_central",
+     "options": {}
+    },
+    "ports": {
+     "in": {
+      "alphaG": "dirichlet",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "4",
+      "file": "10_2_2.ic.npz"
+     }
+    }
+   },
+   {
+    "id": "5",
+    "type": "pipe",
+    "from": "5",
+    "to": "4",
+    "D": 0.05,
+    "roughness": 0.001,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        -200.0,
+        400.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        600.0,
+        0.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 10
+      }
+     ]
+    },
+    "model": {
+     "type": "two_fluid",
+     "regime": {
+      "type": "fixed",
+      "regime": "stratified_smooth"
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "thesis"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.0,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fd_central",
+     "options": {}
+    },
+    "ports": {
+     "in": {
+      "alphaG": "dirichlet",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "5",
+      "file": "10_2_2.ic.npz"
+     }
+    }
+   }
+  ]
+ },
+ "integration": {
+  "integrator": "bdf",
+  "quadrature_order": 2,
+  "max_step": 1.0,
+  "atol": 0.001,
+  "rtol": 0.001,
+  "backend": "numpy",
+  "tol_range": null,
+  "first_step": 0.001,
+  "max_order": 2,
+  "max_newton": 12,
+  "newton_tol": 0.001,
+  "slow_exit": false
+ }
+}
