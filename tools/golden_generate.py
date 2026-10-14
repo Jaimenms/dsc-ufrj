@@ -76,8 +76,8 @@ def provenance():
 # ----------------------------------------------------------------------------- grupos
 def gen_chapter10():
     """Trajetórias completas dos casos do capítulo 10 como os notebooks as correm."""
-    from mfsim.io_legacy import chapter10_keys
-    from mfsim.notebook_utils import run_case
+    from thesis.mf2 import chapter10_keys
+    from thesis.notebook_utils import run_case
 
     out = {}
     for key in chapter10_keys():
@@ -93,7 +93,7 @@ def gen_chapter10():
 def gen_variants():
     """Cálculos secundários dos notebooks: estacionário automático, estudo de esquemas, 10.1.4
     com estacionário consistente, 10.3.1 em volumes finitos (modelo de deriva)."""
-    from mfsim.io_legacy import chapter10_case, legacy_results
+    from thesis.mf2 import chapter10_case, legacy_results
     from mfsim.network.graph import ports
     from mfsim.simulation import simulate, steady_state
 
@@ -224,7 +224,7 @@ def gen_results():
     """Pós-processamento (Results, mass_balance) em 3 instantes para 4 casos, a partir das
     trajetórias golden (capítulo 10) e da referência numpy 150 s."""
     from mfsim.analysis import mass_balance
-    from mfsim.io_legacy import chapter10_case, legacy_results
+    from thesis.mf2 import chapter10_case, legacy_results
     from mfsim.results import Results
     from mfsim.simulation import build_model
 
@@ -383,7 +383,7 @@ def gen_runs_meta():
 
 def gen_nightly():
     """Nível noturno: referência 3000 s em JAX e gas lift 2000 s (duas aberturas)."""
-    from mfsim.io_legacy import chapter10_case, legacy_results
+    from thesis.mf2 import chapter10_case, legacy_results
     from mfsim.integrators.implicit import ImplicitBDF
     from mfsim.network.graph import Choke
     from mfsim.network.schedules import PiecewiseLinear
@@ -505,7 +505,7 @@ def gen_network():
     """Montagem da rede: todos os casos do capítulo 10 (com variantes de esquema no 10.1.1 e 10.3.1),
     os casos JSON do severe slug e duas corridas em rede."""
     import copy
-    from mfsim.io_legacy import chapter10_keys, chapter10_case, legacy_results
+    from thesis.mf2 import chapter10_keys, chapter10_case, legacy_results
     from mfsim.io.spec import case_from_json
     from mfsim.simulation import build_model
 

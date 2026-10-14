@@ -16,7 +16,7 @@
 import copy, time
 import numpy as np
 import matplotlib.pyplot as plt
-from mfsim.io_legacy import chapter10_case, chapter10_info, legacy_results
+from thesis.mf2 import chapter10_case, chapter10_info, legacy_pipe_dict, legacy_results
 from mfsim.network.graph import ports
 from mfsim.simulation import simulate, steady_state, build_model
 from mfsim.plotting import (
@@ -24,10 +24,9 @@ from mfsim.plotting import (
     pipe_profiles,
     pipe_timeseries,
     compare_runs,
-    legacy_pipe_dict,
     eigenvalue_plot,
 )
-from mfsim.io_legacy import legacy_states
+from thesis.mf2 import legacy_states
 from mfsim.integrators.jacobian import colored_jacobian
 
 info = chapter10_info("10.1.1")
@@ -235,6 +234,6 @@ print("máx parte real: formulação 1 =", ev1.real.max(), "| formulação 2 =",
 # e de Jacobianas.
 
 # %%
-from mfsim.notebook_utils import jax_comparison
+from thesis.notebook_utils import jax_comparison
 
 res_jax = jax_comparison(case, res, rtol=1e-4, atol=1e-6)

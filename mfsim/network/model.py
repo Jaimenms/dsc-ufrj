@@ -1,7 +1,7 @@
 """`NetworkModel`: o sistema da rede (`NetworkSystem`, montado sobre o grafo) construído a
-partir de um `Network` (o caso normal) ou do registo legado (`io.legacy_case.Case`, o struct
+partir de um `Network` (o struct
 `dados` do MATLAB), com as opções de `build_model` (esquema global `method`,
-`scheme_settings`). O registo legado converte-se por `Network.from_legacy_case` (sem perda;
+`scheme_settings`). O registo legado da tese converte-se fora do simulador (`thesis.record.network_from_record`;
 junções explícitas para chokes e reservatórios) e o estado estacionário é escrito de volta
 nas suas condições iniciais (`state_to_case_ic`)."""
 
@@ -25,23 +25,11 @@ def with_method(network: Network, method: str) -> Network:
 
 class NetworkModel(NetworkSystem):
     def __init__(self, case, method=None, scheme_settings=None, bk=None):
-        if isinstance(case, Network):
-            net, self.case = case, None
-        else:
-            net, self.case = Network.from_legacy_case(case), case
+        net = case
         if method is not None:
             net = with_method(net, method)
         super().__init__(net, scheme_settings=scheme_settings, bk=bk)
 
     def state_to_case_ic(self, X, t=0.0):
-        """Escreve o estado X nas condições iniciais do grafo e, se o modelo veio de um
-        `Case` legado, também nos seus dutos e vértices."""
+        """Escreve o estado X nas condições iniciais do grafo."""
         self.state_to_network_ic(X, t)
-        if self.case is not None:
-            for pb, lp in zip(self.pipes, self.case.pipes):
-                lp.ic = pb.pipe.ic
-            for vi in self.vA:
-                v = self.vertices[vi]
-                for lv in self.case.vertices:
-                    if str(lv.index) == v.id:
-                        lv.HG0, lv.PT0 = v.HG0, v.PT0

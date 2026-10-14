@@ -7,7 +7,7 @@
    "section": "10.1.1",
    "title": "Escoamento horizontal estratificado",
    "figures": "Figs. 10.2-10.8, Tabela 10.1",
-   "note": "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (network_from_mf2: correções e composição do 10.3.2a)"
+   "note": "convertido de legacy/mfsim23/Files por thesis.export (network_from_mf2: correções e composição do 10.3.2a)"
   },
   "description": "Duto horizontal de 1000 m, D=0.1 m, 50 elementos, Galerkin, modelo a 4 equações com padrão estratificado fixo. qL=0.5 kg/s; qG sobe de 0.1 para 0.13 kg/s entre 150 e 180 s. Pressão de saída 100 bar."
  },

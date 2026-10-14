@@ -1,9 +1,9 @@
 """Conversão dos casos legados (.mf2 do MFSIM/MATLAB) para JSON `mfsim-case/1`.
 
-uso: uv run mfsim export-case --chapter10 [--out cases/chapter10]   (ou python -m mfsim.io.legacy_mf2)
+uso: uv run python -m thesis.export --chapter10 [--out cases/chapter10]  |  --mf2 ficheiro.mf2 --out caso.json
 Escreve `<chave>.json` + `<chave>.ic.npz` por caso do capítulo 10. `network_from_mf2` aplica
 as composições e correções dos ficheiros originais (10.3.2a = válvulas do ficheiro "a" sobre a
-rede "b"; `LEGACY_OVERRIDES` de `io_legacy`), registadas em `meta.provenance`. A descrição de
+rede "b"; `LEGACY_OVERRIDES` de `thesis.mf2`), registadas em `meta.provenance`. A descrição de
 cada caso (título, figuras, descrição) vive no JSON: a exportação preserva o `meta` do ficheiro
 existente e só atualiza `provenance.source`, `provenance.section` e a nota.
 """
@@ -14,11 +14,9 @@ import argparse
 import json
 import os
 
-from .spec import case_to_json
+from mfsim.io.spec import case_to_json
 
-DEFAULT_OUT = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "cases", "chapter10"
-)
+DEFAULT_OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cases", "chapter10")
 
 # chave do caso -> ficheiro .mf2 original (legacy/mfsim23/Files)
 MF2_SOURCES = {
@@ -34,7 +32,7 @@ MF2_SOURCES = {
     "10.3.2b": "CASO10-3-2b.mf2",
     "10.3.3": "CASO10-3-3b.mf2",
 }
-NOTE = "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (network_from_mf2: correções e composição do 10.3.2a)"
+NOTE = "convertido de legacy/mfsim23/Files por thesis.export (network_from_mf2: correções e composição do 10.3.2a)"
 
 
 def network_from_mf2(key, **kw):
@@ -42,8 +40,9 @@ def network_from_mf2(key, **kw):
     inicial de `estados.X[:, 0]`, `LEGACY_OVERRIDES` e, no 10.3.2a, os chokes do ficheiro "a"
     sobre a rede do ficheiro "b" (o ficheiro "a" tem o vértice 8 estático, editado após a
     simulação; a rede da tese usa vértice dinâmico com válvula de retenção, como no "b")."""
-    from ..io_legacy import load_case
-    from ..network.graph import Choke
+    from mfsim.network.graph import Choke
+
+    from .mf2 import load_case
 
     if key == "10.3.2a":
         kw = dict(kw, ic_from="file")  # o ficheiro original não monta (retenção em vértice estático)
@@ -78,10 +77,28 @@ def export_chapter10(out_dir=DEFAULT_OUT, keys=None):
     return written
 
 
-if __name__ == "__main__":
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--out", default=DEFAULT_OUT)
+    ap.add_argument("--chapter10", action="store_true", help="exporta os casos do capítulo 10 para --out (pasta)")
+    ap.add_argument("--mf2", help="converte um .mf2 avulso para --out (ficheiro JSON)")
+    ap.add_argument("--out")
     ap.add_argument("--keys", nargs="*")
-    a = ap.parse_args()
-    for p in export_chapter10(a.out, a.keys):
-        print("escrito", p)
+    a = ap.parse_args(argv)
+    if a.chapter10:
+        for p in export_chapter10(a.out or DEFAULT_OUT, a.keys):
+            print("escrito", p)
+        return 0
+    if a.mf2:
+        from .mf2 import load_case
+
+        if not a.out:
+            raise SystemExit("--mf2 exige --out")
+        case, raw = load_case(a.mf2)
+        case_to_json(case, a.out)
+        print("escrito", a.out)
+        return 0
+    raise SystemExit("indique --chapter10 ou --mf2")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

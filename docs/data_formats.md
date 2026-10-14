@@ -51,10 +51,10 @@ segmento sobre uma lista é o `id` do elemento ou, se nenhum coincidir, o índic
 `mfsim steady` e em `case_from_json(..., overrides=[...])`; `tests/test_extends.py`.
 
 - `cases/chapter10/*.json`: os 11 casos da tese, exportados dos .mf2 por
-  `uv run mfsim export-case --chapter10` (`mfsim.io.legacy_mf2.network_from_mf2`: condição
+  `uv run python -m thesis.export --chapter10` (`thesis.export.network_from_mf2`: condição
   inicial de `estados.X[:, 0]`, `LEGACY_OVERRIDES`, composição do 10.3.2a; registado em
   `meta.provenance`). São a **fonte** dos casos: a descrição (secção, título, figuras,
-  descrição) vive em `meta` e a exportação preserva-a. `mfsim.io_legacy.chapter10_keys()`,
+  descrição) vive em `meta` e a exportação preserva-a. `thesis.mf2.chapter10_keys()`,
   `chapter10_case(chave)` e `chapter10_info(chave)` leem-nos; `legacy_results(chave)` carrega
   o .mf2 indicado em `meta.provenance.source` só para comparar com os resultados do MATLAB.
 - `cases/severe_slug/*.json`: referência (configuração recomendada), variantes (`$extends`) e
@@ -152,6 +152,6 @@ Edição conveniente no dialeto legado (o que os notebooks e testes faziam no `C
 `net.pipes[0].ports_in = ports((3, 1, 2, 2))`, `net.vertices[0].spec["qG"] = Constant(0.13)`,
 `net.edges_of(Choke)[i].opening = PiecewiseLinear(t, v)`; construção direta com
 `Network.build(...)`, `Pipe.legacy(...)`, `BoundaryVertex(id, spec=specs(PT=...))`. O registo
-legado (`mfsim.io.legacy_case`: `Case`, `Vertex`, `Pipe`, `Valve`, ...; o struct `dados`) é só o
-formato intermédio do leitor dos `.mf2` e do exportador `Network.to_legacy_case` (round-trip
-testado); nada no simulador o consome.
+legado (`thesis.record`: `Case`, `Vertex`, `Pipe`, `Valve`, ...; o struct `dados`) é só o
+formato intermédio do leitor dos `.mf2` (`thesis.record.network_from_record` e a inversa
+`record_from_network`, round-trip testado); nada no simulador o consome.

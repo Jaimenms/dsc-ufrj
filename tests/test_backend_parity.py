@@ -145,7 +145,7 @@ def test_fixed_regime_blend_with_used_set():
 def test_models_jax_vs_numpy(key):
     """Coeficientes F e termos conservativos dos modelos com bk=JAX iguais aos do numpy
     (deriva com derivadas por diferenças finitas em ambos, como o teste de rede)."""
-    from mfsim.io_legacy import chapter10_case
+    from thesis.mf2 import chapter10_case
     from mfsim.models.base import PipeParams
     from mfsim.simulation import build_model
 
@@ -173,7 +173,7 @@ def test_models_jax_vs_numpy(key):
 
 
 def test_beggs_brill_exact_derivatives_jax():
-    from mfsim.io_legacy import chapter10_case
+    from thesis.mf2 import chapter10_case
     from mfsim.models.driftflux_bb import BeggsBrillModel
     from mfsim.simulation import build_model
 

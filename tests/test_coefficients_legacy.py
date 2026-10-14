@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from mfsim.fluid import Fluid
-from mfsim.io_legacy import load_mf2, legacy_pipe_outputs
+from thesis.mf2 import load_mf2, legacy_pipe_outputs
 from mfsim.models.base import PipeParams
 from mfsim.models.twofluid import TwoFluidModel
 

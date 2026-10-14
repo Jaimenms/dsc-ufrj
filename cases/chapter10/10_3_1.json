@@ -7,7 +7,7 @@
    "section": "10.3.1",
    "title": "Poço simples",
    "figures": "Figs. 10.32-10.34",
-   "note": "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (network_from_mf2: correções e composição do 10.3.2a)"
+   "note": "convertido de legacy/mfsim23/Files por thesis.export (network_from_mf2: correções e composição do 10.3.2a)"
   },
   "description": "Poço vertical de 2048 m (5 in), modelo a 3 equações (intermitente), reservatório (170 bar, IPL 0.71, IPG 0.042 kg/s/bar) e choke (Cv=30) com rampa 100%->25% (60-90 s) e 25%->100% (500-530 s)."
  },

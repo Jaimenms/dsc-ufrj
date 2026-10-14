@@ -99,29 +99,6 @@ def compare_runs(runs, k=0, key="alphaG", node=-1, ax=None, title=None, legacy=N
     return ax
 
 
-def legacy_pipe_dict(raw, k=0):
-    """Extrai de `saidas.tubo{k}` um dict compatível com os gráficos acima."""
-    from .io_legacy import legacy_pipe_outputs, legacy_states
-
-    out = legacy_pipe_outputs(raw, k)
-    T, X = legacy_states(raw)
-    eixos = raw.get("eixos", {})
-    try:
-        xs = eixos["tubo"]["X"]["valor"]
-        x = np.asarray(xs[k] if isinstance(xs, list) else xs, float).ravel()
-    except Exception:
-        x = np.arange(out["alfaG"].shape[0], dtype=float)
-    d = {"T": T, "x": x}
-    d["alphaG"] = np.asarray(out["alfaG"], float)
-    d["P_bar"] = np.asarray(out["pressao"], float)
-    d["qL"] = np.asarray(out.get("vazaoMassaL", np.zeros_like(d["alphaG"])), float)
-    d["qG"] = np.asarray(out.get("vazaoMassaG", np.zeros_like(d["alphaG"])), float)
-    for key in ("velocidadeL", "velocidadeG", "reg1"):
-        if key in out:
-            d[key] = np.asarray(out[key], float)
-    return d
-
-
 def eigenvalue_plot(ev, ax=None, title=""):
     """Autovalores da Jacobiana no plano complexo (Figs. 10.7 e 10.8)."""
     if ax is None:

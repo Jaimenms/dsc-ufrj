@@ -8,7 +8,7 @@ import copy
 import numpy as np
 import pytest
 
-from mfsim.io_legacy import chapter10_case
+from thesis.mf2 import chapter10_case
 from generators.severe_slug import severe_slug_case
 from mfsim.fluid import Fluid
 from mfsim.simulation import build_model

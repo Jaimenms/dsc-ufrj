@@ -21,7 +21,7 @@
 import numpy as np, matplotlib.pyplot as plt, time, warnings
 
 warnings.filterwarnings("ignore")
-from mfsim.io_legacy import chapter10_case
+from thesis.mf2 import chapter10_case
 from mfsim.simulation import build_model, state_bounds
 from mfsim.integrators.implicit import ImplicitBDF
 from mfsim.results import Results

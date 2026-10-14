@@ -1,4 +1,4 @@
-"""Linha de comando do mfsim: `mfsim run|steady|stats|scan|riser|val|export-case|validate|nb`.
+"""Linha de comando do mfsim: `mfsim run|steady|stats|scan|riser|val|validate|nb`.
 
     mfsim run cases/severe_slug/reference.json --backend jax --tf 150 --out runs/ref150.npz
     mfsim run cases/severe_slug/reference.json --set integration.integrator=radau --set integration.rtol=1e-5
@@ -7,7 +7,6 @@
     mfsim scan severe_slug_blocked_conservative_arc_scan_P2_g005 ...   (varredura da fronteira: Bøe, padrão da linha, ciclos)
     mfsim riser severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys   (filme no riser: contracorrente)
     mfsim val severe_slug_lab_fabre2_fisico --plot              (validação de laboratório contra os valores publicados)
-    mfsim export-case --chapter10 [--out cases/chapter10]
     mfsim validate cases/**/*.json                              (schema mfsim-case/1)
     mfsim nb notebooks_src/nb_severe_slug.py [--execute]
 
@@ -167,27 +166,6 @@ def cmd_val(a):
     return rc
 
 
-def cmd_export_case(a):
-    if a.chapter10:
-        from .io.legacy_mf2 import export_chapter10
-
-        kw = {"out_dir": a.out} if a.out else {}
-        for pth in export_chapter10(**kw):
-            print("escrito", pth)
-        return 0
-    if a.mf2:
-        from .io.spec import case_to_json
-        from .io_legacy import load_case
-
-        if not a.out:
-            raise SystemExit("--mf2 exige --out")
-        case, raw = load_case(a.mf2)
-        case_to_json(case, a.out)
-        print("escrito", a.out)
-        return 0
-    raise SystemExit("indique --chapter10 ou --mf2")
-
-
 def cmd_nb(a):
     cmd = [sys.executable, str(ROOT / "tools" / "make_nb.py"), a.src] + (["--execute"] if a.execute else [])
     return subprocess.run(cmd).returncode
@@ -269,12 +247,6 @@ def main(argv=None):
     va.add_argument("--t0", type=float)
     va.add_argument("--t1", type=float)
     va.set_defaults(func=cmd_val)
-
-    e = sub.add_parser("export-case", help="exporta casos para JSON (mfsim-case/1)")
-    e.add_argument("--chapter10", action="store_true")
-    e.add_argument("--mf2")
-    e.add_argument("--out")
-    e.set_defaults(func=cmd_export_case)
 
     vs = sub.add_parser("validate", help="valida casos JSON contra o schema mfsim-case/1")
     vs.add_argument("files", nargs="+")

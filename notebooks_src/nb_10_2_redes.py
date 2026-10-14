@@ -11,8 +11,9 @@
 
 # %%
 import numpy as np, matplotlib.pyplot as plt
-from mfsim.notebook_utils import describe, run_case, compare_states, show_pipe, plot_vertices
-from mfsim.plotting import compare_runs, legacy_pipe_dict
+from thesis.notebook_utils import describe, run_case, compare_states, show_pipe, plot_vertices
+from mfsim.plotting import compare_runs
+from thesis.mf2 import legacy_pipe_dict
 
 describe("10.2.1A")
 caseA, rawA, resA = run_case("10.2.1A")
@@ -95,6 +96,6 @@ plot_vertices(res, raw)
 # e de Jacobianas.
 
 # %%
-from mfsim.notebook_utils import jax_comparison
+from thesis.notebook_utils import jax_comparison
 
 res_jax = jax_comparison(case, res, rtol=1e-4, atol=1e-6)

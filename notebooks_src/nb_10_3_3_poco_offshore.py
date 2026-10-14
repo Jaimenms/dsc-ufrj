@@ -13,7 +13,7 @@
 
 # %%
 import numpy as np, matplotlib.pyplot as plt
-from mfsim.notebook_utils import describe, run_case, compare_states, show_pipe, plot_elements, plot_vertices
+from thesis.notebook_utils import describe, run_case, compare_states, show_pipe, plot_elements, plot_vertices
 
 describe("10.3.3")
 case, raw, res = run_case("10.3.3")
@@ -40,6 +40,6 @@ plot_vertices(res, raw, indices=[1, 2, 3, 4, 5, 6, 7, 8])
 # e de Jacobianas.
 
 # %%
-from mfsim.notebook_utils import jax_comparison
+from thesis.notebook_utils import jax_comparison
 
 res_jax = jax_comparison(case, res, rtol=1e-4, atol=1e-6)

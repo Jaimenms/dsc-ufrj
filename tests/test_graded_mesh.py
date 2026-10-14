@@ -4,7 +4,7 @@ import copy
 
 import numpy as np
 
-from mfsim.io_legacy import chapter10_case
+from thesis.mf2 import chapter10_case
 from mfsim.geometry import pipe_mesh
 from mfsim.simulation import steady_state
 

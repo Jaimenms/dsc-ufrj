@@ -8,7 +8,8 @@ import json
 import numpy as np
 import pytest
 
-from mfsim.io_legacy import chapter10_keys, chapter10_case
+from thesis.record import network_from_record, record_from_network
+from thesis.mf2 import chapter10_keys, chapter10_case
 from mfsim.io import case_from_json, case_to_json
 from mfsim.network.graph import Network
 
@@ -19,7 +20,7 @@ from conftest import assert_same_model as _assert_same
 @pytest.mark.parametrize("key", chapter10_keys())
 def test_chapter10_legacy_and_json_roundtrip(key, tmp_path):
     net = chapter10_case(key)
-    _assert_same(net, Network.from_legacy_case(net.to_legacy_case()))
+    _assert_same(net, network_from_record(record_from_network(net)))
     path = tmp_path / f"{key}.json"
     case_to_json(net, str(path))
     d = json.load(open(path))
@@ -46,7 +47,7 @@ def test_severe_slug_runs_roundtrip(name, tmp_path, data_dir):
         pytest.skip(name)
     run = load_run(str(path))
     net = run.case
-    _assert_same(net, Network.from_legacy_case(net.to_legacy_case()), X=run.X[:, 0])
+    _assert_same(net, network_from_record(record_from_network(net)), X=run.X[:, 0])
     jpath = tmp_path / f"{name}.json"
     case_to_json(net, str(jpath))
     _assert_same(net, case_from_json(str(jpath)), X=run.X[:, 0])
@@ -68,7 +69,7 @@ def test_json_is_self_contained(tmp_path):
 def test_chapter10_json_files_match_mf2(key):
     """Os JSON exportados em cases/chapter10 (a fonte dos casos) constroem o mesmo modelo que
     os .mf2 originais lidos com as correções do exportador."""
-    from mfsim.io.legacy_mf2 import network_from_mf2
+    from thesis.export import network_from_mf2
 
     net_m, raw = network_from_mf2(key)
     _assert_same(net_m, chapter10_case(key))
@@ -79,7 +80,7 @@ def test_network_editing_helpers():
     (a identidade de `from_legacy(to_legacy())` é o que permite editar no dialeto legado)."""
     net = chapter10_case("10.1.1")
     before = net.pipes[0].model
-    net2 = Network.from_legacy_case(net.to_legacy_case()).set_options(k_switch=net.pipes[0].model.regime.k_switch)
+    net2 = network_from_record(record_from_network(net)).set_options(k_switch=net.pipes[0].model.regime.k_switch)
     assert net2.pipes[0].model == before and net2.pipes[0].scheme == net.pipes[0].scheme
     net2.set_method("fd_central").set_options(conservative=True, bb_derivatives="fd").set_time(tf=10.0)
     assert net2.pipes[0].scheme.type == "fd_central" and dict(net2.pipes[0].scheme.options)["conservative"] is True

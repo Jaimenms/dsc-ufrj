@@ -13,8 +13,9 @@
 
 # %%
 import numpy as np, matplotlib.pyplot as plt
-from mfsim.notebook_utils import describe, run_case, compare_states, show_pipe
-from mfsim.plotting import pipe_profiles, legacy_pipe_dict
+from thesis.notebook_utils import describe, run_case, compare_states, show_pipe
+from mfsim.plotting import pipe_profiles
+from thesis.mf2 import legacy_pipe_dict
 
 # %% [markdown]
 # ## Anular (10.1.2)
@@ -86,6 +87,6 @@ show_pipe(res, raw, 0)
 # e de Jacobianas.
 
 # %%
-from mfsim.notebook_utils import jax_comparison
+from thesis.notebook_utils import jax_comparison
 
 res_jax = jax_comparison(case, res, rtol=1e-4, atol=1e-6)

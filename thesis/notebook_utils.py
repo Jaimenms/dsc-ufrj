@@ -1,4 +1,4 @@
-"""Funções de apoio aos notebooks de reprodução do capítulo 10."""
+"""Funções de apoio aos notebooks de reprodução do capítulo 10 (fora do simulador)."""
 
 from __future__ import annotations
 
@@ -7,9 +7,10 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .io_legacy import chapter10_case, chapter10_info, legacy_results, legacy_states
-from .plotting import legacy_pipe_dict, pipe_surfaces, pipe_timeseries
-from .simulation import build_model, simulate
+from mfsim.plotting import pipe_surfaces, pipe_timeseries
+
+from .mf2 import chapter10_case, chapter10_info, legacy_pipe_dict, legacy_results, legacy_states
+from mfsim.simulation import build_model, simulate
 
 
 def describe(key):
@@ -122,8 +123,8 @@ def jax_comparison(case, res_numpy=None, label="", **simulate_kw):
     versão numpy: tempo de CPU (sem a compilação, que é feita uma vez e guardada em
     cache no disco), passos e diferença máxima relativa dos estados. Devolve o Results
     da versão JAX."""
-    from .compiled import get_jax
-    from .simulation import build_model
+    from mfsim.compiled import get_jax
+    from mfsim.simulation import build_model
 
     model = build_model(case)
     t0 = time.time()

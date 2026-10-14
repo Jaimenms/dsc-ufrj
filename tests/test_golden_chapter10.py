@@ -9,8 +9,8 @@ from mfsim.network.graph import ports
 import numpy as np
 import pytest
 
-from mfsim.io_legacy import chapter10_keys, chapter10_case, legacy_results
-from mfsim.notebook_utils import run_case
+from thesis.mf2 import chapter10_keys, chapter10_case, legacy_results
+from thesis.notebook_utils import run_case
 from mfsim.simulation import simulate, steady_state
 
 NB_KW = {"10.3.2a": dict(rtol=1e-3, atol=1e-5), "10.3.2b": dict(rtol=1e-3, atol=1e-5)}

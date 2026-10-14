@@ -352,11 +352,11 @@ def _jsonable(o):
 
 # ----------------------------------------------------------------------------- Case legado <-> JSON
 def case_to_json(case, path, ic_file=None, extends=None):
-    """Grava o grafo (ou um `Case` legado) como JSON + npz de condições iniciais ao lado. Com
+    """Grava o grafo como JSON + npz de condições iniciais ao lado. Com
     `extends` (caminho de um caso base, relativo à pasta de `path`) escreve só o remendo mínimo
     sobre a base (`"$extends"`), de modo que carregar o ficheiro reconstrói o caso completo.
     Devolve o dicionário completo (validado contra o schema)."""
-    net = case if isinstance(case, Network) else Network.from_legacy_case(case)
+    net = case
     if ic_file is None:
         ic_file = os.path.splitext(os.path.basename(path))[0] + ".ic.npz"
     d, ic_store = network_to_json(net, ic_file=ic_file)

@@ -7,7 +7,7 @@
    "section": "10.1.3",
    "title": "Escoamento horizontal padrão bolhas",
    "figures": "Figs. 10.15-10.16",
-   "note": "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (network_from_mf2: correções e composição do 10.3.2a)"
+   "note": "convertido de legacy/mfsim23/Files por thesis.export (network_from_mf2: correções e composição do 10.3.2a)"
   },
   "description": "Mesmo duto com padrão bolhas fixo. qG=0.1 kg/s; qL sobe de 50 para 55 kg/s entre 150 e 180 s."
  },

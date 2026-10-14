@@ -11,7 +11,7 @@ from . import steady as _steady
 
 
 def build_model(case, method=None, scheme_settings=None):
-    """Sistema da rede a partir de um `Network` (ou do registo legado `io.legacy_case.Case`)."""
+    """Sistema da rede a partir de um `Network`."""
     return NetworkModel(case, method=method, scheme_settings=scheme_settings)
 
 

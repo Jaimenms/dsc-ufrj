@@ -7,7 +7,7 @@
    "section": "10.1.4",
    "title": "Escoamento horizontal via modelo a 3 equações",
    "figures": "Fig. 10.17",
-   "note": "convertido de legacy/mfsim23/Files pelo mfsim.io.legacy_mf2 (network_from_mf2: correções e composição do 10.3.2a)"
+   "note": "convertido de legacy/mfsim23/Files por thesis.export (network_from_mf2: correções e composição do 10.3.2a)"
   },
   "description": "Cenário de 10.1.1 com o modelo de mistura (Beggs & Brill)."
  },

@@ -5,7 +5,7 @@
 | tipo | estudo |
 | área | reprodução da tese |
 | estado | feito (2026-10-12/13) |
-| onde | `mfsim/io_legacy.py` (leitor dos .mf2), `mfsim/io/legacy_mf2.py` (exportador com as correções), `cases/chapter10/*.json` (fonte dos casos; descrição em `meta`) |
+| onde | `thesis/mf2.py` (leitor dos .mf2, fora do simulador), `thesis/export.py` (exportador com as correções), `cases/chapter10/*.json` (fonte dos casos; descrição em `meta`) |
 | dados | `legacy/mfsim23/Files/*.mf2`; notebooks `nb_10_*` |
 
 ## Antes

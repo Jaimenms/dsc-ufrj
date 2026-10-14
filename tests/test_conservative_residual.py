@@ -7,7 +7,7 @@ from mfsim.network.schedules import Constant
 
 import numpy as np
 
-from mfsim.io_legacy import chapter10_case
+from thesis.mf2 import chapter10_case
 from mfsim.integrators.implicit import ImplicitBDF
 from mfsim.simulation import build_model, state_bounds, steady_state
 

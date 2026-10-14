@@ -17,10 +17,11 @@
 
 # %%
 import copy, numpy as np, matplotlib.pyplot as plt
-from mfsim.notebook_utils import describe, run_case, compare_states, show_pipe
-from mfsim.io_legacy import chapter10_case, legacy_results
+from thesis.notebook_utils import describe, run_case, compare_states, show_pipe
+from thesis.mf2 import chapter10_case, legacy_results
 from mfsim.simulation import steady_state, simulate
-from mfsim.plotting import pipe_surfaces, pipe_timeseries, legacy_pipe_dict
+from mfsim.plotting import pipe_surfaces, pipe_timeseries
+from thesis.mf2 import legacy_pipe_dict
 
 describe("10.1.4")
 case, raw = chapter10_case("10.1.4"), legacy_results("10.1.4")
@@ -31,7 +32,7 @@ print("regime do duto:", case.pipes[0].regime, "(6 = identificação automática
 
 # %%
 from mfsim.simulation import build_model
-from mfsim.io_legacy import legacy_states
+from thesis.mf2 import legacy_states
 
 Tl, Xl = legacy_states(raw)
 model = build_model(case)
@@ -72,6 +73,6 @@ plt.show()
 # e de Jacobianas.
 
 # %%
-from mfsim.notebook_utils import jax_comparison
+from thesis.notebook_utils import jax_comparison
 
 res_jax = jax_comparison(case_ss, res, rtol=1e-4, atol=1e-6)

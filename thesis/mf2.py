@@ -1,4 +1,4 @@
-"""Leitura dos arquivos .mf2 (MAT v5) do MFSIM/SDMPFLOW original.
+"""Leitura dos arquivos .mf2 (MAT v5) do MFSIM/SDMPFLOW original (fora do simulador).
 
 Os arquivos contêm `dados` (entrada), `saidas` (resultados pós-processados),
 `estados` (T, X) e `eixos`. Esta rotina converte tudo para dicts/arrays e
@@ -67,9 +67,9 @@ def _list_of_structs(d, key):
 
 
 def legacy_record(data, name=None):
-    """Registo legado (`io.legacy_case.Case`) a partir do dict `dados` de um arquivo .mf2."""
-    from .fluid import Fluid
-    from .io.legacy_case import (
+    """Registo legado (`thesis.record.Case`) a partir do dict `dados` de um arquivo .mf2."""
+    from mfsim.fluid import Fluid
+    from .record import (
         BC_ABSENT,
         BC_DIRICHLET,
         BC_NEUMANN,
@@ -117,14 +117,16 @@ def legacy_record(data, name=None):
                 spec[key] = float(vals[0])
             else:
                 spec[key] = (times, vals)
-        vertices.append(Vertex(
-            index=int(_scalar(v["indice"])),
-            kind="A" if int(_scalar(v["tipo"])) == 1 else "B",
-            volume=float(_scalar(v.get("volume", 1e-3), 1e-3)),
-            spec=spec,
-            HG0=_scalar(v.get("condicaoInicial1"), None),
-            PT0=_scalar(v.get("condicaoInicial2"), None),
-        ))
+        vertices.append(
+            Vertex(
+                index=int(_scalar(v["indice"])),
+                kind="A" if int(_scalar(v["tipo"])) == 1 else "B",
+                volume=float(_scalar(v.get("volume", 1e-3), 1e-3)),
+                spec=spec,
+                HG0=_scalar(v.get("condicaoInicial1"), None),
+                PT0=_scalar(v.get("condicaoInicial2"), None),
+            )
+        )
 
     pipes = []
     for t in _list_of_structs(data, "tubo"):
@@ -147,56 +149,86 @@ def legacy_record(data, name=None):
             if bc_out[s_] == BC_DIRICHLET and key not in vmap[vout].spec and vmap[vout].kind == "B":
                 bc_out[s_] = BC_NEUMANN
         bc_in, bc_out = tuple(bc_in), tuple(bc_out)
-        pipes.append(Pipe(
-            index=int(_scalar(t["indice"])),
-            model=int(_scalar(t.get("modelo", 1), 1)),
-            v_in=int(_scalar(t["verticeOrigem"])),
-            v_out=int(_scalar(t["verticeDestino"])),
-            x=_vec(t["x"]), y=_vec(t["y"]), z=_vec(t["z"]),
-            n_elements=np.atleast_1d(np.asarray(t["numeroElementos"], int)),
-            D=float(_scalar(t["diametro"])),
-            roughness=float(_scalar(t["rugosidade"])) * 1e-6,
-            regime=int(_scalar(t["regime"])),
-            bc_in=bc_in, bc_out=bc_out,
-            check=int(_scalar(t.get("check", 1), 1)) == 1,
-            ic=ic,
-        ))
+        pipes.append(
+            Pipe(
+                index=int(_scalar(t["indice"])),
+                model=int(_scalar(t.get("modelo", 1), 1)),
+                v_in=int(_scalar(t["verticeOrigem"])),
+                v_out=int(_scalar(t["verticeDestino"])),
+                x=_vec(t["x"]),
+                y=_vec(t["y"]),
+                z=_vec(t["z"]),
+                n_elements=np.atleast_1d(np.asarray(t["numeroElementos"], int)),
+                D=float(_scalar(t["diametro"])),
+                roughness=float(_scalar(t["rugosidade"])) * 1e-6,
+                regime=int(_scalar(t["regime"])),
+                bc_in=bc_in,
+                bc_out=bc_out,
+                check=int(_scalar(t.get("check", 1), 1)) == 1,
+                ic=ic,
+            )
+        )
 
     valves = []
     for v in _list_of_structs(data, "valvula"):
+
         def tbl(i):
             vals = _vec(v.get(f"especificacao{i}"))
             times = _vec(v.get(f"especificacaoT{i}"))
             if vals.size <= 1:
                 return float(vals[0]) if vals.size else None
             return (times, vals)
-        valves.append(Valve(
-            vertex=int(_scalar(v["vertice"])), CV=float(_scalar(v["CV"])),
-            opening=tbl(1), mode=tbl(2), setpoint=tbl(3),
-            pv_type=int(_scalar(v.get("tipoPV", 1), 1)),
-            pv_node=_scalar(v.get("nohPV"), None), pv_pipe=_scalar(v.get("linhaPV"), None),
-            action=_scalar(v.get("acao"), None), Kp=_scalar(v.get("ContP"), None),
-            Ki=_scalar(v.get("ContI"), None), Kd=_scalar(v.get("ContD"), None),
-            bias=_scalar(v.get("ContBias"), None),
-        ))
+
+        valves.append(
+            Valve(
+                vertex=int(_scalar(v["vertice"])),
+                CV=float(_scalar(v["CV"])),
+                opening=tbl(1),
+                mode=tbl(2),
+                setpoint=tbl(3),
+                pv_type=int(_scalar(v.get("tipoPV", 1), 1)),
+                pv_node=_scalar(v.get("nohPV"), None),
+                pv_pipe=_scalar(v.get("linhaPV"), None),
+                action=_scalar(v.get("acao"), None),
+                Kp=_scalar(v.get("ContP"), None),
+                Ki=_scalar(v.get("ContI"), None),
+                Kd=_scalar(v.get("ContD"), None),
+                bias=_scalar(v.get("ContBias"), None),
+            )
+        )
 
     check_valves = [
-        CheckValve(vertex=int(_scalar(v["vertice"])), CV=float(_scalar(v["CV"])),
-                   dP_min=float(_scalar(v.get("dPMin", 0.0), 0.0)))
+        CheckValve(
+            vertex=int(_scalar(v["vertice"])),
+            CV=float(_scalar(v["CV"])),
+            dP_min=float(_scalar(v.get("dPMin", 0.0), 0.0)),
+        )
         for v in _list_of_structs(data, "valvulaRet")
     ]
     reservoirs = [
-        Reservoir(vertex=int(_scalar(r["vertice"])), IPL=float(_scalar(r["IPL"])),
-                  IPG=float(_scalar(r["IPG"])), P=float(_scalar(r["P"])))
+        Reservoir(
+            vertex=int(_scalar(r["vertice"])),
+            IPL=float(_scalar(r["IPL"])),
+            IPG=float(_scalar(r["IPG"])),
+            P=float(_scalar(r["P"])),
+        )
         for r in _list_of_structs(data, "reservatorio")
     ]
     couplings = [
         Coupling(v_up=int(_scalar(c["verticeE"])), v_down=int(_scalar(c["verticeS"])))
         for c in _list_of_structs(data, "acoplador")
     ]
-    return Case(name=name or "legacy", fluid=fluid, settings=settings, vertices=vertices,
-                pipes=pipes, valves=valves, check_valves=check_valves,
-                reservoirs=reservoirs, couplings=couplings)
+    return Case(
+        name=name or "legacy",
+        fluid=fluid,
+        settings=settings,
+        vertices=vertices,
+        pipes=pipes,
+        valves=valves,
+        check_valves=check_valves,
+        reservoirs=reservoirs,
+        couplings=couplings,
+    )
 
 
 # Ajustes necessários para reproduzir os resultados gravados (os arquivos
@@ -214,12 +246,13 @@ LEGACY_OVERRIDES = {
 def case_from_legacy(data, name=None, overrides=None):
     """Grafo (`Network`) a partir do dict `dados` de um arquivo .mf2 (com `overrides`
     = {índice do duto: {atributo: valor}} aplicados ao registo legado antes da conversão)."""
-    from .network.graph import Network
+    from .record import network_from_record
+
     rec = legacy_record(data, name)
     for idx, kv in (overrides or {}).items():
         for k, v in kv.items():
             setattr(rec.pipe(idx), k, v)
-    return Network.from_legacy_case(rec)
+    return network_from_record(rec)
 
 
 def load_case(path, ic_from="legacy_t0", apply_overrides=True):
@@ -233,10 +266,13 @@ def load_case(path, ic_from="legacy_t0", apply_overrides=True):
     """
     raw = load_mf2(path)
     name = Path(path).stem
-    net = case_from_legacy(raw["dados"], name=name, overrides=LEGACY_OVERRIDES.get(name, {}).get("pipes") if apply_overrides else None)
+    net = case_from_legacy(
+        raw["dados"], name=name, overrides=LEGACY_OVERRIDES.get(name, {}).get("pipes") if apply_overrides else None
+    )
     T, X = legacy_states(raw)
     if ic_from == "legacy_t0" and X is not None and X.ndim == 2:
-        from .network.model import NetworkModel
+        from mfsim.network.model import NetworkModel
+
         model = NetworkModel(net)
         if model.n_states == X.shape[0]:
             model.state_to_network_ic(X[:, 0], net.time.t0)
@@ -286,11 +322,11 @@ def chapter10_keys() -> list:
 
 def chapter10_case(key: str):
     """O grafo (`Network`) do caso `key` do capítulo 10, do JSON exportado."""
-    from .io.spec import case_from_json
+    from mfsim.io.spec import case_from_json
 
     path = chapter10_json_path(key)
     if not os.path.exists(path):
-        raise FileNotFoundError(f"{path}: exportar com `uv run mfsim export-case --chapter10`")
+        raise FileNotFoundError(f"{path}: exportar com `uv run python -m thesis.export --chapter10`")
     return case_from_json(path)
 
 
@@ -334,3 +370,23 @@ def legacy_results(case_or_key):
         raise ValueError("o caso não indica o .mf2 de origem em meta.provenance.source")
     return load_mf2(source)
 
+
+def legacy_pipe_dict(raw, k=0):
+    """Extrai de `saidas.tubo{k}` um dict compatível com os gráficos acima."""
+    out = legacy_pipe_outputs(raw, k)
+    T, X = legacy_states(raw)
+    eixos = raw.get("eixos", {})
+    try:
+        xs = eixos["tubo"]["X"]["valor"]
+        x = np.asarray(xs[k] if isinstance(xs, list) else xs, float).ravel()
+    except Exception:
+        x = np.arange(out["alfaG"].shape[0], dtype=float)
+    d = {"T": T, "x": x}
+    d["alphaG"] = np.asarray(out["alfaG"], float)
+    d["P_bar"] = np.asarray(out["pressao"], float)
+    d["qL"] = np.asarray(out.get("vazaoMassaL", np.zeros_like(d["alphaG"])), float)
+    d["qG"] = np.asarray(out.get("vazaoMassaG", np.zeros_like(d["alphaG"])), float)
+    for key in ("velocidadeL", "velocidadeG", "reg1"):
+        if key in out:
+            d[key] = np.asarray(out[key], float)
+    return d

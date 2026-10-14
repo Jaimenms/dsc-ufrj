@@ -23,7 +23,7 @@
 
 # %%
 import numpy as np, matplotlib.pyplot as plt
-from mfsim.notebook_utils import describe, run_case, compare_states, show_pipe, plot_elements, plot_vertices
+from thesis.notebook_utils import describe, run_case, compare_states, show_pipe, plot_elements, plot_vertices
 
 # %% [markdown]
 # ## Cenário 2 - com intermitência (comparação direta com o MATLAB)
@@ -62,6 +62,6 @@ plot_vertices(res1, raw1, indices=[1, 2, 3, 4, 6, 8])
 # e de Jacobianas.
 
 # %%
-from mfsim.notebook_utils import jax_comparison
+from thesis.notebook_utils import jax_comparison
 
 res_jax = jax_comparison(case, res, rtol=1e-3, atol=1e-5)
