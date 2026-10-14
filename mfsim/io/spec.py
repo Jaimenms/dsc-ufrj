@@ -2,7 +2,8 @@
 
 Secções: schema, name, description, meta, fluid, reference (PR, state_ref), time,
 library (models, schemes reutilizáveis por "$ref"), network (vertices, edges),
-integration, initial_state. Unidades SI; pressões nas especificações como "P" (Pa) ou
+integration, initial_state. Um ficheiro pode herdar de outro com "$extends" e trazer só o
+que muda (`io/extends.py`); o schema (`io/schema/`) valida o caso expandido. Unidades SI; pressões nas especificações como "P" (Pa) ou
 "PT" (P/PR, para round-trip exato dos casos legados); arrays de condição inicial num
 ficheiro npz ao lado (`"ic": {"arrays": {"file": ..., "key": ...}}`) ou receita.
 """
@@ -48,17 +49,46 @@ def _resolve_refs(obj, root):
     return obj
 
 
-def load_json(path):
-    """Lê o JSON, funde `$include` (bibliotecas externas) e resolve `$ref`."""
+def _relocate_ic_files(d, from_dir, to_dir):
+    """Os `ic.arrays.file` de um caso carregado de outra pasta passam a caminhos absolutos
+    para continuarem a resolver depois de fundidos num caso desta pasta."""
+    if os.path.abspath(from_dir) == os.path.abspath(to_dir):
+        return
+    for e in d.get("network", {}).get("edges", []):
+        arrays = (e.get("ic") or {}).get("arrays")
+        if arrays and arrays.get("file") and not os.path.isabs(arrays["file"]):
+            arrays["file"] = os.path.join(os.path.abspath(from_dir), arrays["file"])
+
+
+def load_json(path, _stack=()):
+    """Lê o JSON, funde `$include` (bibliotecas externas), aplica o ficheiro sobre as bases de
+    `$extends` (`mfsim.io.extends.merge_case`; a cadeia fica em `meta.extends`) e resolve `$ref`."""
+    from .extends import merge_case
+
+    path = os.fspath(path)
+    key = os.path.abspath(path)
+    if key in _stack:
+        raise ValueError(f"ciclo em $extends: {' -> '.join(_stack + (key,))}")
     with open(path) as f:
         d = json.load(f)
-    base = os.path.dirname(os.path.abspath(path))
+    base = os.path.dirname(key)
     for inc in d.pop("$include", []) or []:
         with open(os.path.join(base, inc)) as f:
             lib = json.load(f)
         d.setdefault("library", {})
         for k, v in lib.get("library", {}).items():
             d["library"].setdefault(k, {}).update(v)
+    extends = d.pop("$extends", None)
+    if extends:
+        bases = [extends] if isinstance(extends, str) else list(extends)
+        merged, chain = None, []
+        for b in bases:
+            bd = load_json(os.path.join(base, b), _stack + (key,))
+            _relocate_ic_files(bd, bd.pop("_base_dir"), base)
+            chain += [b] + list((bd.get("meta") or {}).pop("extends", []))
+            merged = bd if merged is None else merge_case(merged, bd)
+        d = merge_case(merged, d)
+        d.setdefault("meta", {})["extends"] = chain
     d["_base_dir"] = base
     return _resolve_refs(d, d)
 
@@ -321,19 +351,49 @@ def _jsonable(o):
 
 
 # ----------------------------------------------------------------------------- Case legado <-> JSON
-def case_to_json(case, path, ic_file=None):
-    """Grava um `Case` legado (ou grafo) como JSON + npz de condições iniciais ao lado."""
+def case_to_json(case, path, ic_file=None, extends=None):
+    """Grava o grafo (ou um `Case` legado) como JSON + npz de condições iniciais ao lado. Com
+    `extends` (caminho de um caso base, relativo à pasta de `path`) escreve só o remendo mínimo
+    sobre a base (`"$extends"`), de modo que carregar o ficheiro reconstrói o caso completo.
+    Devolve o dicionário completo (validado contra o schema)."""
     net = case if isinstance(case, Network) else Network.from_legacy_case(case)
     if ic_file is None:
         ic_file = os.path.splitext(os.path.basename(path))[0] + ".ic.npz"
     d, ic_store = network_to_json(net, ic_file=ic_file)
-    save_json(d, path)
+    from .validate import validate_case
+
+    validate_case(d, source=str(path))
+    out = d
+    if extends:
+        from .extends import make_patch, merge_case
+
+        base_dir = os.path.dirname(os.path.abspath(path))
+        base = {k: v for k, v in load_json(os.path.join(base_dir, extends)).items() if not k.startswith("_")}
+        (base.get("meta") or {}).pop("extends", None)
+        target = dict(d)
+        patch = make_patch(base, target)
+        patch.pop("schema", None)
+        if merge_case(base, patch) != target:
+            raise ValueError(f"remendo sobre {extends} não reconstrói o caso {net.name}")
+        out = {"schema": SCHEMA, "$extends": extends, **patch}
+    save_json(out, path)
     if ic_store:
         np.savez(os.path.join(os.path.dirname(os.path.abspath(path)), ic_file), **ic_store)
     return d
 
 
-def case_from_json(path_or_dict, ic_arrays=None):
-    """Grafo (`Network`, o que `simulate`/`build_model`/`mfsim run` consomem) a partir de um JSON."""
+def case_from_json(path_or_dict, ic_arrays=None, validate=True, overrides=None):
+    """Grafo (`Network`, o que `simulate`/`build_model`/`mfsim run` consomem) a partir de um JSON
+    (com `$extends`/`$include`/`$ref` resolvidos), validado contra o schema `mfsim-case/1`
+    (`validate=False` desliga). `overrides`: `{"integration.rtol": 1e-3}` ou lista de
+    `caminho=valor` (`mfsim run --set`), aplicados ao dicionário antes de validar."""
     d = load_json(path_or_dict) if isinstance(path_or_dict, (str, os.PathLike)) else dict(path_or_dict)
+    if overrides:
+        from .extends import apply_overrides
+
+        apply_overrides(d, overrides)
+    if validate:
+        from .validate import validate_case
+
+        validate_case(d, source=str(path_or_dict) if isinstance(path_or_dict, (str, os.PathLike)) else "")
     return network_from_json(d, ic_arrays=ic_arrays)

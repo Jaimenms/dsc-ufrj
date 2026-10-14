@@ -1,6 +1,7 @@
-"""Linha de comando do mfsim: `mfsim run|steady|stats|scan|riser|val|export-case|convert-runs|nb`.
+"""Linha de comando do mfsim: `mfsim run|steady|stats|scan|riser|val|export-case|validate|convert-runs|nb`.
 
     mfsim run cases/severe_slug/reference.json --backend jax --tf 150 --out runs/ref150.npz
+    mfsim run cases/severe_slug/reference.json --set integration.integrator=radau --set integration.rtol=1e-5
     mfsim steady cases/chapter10/10_1_1.json --out /tmp/10_1_1_ss.json
     mfsim stats severe_slug_blocked_conservative_arc ...        (nomes em notebooks/data ou caminhos .npz)
     mfsim scan severe_slug_blocked_conservative_arc_scan_P2_g005 ...   (varredura da fronteira: Bøe, padrão da linha, ciclos)
@@ -9,6 +10,7 @@
     mfsim export-case --chapter10 [--out cases/chapter10]
     mfsim export-case --severe-runs
     mfsim export-case --severe --out novo.json --param D=0.05 --param start=blocked
+    mfsim validate cases/**/*.json                              (schema mfsim-case/1)
     mfsim nb notebooks_src/nb_severe_slug.py [--execute]
 
 As corridas são gravadas no formato v2 (`mfsim.runs.save_run`: trajetória, `info_json`,
@@ -50,7 +52,7 @@ def cmd_run(a):
     from .runs import save_run
     from .simulation import simulate
 
-    case = case_from_json(a.case)
+    case = case_from_json(a.case, overrides=a.set)
     if a.tf is not None:
         case.set_time(tf=float(a.tf))
     if a.dt_out is not None:
@@ -92,6 +94,20 @@ def cmd_run(a):
     return 0 if info.get("success", True) else 1
 
 
+def cmd_validate(a):
+    from .io.spec import load_json
+    from .io.validate import case_errors
+
+    rc = 0
+    for f in a.files:
+        errs = case_errors(load_json(f))
+        print(f"{f}: {'OK' if not errs else str(len(errs)) + ' erro(s)'}", flush=True)
+        for e in errs:
+            print("   ", e)
+        rc = rc or (1 if errs else 0)
+    return rc
+
+
 def cmd_convert_runs(a):
     from .io.legacy_runs import convert_run
 
@@ -111,7 +127,7 @@ def cmd_steady(a):
     from .io.spec import case_from_json, case_to_json
     from .simulation import steady_state
 
-    case = case_from_json(a.case)
+    case = case_from_json(a.case, overrides=a.set)
     model, X, info = steady_state(case, verbose=a.verbose, jax=(a.backend == "jax"))
     out = a.out or os.path.splitext(a.case)[0] + "_ss.json"
     case_to_json(case, out)
@@ -231,6 +247,13 @@ def main(argv=None):
 
     r = sub.add_parser("run", help="integra um caso JSON e grava a corrida (npz v2)")
     r.add_argument("case")
+    r.add_argument(
+        "--set",
+        action="append",
+        default=[],
+        metavar="CAMINHO=VALOR",
+        help="altera qualquer campo do caso (JSON), p. ex. integration.integrator=radau, network.edges.line.D=0.06",
+    )
     r.add_argument("--out")
     r.add_argument("--backend", choices=["numpy", "jax"])
     r.add_argument("--tf", type=float)
@@ -255,6 +278,13 @@ def main(argv=None):
         "steady", help="estado estacionário de um caso JSON; grava o caso com a condição inicial atualizada"
     )
     s.add_argument("case")
+    s.add_argument(
+        "--set",
+        action="append",
+        default=[],
+        metavar="CAMINHO=VALOR",
+        help="altera qualquer campo do caso (JSON), p. ex. integration.integrator=radau, network.edges.line.D=0.06",
+    )
     s.add_argument("--out")
     s.add_argument("--backend", choices=["numpy", "jax"], default="numpy")
     s.add_argument("--verbose", action="store_true")
@@ -294,6 +324,10 @@ def main(argv=None):
     e.add_argument("--out")
     e.add_argument("--param", action="append", default=[], help="chave=valor (JSON) de severe_slug_case")
     e.set_defaults(func=cmd_export_case)
+
+    vs = sub.add_parser("validate", help="valida casos JSON contra o schema mfsim-case/1")
+    vs.add_argument("files", nargs="+")
+    vs.set_defaults(func=cmd_validate)
 
     cv = sub.add_parser(
         "convert-runs", help="converte corridas no formato antigo (meta v1 / opts do driver) para v2 (case_json)"

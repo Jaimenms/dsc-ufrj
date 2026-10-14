@@ -1,0 +1,43 @@
+{
+ "schema": "mfsim-case/1",
+ "name": "hello_world",
+ "description": "Duto horizontal de 1000 m: vazões de líquido e gás impostas na entrada, pressão imposta na saída; a vazão de gás sobe de 0.10 para 0.13 kg/s entre 100 e 130 s.",
+ "fluid": {
+  "type": "polytropic",
+  "rhoL0": 860.0,
+  "rhoG0": 80.0,
+  "muL": 0.008,
+  "muG": 2e-05,
+  "gammaL": 1000.0,
+  "gammaG": 1.2,
+  "P0": 10000000.0,
+  "sigma": 0.03
+ },
+ "reference": {"PR": 10000000.0},
+ "time": {"t0": 0.0, "tf": 600.0, "dt_out": 10.0},
+ "network": {
+  "vertices": [
+   {"id": "inlet", "kind": "boundary", "spec": {"qL": 0.5, "qG": {"ramp": [100.0, 130.0], "from": 0.1, "to": 0.13}}},
+   {"id": "outlet", "kind": "boundary", "spec": {"P": 10000000.0}}
+  ],
+  "edges": [
+   {
+    "id": "line",
+    "type": "pipe",
+    "from": "inlet",
+    "to": "outlet",
+    "D": 0.1,
+    "roughness": 0.001,
+    "geometry": {"points": [{"xyz": [0.0, 0.0, 0.0]}, {"xyz": [1000.0, 0.0, 0.0]}], "segments": [{"n": 20}]},
+    "model": {"type": "two_fluid", "regime": {"type": "fixed", "regime": "stratified_smooth"}},
+    "scheme": {"type": "galerkin"},
+    "ports": {
+     "in": {"alphaG": "free", "PT": "free", "qL": "dirichlet", "qG": "dirichlet"},
+     "out": {"alphaG": "free", "PT": "dirichlet", "qL": "free", "qG": "free"}
+    }
+   }
+  ]
+ },
+ "integration": {"integrator": "bdf", "rtol": 0.001, "atol": 0.001, "max_step": 1.0},
+ "initial_state": {"source": "guess"}
+}

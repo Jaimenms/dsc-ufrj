@@ -2,7 +2,7 @@
 Escoamento horizontal estratificado
 Duto horizontal de 1000 m, D=0.1 m, 50 elementos, Galerkin, modelo a 4 equações com padrão estratificado fixo. qL=0.5 kg/s; qG sobe de 0.1 para 0.13 kg/s entre 150 e <t>s. Pressão de saída 100 bar.
 Figuras: Figs. 10.2-10.8, Tabela 10.1
-TimeSpec(t0=0.0, tf=3000.0, dt_out=10.0) ReferenceSpec(PR=10000000.0, state_ref=()) IntegrationSpec(integrator='bdf', method_quadrature=2, max_step=1.0, atol=0.001, rtol=0.001, backend='numpy', tol_range=None, first_step=0.001, max_order=2, max_newton=12, newton_tol=0.001, slow_exit=False, galerkin_band=None, extra=())
+TimeSpec(t0=0.0, tf=3000.0, dt_out=10.0) ReferenceSpec(PR=10000000.0, state_ref=()) IntegrationSpec(integrator='bdf', method_quadrature=2, max_step=1.0, atol=0.001, rtol=0.001, backend='numpy', tol_range=None, atol_P=None, atol_q=None, first_step=None, max_order=None, max_newton=None, newton_tol=None, min_step=None, slow_exit=None, predict_space=None, jt_refresh=None, accumulate=False, tight_bounds=False, galerkin_band=None, extra=())
 
 ### célula 3
   it 0  |F| = 7.857e-02

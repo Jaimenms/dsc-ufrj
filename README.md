@@ -24,8 +24,10 @@ Linha de comando (`mfsim/cli.py`; os casos são ficheiros JSON `mfsim-case/1`, v
 [docs/data_formats.md](docs/data_formats.md)):
 
 ```bash
+uv run mfsim run cases/examples/hello_world.json --out runs/hello_world.npz   # primeiro caso (docs/hello_world.md)
 uv run mfsim run cases/severe_slug/reference.json --backend jax --tf 150 --out runs/ref150.npz
 uv run mfsim run cases/severe_slug/lab_jansen.json --backend jax        # validação de laboratório (shut_in, slow)
+uv run mfsim run cases/severe_slug/reference.json --set integration.integrator=radau --set integration.rtol=1e-5
 uv run mfsim steady cases/chapter10/10_1_1.json --out /tmp/10_1_1_ss.json
 uv run mfsim stats severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys   # ciclos de uma corrida gravada
 uv run mfsim scan severe_slug_blocked_conservative_arc_scan_P2_g005          # varredura da fronteira (Bøe, padrão, ciclos)
@@ -33,16 +35,26 @@ uv run mfsim riser severe_slug_blocked_conservative_arc_tol_hv_vm_lv_bd_phys   #
 uv run mfsim val severe_slug_lab_fabre2_fisico --plot                         # validação de laboratório + figura
 uv run mfsim export-case --chapter10            # .mf2 -> cases/chapter10/*.json
 uv run mfsim export-case --severe --out novo.json --param D=0.05 --param start=blocked
+uv run mfsim validate cases/chapter10/*.json cases/severe_slug/*.json   # schema mfsim-case/1
+uv run mfsim convert-runs antiga.npz --out-dir runs/                     # corrida v1 (meta) -> v2 (case_json)
 ```
 
-`mfsim run` grava a corrida em npz v2 (`T`, `X`, `acc`, `meta`, `info_json`,
-`provenance_json` e o caso completo em `case_json`; `mfsim.runs.load_run` lê qualquer
-corrida — `runs/`, `notebooks/data/`, arquivo — e reconstrói caso, modelo e resultados);
-uma falha do integrador grava a trajetória parcial. As análises das corridas gravadas
+`mfsim run` grava a corrida em npz v2 (`T`, `X`, `acc`, `info_json`, `provenance_json` e o
+caso completo em `case_json`, de onde `mfsim.runs.load_run` reconstrói caso, modelo e
+resultados sem outra fonte); uma falha do integrador grava a trajetória parcial. O caso
+JSON (secções `integration` e `initial_state` incluídas) é tudo o que `simulate` precisa,
+em numpy ou JAX: um só caminho de execução serve a CLI, os notebooks e os testes. As 76
+corridas históricas de `notebooks/data` foram convertidas para v2 (`mfsim convert-runs`;
+cópias v1 em `archive/data_v1_2026-10/`). Os casos JSON obedecem ao schema `mfsim-case/1`
+(`mfsim/io/schema/mfsim-case-1.schema.json`), verificado ao carregar, ao exportar e por
+`mfsim validate`; uma variante herda o caso base com `"$extends"` e traz só o que muda
+(as variantes de `cases/severe_slug` são remendos de poucas linhas), e `--set caminho=valor`
+altera qualquer campo sem ficheiro novo. As análises das corridas gravadas
 (ciclos, varredura da fronteira, filme no riser, validação de laboratório) são
 subcomandos da CLI, com testes que reproduzem as tabelas publicadas; em `tools/` ficam só
-`golden_generate`, `manifest`, `make_nb` e o pipeline no dialeto antigo (`severe_run.py`,
-o driver `scratch/severe_D.py` com as mesmas opções, e `save_run_data.py`). A antiga
+`golden_generate`, `manifest`, `make_nb` e os invólucros do dialeto antigo (`severe_run.py`,
+com as opções do antigo driver `scratch/severe_D.py`, e `save_run_data.py`, ambos sobre
+`mfsim/io/legacy_runs.py`). A antiga
 `scratch/` e os diagnósticos pontuais estão arquivados em `archive/scratch_2026-10/`
 (índice em `INDEX.md`; os dados fora do git são fixados por `MANIFEST.sha256`,
 `uv run python tools/manifest.py --check`).
@@ -61,10 +73,10 @@ o driver `scratch/severe_D.py` com as mesmas opções, e `save_run_data.py`). A 
 | `mfsim/backend/` | backend numérico injetado (`NUMPY`, `JAX`): as primitivas (`set/add` funcionais, `while_loop`, `sigmoid`, `masked_apply`, `robust_inv`, `jvp`) sobre as quais fluido, fechamentos, modelos, esquemas e rede são escritos **uma só vez** |
 | `mfsim/compiled.py` | `CompiledNetwork(model)`: o mesmo `NetworkModel` reconstruído com o backend JAX, `jit` do `rhs_core` e Jacobiana exata por `jacfwd` (`build_jax_rhs`/`get_jax`) |
 | `mfsim/core/` | slots do estado, `PortKind` (livre/Dirichlet/Neumann), dataclasses de opções (modelo, esquema, tempo, referência, integração) |
-| `mfsim/io/`, `mfsim/initial/` | casos em JSON (`mfsim-case/1`, `$ref`/`$include`), conversão dos `.mf2`, registo legado (`legacy_case.py`: o struct `dados` do MATLAB, só como formato de entrada convertido para o grafo); receitas de condição inicial (bloqueada, linha fechada) |
-| `mfsim/runs.py`, `mfsim/analysis.py` | carregador único das corridas gravadas (`load_run`, `case_from_meta`, `integrate_run`), assinaturas de ciclo |
-| `mfsim/cli.py` | `mfsim run\|steady\|stats\|scan\|riser\|val\|export-case\|nb` |
-| `cases/`, `tools/`, `tests/golden/`, `archive/` | casos JSON (capítulo 10, severe slug), ferramentas (`make_nb`, `golden_generate`, `manifest`, `severe_run`, `save_run_data`), referências de regressão (nível A = bit a bit), arquivo da antiga `scratch/` e dos diagnósticos |
+| `mfsim/io/`, `mfsim/initial/` | casos em JSON (`mfsim-case/1`, `$ref`/`$include`; schema em `io/schema/` e validador `io/validate.py`), conversão dos `.mf2`, dialeto das corridas antigas (`legacy_runs.py`: `meta` v1 → caso JSON, `convert_run`), registo legado (`legacy_case.py`: o struct `dados` do MATLAB, só como formato de entrada convertido para o grafo); receitas de condição inicial (bloqueada, linha fechada) |
+| `mfsim/runs.py`, `mfsim/analysis.py` | corridas gravadas no formato v2 (`load_run`, `save_run`; `Run.case`/`network`/`res`), assinaturas de ciclo e análises (varredura, riser, laboratório) |
+| `mfsim/cli.py` | `mfsim run\|steady\|stats\|scan\|riser\|val\|export-case\|validate\|convert-runs\|nb` |
+| `cases/`, `tools/`, `tests/golden/`, `archive/` | casos JSON (exemplo `hello_world`, capítulo 10, severe slug), ferramentas (`make_nb`, `golden_generate`, `manifest`, `severe_run`, `save_run_data`), referências de regressão (nível A = bit a bit), arquivo da antiga `scratch/` e dos diagnósticos |
 | `mfsim/integrators/` | BDF implícito próprio (ordem 1–2, passo adaptativo, Newton modificado, Jacobiana colorida) e invólucro do `solve_ivp` |
 | `mfsim/steady.py`, `mfsim/initial_guess.py` | estado estacionário (Newton + pseudo-transiente) e estimativa inicial |
 | `mfsim/io_legacy.py` | leitura dos `.mf2` originais (entrada e resultados do MATLAB) |
@@ -73,6 +85,7 @@ o driver `scratch/severe_D.py` com as mesmas opções, e `save_run_data.py`). A 
 
 ## Documentação
 
+- [docs/hello_world.md](docs/hello_world.md) — primeiro caso: um duto e duas fronteiras em JSON (`cases/examples/hello_world.json`), correr, ler os resultados, o mesmo caso em Python, variar com `--set`/`$extends`.
 - [docs/thesis_reproduction.md](docs/thesis_reproduction.md) — modelo e layout de estados, resultados da reprodução do capítulo 10, gas lift com intermitência forte, observações sobre os ficheiros originais.
 - [docs/data_formats.md](docs/data_formats.md) — casos em JSON (`mfsim-case/1`) e grafo da rede, corridas gravadas (npz v1/v2), referências de regressão e manifesto.
 - [docs/jax_backend.md](docs/jax_backend.md) — backend único numpy/JAX, `CompiledNetwork`, paridade e desempenho.
@@ -96,6 +109,7 @@ por fases, cada uma fechada com a suíte de regressão bit a bit verde:
 | 4 | notebooks pelo carregador único e API pública, re-executados; outputs de texto iguais (numpy) ou explicados (células JAX) | feito (tag `v4-notebooks`) |
 | noturna | referência 3000 s JAX, gas lift 2000 s, validação de laboratório (Fabre 2, Jansen), 9 notebooks re-executados contra os outputs de texto | verde 14/14 em 2026-10-14 |
 | 5 | remoção da compatibilidade: `jaxrhs` e módulos JAX duplicados apagados, documentação dividida em `docs/`; rede montada diretamente sobre o grafo (`network/system.py` + `ports.py`: resolução de portas e plano topológico das arestas de comprimento zero; junções explícitas com as especificações herdadas; `specs.py` apagado), com o golden `network` (E por extremidade de duto, diagnósticos, rhs, layout, escalas, esparsidade) bit-idêntico em todos os casos; o `Network` é o objeto de ponta a ponta (JSON, `.mf2`, gerador do severe slug, `simulate`/`steady_state`/`integrate_run`, CLI, corridas gravadas) e o registo legado saiu do pacote `network` para `io/legacy_case.py`, só como formato de entrada | feito (tags `v5-refactored`, `v5-network-native`) |
+| 6 | caminho único de execução: `simulate(case)` constrói o integrador só a partir da secção `integration` do caso (campos opcionais explícitos, `initial_state`), `integrate_run` e o dialeto do `meta` saem do simulador (`io/legacy_runs.py`); corridas gravadas só em v2 (`case_json`), as 76 históricas convertidas (`mfsim convert-runs`, cópias em `archive/data_v1_2026-10`); schema `mfsim-case/1` com validação ao carregar/exportar e `mfsim validate`; herança de casos (`$extends`, remendo mínimo pelo exportador) e `--set caminho=valor` | feito (tag `v6-single-driver`) |
 
 ## Pendências do modelo físico (status)
 

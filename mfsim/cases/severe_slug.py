@@ -403,10 +403,21 @@ REFERENCE_RUNS = {
 }
 
 
+# variantes gravadas como remendo (`"$extends"`) sobre o caso base da mesma pasta
+EXTENDS = {
+    "reference_thesis_bubbles": "reference",
+    "reference_auto_regime": "reference",
+    "long_line_2bar": "reference",
+    "lab_fabre1": "lab_fabre2",
+    "lab_fabre2_thesis_bubbles": "lab_fabre2",
+    "lab_jansen_thesis_bubbles": "lab_jansen",
+}
+
+
 def export_run_cases(out_dir=CASES_DIR, runs=None):
     """Exporta para JSON os casos das corridas gravadas (o `case_json` de cada corrida, com a
     secção `integration` e o meta do gerador), com a condição inicial como receita nos dutos
-    únicos."""
+    únicos; as variantes de `EXTENDS` ficam como remendo sobre o caso base."""
     import copy
 
     from ..io.spec import case_to_json
@@ -414,7 +425,8 @@ def export_run_cases(out_dir=CASES_DIR, runs=None):
 
     os.makedirs(out_dir, exist_ok=True)
     written = []
-    for run_name, name in (runs or REFERENCE_RUNS).items():
+    items = sorted((runs or REFERENCE_RUNS).items(), key=lambda it: it[1] in EXTENDS)  # bases primeiro
+    for run_name, name in items:
         run = load_run(run_name)
         net = copy.deepcopy(run.case)  # já traz a secção integration e o meta do gerador (conversão v2)
         net.name = name
@@ -443,7 +455,8 @@ def export_run_cases(out_dir=CASES_DIR, runs=None):
                 }
             pipe.ic = None
         path = os.path.join(out_dir, f"{name}.json")
-        case_to_json(net, path, ic_file=f"{name}.ic.npz")
+        base = EXTENDS.get(name)
+        case_to_json(net, path, ic_file=f"{name}.ic.npz", extends=f"{base}.json" if base else None)
         written.append(path)
     return written
 

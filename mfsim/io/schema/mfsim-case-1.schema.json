@@ -1,0 +1,1270 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mfsim/schema/mfsim-case-1.schema.json",
+  "title": "mfsim-case/1",
+  "description": "Caso de simulação do mfsim: fluido, referência, tempo, grafo da rede (vértices e arestas), integração e estado inicial. Unidades SI; pressões adimensionais PT = P/PR ou P em Pa. Um ficheiro pode herdar de outro com $extends e trazer só o que muda.",
+  "type": "object",
+  "required": [
+    "schema",
+    "name",
+    "fluid",
+    "reference",
+    "time",
+    "network",
+    "integration"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "mfsim-case/1"
+    },
+    "$extends": {
+      "type": [
+        "string",
+        "array"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "description": "Caso(s) base, relativo(s) a este ficheiro: o loader funde este ficheiro sobre a base (io/extends.py) antes de validar; o schema valida o caso expandido."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "meta": {
+      "type": "object",
+      "description": "Informação livre: proveniência, parâmetros do gerador, corrida de origem."
+    },
+    "$include": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Bibliotecas externas (ficheiros JSON com a secção library) fundidas antes de resolver $ref."
+    },
+    "library": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "models": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/model"
+          }
+        },
+        "schemes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/scheme"
+          }
+        }
+      }
+    },
+    "fluid": {
+      "$ref": "#/$defs/fluid"
+    },
+    "reference": {
+      "type": "object",
+      "required": [
+        "PR"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "PR": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "pressão de referência [Pa]: PT = P/PR"
+        },
+        "state_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "faixas esperadas dos estados (tolerância absoluta por faixa, tol_range)",
+          "properties": {
+            "PT": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "qL": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "qG": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        }
+      }
+    },
+    "time": {
+      "type": "object",
+      "required": [
+        "t0",
+        "tf",
+        "dt_out"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "t0": {
+          "type": "number"
+        },
+        "tf": {
+          "type": "number"
+        },
+        "dt_out": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "network": {
+      "type": "object",
+      "required": [
+        "vertices",
+        "edges"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "vertices": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/vertex"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/edge"
+          }
+        }
+      }
+    },
+    "integration": {
+      "$ref": "#/$defs/integration"
+    },
+    "initial_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "enum": [
+            "edges",
+            "guess"
+          ],
+          "description": "edges: condições iniciais dos dutos e tanques; guess: estimativa de escoamento estabelecido"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "positive": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "schedule": {
+      "description": "Especificação no tempo: constante, tabela linear por partes {t, v} ou rampa {ramp: [t1, t2], from, to}.",
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "object",
+          "required": [
+            "t",
+            "v"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "t": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "number"
+              }
+            },
+            "v": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "ramp",
+            "to"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "ramp": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "number"
+              }
+            },
+            "from": {
+              "type": "number"
+            },
+            "to": {
+              "type": "number"
+            }
+          }
+        }
+      ]
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Portas do vértice: alphaG, PT (P/PR) ou P (Pa), qL e qG (kg/s, positivas entrando).",
+      "properties": {
+        "alphaG": {
+          "$ref": "#/$defs/schedule"
+        },
+        "PT": {
+          "$ref": "#/$defs/schedule"
+        },
+        "P": {
+          "$ref": "#/$defs/schedule"
+        },
+        "qL": {
+          "$ref": "#/$defs/schedule"
+        },
+        "qG": {
+          "$ref": "#/$defs/schedule"
+        }
+      }
+    },
+    "vertex": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "boundary",
+            "junction",
+            "tank"
+          ]
+        },
+        "spec": {
+          "$ref": "#/$defs/spec"
+        },
+        "volume": {
+          "$ref": "#/$defs/positive"
+        },
+        "ic": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "HG": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "PT": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "const": "boundary"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "spec"
+            ],
+            "properties": {
+              "volume": false,
+              "ic": false
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "const": "junction"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "volume": false,
+              "ic": false
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "const": "tank"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "volume"
+            ]
+          }
+        }
+      ]
+    },
+    "ports": {
+      "type": "object",
+      "required": [
+        "alphaG",
+        "PT",
+        "qL",
+        "qG"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "alphaG": {
+          "$ref": "#/$defs/port"
+        },
+        "PT": {
+          "$ref": "#/$defs/port"
+        },
+        "qL": {
+          "$ref": "#/$defs/port"
+        },
+        "qG": {
+          "$ref": "#/$defs/port"
+        }
+      }
+    },
+    "port": {
+      "enum": [
+        "free",
+        "dirichlet",
+        "neumann"
+      ]
+    },
+    "regime_name": {
+      "enum": [
+        "annular",
+        "bubble",
+        "intermittent",
+        "stratified_smooth",
+        "stratified_wavy"
+      ]
+    },
+    "regime": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "fixed",
+            "automatic"
+          ]
+        },
+        "regime": {
+          "$ref": "#/$defs/regime_name"
+        },
+        "k_switch": {
+          "$ref": "#/$defs/positive"
+        },
+        "smooth": {
+          "type": "boolean"
+        },
+        "local": {
+          "type": "boolean"
+        },
+        "vertical": {
+          "type": "object",
+          "required": [
+            "regime"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "regime": {
+              "$ref": "#/$defs/regime_name"
+            },
+            "angle_deg": {
+              "type": "number"
+            },
+            "blend_deg": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "low_void": {
+          "type": "object",
+          "required": [
+            "regime"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "regime": {
+              "$ref": "#/$defs/regime_name"
+            },
+            "alpha": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "high_void": {
+          "type": "object",
+          "required": [
+            "regime"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "regime": {
+              "$ref": "#/$defs/regime_name"
+            },
+            "alpha": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "two_fluid",
+            "drift_flux_bb",
+            "single_liquid",
+            "single_gas"
+          ]
+        },
+        "regime": {
+          "$ref": "#/$defs/regime"
+        },
+        "closures": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "stratified": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "fi_mult": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "v_gt": {
+                  "$ref": "#/$defs/positive"
+                }
+              }
+            },
+            "bubble": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "drag": {
+                  "enum": [
+                    "thesis",
+                    "physical"
+                  ]
+                }
+              }
+            },
+            "annular": {
+              "type": "object"
+            },
+            "intermittent": {
+              "type": "object"
+            },
+            "friction": {
+              "type": "object"
+            }
+          }
+        },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "alpha_min": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "alpha_max": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "legacy_convective": {
+              "type": "boolean"
+            },
+            "interfacial_pressure": {
+              "type": "number",
+              "minimum": 0
+            },
+            "ip_slip_max": {
+              "$ref": "#/$defs/positive"
+            },
+            "virtual_mass": {
+              "oneOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "C_vm": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "lambda": {
+                      "type": "number"
+                    }
+                  }
+                }
+              ]
+            },
+            "derivatives": {
+              "enum": [
+                "exact",
+                "fd"
+              ]
+            }
+          }
+        },
+        "extra": {
+          "type": "object",
+          "description": "chaves legadas sem equivalente (passagem direta)"
+        }
+      }
+    },
+    "scheme": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "galerkin",
+            "petrov_galerkin",
+            "fd_central",
+            "fd_upwind",
+            "fv_upwind",
+            "fv_upwind_cons"
+          ]
+        },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^fv_": {}
+          },
+          "properties": {
+            "alpha_face": {
+              "enum": [
+                "upwind",
+                "central",
+                "muscl"
+              ]
+            },
+            "pg_alpha": {
+              "type": "number"
+            },
+            "q_switch": {
+              "$ref": "#/$defs/positive"
+            },
+            "q_switch_L": {
+              "$ref": "#/$defs/positive"
+            },
+            "q_switch_G": {
+              "$ref": "#/$defs/positive"
+            },
+            "switch_frac": {
+              "type": "number",
+              "minimum": 0
+            },
+            "alpha_band": {
+              "$ref": "#/$defs/positive"
+            },
+            "relax_time": {
+              "type": "number",
+              "minimum": 0
+            },
+            "limit_alpha": {
+              "type": "boolean"
+            },
+            "limit_band": {
+              "$ref": "#/$defs/positive"
+            },
+            "conservative": {
+              "type": "boolean"
+            },
+            "flux_band": {
+              "$ref": "#/$defs/positive"
+            },
+            "flux_eps": {
+              "$ref": "#/$defs/positive"
+            },
+            "flux_limit": {
+              "type": "boolean"
+            },
+            "art_visc": {
+              "type": "number",
+              "minimum": 0
+            },
+            "relax_target": {
+              "enum": [
+                "raw",
+                "noslip"
+              ]
+            },
+            "drift_relax": {
+              "$ref": "#/$defs/positive"
+            },
+            "drift_den_min": {
+              "$ref": "#/$defs/positive"
+            },
+            "ic_holdup": {
+              "enum": [
+                "correlation",
+                "given"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "geometry": {
+      "type": "object",
+      "required": [
+        "points",
+        "segments"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "points": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "required": [
+              "xyz"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "xyz": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": {
+                  "type": "number"
+                }
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "segments": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "n"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "n": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "grading": {
+                "$ref": "#/$defs/positive"
+              }
+            }
+          }
+        }
+      }
+    },
+    "pipe_ic": {
+      "description": "Condição inicial nodal: arrays num npz ao lado ({arrays: {key, file}}) ou receita (blocked, shut_in).",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "arrays"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "arrays": {
+              "type": "object",
+              "required": [
+                "key"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "file": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "recipe",
+            "s_front",
+            "s_top",
+            "pocket_alpha",
+            "P_out_bar",
+            "dP_margin_bar",
+            "qL",
+            "qG"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "recipe": {
+              "const": "blocked"
+            },
+            "s_front": {
+              "type": "number"
+            },
+            "s_top": {
+              "type": "number"
+            },
+            "pocket_alpha": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "P_out_bar": {
+              "$ref": "#/$defs/positive"
+            },
+            "dP_margin_bar": {
+              "type": "number",
+              "minimum": 0
+            },
+            "qL": {
+              "type": "number"
+            },
+            "qG": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "recipe",
+            "s_elbow0",
+            "alpha_line",
+            "alpha_riser",
+            "P_out_bar"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "recipe": {
+              "const": "shut_in"
+            },
+            "s_elbow0": {
+              "type": "number"
+            },
+            "alpha_line": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "alpha_riser": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "P_out_bar": {
+              "$ref": "#/$defs/positive"
+            }
+          }
+        }
+      ]
+    },
+    "edge": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "from",
+        "to"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "enum": [
+            "pipe",
+            "connector",
+            "choke",
+            "reservoir",
+            "check_valve"
+          ]
+        },
+        "from": {
+          "type": "string",
+          "minLength": 1
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1
+        },
+        "D": {
+          "$ref": "#/$defs/positive"
+        },
+        "roughness": {
+          "type": "number",
+          "minimum": 0
+        },
+        "geometry": {
+          "$ref": "#/$defs/geometry"
+        },
+        "model": {
+          "$ref": "#/$defs/model"
+        },
+        "scheme": {
+          "$ref": "#/$defs/scheme"
+        },
+        "ports": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "in": {
+              "$ref": "#/$defs/ports"
+            },
+            "out": {
+              "$ref": "#/$defs/ports"
+            }
+          }
+        },
+        "ic": {
+          "$ref": "#/$defs/pipe_ic"
+        },
+        "CV": {
+          "$ref": "#/$defs/positive"
+        },
+        "opening": {
+          "$ref": "#/$defs/schedule"
+        },
+        "mode": {
+          "$ref": "#/$defs/schedule"
+        },
+        "setpoint": {
+          "$ref": "#/$defs/schedule"
+        },
+        "pid": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "pv_type": {
+              "type": "integer"
+            },
+            "pv_node": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "pv_pipe": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "action": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "Kp": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "Ki": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "Kd": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "bias": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        },
+        "IPL": {
+          "type": "number",
+          "minimum": 0
+        },
+        "IPG": {
+          "type": "number",
+          "minimum": 0
+        },
+        "P_bar": {
+          "$ref": "#/$defs/positive"
+        },
+        "dP_min_bar": {
+          "type": "number"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "pipe"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "CV": false,
+              "IPG": false,
+              "IPL": false,
+              "P_bar": false,
+              "dP_min_bar": false,
+              "mode": false,
+              "opening": false,
+              "pid": false,
+              "setpoint": false
+            },
+            "required": [
+              "D",
+              "roughness",
+              "geometry"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "connector"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "CV": false,
+              "D": false,
+              "IPG": false,
+              "IPL": false,
+              "P_bar": false,
+              "dP_min_bar": false,
+              "geometry": false,
+              "ic": false,
+              "mode": false,
+              "model": false,
+              "opening": false,
+              "pid": false,
+              "ports": false,
+              "roughness": false,
+              "scheme": false,
+              "setpoint": false
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "choke"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "D": false,
+              "IPG": false,
+              "IPL": false,
+              "P_bar": false,
+              "dP_min_bar": false,
+              "geometry": false,
+              "ic": false,
+              "model": false,
+              "ports": false,
+              "roughness": false,
+              "scheme": false
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "reservoir"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "CV": false,
+              "D": false,
+              "dP_min_bar": false,
+              "geometry": false,
+              "ic": false,
+              "mode": false,
+              "model": false,
+              "opening": false,
+              "pid": false,
+              "ports": false,
+              "roughness": false,
+              "scheme": false,
+              "setpoint": false
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "check_valve"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "D": false,
+              "IPG": false,
+              "IPL": false,
+              "P_bar": false,
+              "geometry": false,
+              "ic": false,
+              "mode": false,
+              "model": false,
+              "opening": false,
+              "pid": false,
+              "ports": false,
+              "roughness": false,
+              "scheme": false,
+              "setpoint": false
+            }
+          }
+        }
+      ]
+    },
+    "fluid": {
+      "type": "object",
+      "required": [
+        "rhoL0",
+        "rhoG0",
+        "muL",
+        "muG",
+        "gammaL",
+        "gammaG",
+        "P0"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "polytropic"
+        },
+        "rhoL0": {
+          "$ref": "#/$defs/positive"
+        },
+        "rhoG0": {
+          "$ref": "#/$defs/positive"
+        },
+        "muL": {
+          "$ref": "#/$defs/positive"
+        },
+        "muG": {
+          "$ref": "#/$defs/positive"
+        },
+        "gammaL": {
+          "$ref": "#/$defs/positive"
+        },
+        "gammaG": {
+          "$ref": "#/$defs/positive"
+        },
+        "P0": {
+          "$ref": "#/$defs/positive"
+        },
+        "sigma": {
+          "$ref": "#/$defs/positive"
+        }
+      }
+    },
+    "integration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "integrator": {
+          "enum": [
+            "bdf",
+            "BDF",
+            "implicit",
+            "radau",
+            "Radau",
+            "LSODA"
+          ]
+        },
+        "quadrature_order": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "max_step": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "null = sem limite"
+        },
+        "atol": {
+          "$ref": "#/$defs/positive"
+        },
+        "rtol": {
+          "$ref": "#/$defs/positive"
+        },
+        "backend": {
+          "enum": [
+            "numpy",
+            "jax"
+          ]
+        },
+        "tol_range": {
+          "$ref": "#/$defs/positive"
+        },
+        "atol_P": {
+          "$ref": "#/$defs/positive"
+        },
+        "atol_q": {
+          "$ref": "#/$defs/positive"
+        },
+        "first_step": {
+          "$ref": "#/$defs/positive"
+        },
+        "max_order": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "max_newton": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "newton_tol": {
+          "$ref": "#/$defs/positive"
+        },
+        "min_step": {
+          "$ref": "#/$defs/positive"
+        },
+        "slow_exit": {
+          "type": "boolean"
+        },
+        "predict_space": {
+          "enum": [
+            "x",
+            "T"
+          ]
+        },
+        "jt_refresh": {
+          "type": "string"
+        },
+        "accumulate": {
+          "type": "boolean"
+        },
+        "tight_bounds": {
+          "type": "boolean"
+        },
+        "galerkin_band": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "extra": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}
