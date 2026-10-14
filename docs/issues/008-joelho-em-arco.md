@@ -1,0 +1,37 @@
+# 008 · Joelho em arco e transição suave dos fechamentos por ângulo
+
+| | |
+|---|---|
+| tipo | feature |
+| área | geometria / fechamentos |
+| estado | feito (2026-10-13); R = 5 m, 4 elementos, Δ = 20° na configuração recomendada |
+| onde | `severe_slug_case(elbow_radius=, n_elbow=)`; `model.regime.vertical = {regime, angle_deg, blend_deg}` |
+| dados | `severe_slug_blocked_{primitive,conservative}_arc.npz`; `tests/test_vertical_blend.py` |
+
+## Antes
+
+Com o traçado poligonal a inclinação salta de −3° para 90° entre duas células e o
+fechamento muda de forma abrupta (estratificado → bolhas, chave dura em |θ| > 45°, como na
+tese). O ciclo obtido era **amortecido**: pressão de entrada 5.7–6.4 bar (nunca caía até a do
+separador) e blowdowns a cada ≈ 240–250 s com picos de 8.5–8.9 kg/s.
+
+## Depois
+
+Dois ingredientes removem a descontinuidade espacial: um arco tangente à linha e ao riser
+com elementos de ângulos intermediários, e o peso do padrão vertical como rampa C1 entre
+45° ± Δ (os fechamentos são somados com pesos (1 − w) e w). Misturar sem o arco (só na face
+do joelho) **piora** a convergência (1661 contra 877 passos até 7 s): metade de cada fechamento
+entre duas células "puras".
+
+## Benefício
+
+O ciclo muda qualitativamente para o blowdown "de livro": a pressão na entrada cai quase
+até a do separador (4.2–6.1 bar), o intervalo entre blowdowns quase triplica (≈ 660–700 s) e
+os picos caem para ≈ 6.8 kg/s. As formulações primitiva e conservativa concordam entre si,
+ou seja, a sensibilidade é do tratamento do joelho e não das variáveis de estado. Custo:
+128 mil passos (primitiva, 24 min) e 112 mil (conservativa, 22 min).
+
+## Referências
+
+[docs/severe_slug.md](../severe_slug.md) § "Joelho curvo";
+[docs/findings_for_paper.md](../findings_for_paper.md) ponto 2.

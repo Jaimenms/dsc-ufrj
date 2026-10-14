@@ -85,6 +85,7 @@ uv run mfsim convert-runs antiga.npz --out-dir runs/                       # cor
 
 ## Documentação
 
+- [docs/issues/INDEX.md](docs/issues/INDEX.md) — o que mudou em relação ao modelo e ao solver da tese: 38 alterações atómicas (feature, bugfix, estudo), cada uma com antes, depois e benefício medido.
 - [docs/hello_world.md](docs/hello_world.md) — primeiro caso: um duto e duas fronteiras em JSON, correr, ler os resultados, o mesmo caso em Python, variar com `--set`/`$extends`.
 - [docs/data_formats.md](docs/data_formats.md) — casos em JSON (`mfsim-case/1`, schema, herança), grafo e montagem da rede, corridas gravadas (v2, conversão de v1), referências de regressão e manifesto.
 - [docs/thesis_reproduction.md](docs/thesis_reproduction.md) — modelo e layout de estados, reprodução do capítulo 10, gas lift com intermitência forte, observações sobre os ficheiros originais.
