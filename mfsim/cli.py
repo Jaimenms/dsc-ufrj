@@ -1,7 +1,8 @@
-"""Linha de comando do mfsim: `mfsim run|steady|stats|scan|riser|val|validate|nb`.
+"""Linha de comando do mfsim: `mfsim run|batch|steady|stats|scan|riser|val|validate|nb`.
 
     mfsim run cases/severe_slug/reference.json --backend jax --tf 150 --out runs/ref150.npz
     mfsim run cases/severe_slug/reference.json --set integration.integrator=radau --set integration.rtol=1e-5
+    mfsim batch batches/thesis.json                               # lote da tese -> runs/chapter10/*.npz
     mfsim steady cases/chapter10/10_1_1.json --out /tmp/10_1_1_ss.json
     mfsim stats severe_slug_blocked_conservative_arc ...        (nomes em notebooks/data ou caminhos .npz)
     mfsim scan severe_slug_blocked_conservative_arc_scan_P2_g005 ...   (varredura da fronteira: Bøe, padrão da linha, ciclos)
@@ -90,6 +91,13 @@ def cmd_validate(a):
             print("   ", e)
         rc = rc or (1 if errs else 0)
     return rc
+
+
+def cmd_batch(a):
+    from .runs import run_batch
+
+    done = run_batch(a.spec, force=a.force, only=a.only or None)
+    return 0 if all(info.get("success", True) for _, _, info in done) else 1
 
 
 def cmd_steady(a):
@@ -205,6 +213,12 @@ def main(argv=None):
     r.add_argument("--first-step", dest="first_step", type=float)
     r.add_argument("--verbose", action="store_true")
     r.set_defaults(func=cmd_run)
+
+    b = sub.add_parser("batch", help="executa um lote de casos (JSON) e grava as corridas; os notebooks só leem")
+    b.add_argument("spec")
+    b.add_argument("--force", action="store_true", help="reexecuta mesmo que a saída exista")
+    b.add_argument("--only", action="append", default=[], metavar="NOME")
+    b.set_defaults(func=cmd_batch)
 
     s = sub.add_parser(
         "steady", help="estado estacionário de um caso JSON; grava o caso com a condição inicial atualizada"

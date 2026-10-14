@@ -1,0 +1,10 @@
+### célula 1
+10.1.2 Escoamento horizontal anular
+Mesmo duto com padrão anular fixo. qL=0.5 kg/s; qG sobe de 5.0 para 5.5 kg/s entre 150 e <t>s.
+Figuras da tese: Figs. 10.10-10.13
+corrida 10_1_2.npz: integrador bdf (rtol 0.01, atol 0.0001, max_step 5.0), 145 instantes de saída até <t>s
+duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
+   1 twofluid     alphaG    4.90e-04       1.00e-02   4.88e-02
+   1 twofluid     PT        4.94e-04       1.55e-01   3.19e-03
+   1 twofluid     qL        8.55e-03       1.02e-01   8.40e-02
+   1 twofluid     qG        1.92e-02       5.01e-01   3.83e-02

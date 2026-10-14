@@ -87,10 +87,25 @@ def test_lab_validation_signature(name, min_gap, tol_interval, tol_n, data_dir):
     assert abs(sig["q_peak"] - ref["q_peak"]) <= 0.25 * ref["q_peak"]
 
 
-@pytest.mark.parametrize("nb", sorted(p.stem for p in (ROOT / "notebooks_src").glob("nb_*.py")))
+def test_thesis_batch_runs():
+    """O lote da tese (`batches/thesis.json`) corre por inteiro e grava `runs/chapter10/*.npz`;
+    é o que os notebooks fiéis (`notebooks_src/thesis/`) leem a seguir."""
+    from mfsim.runs import run_batch
+
+    done = run_batch(str(ROOT / "batches" / "thesis.json"), force=True, progress=False)
+    assert len(done) >= 11
+    assert all(info.get("success", True) for _, _, info in done), [n for n, _, i in done if not i.get("success", True)]
+
+
+NOTEBOOKS = sorted(
+    str(p.relative_to(ROOT / "notebooks_src").with_suffix("")) for p in (ROOT / "notebooks_src").rglob("nb_*.py")
+)
+
+
+@pytest.mark.parametrize("nb", NOTEBOOKS)
 def test_notebooks_execute_same_text(nb, tmp_path):
     """Converte e executa o notebook num diretório temporário e compara os outputs de texto
-    das células com tests/golden/notebook_text/<nb>.txt."""
+    das células com tests/golden/notebook_text/<nb>.txt (subpastas de notebooks_src espelhadas)."""
     sys.path.insert(0, str(ROOT / "tools"))
     from golden_generate import notebook_text
 
@@ -100,10 +115,10 @@ def test_notebooks_execute_same_text(nb, tmp_path):
     work = tmp_path / "notebooks"
     work.mkdir()
     (work / "data").symlink_to(ROOT / "notebooks" / "data")
-    src = tmp_path / "notebooks_src"
-    src.mkdir()
-    shutil.copy(ROOT / "notebooks_src" / f"{nb}.py", src / f"{nb}.py")
-    cmd = [sys.executable, str(ROOT / "tools" / "make_nb.py"), str(src / f"{nb}.py"), "--execute"]
+    src = tmp_path / "notebooks_src" / f"{nb}.py"
+    src.parent.mkdir(parents=True)
+    shutil.copy(ROOT / "notebooks_src" / f"{nb}.py", src)
+    cmd = [sys.executable, str(ROOT / "tools" / "make_nb.py"), str(src), "--execute"]
     r = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True, timeout=3600)
     assert r.returncode == 0, r.stderr[-2000:]
     out = work / f"{nb}.ipynb"

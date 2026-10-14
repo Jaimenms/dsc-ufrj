@@ -1,0 +1,22 @@
+### célula 3
+10.3.2 Poço com gas lift - cenário 2 (com intermitência)
+Choke de gás 75%->15% entre 100 e <t>s.
+Figuras da tese: Figs. 10.41-10.46
+corrida 10_3_2b.npz: integrador bdf (rtol 0.0001, atol 0.01, max_step 5.0), 601 instantes de saída até <t>s
+duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
+   1 liquid       PT        5.16e-04       4.16e-01   1.24e-03
+   1 liquid       qL        4.88e-02       1.48e+01   3.29e-03
+   2 beggs_brill  PT        8.69e-04       1.25e+00   6.96e-04
+   2 beggs_brill  qL        1.46e-01       1.46e+01   1.00e-02
+   2 beggs_brill  qG        9.89e-03       8.04e-01   1.23e-02
+   3 gas          PT        7.00e-04       6.91e-02   1.01e-02
+   3 gas          qG        1.38e-02       6.50e-01   2.13e-02
+   4 gas          PT        4.35e-04       2.92e-01   1.49e-03
+   4 gas          qG        1.16e-02       7.93e-01   1.46e-02
+vértices dinâmicos: máx |dif| = [3.14193116e-13 4.39230639e-04]
+
+### célula 5
+10.3.2 Poço com gas lift - cenário 1 (sem intermitência)
+Choke de gás 100%->75% entre 100 e <t>s.
+Figuras da tese: Figs. 10.36-10.40
+corrida 10_3_2a.npz: integrador bdf (rtol 0.0001, atol 0.01, max_step 5.0), 601 instantes de saída até <t>s

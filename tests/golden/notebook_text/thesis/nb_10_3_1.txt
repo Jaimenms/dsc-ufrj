@@ -1,0 +1,9 @@
+### célula 1
+10.3.1 Poço simples
+Poço vertical de 2048 m (5 in), modelo a 3 equações (intermitente), reservatório (170 bar, IPL 0.71, IPG 0.042 kg/s/bar) e choke (Cv=30) com rampa 100%->25% (60-<t>s) e 25%->100% (500-<t>s).
+Figuras da tese: Figs. 10.32-10.34
+corrida 10_3_1.npz: integrador bdf (rtol 0.1, atol 0.001, max_step 5.0), 201 instantes de saída até <t>s
+duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
+   1 beggs_brill  PT        1.33e-02       1.36e+00   9.72e-03
+   1 beggs_brill  qL        2.47e+00       1.88e+01   1.31e-01
+   1 beggs_brill  qG        1.78e-01       9.69e-01   1.84e-01

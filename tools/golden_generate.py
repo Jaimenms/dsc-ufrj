@@ -435,9 +435,13 @@ def gen_notebook_text():
     outdir = GOLDEN / "notebook_text"
     outdir.mkdir(parents=True, exist_ok=True)
     n = 0
-    for nb in sorted(nbdir.glob("*.ipynb")):
+    for nb in sorted(nbdir.rglob("*.ipynb")):
+        if ".ipynb_checkpoints" in nb.parts:
+            continue
         text = notebook_text(nb)
-        (outdir / f"{nb.stem}.txt").write_text(text)
+        dst = outdir / nb.relative_to(nbdir).with_suffix(".txt")
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_text(text)
         n += 1
     print(f"  notebook_text: {n} notebooks")
     return {}

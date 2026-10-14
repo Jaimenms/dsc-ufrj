@@ -13,6 +13,24 @@ from .mf2 import chapter10_case, chapter10_info, legacy_pipe_dict, legacy_result
 from mfsim.simulation import build_model, simulate
 
 
+def thesis_run(key):
+    """Corrida fiel do caso `key` (lote `batches/thesis.json` -> `runs/chapter10/`) e os resultados
+    do MATLAB: devolve (run, res, raw) e imprime a descrição do caso e a integração usada."""
+    import os
+
+    from mfsim.runs import load_run
+
+    run = load_run(f"chapter10/{key.replace('.', '_')}")
+    info = chapter10_info(key)
+    it = run.case.integration
+    print(f"{info.section} {info.title}\n{info.description}\nFiguras da tese: {info.figures}")
+    print(
+        f"corrida {os.path.basename(run.path)}: integrador {it.integrator} (rtol {it.rtol:g}, atol {it.atol:g}, "
+        f"max_step {it.max_step}), {run.T.size} instantes de saída até {run.T[-1]:g} s"
+    )
+    return run, run.res, legacy_results(run.case)
+
+
 def describe(key):
     info = chapter10_info(key)
     print(f"{info.section} {info.title}\n{info.description}\nFiguras da tese: {info.figures}")

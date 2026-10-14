@@ -24,7 +24,8 @@ Python; [docs/data_formats.md](docs/data_formats.md) tem o vocabulário completo
 uv run pytest                                  # rotina (≈ 3 min): regressão bit a bit, paridade JAX, CLI
 uv run pytest -m nightly                       # noturna (≈ 25 min): corridas longas, laboratório, notebooks
 uv run black --check mfsim tests tools notebooks_src   # formatação (120 colunas)
-uv run mfsim nb notebooks_src/nb_10_1_1_estratificado.py --execute   # notebooks a partir de notebooks_src/*.py
+uv run mfsim batch batches/thesis.json                         # lote da tese -> runs/chapter10/*.npz (os notebooks só leem)
+uv run mfsim nb notebooks_src/thesis/nb_10_1_1.py --execute    # notebooks a partir de notebooks_src/**/*.py
 ```
 
 ## Linha de comando
@@ -80,7 +81,8 @@ uv run python tools/convert_runs.py antiga.npz --out-dir runs/            # corr
 | `thesis/` | ponte com o MFSIM da tese, **fora do simulador**: leitura dos `.mf2` (`mf2.py`: `load_mf2`, `chapter10_case`, `legacy_results`), registo legado e conversão para o grafo (`record.py`), exportação para JSON (`python -m thesis.export --chapter10`), apoio aos notebooks de reprodução (`notebook_utils.py`) |
 | `mfsim/plotting.py`, `notebook_utils.py` | figuras no estilo da tese e apoio aos notebooks |
 | `cases/`, `generators/` | JSON: `examples/hello_world`, `chapter10/` (11 casos da tese), `severe_slug/` (referência, variantes como `$extends`, laboratório); gerador paramétrico do severe slug, fora do simulador (`generators/severe_slug.py`: parâmetros físicos → JSON) |
-| `tools/`, `tests/`, `notebooks_src/` | `golden_generate` (referências de regressão), `manifest`, `make_nb`, migração do dialeto antigo (`legacy_runs`, `convert_runs`, `severe_run`, `save_run_data`, `export_severe_cases`); testes com `tests/golden/` (nível A = bit a bit, B = tolerância, C = assinaturas de ciclo; `CHANGELOG.md`); fontes dos 9 notebooks |
+| `batches/` | lotes de corridas em JSON (`thesis.json`: os casos da tese tal e qual e as sensibilidades de malha), executados por `mfsim batch` para `runs/` |
+| `tools/`, `tests/`, `notebooks_src/` | `golden_generate` (referências de regressão), `manifest`, `make_nb`, migração do dialeto antigo (`legacy_runs`, `convert_runs`, `severe_run`, `save_run_data`, `export_severe_cases`); testes com `tests/golden/` (nível A = bit a bit, B = tolerância, C = assinaturas de ciclo; `CHANGELOG.md`); fontes dos notebooks: `thesis/` reproduz os casos da tese tal e qual a partir das corridas do lote (um por secção), os restantes serão reorganizados por grupos de issues |
 | `legacy/`, `archive/` | `.mf2` e código MATLAB originais; arquivo da antiga `scratch/`, dos diagnósticos e das corridas v1 |
 
 ## Documentação

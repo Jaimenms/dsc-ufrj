@@ -1,0 +1,24 @@
+### célula 1
+10.1.1 Escoamento horizontal estratificado
+Duto horizontal de 1000 m, D=0.1 m, 50 elementos, Galerkin, modelo a 4 equações com padrão estratificado fixo. qL=0.5 kg/s; qG sobe de 0.1 para 0.13 kg/s entre 150 e <t>s. Pressão de saída 100 bar.
+Figuras da tese: Figs. 10.2-10.8, Tabela 10.1
+corrida 10_1_1.npz: integrador bdf (rtol 0.001, atol 0.001, max_step 1.0), 301 instantes de saída até <t>s
+duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
+   1 twofluid     alphaG    2.70e-05       5.64e-02   4.79e-04
+   1 twofluid     PT        2.03e-06       4.22e-04   4.80e-03
+   1 twofluid     qL        4.29e-04       1.46e-01   2.94e-03
+   1 twofluid     qG        1.44e-04       3.00e-02   4.80e-03
+
+### célula 9
+Tabela 10.1 - custo (estado estacionário + simulação, BDF do SciPy)
+Método           N      CPU
+galerkin         5    <t>s
+galerkin        10    <t>s
+galerkin        25    <t>s
+galerkin        50   <t>s
+galerkin       100   <t>s
+fd_central       5    <t>s
+fd_central      10    <t>s
+fd_central      25    <t>s
+fd_central      50    <t>s
+fd_central     100    <t>s

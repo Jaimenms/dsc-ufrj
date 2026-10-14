@@ -741,6 +741,10 @@
       "description": "Condição inicial nodal: arrays num npz ao lado ({arrays: {key, file}}) ou receita (blocked, shut_in).",
       "oneOf": [
         {
+          "type": "null",
+          "description": "sem condição inicial declarada (usa initial_state.source = guess ou um estacionário)"
+        },
+        {
           "type": "object",
           "required": [
             "arrays"

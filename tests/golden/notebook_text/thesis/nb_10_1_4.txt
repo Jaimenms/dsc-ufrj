@@ -1,0 +1,9 @@
+### célula 1
+10.1.4 Escoamento horizontal via modelo a 3 equações
+Cenário de 10.1.1 com o modelo de mistura (Beggs & Brill).
+Figuras da tese: Fig. 10.17
+corrida 10_1_4.npz: integrador bdf (rtol 0.1, atol 0.001, max_step 10.0), 301 instantes de saída até <t>s
+duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
+   1 beggs_brill  PT        1.71e-03       1.21e-04   1.41e+01
+   1 beggs_brill  qL        2.97e-01       2.16e-01   1.37e+00
+   1 beggs_brill  qG        2.76e-02       3.01e-02   9.18e-01

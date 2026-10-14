@@ -102,6 +102,24 @@ As 80 trajetórias históricas **não são reproduzíveis bit a bit** pelo códi
 identidade do código garante-se pelo lado direito avaliado nos estados guardados e por
 assinaturas de ciclo (`mfsim.analysis.cycle_signature`).
 
+## Lotes de corridas (`batches/*.json`, `mfsim batch`)
+
+Um lote declara corridas a partir de casos JSON, para que os notebooks só leiam resultados:
+
+```json
+{"out_dir": "runs/chapter10",
+ "runs": [{"name": "10_1_1", "case": "cases/chapter10/10_1_1.json"},
+          {"name": "10_1_1_galerkin_n5", "case": "cases/chapter10/10_1_1.json", "steady": true,
+           "set": ["network.edges.1.geometry.segments.0.n=5", "network.edges.1.ic=null"]}]}
+```
+
+`set` são overrides por caminho (como `mfsim run --set`; `ic=null` retira a condição inicial
+gravada quando a malha muda), `steady` resolve o estado estacionário antes de integrar (como
+`mfsim steady`), `tf`/`dt_out` alteram o tempo. Os caminhos são relativos à raiz do projeto;
+uma entrada cuja saída já existe é saltada (`--force` reexecuta, `--only nome` restringe). Cada
+saída é uma corrida v2 normal (`case_json` com os overrides aplicados, `info_json` com
+`cpu_total`). `batches/thesis.json` é o lote dos casos da tese e das sensibilidades de malha.
+
 ## Referências de regressão (`tests/golden/`)
 
 Geradas só por `tools/golden_generate.py` (`--rebaseline --note "..."` para regenerar;

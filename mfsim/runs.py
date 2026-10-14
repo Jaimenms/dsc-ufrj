@@ -22,8 +22,12 @@ import numpy as np
 
 from .simulation import build_model
 
-RUN_DIRS = ("runs", os.path.join("notebooks", "data"), os.path.join("archive", "scratch_2026-10", "npz"))
-INFO_KEYS = ("n_steps", "n_rejected", "cpu", "n_rhs", "n_jac", "success", "error", "note")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RUN_DIRS = tuple(
+    os.path.join(ROOT, d)
+    for d in ("runs", os.path.join("notebooks", "data"), os.path.join("archive", "scratch_2026-10", "npz"))
+)  # absolutos: os notebooks e os testes correm noutras pastas
+INFO_KEYS = ("n_steps", "n_rejected", "cpu", "cpu_total", "n_rhs", "n_jac", "success", "error", "note")
 
 
 @dataclass
@@ -211,3 +215,66 @@ def save_run(path, T, X, case, info=None, acc=None, command=None):
         **extra,
     )
     return path
+
+
+# ----------------------------------------------------------------------------- lotes
+def run_batch(spec_path, force=False, only=None, progress=True):
+    """Executa um lote de casos declarado em JSON e grava uma corrida v2 por entrada:
+
+        {"out_dir": "runs/chapter10",
+         "runs": [{"name": "10_1_1", "case": "cases/chapter10/10_1_1.json"},
+                  {"name": "10_1_1_galerkin_n5", "case": "...", "set": ["network.edges.1.geometry.segments.0.n=5"],
+                   "steady": true, "tf": 3000.0}]}
+
+    `set` são overrides `caminho=valor` (como `mfsim run --set`), `steady` resolve o estado
+    estacionário antes de integrar (como `mfsim steady`), `tf`/`dt_out` alteram o tempo. Uma
+    entrada cuja saída já existe é saltada (`force=True` reexecuta); `only` restringe aos nomes
+    dados. Devolve [(nome, caminho, info)]. É o que os notebooks consomem: eles só leem corridas."""
+    import json
+    import time
+
+    from .io.spec import case_from_json
+    from .simulation import simulate, steady_state
+
+    with open(spec_path, encoding="utf-8") as f:
+        spec = json.load(f)
+
+    def _abs(path):  # caminhos do lote relativos à raiz do projeto (funciona de qualquer pasta)
+        return path if os.path.isabs(path) else os.path.join(ROOT, path)
+
+    out_dir = _abs(spec.get("out_dir", "runs"))
+    os.makedirs(out_dir, exist_ok=True)
+    done = []
+    for entry in spec["runs"]:
+        name = entry["name"]
+        if only and name not in only:
+            continue
+        path = os.path.join(out_dir, f"{name}.npz")
+        if os.path.exists(path) and not force:
+            if progress:
+                print(f"{name}: existe, saltado ({path})", flush=True)
+            continue
+        case = case_from_json(_abs(entry["case"]), overrides=entry.get("set"))
+        time_kw = {k: float(entry[k]) for k in ("tf", "dt_out") if k in entry}
+        if time_kw:
+            case.set_time(**time_kw)
+        t0 = time.time()
+        if entry.get("steady"):
+            steady_state(case, X0="auto", verbose=False, update_case=True)
+        res = simulate(case, progress=False, partial=True)
+        info = dict(res.info)
+        info["cpu_total"] = time.time() - t0
+        save_run(
+            path,
+            res.T,
+            res.X,
+            res.model.network,
+            info=info,
+            acc=info.get("accum"),
+            command=f"mfsim batch {spec_path} --only {name}",
+        )
+        if progress:
+            ok = "OK" if info.get("success", True) else "FALHOU"
+            print(f"{name}: {ok} {info.get('n_steps')} passos, {info['cpu_total']:.1f} s -> {path}", flush=True)
+        done.append((name, path, info))
+    return done

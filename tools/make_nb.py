@@ -38,7 +38,11 @@ def convert(src: Path, dst: Path):
 
 if __name__ == "__main__":
     src = Path(sys.argv[1])
-    dst = Path("notebooks") / (src.stem + ".ipynb")
+    try:  # notebooks_src/<sub>/x.py -> notebooks/<sub>/x.ipynb
+        rel = src.resolve().relative_to((Path("notebooks_src")).resolve())
+    except ValueError:
+        rel = Path(src.name)
+    dst = Path("notebooks") / rel.with_suffix(".ipynb")
     convert(src, dst)
     print("notebook:", dst)
     if "--execute" in sys.argv:

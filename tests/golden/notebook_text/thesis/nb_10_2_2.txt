@@ -1,0 +1,28 @@
+### célula 1
+10.2.2 Rede com ciclo
+Cinco dutos de 200 m (10 elementos) formando um ciclo; dutos 4 e 5 com D=0.05 m; vértices dinâmicos nas junções.
+Figuras da tese: Figs. 10.26-10.30
+corrida 10_2_2.npz: integrador bdf (rtol 0.001, atol 0.001, max_step 1.0), 301 instantes de saída até <t>s
+duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
+   1 twofluid     alphaG    3.07e-05       5.49e-02   5.59e-04
+   1 twofluid     PT        1.96e-06       1.50e-04   1.30e-02
+   1 twofluid     qL        4.56e-04       1.41e-01   3.23e-03
+   1 twofluid     qG        1.44e-04       3.00e-02   4.81e-03
+   2 twofluid     alphaG    1.52e-05       4.63e-02   3.29e-04
+   2 twofluid     PT        8.29e-07       1.35e-04   6.13e-03
+   2 twofluid     qL        3.53e-04       1.37e-01   2.58e-03
+   2 twofluid     qG        8.99e-05       2.59e-02   3.47e-03
+   3 twofluid     alphaG    8.08e-06       4.15e-02   1.95e-04
+   3 twofluid     PT        3.95e-07       8.86e-05   4.46e-03
+   3 twofluid     qL        3.75e-04       1.37e-01   2.73e-03
+   3 twofluid     qG        1.11e-04       2.48e-02   4.50e-03
+   4 twofluid     alphaG    1.32e-05       4.53e-02   2.91e-04
+   4 twofluid     PT        7.78e-07       1.25e-04   6.25e-03
+   4 twofluid     qL        4.00e-05       1.47e-02   2.72e-03
+   4 twofluid     qG        2.28e-05       3.66e-03   6.22e-03
+   5 twofluid     alphaG    3.13e-06       2.68e-02   1.17e-04
+   5 twofluid     PT        4.20e-07       8.86e-05   4.74e-03
+   5 twofluid     qL        4.56e-05       1.21e-02   3.77e-03
+   5 twofluid     qG        2.82e-05       3.37e-03   8.37e-03
+vértices dinâmicos: máx |dif| = [1.39406955e-05 8.60388540e-07 8.51407156e-06 4.31875962e-07
+ 3.27734151e-06 4.57585091e-07]

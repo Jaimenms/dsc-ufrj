@@ -1,0 +1,10 @@
+### célula 1
+10.1.3 Escoamento horizontal padrão bolhas
+Mesmo duto com padrão bolhas fixo. qG=0.1 kg/s; qL sobe de 50 para 55 kg/s entre 150 e <t>s.
+Figuras da tese: Figs. 10.15-10.16
+corrida 10_1_3.npz: integrador bdf (rtol 0.01, atol 0.0001, max_step 2.0), 251 instantes de saída até <t>s
+duto modelo       var      máx |dif|   faixa MATLAB  dif/faixa
+   1 twofluid     alphaG    2.40e-03       9.88e-03   2.43e-01
+   1 twofluid     PT        1.42e-03       1.10e+00   1.28e-03
+   1 twofluid     qL        1.12e-01       5.00e+00   2.24e-02
+   1 twofluid     qG        1.31e-02       9.98e-03   1.31e+00

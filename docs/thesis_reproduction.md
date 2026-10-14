@@ -10,6 +10,20 @@ extremidades; vértices dinâmicos acrescentam `[HG, PT]`. O layout coincide com
 do código original para os esquemas nodais, o que permite comparar diretamente com
 `estados.X` gravado nos `.mf2`.
 
+## Notebooks de reprodução fiel (`notebooks_src/thesis/`)
+
+Um notebook por secção do capítulo 10 (`nb_10_1_1` ... `nb_10_3_3`), **sem simulação dentro
+do notebook**: cada um lê as corridas do lote `batches/thesis.json` (`uv run mfsim batch
+batches/thesis.json` grava `runs/chapter10/*.npz`), que integram os casos JSON exportados dos
+`.mf2` com a configuração original (BDF do SciPy, tolerâncias e passo máximo do ficheiro), e
+sobrepõe os resultados do MATLAB (`thesis.mf2.legacy_results`). As sensibilidades de malha das
+figuras 10.4–10.6 e 10.12–10.13 são entradas do lote com o estado estacionário recalculado em
+cada malha. As correções necessárias para carregar os ficheiros (estado inicial de
+`estados.X[:, 0]`, padrão do 10.3.1, composição do 10.3.2a) estão nos JSON e descritas na
+[issue 001](issues/001-reproducao-capitulo-10.md); tudo o que é melhoria fica nos notebooks de
+`notebooks_src/issues/` (em reorganização) e no [índice de issues](issues/INDEX.md). A suíte
+noturna reexecuta o lote e os notebooks e compara os textos.
+
 ## Principais resultados da reprodução
 
 * Fechamentos validados contra os coeficientes F1..F12 gravados pelo MATLAB
