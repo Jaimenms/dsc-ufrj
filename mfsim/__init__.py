@@ -1,7 +1,7 @@
 """MFSIM - Simulador dinâmico de escoamento bifásico em redes de dutos.
 
 Reimplementação em Python do SDMPFLOW/MFSIM desenvolvido na tese de doutorado
-de Jaime Souza (modelo a dois fluidos com 4 equações, modelo de mistura a
+de Jaime Neiva Miranda de Souza (UFRJ, 2010) (modelo a dois fluidos com 4 equações, modelo de mistura a
 3 equações, modelos monofásicos, discretização espacial por Galerkin,
 diferenças finitas e volumes finitos escalonados, integração implícita).
 """

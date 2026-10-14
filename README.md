@@ -1,11 +1,46 @@
-# mfsim — simulador dinâmico de escoamento bifásico em redes de dutos
+# Modelagem e Simulação de Escoamento Multifásico em Dutos de Produção de Óleo e Gás Natural
 
-Reimplementação em Python do MFSIM/SDMPFLOW (MATLAB, 2010) desenvolvido na tese
-*Modelagem Dinâmica de Redes de Escoamento Bifásico* (Jaime Souza), com foco no
-capítulo 10 (simulação dinâmica) e na exploração de intermitência severa
-(*severe slugging*) em geometrias linha–riser. Modelo a dois fluidos (4 equações), modelo de
-mistura (3 equações) e monofásicos; Galerkin, diferenças finitas e volumes finitos
-escalonados; BDF implícito próprio com lado direito em numpy ou compilado com JAX.
+Tese de doutorado de **Jaime Neiva Miranda de Souza** (UFRJ, 2010) e a sua reimplementação
+moderna em Python: o simulador **mfsim**, a reprodução bit a bit dos casos da tese contra os
+resultados originais em MATLAB, e a resolução do problema que a tese deixou em aberto, a
+intermitência severa (*severe slugging*), validada com dados de laboratório.
+
+## A tese
+
+| | |
+|---|---|
+| título | Modelagem e Simulação de Escoamento Multifásico em Dutos de Produção de Óleo e Gás Natural |
+| autor | Jaime Neiva Miranda de Souza |
+| grau | Doutor em Ciências, Programa de Pós-Graduação em Tecnologia de Processos Químicos e Bioquímicos (TPQB), Escola de Química, Universidade Federal do Rio de Janeiro |
+| orientadores | Prof. José Luiz de Medeiros, D.Sc. (presidente); Prof. André Luiz Hemerly Costa, D.Sc.; Prof. Giovani Cavalcanti Nunes, Ph.D. |
+| banca | Prof. Alexandre Rodrigues Tôrres, Prof. Carlos Eduardo Fontes da Costa e Silva, Prof. Heloísa Lajas Sanches, Prof. Luiz Fernando Lopes Rodrigues Silva, Prof. Su Jian |
+| defesa | Rio de Janeiro, fevereiro de 2010 |
+| apoio | PETROBRAS (incentivo e apoio financeiro); Chemtech Serviços de Engenharia e Software |
+| texto | [docs/thesis.pdf](docs/thesis.pdf) (xxvi + 265 p.) |
+
+A tese propõe modelos dinâmicos de escoamento monofásico e bifásico aplicados a **redes de dutos**
+de produção de óleo e gás, com qualquer topologia e com elementos modificadores de pressão
+(válvulas, reservatórios, válvulas de retenção, acoplamentos): modelo a dois fluidos a quatro
+equações com fechamentos por padrão de escoamento e identificação automática de padrão, modelo de
+mistura a três equações (Beggs & Brill) e modelos monofásicos, discretizados pelo método das
+linhas (Galerkin, Petrov-Galerkin, diferenças finitas) e integrados por BDF implícito. Sobre esse
+modelo dinâmico constrói um modelo estacionário de redes e um arcabouço de otimização de sistemas
+de elevação por gas lift contínuo. O capítulo 10 apresenta os casos de simulação dinâmica (duto
+horizontal nos padrões estratificado, anular e bolhas; redes em série e com ciclo; poço simples,
+poço com gas lift e poço offshore), todos reproduzidos aqui. A motivação é a falta, na literatura
+aberta, de simuladores de redes bifásicas capazes de descrever o petróleo brasileiro e a
+profundidade dos poços nacionais sem a arquitetura fechada das ferramentas comerciais.
+
+## Este repositório
+
+O código original (MFSIM/SDMPFLOW, MATLAB, 2010) e os seus resultados gravados foram a referência
+para o **mfsim**, reimplementação em Python com o solver próprio da tese: modelo a dois fluidos
+(4 equações), modelo de mistura (3 equações) e monofásicos; Galerkin, diferenças finitas e volumes
+finitos escalonados; BDF implícito próprio com lado direito em numpy ou compilado com JAX. Os
+casos do capítulo 10 reproduzem-se contra os ficheiros MATLAB; as 38 alterações em relação à tese
+(correções, melhorias e estudos) estão em [docs/issues/INDEX.md](docs/issues/INDEX.md), e a
+resposta à pergunta que a tese não conseguiu fechar, a intermitência severa em geometria
+linha–riser, em [docs/why_no_severe_slug_in_thesis.md](docs/why_no_severe_slug_in_thesis.md).
 
 ## Começar
 

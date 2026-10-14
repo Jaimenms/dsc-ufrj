@@ -6,7 +6,10 @@ O método que nos trouxe até aqui está em [docs/method_thesis_to_modern_code.m
 
 ## O que é
 
-Reimplementação em Python do MFSIM (tese de doutorado de Jaime Souza, MATLAB, 2010): simulador
+Reimplementação em Python do MFSIM da tese de doutorado *Modelagem e Simulação de Escoamento
+Multifásico em Dutos de Produção de Óleo e Gás Natural* (Jaime Neiva Miranda de Souza, UFRJ/EQ,
+TPQB, 2010; orientadores José Luiz de Medeiros, André Luiz Hemerly Costa e Giovani Cavalcanti
+Nunes; código original em MATLAB): simulador
 dinâmico de escoamento bifásico em redes de dutos (modelo a dois fluidos a 4 equações, modelo de
 mistura, monofásicos; Galerkin, diferenças finitas, volumes finitos escalonados; BDF implícito
 próprio, numpy ou JAX). Reproduz o capítulo 10 da tese bit a bit contra os ficheiros MATLAB e
