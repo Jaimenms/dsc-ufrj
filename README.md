@@ -134,7 +134,7 @@ uv run python tools/convert_runs.py antiga.npz --out-dir runs/            # corr
 - [docs/severe_slug.md](docs/severe_slug.md) — intermitência severa: o caso, a configuração recomendada e o mapa dos temas para as issues.
 - [docs/lab_validation.md](docs/lab_validation.md) — validação com dados de laboratório (Jansen, Fabre, Tengesdal): casos, comandos e resultado em uma linha.
 - [docs/findings_for_paper.md](docs/findings_for_paper.md) — achados para o artigo (resumo).
-- [docs/future/README.md](docs/future/README.md) — planos para temas futuros, não iniciados: chill-down criogénico (hidrogénio líquido), despressurização de dutos de CO₂, composição e transferência de massa, água como terceira fase.
+- [docs/future/README.md](docs/future/README.md) — planos para temas futuros, não iniciados: chill-down criogénico (hidrogénio líquido), despressurização de dutos de CO₂, composição e transferência de massa, água como terceira fase, catálogo de assinaturas de golfada e alocação de poços a separadores (linha de controle anti-slug e gêmeo digital).
 - `tests/golden/CHANGELOG.md` — registo das referências de regressão; `docs/thesis.pdf` — a tese.
 
 ## Reorganização do código (2026-10)
