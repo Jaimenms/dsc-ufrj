@@ -123,6 +123,12 @@ BDF próprio com `tol_range` 0,01 e lado direito em JAX; fechamentos das faces p
 
 ## Decisões em aberto para o dono
 
+- **Compressibilidade do líquido (γL).** O exemplo base usa γL = 100 (c ≈ 258 m/s, ~40× mais compressível que um
+  líquido real). A ablação com γL = 1000 dá o mesmo ciclo dentro da variabilidade (5 blowdowns, P_in 4,56–5,85 bar)
+  com 45 % menos passos (145 mil contra 264 mil): o BDF amortece os acústicos mais rápidos em vez de os resolver.
+  O rascunho dizia o contrário e foi corrigido. Mudar o caso base para um γL realista obriga a refazer todas as
+  corridas (dias de CPU); alternativa: manter 100 e reportar a ablação.
+
 - Revista (proposta: *International Journal of Multiphase Flow*; ver `../00-escolha-da-revista.md`).
 - Autores: Jaime Neiva Miranda de Souza (Miradouro Digital) e André Luiz Hemerly Costa (UERJ, autor correspondente), decididos pelo dono em 2026-10-16 (Medeiros e Nunes saíram). E-mail do correspondente: andrehc@uerj.br. Falta a morada da Miradouro Digital.
 - Fechamentos das faces pela célula doadora (044) como padrão do caso do artigo.

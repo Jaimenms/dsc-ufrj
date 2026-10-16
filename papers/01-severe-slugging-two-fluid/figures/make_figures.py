@@ -1232,7 +1232,7 @@ DISC_SHORT = {
     "fd_upwind": "backward diff.",
 }
 ABL_LABELS = {
-    "reference": "configuration of Section 7 (reference)",
+    "reference": "reference (Section~\\ref{sec:application})",
     "primitive": "primitive time integration",
     "relax_raw": "vanishing phase relaxed to rest",
     "no_flux_limiter": "no donor-cell flux limiter",
