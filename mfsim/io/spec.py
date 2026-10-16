@@ -184,6 +184,8 @@ def _pipe_to_json(p, ic_store):
     elif p.ic is not None:
         ic_store[p.id] = np.asarray(p.ic, float)
         d["ic"] = {"arrays": {"key": p.id}}
+        if p.ic_at != "mesh":
+            d["ic"]["at"] = p.ic_at
     return d
 
 
@@ -221,6 +223,7 @@ def _pipe_from_json(d, ic_arrays):
         ports_out=pout,
         ic=ic,
         ic_recipe=recipe,
+        ic_at=str(ic_d.get("at", "mesh")) if "arrays" in ic_d else "mesh",
         point_names=names,
     )
 

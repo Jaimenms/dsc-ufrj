@@ -326,6 +326,8 @@ def record_from_network(net):
     pipes = []
     for i, p in enumerate(net.pipes):
         model_id, regime_id, extra = p.model.to_legacy()
+        if getattr(p, "ic_at", "mesh") != "mesh":
+            raise ValueError(f"duto {p.id}: condição inicial nos nós do esquema não tem equivalente no registo legado")
         ic = p.ic
         if ic is None and p.ic_recipe is not None:
             from ..initial.recipes import materialize

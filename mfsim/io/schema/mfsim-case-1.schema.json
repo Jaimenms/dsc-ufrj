@@ -832,6 +832,13 @@
                   "type": "string"
                 }
               }
+            },
+            "at": {
+              "enum": [
+                "mesh",
+                "scheme"
+              ],
+              "description": "mesh: nós da malha (interpolados para o esquema); scheme: estado exato nos nós do esquema"
             }
           }
         },

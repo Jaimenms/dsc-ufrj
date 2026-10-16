@@ -151,7 +151,15 @@ class PipeBlock:
         return self.scheme.fill_derived(Y)
 
     def ic_nodal(self, ic):
-        """Interpola uma condição inicial nodal (nós da malha) para os nós do esquema."""
+        """Condição inicial nos nós do esquema: interpolada dos nós da malha, ou tal e qual se o
+        duto a guarda nos nós do esquema (`ic_at = "scheme"`)."""
+        if getattr(self.pipe, "ic_at", "mesh") == "scheme":
+            ic = np.asarray(ic, float)
+            if ic.shape != (self.n_nodes, 4):
+                raise ValueError(
+                    f"duto {self.pipe.id}: condição inicial nos nós do esquema com forma {ic.shape}, esperado {(self.n_nodes, 4)}"
+                )
+            return ic.copy()
         s_mesh = self.mesh["s"]
         x = self.scheme.x_nodes
         out = np.empty((self.n_nodes, 4))
@@ -436,18 +444,27 @@ class NetworkSystem:
             X[iP] = PT0
         return X
 
-    def state_to_network_ic(self, X, t=0.0):
-        """Escreve o estado X nas condições iniciais do grafo (dutos e tanques)."""
+    def state_to_network_ic(self, X, t=0.0, exact=False):
+        """Escreve o estado X nas condições iniciais do grafo (dutos e tanques). Por omissão nos
+        nós da malha (interpolado, como a tese guarda); com `exact` nos nós do esquema
+        (`ic_at = "scheme"`), o que torna a ida e volta estado -> caso -> estado a identidade
+        também nos esquemas escalonados (issue 040)."""
         E, Ys, info, X = self.assemble(t, X)
         for pb, Y in zip(self.pipes, Ys):
             if hasattr(pb.scheme, "to_primitive"):
                 Y = pb.scheme.to_primitive(Y)
-            x = pb.scheme.x_nodes
-            s_mesh = pb.mesh["s"]
-            ic = np.empty((s_mesh.size, 4))
-            for s in range(4):
-                ic[:, s] = np.interp(s_mesh, x, Y[:, s])
-            pb.pipe.ic = ic
+            if exact:
+                pb.pipe.ic = np.asarray(Y, float).copy()
+                pb.pipe.ic_at = "scheme"
+            else:
+                x = pb.scheme.x_nodes
+                s_mesh = pb.mesh["s"]
+                ic = np.empty((s_mesh.size, 4))
+                for s in range(4):
+                    ic[:, s] = np.interp(s_mesh, x, Y[:, s])
+                pb.pipe.ic = ic
+                pb.pipe.ic_at = "mesh"
+            pb.pipe.ic_recipe = None
             pb._ic = None
         for vi in self.vA:
             v = self.vertices[vi]

@@ -69,3 +69,20 @@ def test_failure_raises_or_falls_back_to_start():
     res = simulate(net, progress=False)
     assert res.info["initial"]["converged"] is False
     assert np.array_equal(res.X[:, 0], build_model(net).initial_state())
+
+
+def test_exact_state_roundtrip_through_json(tmp_path):
+    """Estado do esquema escalonado -> condição inicial nos nós do esquema -> JSON -> estado:
+    a identidade (nos nós da malha a ida e volta suaviza o degrau de fração de gás na curva)."""
+    d = json.load(open(ROOT / "cases" / "severe_slug" / "reference.json"))
+    net = case_from_json(d)
+    model = build_model(net)
+    X = model.initial_state()
+    X = X * (1.0 + 1e-3 * np.sin(np.arange(X.size)))  # um estado qualquer, não o da receita
+    model.state_to_case_ic(X, model.t0, exact=True)
+    case_to_json(net, str(tmp_path / "c.json"))
+    back = case_from_json(str(tmp_path / "c.json"))
+    assert back.pipes[0].ic_at == "scheme" and back.pipes[0].ic_recipe is None
+    assert np.array_equal(build_model(back).initial_state(), X)
+    model.state_to_case_ic(X, model.t0)  # nos nós da malha: aproximado
+    assert not np.array_equal(build_model(net).initial_state(), X)

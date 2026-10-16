@@ -129,8 +129,9 @@ class Pipe(Edge):
     scheme: SchemeSpec = field(default_factory=SchemeSpec)
     ports_in: tuple = (PortKind.FREE, PortKind.FREE, PortKind.DIRICHLET, PortKind.DIRICHLET)
     ports_out: tuple = (PortKind.FREE, PortKind.DIRICHLET, PortKind.FREE, PortKind.FREE)
-    ic: Optional[np.ndarray] = None  # (n_mesh_nodes, 4) ou None
+    ic: Optional[np.ndarray] = None  # (n_mesh_nodes, 4) ou, com ic_at = "scheme", (nós do esquema, 4)
     ic_recipe: Optional[dict] = None  # receita (fase 1b) em alternativa aos arrays
+    ic_at: str = "mesh"  # "mesh": nós da malha (interpolados); "scheme": estado exato do esquema (issue 040)
     point_names: tuple = ()  # nomes opcionais dos pontos (marcadores)
 
     @property

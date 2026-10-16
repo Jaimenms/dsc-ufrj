@@ -35,6 +35,15 @@ A semente robusta é o estacionário de um caso vizinho gravado como condição 
 (`ic.arrays`): o Newton converge em 3 a 10 iterações de um ponto para o seguinte numa
 continuação na abertura do choke, e o caminho de execução continua a ser um só (tudo no JSON).
 
+Para isso a condição inicial de um duto pode ficar nos nós do próprio esquema
+(`"ic": {"arrays": ..., "at": "scheme"}`, `Pipe.ic_at`; `state_to_case_ic(X, exact=True)`). Nos
+nós da malha, que é como a tese guarda e continua a ser o padrão, a ida e volta estado → caso →
+estado interpola e, no esquema escalonado, suaviza o degrau de fração de gás na curva (0,915
+passou a 0,639 numa célula, resíduo de 3 em vez de 1e−11); nos nós do esquema é a identidade.
+Escrever um estado nas condições iniciais passa também a apagar a receita do duto, que antes
+tinha prioridade na escrita do JSON. O registo legado não tem equivalente para a condição
+inicial nos nós do esquema e recusa-a.
+
 ## Benefício
 
 - Ponto de partida reprodutível no próprio equilíbrio, que é o que um mapa de estabilidade

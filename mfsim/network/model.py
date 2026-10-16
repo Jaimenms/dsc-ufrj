@@ -30,6 +30,6 @@ class NetworkModel(NetworkSystem):
             net = with_method(net, method)
         super().__init__(net, scheme_settings=scheme_settings, bk=bk)
 
-    def state_to_case_ic(self, X, t=0.0):
-        """Escreve o estado X nas condições iniciais do grafo."""
-        self.state_to_network_ic(X, t)
+    def state_to_case_ic(self, X, t=0.0, exact=False):
+        """Escreve o estado X nas condições iniciais do grafo (`exact`: nos nós do esquema)."""
+        self.state_to_network_ic(X, t, exact=exact)
