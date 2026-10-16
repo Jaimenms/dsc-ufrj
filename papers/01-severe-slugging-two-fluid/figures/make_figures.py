@@ -2470,15 +2470,14 @@ def tab_runs(out):
         try:
             n, get = info(path)
         except FileNotFoundError:
-            rows.append([lab, _tex(path), start, tf, dt, "--", "--", "--"])
+            rows.append([lab, start, tf, dt, "--", "--", "--"])
             continue
         ms = get("integration.max_step")
         bud = get("integration.max_cpu")
-        rows.append([lab, _tex(path), start, tf, dt, ms or "none", f"{float(bud):.0f}" if bud else "none", str(n)])
+        rows.append([lab, start, tf, dt, ms or "none", f"{float(bud):.0f}" if bud else "none", str(n)])
     rows.append(
         [
             "model problem (\\ref{sec:toy})",
-            _tex("toy/model_problem.py run"),
             "steady state + 0.1 \\%",
             "300",
             "0.1",
@@ -2490,13 +2489,13 @@ def tab_runs(out):
     fl.tex_table(
         out,
         "tab_runs",
-        ["study (section)", "batch", "start", "time (s)", "output (s)", "max.\\ step (s)", "budget (s)", "runs"],
+        ["study (section)", "start", "time (s)", "output (s)", "max.\\ step (s)", "budget (s)", "runs"],
         rows,
-        align="llllrrrr",
+        align="lllrrrr",
         notes=(
-            "Batches of the repository (\\texttt{mfsim batch <file>}); each entry of a batch is the case file of the "
-            "application with the overrides of Table~\\ref{tab:ablationchanges} or of the batch itself. Budget: "
-            "wall-clock time after which a run is stopped with its partial trajectory. Exceptions: the SciPy variant of "
+            "Each run is the application case of Table~\\ref{tab:parameters} with the changes of its study (choke "
+            "opening, reservoir pressure, mesh, or the variants of Table~\\ref{tab:ablationchanges}). Budget: wall-clock "
+            "time after which a run is stopped with its partial trajectory. Exceptions: the SciPy variant of "
             "the ablation bounds the step by \\SI{1}{\\second}, and the runs at an opening of 0.13 of the mesh batch, "
             "which provide the steady states of the finer meshes, start from a blocked line with the step bounded by "
             "\\SI{1}{\\second}. The model problem uses rtol $= 10^{-4}$ and atol $= 10^{-6}$ (dimensionless units)."
@@ -2504,27 +2503,39 @@ def tab_runs(out):
     )
 
 
+ABL_CHANGES = {
+    "reference": "the configuration of Table~\\ref{tab:parameters}",
+    "primitive": "the integrator advances the primitive variables $(\\alpha_G, P)$ instead of the masses per unit volume; vanishing phase relaxed to a zero flow rate (the no-slip target needs the flux limiter of the conservative form)",
+    "relax_raw": "vanishing phase relaxed to a zero flow rate instead of the no-slip flow rate",
+    "no_flux_limiter": "no donor-cell limiter of the mass fluxes",
+    "no_art_visc": "$C = 0$ in the artificial viscosity",
+    "closure_mean": "face closures evaluated with the arithmetic mean of the void fractions of the two neighbouring cells",
+    "ipe_thesis": "pattern criteria evaluated on the equilibrium level and void fraction instead of the cell state, with sharp switches ($k = 10^6$)",
+    "ipe_smooth_only": "pattern criteria evaluated on the equilibrium level and void fraction instead of the cell state ($k = 20$)",
+    "no_low_void": "low-void threshold $10^{-12}$ (rule inactive)",
+    "no_virtual_mass": "$C_{vm} = 0$",
+    "bubble_drag_thesis": "bubble terminal velocity $v_b = (0.51\\,d_b + 2.14/d_b)^{1/2}$, without $g$ and $\\sigma/\\rho_L$",
+    "bdf1": "BDF of order 1 only",
+    "uniform_atol": "absolute tolerance $10^{-6}$ for every state, with the pressure in MPa and the flow rates in kg/s",
+    "newton12": "at most 12 Newton iterations per step",
+    "scipy_bdf": "variable-order BDF of SciPy on the primitive form, vanishing phase relaxed to a zero flow rate, rtol $= 3\\times10^{-3}$, atol $= 10^{-3}$ for every state, maximum step \\SI{1}{\\second}, no projection on bounds",
+    "gammaL1000": "$\\gamma_L = 1000$",
+    "valve_thesis": "choke density weighted by mass, $\\Delta P = \\dot m|\\dot m|/(\\rho_M (K a)^2)$ with $\\rho_M = (q_L\\rho_L + q_G\\rho_G)/(q_L + q_G)$",
+    "sharp_bend": "no bend: the descending line ends at $x = 319.59$ m, $z = -15.70$ m, where a vertical riser of \\SI{20}{\\metre} (5 cells) starts",
+}
+
+
 def tab_ablation_changes(out):
-    """Alterações exatas de cada variante da ablação (caminho JSON = valor), sem as comuns a todas."""
+    """Variantes da ablação descritas em termos do modelo (o código não é público: nada de chaves de ficheiro)."""
     b = json.load(open(fl.PROJECT / "batches" / "paper01_ablation.json"))
-    common = {"network.edges.choke_2.opening=1.0", "integration.max_cpu=5400.0"}
-    rows = []
-    for r in b["runs"]:
-        ch = [x for x in r.get("set", []) if x not in common]
-        if r.get("case") and "sharp" in str(r.get("case")):
-            ch = [f"case {r['case']}"] + ch
-        lab = ABL_LABELS.get(r["name"], r["name"])
-        rows.append([lab, "; ".join(_tex(x) for x in ch) if ch else "--"])
+    rows = [[ABL_LABELS.get(r["name"], r["name"]), ABL_CHANGES.get(r["name"], "--")] for r in b["runs"]]
     fl.tex_table(
         out,
         "tab_ablationchanges",
-        ["variant", "change to the case file"],
+        ["variant", "change to the configuration of the application"],
         rows,
-        align="lp{0.62\\linewidth}",
-        notes=(
-            "Every variant also sets \\texttt{network.edges.choke\\_2.opening=1.0} and "
-            "\\texttt{integration.max\\_cpu=5400}."
-        ),
+        align="lp{0.6\\linewidth}",
+        notes="Every variant has the choke wide open ($a = 1$) and a budget of \\SI{5400}{\\second} of wall-clock time.",
     )
 
 
@@ -2593,8 +2604,8 @@ def software_note(out):
     except Exception:
         rev = "--"
     txt = (
-        f"Python {platform.python_version()}, NumPy {np.__version__}, SciPy {scipy.__version__}, "
-        f"JAX {jax.__version__}; repository revision {_tex(rev)}."
+        f"Python {platform.python_version()}, NumPy {np.__version__}, SciPy {scipy.__version__} and "
+        f"JAX {jax.__version__}."
     )
     path = Path(out) / "software.tex"
     path.parent.mkdir(parents=True, exist_ok=True)

@@ -436,8 +436,8 @@ The authors declare that they have no known competing financial interests or per
 During the preparation of this work the authors used AI-assisted tools for code development and language editing. After using these tools, the authors reviewed and edited the content as needed and take full responsibility for the content of the publication.
 
 \section*{Data availability}
-% TODO: DOI do repositório (Zenodo) ou endereço público do código e dos casos.
-The simulator, the case definitions, the batch files, the recorded runs and the script that produces every figure and table of this article are available in a public repository; Appendix~\ref{app:reproduction} lists every parameter and run setting.
+% O código não é público (decisão do dono, 2026-10-16): o artigo tem de bastar para reproduzir (apêndice C).
+The simulator used in this study is not publicly available. Appendix~\ref{app:reproduction} lists the geometry, every parameter of the model, the boundary conditions, the numerical scheme and the integrator, the settings of every run and the definitions of the derived quantities, so that the results can be reproduced with an independent implementation; the case definitions and the simulation results are available from the corresponding author upon reasonable request.
 
 \FloatBarrier
 \appendix
@@ -486,7 +486,7 @@ bubbly, horizontal & turbulent dispersion $T > T_c$ & horizontal \\
 
 \section{Data for reproduction}\label{app:reproduction}
 
-The tables of this appendix are generated from the case file of the application, the batch files and the code of the simulator by the script that produces the figures of the article, so that they describe exactly what was run. Table~\ref{tab:geometry} gives the geometry and the mesh, Table~\ref{tab:parameters} every parameter of the model, the boundary conditions, the scheme and the integrator, Table~\ref{tab:runs} the runs behind each section, Table~\ref{tab:ablationchanges} the changes of each variant of the ablation, and Table~\ref{tab:analysis} the definitions of the quantities derived from the runs. The results were obtained with \input{tables/generated/software}
+The tables of this appendix were generated from the input files and the code of the simulator, so that they describe exactly what was run, and they are meant to allow the results to be reproduced with an independent implementation. Table~\ref{tab:geometry} gives the geometry and the mesh, Table~\ref{tab:parameters} every parameter of the model, the boundary conditions, the scheme and the integrator, Table~\ref{tab:runs} the runs behind each section, Table~\ref{tab:ablationchanges} the changes of each variant of the ablation, and Table~\ref{tab:analysis} the definitions of the quantities derived from the runs. The results were obtained with \input{tables/generated/software}
 
 \begin{table}[htbp]
 \caption{Geometry and mesh of the application.}\label{tab:geometry}
