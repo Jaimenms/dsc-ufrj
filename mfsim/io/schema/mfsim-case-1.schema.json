@@ -155,9 +155,32 @@
         "source": {
           "enum": [
             "edges",
+            "guess",
+            "steady"
+          ],
+          "description": "edges: condições iniciais dos dutos e tanques; guess: estimativa de escoamento estabelecido; steady: estado estacionário por Newton a partir de `from` (issue 040)"
+        },
+        "from": {
+          "enum": [
+            "edges",
             "guess"
           ],
-          "description": "edges: condições iniciais dos dutos e tanques; guess: estimativa de escoamento estabelecido"
+          "description": "estado de partida do Newton (steady)"
+        },
+        "perturb": {
+          "type": "number",
+          "description": "perturbação relativa das pressões dos dutos depois do Newton (steady)"
+        },
+        "max_iter": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "on_failure": {
+          "enum": [
+            "error",
+            "start"
+          ],
+          "description": "Newton sem convergência: erro, ou partir do estado `from`"
         }
       }
     }

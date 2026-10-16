@@ -15,6 +15,9 @@ tempo como escalar, `{"t": [...], "v": [...]}` ou `{"ramp": [t1, t2], "from": a,
 pressões como `"P"` (Pa) ou `"PT"` (P/PR). A condição inicial de um duto é uma receita
 (`{"recipe": "blocked" | "shut_in", ...}`, `mfsim/initial/recipes.py`) ou arrays num
 npz ao lado (`{"arrays": {"file": ..., "key": ...}}`).
+O estado inicial da corrida é o dos dutos (`initial_state.source = "edges"`), a estimativa
+automática (`"guess"`) ou o estacionário por Newton a partir de um deles (`"steady"`, com
+`from`, `perturb`, `max_iter` e `on_failure`; issue 040).
 
 A secção `integration` é completa: `integrator` (`bdf`/`implicit` = BDF próprio, `radau`,
 `LSODA`), `quadrature_order`, `max_step` (`null` = sem limite), `atol`, `rtol`, `backend`

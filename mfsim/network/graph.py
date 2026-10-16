@@ -269,7 +269,9 @@ class Network:
     edges: list
     meta: dict = field(default_factory=dict)
     description: str = ""
-    initial: str = "edges"  # estado inicial: "edges" (condições iniciais dos dutos/tanques) | "guess" (estimativa)
+    initial: str = "edges"  # estado inicial: "edges" (condições iniciais) | "guess" (estimativa) | "steady"
+    # opções de initial = "steady" (issue 040): from ("edges" | "guess"), perturb, max_iter, on_failure
+    initial_options: dict = field(default_factory=dict)
 
     # --- construção --------------------------------------------------------
     @classmethod

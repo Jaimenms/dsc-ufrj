@@ -14,7 +14,7 @@ dinâmico de escoamento bifásico em redes de dutos (modelo a dois fluidos a 4 e
 mistura, monofásicos; Galerkin, diferenças finitas, volumes finitos escalonados; BDF implícito
 próprio, numpy ou JAX). Reproduz o capítulo 10 da tese bit a bit contra os ficheiros MATLAB e
 resolve o que a tese não conseguiu: a intermitência severa (severe slugging), validada com dados
-de laboratório. As 39 alterações em relação à tese estão em `docs/issues/` (feature, bugfix, estudo).
+de laboratório. As 40 alterações em relação à tese estão em `docs/issues/` (feature, bugfix, estudo).
 
 ## Mapa do repositório
 

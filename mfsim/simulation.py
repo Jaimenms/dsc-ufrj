@@ -208,11 +208,14 @@ def simulate(
         overrides["backend"] = "jax" if jax else "numpy"
     if overrides:
         spec = replace(spec, **overrides)
+    start_info = None
     if X0 is None:
         if model.network.initial == "guess":
             from .initial_guess import initial_guess
 
             X0 = initial_guess(model)
+        elif model.network.initial == "steady":
+            X0, start_info = steady_start(model, jax=spec.backend == "jax")
         else:
             X0 = model.initial_state()
     if t_eval is None:
@@ -221,6 +224,8 @@ def simulate(
     if t_eval.size < 2:  # tf == t0: a "trajetória" é o estado inicial (nada a integrar)
         X0 = np.asarray(X0, float)
         info = dict(success=True, message="tf == t0: estado inicial", n_steps=0, n_rhs=0, cpu=0.0)
+        if start_info is not None:
+            info["initial"] = start_info
         return Results(model, t_eval, X0[:, None], info)
     integrator = spec.integrator
     if integrator in ("bdf", "BDF", "Radau", "radau", "LSODA"):
@@ -232,4 +237,54 @@ def simulate(
         T, X, info = _integrate_bdf(model, X0, t_eval, spec, progress=progress, verbose=verbose, partial=partial)
     else:
         raise ValueError(integrator)
+    if start_info is not None:
+        info = dict(info, initial=start_info)
     return Results(model, T, X, info)
+
+
+def steady_start(model, jax=False):
+    """Estado inicial `initial_state.source = "steady"` (issue 040): Newton para rhs(t0, X) = 0
+    a partir de `from` ("edges": as condições iniciais do caso, por exemplo o estacionário de um
+    ponto vizinho de uma varredura; "guess": a estimativa automática), sem continuação
+    pseudo-transiente (não converge para estacionários instáveis, que são os que interessam a
+    um mapa de estabilidade). `perturb` multiplica as pressões por (1 + perturb) para tirar a
+    trajetória de um equilíbrio instável; `on_failure` = "error" (padrão) ou "start" (segue a
+    partir de `from`). Devolve (X0, info do Newton)."""
+    from .initial_guess import initial_guess
+    from .steady import newton_steady
+
+    opts = dict(model.network.initial_options or {})
+    src = opts.get("from", "edges")
+    if src not in ("edges", "guess"):
+        raise ValueError(f"initial_state.from inválido: {src!r}")
+    X_start = initial_guess(model) if src == "guess" else model.initial_state()
+    X, info = newton_steady(
+        model,
+        X_start,
+        t=model.t0,
+        tol=float(opts.get("tol", 1e-9)),
+        verbose=False,
+        bounds=state_bounds(model),
+        jax=jax,
+        max_iter=int(opts.get("max_iter", 100)),
+    )
+    out = dict(
+        source="steady",
+        start=src,
+        converged=bool(info["converged"]),
+        iterations=int(info["iterations"]),
+        residual=float(info["residual"]),
+    )
+    if not info["converged"]:
+        if opts.get("on_failure", "error") != "start":
+            raise RuntimeError(
+                f"estado estacionário não convergiu a partir de '{src}' (|F| = {info['residual']:.2e}); "
+                "use initial_state.on_failure = 'start' para seguir a partir do estado de partida"
+            )
+        X = np.asarray(X_start, float)
+    perturb = float(opts.get("perturb", 0.0))
+    if perturb:
+        X = np.array(X, float)
+        X[model.state_slots() == 1] *= 1.0 + perturb
+    out["perturb"] = perturb
+    return X, out

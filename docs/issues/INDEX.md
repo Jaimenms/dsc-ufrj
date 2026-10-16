@@ -81,6 +81,7 @@ qual estão em `notebooks_src/thesis/`.
 | [030](030-validacao-laboratorio.md) | feature | Validação com laboratório (item 8) | sem dados medidos → Fabre 2, Tengesdal, Jansen como ciclo clássico com o arrasto físico |
 | [031](031-numerica-a-1-atm.md) | bugfix | Numérica a 1 atm | banda de undershoot cruzava a singularidade; Newton estagnado → `state_bounds` com γL, `slow_exit` |
 | [039](039-lei-de-valvula-homogenea.md) | bugfix | Lei de válvula homogénea | densidade ponderada por massa (choke não resiste ao gás; singular em refluxo, 7 falhas) → por volume, padrão; tese só nos seus casos |
+| [040](040-partida-do-estacionario.md) | feature | Partida a partir do estado estacionário | só condições iniciais ou estimativa (Newton não converge dela) → `initial_state.source = "steady"` a partir de um estado gravado, com perturbação |
 
 ## Integrador e desempenho
 
