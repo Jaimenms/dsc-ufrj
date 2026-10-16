@@ -910,6 +910,15 @@
         "CV": {
           "$ref": "#/$defs/positive"
         },
+        "law": {
+          "enum": [
+            "homogeneous",
+            "thesis"
+          ]
+        },
+        "q_smooth": {
+          "$ref": "#/$defs/positive"
+        },
         "opening": {
           "$ref": "#/$defs/schedule"
         },
@@ -1004,9 +1013,11 @@
               "IPL": false,
               "P_bar": false,
               "dP_min_bar": false,
+              "law": false,
               "mode": false,
               "opening": false,
               "pid": false,
+              "q_smooth": false,
               "setpoint": false
             },
             "required": [
@@ -1037,11 +1048,13 @@
               "dP_min_bar": false,
               "geometry": false,
               "ic": false,
+              "law": false,
               "mode": false,
               "model": false,
               "opening": false,
               "pid": false,
               "ports": false,
+              "q_smooth": false,
               "roughness": false,
               "scheme": false,
               "setpoint": false
@@ -1093,11 +1106,13 @@
               "dP_min_bar": false,
               "geometry": false,
               "ic": false,
+              "law": false,
               "mode": false,
               "model": false,
               "opening": false,
               "pid": false,
               "ports": false,
+              "q_smooth": false,
               "roughness": false,
               "scheme": false,
               "setpoint": false
@@ -1123,11 +1138,13 @@
               "P_bar": false,
               "geometry": false,
               "ic": false,
+              "law": false,
               "mode": false,
               "model": false,
               "opening": false,
               "pid": false,
               "ports": false,
+              "q_smooth": false,
               "roughness": false,
               "scheme": false,
               "setpoint": false

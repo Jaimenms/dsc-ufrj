@@ -80,6 +80,7 @@ qual estão em `notebooks_src/thesis/`.
 | [029](029-fronteira-da-intermitencia-severa.md) | estudo | Fronteira da intermitência severa | varredura: ciclo em toda a região estratificada; permanente quando a linha deixa de o ser |
 | [030](030-validacao-laboratorio.md) | feature | Validação com laboratório (item 8) | sem dados medidos → Fabre 2, Tengesdal, Jansen como ciclo clássico com o arrasto físico |
 | [031](031-numerica-a-1-atm.md) | bugfix | Numérica a 1 atm | banda de undershoot cruzava a singularidade; Newton estagnado → `state_bounds` com γL, `slow_exit` |
+| [039](039-lei-de-valvula-homogenea.md) | bugfix | Lei de válvula homogénea | densidade ponderada por massa (choke não resiste ao gás; singular em refluxo, 7 falhas) → por volume, padrão; tese só nos seus casos |
 
 ## Integrador e desempenho
 

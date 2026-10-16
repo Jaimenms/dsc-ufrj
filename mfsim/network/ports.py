@@ -105,7 +105,18 @@ class ChokeStep(Step):
         qG = x[self.iG] if self.iG is not None else 0.0
         P_down = self.src(x, E)
         opening = opt_t[self.j]
-        ZP, dP = valve_upstream_pressure(P_down, qL, qG, opening, self.edge.CV, self.fluid, self.PR, bk=bk)
+        ZP, dP = valve_upstream_pressure(
+            P_down,
+            qL,
+            qG,
+            opening,
+            self.edge.CV,
+            self.fluid,
+            self.PR,
+            law=self.edge.law,
+            q_smooth=self.edge.q_smooth,
+            bk=bk,
+        )
         if info is not None:
             info["valves"].append(
                 dict(

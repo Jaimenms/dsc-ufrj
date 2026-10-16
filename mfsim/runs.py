@@ -132,6 +132,16 @@ def find_run(name) -> str:
     raise FileNotFoundError(f"corrida não encontrada: {name} (procurado em {RUN_DIRS})")
 
 
+def _legacy_valve_law(case_json):
+    """Chokes gravados sem `law` são anteriores à issue 039 e foram simulados com a lei da tese
+    (o JSON novo sem `law` significa lei homogénea); fixa-a para o caso reconstruído ser o da
+    corrida."""
+    for e in (case_json.get("network") or {}).get("edges", []):
+        if e.get("type") == "choke" and "law" not in e:
+            e["law"] = "thesis"
+    return case_json
+
+
 def load_run(path) -> Run:
     """Lê uma corrida v2 (caminho, ou nome procurado por `find_run`)."""
     path = find_run(path)
@@ -142,7 +152,7 @@ def load_run(path) -> Run:
             )
         info = json.loads(str(d["info_json"])) if "info_json" in d.files else {}
         prov = json.loads(str(d["provenance_json"])) if "provenance_json" in d.files else {}
-        case_json = json.loads(str(d["case_json"]))
+        case_json = _legacy_valve_law(json.loads(str(d["case_json"])))
         ic_arrays = {k[3:]: np.asarray(d[k], float) for k in d.files if k.startswith("ic/")}
         return Run(
             path=str(path),

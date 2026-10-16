@@ -213,9 +213,14 @@ class Connector(ZeroLengthEdge):
 @dataclass
 class Choke(ZeroLengthEdge):
     """Válvula (choke) entre a junção de saída de um duto (v_from) e o vértice de jusante (v_to):
-    P_montante = P_jusante + qM|qM|/(rhoM (0.0075 CV ab)²) [bar]."""
+    P_montante = P_jusante + dP(qL, qG, ab) [bar]. `law` escolhe a densidade da mistura:
+    "homogeneous" (padrão, ponderada por volume, regularizada com `q_smooth` [m³/s]) ou
+    "thesis" (ponderada por massa, a do MATLAB; os casos da tese usam-na). Ver
+    `elements.valve_upstream_pressure` e a issue 039."""
 
     CV: float = 1000.0
+    law: str = "homogeneous"
+    q_smooth: float = 1e-6
     opening: Schedule = None
     mode: Schedule = None
     setpoint: Schedule = None

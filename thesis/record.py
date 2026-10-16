@@ -87,10 +87,13 @@ class Valve:
 
     dP[bar] = qM |qM| / rhoM / (0.0075 CV ab)^2 ; P_montante = P_vertice + dP.
     Abertura: manual (opening) ou PID (mode=1) sobre uma variável de processo.
+    `law` é a lei de válvula do grafo: os .mf2 da tese usam "thesis" (densidade ponderada
+    por massa); guardá-la aqui mantém o round-trip grafo -> registo -> grafo sem perda.
     """
 
     vertex: int
     CV: float = 1000.0
+    law: str = "thesis"
     opening: SpecValue = 1.0
     mode: SpecValue = 0.0
     setpoint: SpecValue = 1.0
@@ -224,6 +227,7 @@ def network_from_record(case) -> _g.Network:
                 v_from=f"Jc{vid}",
                 v_to=vid,
                 CV=float(e.CV),
+                law=e.law,
                 opening=Schedule.from_legacy(e.opening),
                 mode=Schedule.from_legacy(e.mode),
                 setpoint=Schedule.from_legacy(e.setpoint),
@@ -354,6 +358,7 @@ def record_from_network(net):
         Valve(
             vertex=index[e.v_to],
             CV=e.CV,
+            law=e.law,
             opening=e.opening.to_legacy(),
             mode=e.mode.to_legacy() if e.mode else 0.0,
             setpoint=e.setpoint.to_legacy() if e.setpoint else 1.0,

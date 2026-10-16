@@ -460,6 +460,7 @@
     "from": "Jc4",
     "to": "4",
     "CV": 30.0,
+    "law": "thesis",
     "opening": 1.0,
     "mode": 0.0,
     "setpoint": 1.0
@@ -470,6 +471,7 @@
     "from": "Jc6",
     "to": "6",
     "CV": 5.0,
+    "law": "thesis",
     "opening": {
      "t": [
       0.0,

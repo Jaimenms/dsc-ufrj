@@ -153,6 +153,7 @@
     "from": "Jc2",
     "to": "2",
     "CV": 30.0,
+    "law": "thesis",
     "opening": {
      "t": [
       0.0,

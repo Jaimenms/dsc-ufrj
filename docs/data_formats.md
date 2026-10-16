@@ -9,7 +9,8 @@ feitas em 2026-10-13). Todas as entradas de um caso cabem num ficheiro JSON:
 `fluid`, `reference` (PR e faixas `state_ref`), `time`, `library` (blocos `models` e
 `schemes` reutilizáveis por `"$ref"`), `network` (`vertices` de tipo `boundary`,
 `junction` ou `tank`; `edges` de tipo `pipe`, `connector`, `choke`, `reservoir`,
-`check_valve`, todas com `from`/`to`), `integration`. Unidades SI; especificações no
+`check_valve`, todas com `from`/`to`; o `choke` leva `CV`, `opening` e `law`, `"homogeneous"` por
+omissão ou `"thesis"` nos casos da tese, issue 039), `integration`. Unidades SI; especificações no
 tempo como escalar, `{"t": [...], "v": [...]}` ou `{"ramp": [t1, t2], "from": a, "to": b}`;
 pressões como `"P"` (Pa) ou `"PT"` (P/PR). A condição inicial de um duto é uma receita
 (`{"recipe": "blocked" | "shut_in", ...}`, `mfsim/initial/recipes.py`) ou arrays num

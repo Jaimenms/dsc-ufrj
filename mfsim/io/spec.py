@@ -228,7 +228,9 @@ def _pipe_from_json(d, ic_arrays):
 def _edge_to_json(e):
     d = {"id": e.id, "type": e.type, "from": e.v_from, "to": e.v_to}
     if isinstance(e, Choke):
-        d.update(CV=e.CV, opening=e.opening.to_json())
+        d.update(CV=e.CV, law=e.law, opening=e.opening.to_json())
+        if e.q_smooth != 1e-6:
+            d["q_smooth"] = e.q_smooth
         if e.mode is not None:
             d["mode"] = e.mode.to_json()
         if e.setpoint is not None:
@@ -256,6 +258,8 @@ def _edge_from_json(d, ic_arrays):
         return Choke(
             **base,
             CV=float(d.get("CV", 1000.0)),
+            law=str(d.get("law", "homogeneous")),
+            q_smooth=float(d.get("q_smooth", 1e-6)),
             opening=Schedule.from_json(d.get("opening", 1.0)),
             mode=Schedule.from_json(d["mode"]) if "mode" in d else None,
             setpoint=Schedule.from_json(d["setpoint"]) if "setpoint" in d else None,

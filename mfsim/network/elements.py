@@ -6,20 +6,40 @@ from __future__ import annotations
 
 from ..backend import NUMPY
 
+VALVE_LAWS = ("homogeneous", "thesis")
+Q_SMOOTH = 1e-6  # m³/s: escala de regularização da lei homogénea perto de vazão nula
 
-def valve_upstream_pressure(P_down, qL, qG, opening, CV, fluid, PR, bk=NUMPY):
-    """Pressão adimensional a montante da válvula (modelo_valvula.m) e queda dP [bar].
 
-    dP [bar] = qM |qM| / rhoM / (0.0075 CV ab)^2
-    """
+def valve_upstream_pressure(P_down, qL, qG, opening, CV, fluid, PR, law="homogeneous", q_smooth=Q_SMOOTH, bk=NUMPY):
+    """Pressão adimensional a montante da válvula e queda dP [bar].
+
+    Lei homogénea (padrão; issue 039): a mistura atravessa o choke como um fluido com a
+    densidade sem escorregamento, ponderada por volume, rho = qM / (|qL|/rhoL + |qG|/rhoG),
+    logo dP [bar] = qM Q / (0.0075 CV ab)^2 com Q = |qL|/rhoL + |qG|/rhoG a vazão
+    volumétrica. Não há divisão pela vazão total, dP tem o sinal de qM e é monótona em cada
+    vazão; os módulos são suaves, |x| ~ x tanh(x/q_s), exatos a menos de exp(-|x|/q_s).
+
+    Lei da tese (`law="thesis"`, modelo_valvula.m, bit a bit com o MATLAB): densidade média
+    ponderada pela vazão MÁSSICA, rhoM = (qL rhoL + qG rhoG) / qM, e
+    dP [bar] = qM |qM| / rhoM / (0.0075 CV ab)^2. Fica perto da do líquido mesmo com o gás a
+    dominar o volume (o choke quase não resiste ao gás) e é singular quando qL + qG -> 0.
+
+    As densidades são as da pressão de jusante nas duas leis (como na tese)."""
     xp = bk.xp
     qM = qL + qG
     P = P_down * PR
     rhoL, rhoG, _, _ = fluid.props(xp.maximum(P, 1e3))
-    qM_safe = xp.where(qM != 0, qM, 1.0)
-    rhoM = xp.where(qM != 0, (qL * rhoL + qG * rhoG) / qM_safe, rhoL)
     ab = xp.maximum(opening, 1e-6)
-    dP = qM * xp.abs(qM) / rhoM / (0.0075 * CV * ab) ** 2
+    if law == "thesis":
+        qM_safe = xp.where(qM != 0, qM, 1.0)
+        rhoM = xp.where(qM != 0, (qL * rhoL + qG * rhoG) / qM_safe, rhoL)
+        dP = qM * xp.abs(qM) / rhoM / (0.0075 * CV * ab) ** 2
+    elif law == "homogeneous":
+        QL, QG = qL / rhoL, qG / rhoG
+        Q = QL * xp.tanh(QL / q_smooth) + QG * xp.tanh(QG / q_smooth)
+        dP = qM * Q / (0.0075 * CV * ab) ** 2
+    else:
+        raise ValueError(f"lei de válvula desconhecida: {law!r} (use {VALVE_LAWS})")
     ZP = (P + dP * 1e5) / PR
     return xp.maximum(1e-3, ZP), dP
 
