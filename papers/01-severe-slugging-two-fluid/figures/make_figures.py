@@ -2247,6 +2247,361 @@ def model_problem(out, png):
     fl.save(fig, out, "model_problem", png)
 
 
+# ------------------------------------------------------------------------------------------------ apêndice de reprodução
+def _tex(v):
+    """Texto de uma chave ou valor JSON para LaTeX (\texttt com os caracteres especiais escapados)."""
+    t = str(v).replace("\\", "\\textbackslash{}").replace("_", "\\_").replace("{", "\\{").replace("}", "\\}")
+    return "\\texttt{" + t.replace('"', "") + "}"
+
+
+def _base_case_dict():
+    from mfsim.io import load_json
+
+    return load_json(str(BASE_CASE))
+
+
+def tab_geometry(out):
+    """Troços do caso base: posição ao longo do duto, comprimento, inclinação e células (a partir dos pontos do
+    JSON), mais as variantes de malha do estudo de malha."""
+    d = _base_case_dict()
+    e = next(e for e in d["network"]["edges"] if "geometry" in e)
+    pts = np.array([q["xyz"] for q in e["geometry"]["points"]], float)
+    segs = e["geometry"]["segments"]
+    names = ["inlet section", "descending line"] + [f"bend, chord {k}" for k in range(1, 5)] + ["riser", "top section"]
+    rows, s0 = [], 0.0
+    for k, sg in enumerate(segs):
+        a, b = pts[k], pts[k + 1]
+        L = float(np.hypot(b[1] - a[1], b[2] - a[2]))
+        ang = float(np.degrees(np.arctan2(b[2] - a[2], b[1] - a[1])))
+        rows.append(
+            [
+                names[k] if k < len(names) else f"segment {k + 1}",
+                f"{s0:.2f}",
+                f"{L:.2f}",
+                f"{b[1]:.2f}",
+                f"{b[2]:.2f}",
+                f"{ang:+.1f}",
+                str(sg["n"]),
+            ]
+        )
+        s0 += L
+    fl.tex_table(
+        out,
+        "tab_geometry",
+        ["section", "start $s$ (m)", "length (m)", "end $x$ (m)", "end $z$ (m)", "inclination (deg)", "cells"],
+        rows,
+        align="lrrrrrr",
+        notes=(
+            "Polyline of the base case, starting at $x = z = 0$; the bend is a circular arc of \\SI{5}{\\metre} radius "
+            "represented by four chords. Mesh variants (Section~\\ref{sec:mesh}): fine, 30 cells in the descending line "
+            "and 10 in the riser; graded, a geometric progression of the cell size in those two sections with the "
+            "ratio of the last to the first cell equal to 0.25 (line, refined towards the low point) and 3 (riser, "
+            "refined towards the bend)."
+        ),
+    )
+
+
+def tab_parameters(out):
+    """Todos os parâmetros do caso base com unidades, lidos do JSON e do modelo construído (constantes do código
+    incluídas: larguras de chaveamento, banda do limitador, limites da projeção)."""
+    from mfsim.simulation import build_model, state_bounds
+
+    d = _base_case_dict()
+    net = _base_network()
+    model = build_model(net)
+    sch, pr = model.pipes[0].scheme, model.pipes[0].model.params
+    fd, res = d["fluid"], next(e for e in d["network"]["edges"] if e.get("type") == "reservoir")
+    ch = next(e for e in d["network"]["edges"] if e.get("type") == "choke")
+    integ, ref = d["integration"], d["reference"]
+    sr = ref["state_ref"]
+    lo, hi = state_bounds(model)
+    a_lo = float(lo[model.pipes[0].offset + np.flatnonzero(model.pipes[0].free % 4 == 0)[0]])
+    K = 0.0075 * ch["CV"]
+    rows = [
+        [
+            "fluids",
+            "liquid",
+            f"$\\rho_L = {fd['rhoL0']:g}\\,(P/P_0)^{{1/\\gamma_L}}$ kg/m$^3$, $\\gamma_L = {fd['gammaL']:g}$, $\\mu_L = \\num{{{fd['muL']:g}}}$ Pa\\,s",
+        ],
+        [
+            "",
+            "gas",
+            f"$\\rho_G = {fd['rhoG0']:g}\\,(P/P_0)^{{1/\\gamma_G}}$ kg/m$^3$, $\\gamma_G = {fd['gammaG']:g}$, $\\mu_G = \\num{{{fd['muG']:g}}}$ Pa\\,s; $P_0 = {fd['P0'] / 1e5:g}$ bar",
+        ],
+        ["", "surface tension", f"$\\sigma = {fd['sigma']:g}$ N/m"],
+        [
+            "boundaries",
+            "inflow",
+            f"$q_k = J_k \\max(0, P_r - P_{{in}})$: $J_L = {res['IPL']:g}$, $J_G = \\num{{{res['IPG']:.4g}}}$ kg/(s\\,bar); $P_r$ = 8 to 48 bar (15 in the base case)",
+        ],
+        [
+            "",
+            "choke",
+            f"$\\Delta P = \\dot m Q/(K a)^2$ [bar], $K = 0.0075\\,c_v$, $c_v = {ch['CV']:g}$ ($K a$ = {1e4 * K / np.sqrt(1e5):.2f} cm$^2$ at $a = 1$); $|Q|$ regularised with $10^{{-6}}$ m$^3$/s",
+        ],
+        ["", "separator", f"{d['network']['vertices'][1]['spec']['PT'] * ref['PR'] / 1e5:g} bar"],
+        [
+            "",
+            "pipe ends",
+            "inlet: flow rates from the inflow law, zero gradient of $\\alpha_G$; outlet: pressure from the choke law",
+        ],
+        [
+            "closures",
+            "evaluation bounds",
+            f"$\\alpha_G$ cut to [{pr.alpha_min:g}, {pr.alpha_max:g}] inside the closures",
+        ],
+        [
+            "",
+            "stratified",
+            (
+                f"interfacial factor of Andritsos and Hanratty with $v_{{GT}} = {pr.v_gt:g}$ m/s"
+                if hasattr(pr, "v_gt")
+                else "interfacial factor of Andritsos and Hanratty with $v_{GT} = 5.5$ m/s"
+            ),
+        ],
+        [
+            "",
+            "bubbly",
+            "physical drag (terminal velocity with $g$ and $\\sigma/\\rho_L$); $\\Delta P_L = 0.25\\rho_L v_r^2$, $|v_r| \\leq 3$ m/s",
+        ],
+        [
+            "",
+            "virtual mass",
+            f"$C_{{vm}} = {pr.virtual_mass:g}$, $\\lambda = {getattr(pr, 'vm_lambda', 1.0):g}$, weighted by the bubbly weight $w_B$",
+        ],
+        ["", "interfacial pressure", "Bestion term off ($\\delta = 0$)"],
+        [
+            "flow patterns",
+            "identification",
+            "automatic, smooth and local; logistic switches with $k = 20$ (Appendix~\\ref{app:patterns})",
+        ],
+        [
+            "",
+            "low-void rule",
+            f"bubbly closures below $\\alpha_G = {pr.low_void_alpha:g}$, $C^1$ ramp up to {2 * pr.low_void_alpha:g}",
+        ],
+        [
+            "",
+            "local rules",
+            "annular above $\\alpha_G = 0.9$; no stratified within \\SI{10}{\\degree} of vertical; film bridging with the cell liquid fraction",
+        ],
+        [
+            "scheme",
+            "staggered FV",
+            f"conservative variables $(\\rho_G\\alpha_G, \\rho_L\\alpha_L)$; face closures with the donor fraction",
+        ],
+        [
+            "",
+            "donor switch",
+            f"$w = \\tfrac12[1 + \\tanh(q/\\epsilon)]$, $\\epsilon = {sch.switch_frac:g}\\max|q|_{{\\mathrm{{nb}}}} + q_s$, $q_{{s,L}} = \\num{{{sch.q_switch_L:.3g}}}$, $q_{{s,G}} = \\num{{{sch.q_switch_G:.3g}}}$ kg/s",
+        ],
+        [
+            "",
+            "flux limiter",
+            f"$C^1$ ramp of the donor phase fraction over [0, {sch.flux_band:g}], donor switch with $\\epsilon = {sch.flux_eps:g}\\,q_s$",
+        ],
+        ["", "vanishing phase", f"relaxed to the no-slip flow rate with $\\tau = {sch.relax_time:g}$ s"],
+        ["", "artificial viscosity", f"$\\nu = C c h$, $C = {sch.art_visc:g}$"],
+        ["integrator", "formula", f"BDF of order 1--{integ['max_order']}, variable step, modified Newton"],
+        [
+            "",
+            "tolerances",
+            f"rtol = {integ['rtol']:g}; atol = {integ['tol_range']:g} $\\times$ (1, {sr['PT'] * ref['PR'] / 1e5:.2f} bar, {sr['qL']:.3g} kg/s, {sr['qG']:.3g} kg/s) for ($\\alpha_G$, $P$, $q_L$, $q_G$)",
+        ],
+        ["", "Newton", f"tolerance {integ['newton_tol']:g} (scaled), at most {integ['max_newton']} iterations"],
+        [
+            "",
+            "steps",
+            f"first \\num{{{integ['first_step']:g}}} s, minimum \\num{{{integ['min_step']:g}}} s, maximum none (\\SI{{1}}{{\\second}} from an equilibrium)",
+        ],
+        [
+            "",
+            "projection",
+            f"$\\alpha_G \\in [{a_lo:g}, {float(hi[model.pipes[0].offset + np.flatnonzero(model.pipes[0].free % 4 == 0)[0]]):g}]$, order 1 after a projection",
+        ],
+        [
+            "",
+            "backend",
+            f"{integ['backend'].upper() if integ['backend'] == 'jax' else integ['backend']}, exact Jacobian; boundary fluxes integrated with the same recurrence",
+        ],
+    ]
+    fl.tex_table(
+        out,
+        "tab_parameters",
+        ["group", "item", "value"],
+        rows,
+        align="llp{0.66\\linewidth}",
+        notes="Values read from the case file of the application and from the simulator (Section~\\ref{sec:case}).",
+    )
+
+
+def tab_runs(out):
+    """Corridas de cada estudo: lote, partida, tempo simulado, saída, passo máximo, orçamento e número de corridas,
+    lidos dos ficheiros de lote."""
+
+    def info(path):
+        b = json.load(open(fl.PROJECT / path))
+        sets = b["runs"][0].get("set", [])  # a primeira entrada (a de referência de cada lote)
+        get = lambda key: next((x.split("=", 1)[1] for x in sets if x.startswith(key + "=")), None)  # noqa: E731
+        return len(b["runs"]), get
+
+    rows = []
+    specs = [
+        ("discretisation (\\ref{sec:demands})", "batches/paper01_discretization.json", "blocked line", "3000", "2"),
+        ("ablation (\\ref{sec:ablation})", "batches/paper01_ablation.json", "blocked line", "3000", "2"),
+        (
+            "dense runs at 15 bar (\\ref{sec:opening})",
+            "batches/paper01_dynamics.json",
+            "steady state + 0.1 \\%",
+            "6000",
+            "1",
+        ),
+        ("mesh (\\ref{sec:mesh})", "batches/paper01_mesh.json", "blocked line", "4000", "2"),
+        ("backends (\\ref{sec:backend})", "batches/paper01_backend.json", "blocked line", "1000", "2"),
+        (
+            "map (\\ref{sec:map})",
+            "runs/maps/well_auto/blocked/batch.json",
+            "blocked line",
+            "2000 to 8000 (adaptive)",
+            "5",
+        ),
+    ]
+    for lab, path, start, tf, dt in specs:
+        try:
+            n, get = info(path)
+        except FileNotFoundError:
+            rows.append([lab, _tex(path), start, tf, dt, "--", "--", "--"])
+            continue
+        ms = get("integration.max_step")
+        bud = get("integration.max_cpu")
+        rows.append([lab, _tex(path), start, tf, dt, ms or "none", f"{float(bud):.0f}" if bud else "none", str(n)])
+    rows.append(
+        [
+            "model problem (\\ref{sec:toy})",
+            _tex("toy/model_problem.py run"),
+            "steady state + 0.1 \\%",
+            "300",
+            "0.1",
+            "0.5",
+            "none",
+            "4",
+        ]
+    )
+    fl.tex_table(
+        out,
+        "tab_runs",
+        ["study (section)", "batch", "start", "time (s)", "output (s)", "max.\\ step (s)", "budget (s)", "runs"],
+        rows,
+        align="llllrrrr",
+        notes=(
+            "Batches of the repository (\\texttt{mfsim batch <file>}); each entry of a batch is the case file of the "
+            "application with the overrides of Table~\\ref{tab:ablationchanges} or of the batch itself. Budget: "
+            "wall-clock time after which a run is stopped with its partial trajectory. Exceptions: the SciPy variant of "
+            "the ablation bounds the step by \\SI{1}{\\second}, and the runs at an opening of 0.13 of the mesh batch, "
+            "which provide the steady states of the finer meshes, start from a blocked line with the step bounded by "
+            "\\SI{1}{\\second}. The model problem uses rtol $= 10^{-4}$ and atol $= 10^{-6}$ (dimensionless units)."
+        ),
+    )
+
+
+def tab_ablation_changes(out):
+    """Alterações exatas de cada variante da ablação (caminho JSON = valor), sem as comuns a todas."""
+    b = json.load(open(fl.PROJECT / "batches" / "paper01_ablation.json"))
+    common = {"network.edges.choke_2.opening=1.0", "integration.max_cpu=5400.0"}
+    rows = []
+    for r in b["runs"]:
+        ch = [x for x in r.get("set", []) if x not in common]
+        if r.get("case") and "sharp" in str(r.get("case")):
+            ch = [f"case {r['case']}"] + ch
+        lab = ABL_LABELS.get(r["name"], r["name"])
+        rows.append([lab, "; ".join(_tex(x) for x in ch) if ch else "--"])
+    fl.tex_table(
+        out,
+        "tab_ablationchanges",
+        ["variant", "change to the case file"],
+        rows,
+        align="lp{0.62\\linewidth}",
+        notes=(
+            "Every variant also sets \\texttt{network.edges.choke\\_2.opening=1.0} and "
+            "\\texttt{integration.max\\_cpu=5400}."
+        ),
+    )
+
+
+def tab_analysis(out):
+    """Definições das grandezas derivadas das corridas, com as constantes lidas do código."""
+    import inspect
+
+    from mfsim.analysis import N_EFF_GLOBAL, SLOW_MODE, cycle_class, jansen_choke_dp_crit
+
+    cc = inspect.signature(cycle_class).parameters
+    jj = inspect.signature(jansen_choke_dp_crit).parameters
+    rows = [
+        [
+            "cycle class",
+            f"stable if the range of the smoothed $P_{{in}}$ is below max({cc['amp_stable'].default:g} bar, {100 * cc['amp_rel'].default:g} \\% of its mean) or it crosses its mean at most once; severe slugging if the liquid outflow peaks at {cc['surge'].default:g} times its mean or more; pressure cycle otherwise",
+        ],
+        [
+            "smoothing, period",
+            f"centred moving average of {SMOOTH:g} s on $P_{{in}}$; period = mean time between up-crossings of the mean",
+        ],
+        [
+            "windows",
+            "dense runs: last \\SI{3000}{\\second}; map: windows of \\SI{2000}{\\second}, stop when the range is below \\SI{0.1}{\\bar} or two windows agree within \\SI{10}{\\percent} in range and period, at most \\SI{8000}{\\second}",
+        ],
+        [
+            "blowdowns (tables)",
+            "minima of $P_{in}$ below the middle of its 2--98 \\% percentile range, after \\SI{300}{\\second}, at least \\SI{150}{\\second} apart",
+        ],
+        [
+            "fronts",
+            "seal: liquid-filled length upstream of the low point ($\\alpha_G < 0.5$); level: top of the liquid column in the riser ($\\alpha_G < 0.5$); riser full: level above 98 \\% of the riser for \\SI{20}{\\second}; blowout start: maximum of the smoothed $P_{in}$",
+        ],
+        [
+            "linear stability",
+            f"eigenvalues of $\\bJ\\bv = \\lambda\\bM\\bv$ with the exact Jacobian; global slow modes: $|\\lambda| < {SLOW_MODE:g}$ s$^{{-1}}$ and $n_{{\\mathrm{{eff}}}} \\geq {N_EFF_GLOBAL:g}$, $n_{{\\mathrm{{eff}}}} = 1/\\sum_j p_j^2$ with $p_j$ the share of node $j$ in $\\|\\bv\\|^2$, states scaled by their tolerance ranges; class from the leading global slow mode",
+        ],
+        [
+            "continuation",
+            "Newton on $\\bF = 0$ (residual $10^{-10}$, at most 60 iterations) from the neighbouring point; at \\SI{15}{\\bar} steps of 0.01 in $a$ up to 0.4 and 0.05 above; map: neighbouring grid points, repeated passes; $a_H$ by linear interpolation of Re $\\lambda$ in $\\log a$",
+        ],
+        [
+            "choke criterion",
+            f"$\\Delta p_c$ of \\citet{{jansen1996}} with $\\alpha = {jj['alpha'].default:g}$, $\\alpha_p = {jj['alpha_p'].default:g}$, $L = {jj['L'].default:g}$ m, $H = {jj['H'].default:g}$ m, $P_S = {jj['P_S'].default / 1e5:g}$ bar, mean of $\\Phi = 1$ and 0.87; choke $\\Delta p = q_L^2/(\\rho_L (K a)^2)$ with the production of the steady state",
+        ],
+        [
+            "well-posedness",
+            "eigenvalues of $\\bA$ in every cell, one state every \\SI{5}{\\second}; ill-posed if the largest $|\\mathrm{Im}\\,\\lambda| > 10^{-6}$ m/s",
+        ],
+        ["mass error", "inventory change minus the boundary fluxes integrated with the recurrence of the integrator"],
+    ]
+    fl.tex_table(out, "tab_analysis", ["quantity", "definition"], rows, align="lp{0.74\\linewidth}")
+
+
+def software_note(out):
+    """Versões do software e revisão do repositório com que o PDF foi gerado (fragmento LaTeX)."""
+    import platform
+    import subprocess
+
+    import jax
+    import scipy
+
+    try:
+        rev = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=fl.PROJECT, capture_output=True, text=True, check=True
+        ).stdout.strip()
+    except Exception:
+        rev = "--"
+    txt = (
+        f"Python {platform.python_version()}, NumPy {np.__version__}, SciPy {scipy.__version__}, "
+        f"JAX {jax.__version__}; repository revision {_tex(rev)}."
+    )
+    path = Path(out) / "software.tex"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("% gerado pelo guião de figuras do artigo; não editar à mão\n" + txt + "\n")
+    print(f"tabela: {path}")
+
+
 FIGURES = {
     "geometry": geometry,
     "hyperbolicity": hyperbolicity,
@@ -2270,6 +2625,12 @@ TABLES = {
     "tab_case": tab_case,
     "tab_cycle": tab_cycle,
     "tab_hopf_mesh": tab_hopf_mesh,
+    "tab_geometry": tab_geometry,
+    "tab_parameters": tab_parameters,
+    "tab_runs": tab_runs,
+    "tab_ablationchanges": tab_ablation_changes,
+    "tab_analysis": tab_analysis,
+    "software": software_note,
 }
 
 if __name__ == "__main__":
