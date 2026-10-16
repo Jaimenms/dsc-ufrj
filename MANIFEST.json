@@ -1545,7 +1545,7 @@
   },
   "notebooks/data/severe_slug_map_well.npz": {
    "size": 96376,
-   "sha256": "83efee2597a72d48c6c0c8171c80c79ab0670851c11f5802cde0c7f7ec5ea543",
+   "sha256": "ba5de57afbc94a684073bef9926a03c9a0f7abbddaca027c9d423017c2b377e6",
    "keys": [
     "P_max",
     "P_mean",
@@ -1594,15 +1594,34 @@
      0.13,
      15.0
     ],
-    "commit": "802587c",
+    "commit": "e755502",
     "selected": [
      "severe_slug_map_well_steady_ab0.130_P15.0",
      "severe_slug_map_well_steady_ab0.280_P15.0",
      "severe_slug_map_well_steady_ab0.600_P15.0",
-     "severe_slug_map_well_steady_ab0.600_P24.0",
-     "severe_slug_map_well_blocked_ab0.600_P24.0"
+     "severe_slug_map_well_steady_ab0.060_P08.0",
+     "severe_slug_map_well_blocked_ab0.060_P08.0"
     ]
    }
+  },
+  "notebooks/data/severe_slug_map_well_blocked_ab0.060_P08.0.npz": {
+   "size": 1499190,
+   "sha256": "ca35071df1df2a80519d4d30b75ce2327a2168b2b0b07f27563314a449ef8305",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "case_json",
+    "info_json",
+    "provenance_json"
+   ],
+   "T_shape": [
+    1601
+   ],
+   "X_shape": [
+    112,
+    1601
+   ]
   },
   "notebooks/data/severe_slug_map_well_blocked_ab0.600_P24.0.npz": {
    "size": 1130890,
@@ -1623,9 +1642,29 @@
     1201
    ]
   },
+  "notebooks/data/severe_slug_map_well_steady_ab0.060_P08.0.npz": {
+   "size": 395406,
+   "sha256": "361a3e14bf444be3e7cb22c5704cca65aa709a5e46d03c645524873862218695",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "case_json",
+    "ic/1",
+    "info_json",
+    "provenance_json"
+   ],
+   "T_shape": [
+    401
+   ],
+   "X_shape": [
+    112,
+    401
+   ]
+  },
   "notebooks/data/severe_slug_map_well_steady_ab0.130_P15.0.npz": {
-   "size": 395414,
-   "sha256": "2ba82896f2698d649c0edf1de3e5c5af45348b5be92363016f7e60a361101297",
+   "size": 395358,
+   "sha256": "bbc4779d59b0e0c23f54050ef233e27942e191316e7bcfb88a923c9ef1155eba",
    "keys": [
     "T",
     "X",
@@ -1644,8 +1683,8 @@
    ]
   },
   "notebooks/data/severe_slug_map_well_steady_ab0.280_P15.0.npz": {
-   "size": 1132346,
-   "sha256": "e32cb257680d4a2b1e69980c9dbf5cb54eabe8e544e68cff60cac8f0c63aeb60",
+   "size": 1132350,
+   "sha256": "dad802e3ff8e84da9a78036e2ceb4820f4a23f1a1e4cecfceec83b544d33b061",
    "keys": [
     "T",
     "X",
@@ -1664,8 +1703,8 @@
    ]
   },
   "notebooks/data/severe_slug_map_well_steady_ab0.600_P15.0.npz": {
-   "size": 763882,
-   "sha256": "91b6d737019946856b47b60400078797b5374f6e79d224ea399b5441ebe5cf69",
+   "size": 763866,
+   "sha256": "28a866f958077bb1eba9a0dad819c6f29ad2460e7ae131a3eb9f83fc3f4f26e1",
    "keys": [
     "T",
     "X",

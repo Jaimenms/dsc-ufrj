@@ -366,8 +366,8 @@ SELECTED = [
     ("steady", 0.13, 15.0),
     ("steady", 0.28, 15.0),
     ("steady", 0.6, 15.0),
-    ("steady", 0.6, 24.0),
-    ("blocked", 0.6, 24.0),
+    ("steady", 0.06, 8.0),
+    ("blocked", 0.06, 8.0),
 ]
 SUMMARY_KEYS = (
     "ab",

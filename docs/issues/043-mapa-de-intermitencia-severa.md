@@ -37,32 +37,41 @@ derivavam no fim.
 
 ## Benefício
 
-| | partida do estacionário | partida bloqueada |
-|---|---|---|
-| estáveis | 87 | 79 |
-| ciclo de pressão, saída suave | 14 | 22 |
-| golfada severa | 25 | 25 |
-| falhas do integrador | 0 | 0 |
-| paragem: permanente / ciclo repetido / tempo máximo | 84 / 18 / 24 | 76 / 23 / 27 |
-| CPU total, passos (mediana) | 5,1 h, 9 349 | 6,0 h, 12 744 |
+*Refeito em 2026-10-16 com passo máximo de 1 s em todas as corridas (issue 047), períodos com média móvel de 20 s
+e a classe linear do estacionário (issue 048). A primeira versão, sem passo máximo, dava 8 células de «histerese»
+que eram, em 7 delas, partidas do estacionário presas ao equilíbrio pelo amortecimento do BDF; essas corridas
+ficaram em `runs/maps/well_nomaxstep`.*
 
-- **Concorda com a teoria**: a fronteira estável do lado aberto segue, linha a linha, o
-  critério de choke de Jansen, Shoham e Taitel (1996), queda no choke de cerca de 0,67 bar.
-- **Histerese**: 8 células estáveis a partir do estacionário ciclam a partir da partida
-  bloqueada, sete delas logo acima da fronteira entre 15 e 30 bar. Um poço que escoa estável
-  aguenta o choke mais aberto do que um poço a arrancar depois de uma paragem.
-- **Produção**: a abertura estável mais produtiva sobe com a pressão do reservatório (0,10 a
-  10 bar; 0,22 a 15 bar a partir do estacionário, 0,17 bloqueada; aberto acima de 30 bar).
-- **Ciclos longos**: a linha de 8 bar tem ciclos de cerca de uma hora, mais longos do que as
-  janelas de 2000 s. A classe decide-se por isso no registo depois do transitório (todas as janelas
-  menos a primeira, `run_cycle_class`), e não só na última janela; com a última janela apenas,
-  5 golfadas dessa linha passavam por estáveis.
-- A lei de válvula homogénea (039) é o que faz o choke estabilizar; com a lei da tese o
-  protótipo tinha 11 células estáveis em 126.
+| | partida do estacionário | partida bloqueada | classe linear do estacionário |
+|---|---|---|---|
+| estáveis | 81 | 77 | 75 |
+| ciclo de pressão (Hopf no linear) | 20 | 24 | 27 |
+| golfada severa (modo real no linear) | 25 | 25 | 24 |
+| concordância com a classe linear | 117 / 126 | 117 / 126 | — |
+| falhas do integrador | 0 | 0 | — |
+
+- **O espetro prevê o mapa.** A classe linear do estacionário (modo global lento dominante, com a matriz de massa)
+  bate com a dinâmica em 117 de 126 pontos: o ciclo de pressão nasce de uma bifurcação de Hopf, e onde o modo
+  dominante passa a real começa a golfada severa. A 15 bar o par atravessa o eixo entre 0,17 e 0,22 (período
+  linear 473 s; ciclo simulado na fronteira 489 s).
+- **Fronteira com a forma de Jansen, limiar mais baixo.** No cruzamento linear a queda no choke (lei monofásica do
+  líquido) é 0,37–0,48 bar de 10 a 30 bar, contra 0,61–0,72 bar do critério de Jansen, Shoham e Taitel (1996); as
+  aberturas críticas são 1,2 a 1,5 vezes as de Jansen. Na resolução da grelha a fronteira dinâmica cabe entre as
+  duas, e por isso parecia seguir Jansen.
+- **Histerese.** 4 células têm classes diferentes entre as partidas. Duas são histerese real, estacionário
+  linearmente estável e partida bloqueada a ciclar (8 bar / 0,06 e 30 bar / 0,6: bifurcação subcrítica); as outras
+  duas (15 bar / 0,22 e 24 bar / 0,46) são pares de Hopf no limiar (crescimento ~10⁻⁴ /s) que a partida do
+  estacionário perturbada em 0,1 % não vê em 2000 s. A paragem adaptativa não é um teste de estabilidade.
+- **Produção**: a 15 bar a abertura estável mais produtiva é 0,22 (0,49 kg/s); segurar o estacionário instável à
+  abertura total daria +7 %.
+- **Ciclos longos**: a classe decide-se no registo depois do transitório (todas as janelas menos a primeira,
+  `run_cycle_class`); com só a última janela, golfadas de uma hora a 8 bar passavam por estáveis.
+- A lei de válvula homogénea (039) é o que faz o choke estabilizar; com a lei da tese o protótipo tinha 11 células
+  estáveis em 126.
 
 ## Referências
 
-Correção pendente: as corridas deste mapa não tinham passo máximo; 7 das 8 células de histerese têm partidas do estacionário com 22–97 passos em 2000 s, isto é, ficaram presas ao equilíbrio por amortecimento do BDF (issue [047](047-passo-maximo-perto-do-equilibrio.md)). A coluna «partida do estacionário» tem de ser refeita com `integration.max_step` = 1 s antes de usar as contagens de histerese.
+Correção feita (2026-10-16): o mapa foi refeito com `integration.max_step` = 1 s em todas as corridas (issue [047](047-passo-maximo-perto-do-equilibrio.md)); ver «Benefício».
 
 Notebook: [nb_estabilidade_mapa](../../notebooks/issues/nb_estabilidade_mapa.ipynb) (fonte em `notebooks_src/issues/`).
 

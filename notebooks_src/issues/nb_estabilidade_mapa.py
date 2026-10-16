@@ -1,10 +1,11 @@
 # %% [markdown]
-# # Estabilidade do riser com choke: lei de válvula, partida do estacionário, paragem adaptativa, modos da curva e o mapa
+# # Estabilidade do riser com choke: lei de válvula, partida do estacionário, paragem adaptativa, espetro e o mapa
 #
 # O caso de referência da intermitência severa passa a ser um poço: IPR linear na entrada da linha e choke no topo
 # do riser. A pergunta é onde, num plano abertura do choke × pressão do reservatório, o escoamento é permanente,
-# cicla com a saída suave ou dá golfada severa, e porquê. Pelo caminho, quatro alterações ao simulador que o mapa
-# exigiu e um estudo que descartou uma hipótese.
+# cicla com a saída suave ou dá golfada severa, e porquê. Pelo caminho, as alterações ao simulador que o mapa
+# exigiu, dois erros de análise corrigidos (o passo do integrador e a matriz de massa) e a resposta à pergunta de
+# partida: o espetro do estado estacionário prevê o mapa.
 #
 # Issues ilustradas (índice em [docs/issues/INDEX.md](../../docs/issues/INDEX.md)):
 # - [039](../../docs/issues/039-lei-de-valvula-homogenea.md) lei de válvula homogénea
@@ -12,11 +13,13 @@
 # - [041](../../docs/issues/041-paragem-adaptativa.md) tempo simulado adaptativo
 # - [042](../../docs/issues/042-modos-locais-da-curva.md) modos locais instáveis na curva
 # - [043](../../docs/issues/043-mapa-de-intermitencia-severa.md) o mapa
+# - [047](../../docs/issues/047-passo-maximo-perto-do-equilibrio.md) passo máximo nas corridas que partem de um equilíbrio
+# - [048](../../docs/issues/048-espetro-com-matriz-de-massa.md) espetro do modelo conservativo com a matriz de massa
 #
 # *Nenhuma simulação corre aqui. As 252 corridas do mapa vêm de `tools/slug_map.py build` e de
 # `mfsim batch runs/maps/well/<partida>/batch.json --jobs 12`; `tools/slug_map.py export` grava em
 # `notebooks/data` o resumo de todas (`severe_slug_map_well.npz`) e cinco corridas completas. O notebook só lê e
-# desenha.*
+# desenha. Todas as corridas do mapa usam passo máximo de 1 s (issue 047).*
 
 # %%
 import json
@@ -127,8 +130,10 @@ plt.show()
 # perturbado em 0,1 % nas pressões. **Partida bloqueada**: linha cheia e riser bloqueado, como depois de uma
 # paragem. Estável: amplitude da pressão de entrada menor do que 0,1 bar ou 1 % da média, ou sem ciclo até aos
 # 8000 s; golfada severa: pico da vazão de saída de pelo menos 2× a média; ciclo de pressão com saída suave no
-# resto. Cada célula mostra a pressão de entrada (estável) ou a pressão máxima e o período (com ciclo). A linha
-# tracejada é o critério de choke de Jansen, Shoham e Taitel (1996).
+# resto. Cada célula mostra a pressão de entrada (estável) ou a pressão máxima e o período (com ciclo; média móvel
+# de 20 s, para as oscilações curtas da coluna do riser não contarem como ciclos). A linha tracejada é o critério
+# de choke de Jansen, Shoham e Taitel (1996), com a mesma forma (queda constante no choke) mas um limiar mais alto do
+# que o do próprio modelo (ver o mapa linear, mais abaixo).
 
 # %%
 dpc = 0.5 * (jansen_choke_dp_crit(Phi=0.87) + jansen_choke_dp_crit())
@@ -179,19 +184,39 @@ print(
 # %% [markdown]
 # ### Histerese
 #
-# As células em que as duas partidas dão classes diferentes. Todas são estáveis a partir do estacionário e ciclam
-# a partir da partida bloqueada: logo acima da fronteira, entre 15 e 30 bar, o poço que já escoa estável aguenta o
-# choke mais aberto do que o poço a arrancar de uma paragem.
+# As células em que as duas partidas dão classes diferentes, ao lado da classe linear do estacionário (secção 048).
+# A partida do estacionário (perturbação de 0,1 %, janelas de 2000 s, amplitude mínima de 0,1 bar) não vê
+# crescimentos mais lentos do que ~10⁻³ /s, por isso um «estável» dela pode ser uma instabilidade lenta por medir.
+# **Histerese real** é o estacionário linearmente estável e a partida bloqueada a ciclar: o ciclo-limite coexiste
+# com o equilíbrio estável (bifurcação subcrítica).
 
 # %%
 diff = [(P, ab) for P in pressures for ab in openings if G[("steady", P, ab)]["cls"] != G[("blocked", P, ab)]["cls"]]
-print(f"{len(diff)} células com classes diferentes")
+print(f"{len(diff)} células com classes diferentes entre as partidas")
 print(
-    f"{'P_res (bar)':>11s} {'abertura':>9s} {'estacionário':>13s} {'bloqueada':>10s} {'amplitude bloqueada (bar)':>26s}"
+    f"{'P_res (bar)':>11s} {'abertura':>9s} {'estacionário':>13s} {'bloqueada':>10s} {'linear':>7s} {'λ1 (1/s)':>10s} {'leitura':>34s}"
 )
 for P, ab in diff:
-    s, b = G[("steady", P, ab)], G[("blocked", P, ab)]
-    print(f"{P:11.0f} {ab:9.3f} {s['cls']:>13s} {b['cls']:>10s} {b['amp']:26.2f}")
+    s_, b_ = G[("steady", P, ab)], G[("blocked", P, ab)]
+    real_h = s_["lin_cls"] == "stable" and b_["cls"] != "stable"
+    leitura = (
+        "histerese real (subcrítica)"
+        if real_h
+        else ("instabilidade lenta não medida" if s_["lin_cls"] != "stable" else "--")
+    )
+    print(
+        f"{P:11.0f} {ab:9.3f} {s_['cls']:>13s} {b_['cls']:>10s} {s_['lin_cls']:>7s} {s_['lin_re1']:+10.5f} {leitura:>34s}"
+    )
+hyst = [
+    (P, ab)
+    for P in pressures
+    for ab in openings
+    if G[("steady", P, ab)]["lin_cls"] == "stable" and G[("blocked", P, ab)]["cls"] != "stable"
+]
+print(
+    "histerese real (estacionário linearmente estável, partida bloqueada a ciclar):",
+    ", ".join(f"{P:g} bar / {ab:g}" for P, ab in hyst) or "nenhuma",
+)
 
 # %% [markdown]
 # ## Diagrama de bifurcação a 15 bar e o custo do choke
@@ -301,25 +326,29 @@ fig.colorbar(im, ax=axes, label="Fração de gás", fraction=0.025)
 plt.show()
 
 # %% [markdown]
-# ### A célula de histerese a 24 bar e abertura 0,6
+# ### A célula de histerese real a 8 bar e abertura 0,06
 #
-# O mesmo ponto nas duas partidas: a partir do estacionário o escoamento fica permanente; a partir da linha
-# bloqueada instala-se um ciclo de pressão que não desaparece.
+# O estacionário é linearmente estável (o par lento é amortecido); a partida do estacionário fica nele, a partida
+# bloqueada instala um ciclo de pressão que não desaparece.
 
 # %%
+H_P, H_AB = 8.0, 0.06
 fig, ax = plt.subplots(figsize=(11, 3.4))
 for start in ("steady", "blocked"):
-    r = run_of(start, 0.6, 24.0)
+    r = run_of(start, H_AB, H_P)
     ax.plot(r.T, r.pipe(0)["out"]["P_bar"][1], color=SERIES[start], lw=1, label=START_LABEL[start])
 ax.set_xlabel("Tempo (s)")
 ax.set_ylabel("Pressão de entrada (bar)")
 ax.grid(alpha=0.3)
 ax.legend(frameon=False, fontsize=8)
 plt.show()
+lin = G[("steady", H_P, H_AB)]
+print(f"classe linear do estacionário: {lin['lin_cls']}, λ1 = {lin['lin_re1']:+.5f}{lin['lin_im1']:+.5f}j /s")
 for start in ("steady", "blocked"):
-    r = G[(start, 24.0, 0.6)]
+    r = G[(start, H_P, H_AB)]
+    per = f"{r['period']:.0f} s" if np.isfinite(r["period"]) else "--"
     print(
-        f"{START_LABEL[start]:24s}: {r['cls']:8s} amplitude {r['amp']:.3f} bar, parou por '{r['settle']}' aos {r['t_end']:.0f}"
+        f"{START_LABEL[start]:24s}: {r['cls']:8s} amplitude {r['amp']:.3f} bar, período {per}, parou por '{r['settle']}' aos {r['t_end']:.0f}"
     )
 
 # %% [markdown]
@@ -327,7 +356,9 @@ for start in ("steady", "blocked"):
 #
 # Todas as partidas do estacionário convergiram no Newton (o estado gravado já era o estacionário). A paragem
 # adaptativa integra em janelas de 2000 s e para quando a amplitude fica abaixo da tolerância ou o ciclo se repete;
-# uma deriva sem ciclo segue até aos 8000 s e conta como estável.
+# uma deriva sem ciclo segue até aos 8000 s e conta como estável. A paragem adaptativa poupa tempo, mas **não é um
+# teste de estabilidade**: a partir de uma perturbação de 0,1 %, uma instabilidade que cresce a 10⁻³ /s ainda não
+# passa de 0,1 bar quando a primeira janela acaba.
 
 # %%
 print(
@@ -351,131 +382,230 @@ ax.grid(alpha=0.3, axis="y")
 plt.show()
 
 # %% [markdown]
-# ## 042 · Os autovalores do estacionário em três pontos: estável, ciclo de pressão e golfada severa
+# ## 048 · O espetro do estacionário prevê o mapa
 #
-# A 15 bar, as aberturas 0,13 (estável), 0,28 (ciclo de pressão) e 0,6 (golfada severa) têm todas um estado
-# estacionário, o ponto de partida gravado das corridas. Se a golfada fosse uma bifurcação de Hopf desse
-# estacionário, veríamos um par complexo lento a atravessar o eixo imaginário entre o primeiro e o terceiro ponto.
-# Em cima, o espetro inteiro; em baixo, a zona lenta perto da origem, onde esse par apareceria.
+# No modo conservativo o lado direito do modelo devolve a derivada das massas por volume das células, não a dos
+# estados: a linearização é M·δẋ = J·δx, com M = ∂T/∂x (`mfsim.analysis.mass_matrix`), e os autovalores certos
+# são os do problema generalizado (`linear_spectrum`). Uma primeira versão desta análise usou os de J sozinha e
+# concluiu que os autovalores não desenhavam o mapa; estava errada (issue 048, nota no topo da 042).
+#
+# Os modos separam-se pelo número efetivo de nós do vetor próprio (`mode_participation`): **globais** (pelo
+# menos 4 nós) e **locais** (presos a uma ou duas células). A classe linear do estacionário vem do modo global
+# lento dominante (`slow_global_modes`): amortecido (estável), par complexo instável (bifurcação de Hopf: ciclo
+# de pressão) ou real instável (instabilidade monotónica: golfada de relaxação).
+#
+# ### Três pontos a 15 bar
 
 # %%
-from mfsim.compiled import get_jax
+from mfsim.analysis import mode_participation, slow_global_modes
 
 
-def spectrum(ab):
-    """Autovalores da Jacobiana exata (JAX) no estacionário de partida do ponto (15 bar, ab), a célula onde cada
-    vetor próprio tem mais peso e a zona dessa célula: "curva" (da célula do ponto baixo à base do riser),
-    "entrada" (até ao primeiro nó da linha a −3°) ou "resto"."""
+def steady_modes(ab):
+    """Modos do estacionário de partida do ponto (15 bar, ab), sem a perturbação de partida."""
     r = run_of("steady", ab, P_SEL)
     m = r.model
     X = np.array(r.X[:, 0], float)
-    X[m.state_slots() == 1] /= 1.0 + meta["perturb"]  # o estacionário antes da perturbação de partida
-    _, jac = get_jax(m)
-    w, V = np.linalg.eig(np.asarray(jac(0.0, X)))
-    pb = m.pipes[0]
-    z = zones(m)
-    loc = np.array([pb.free[np.argmax(np.abs(V[:, i]))] // 4 for i in range(w.size)])
-    where = np.select(
-        [(loc >= z["k_low"]) & (loc <= z["k_base"]), loc <= z["k_line"], loc < z["k_low"]],
-        ["curva", "entrada", "linha"],
-        default="riser",
-    )
-    Y = m.assemble(0.0, X)[1][0]
-    speeds = pb.model.eigenvalues(Y[: z["th"].size], z["th"])
+    X[m.state_slots() == 1] /= 1.0 + meta["perturb"]
+    w, n_eff, node = mode_participation(m, X)
     return dict(
-        w=w,
-        loc=loc,
-        where=where,
-        th=z["th"],
-        Y=Y,
-        res=float(np.linalg.norm(m.rhs(0.0, X))),
-        complex_speeds=int(np.sum(np.abs(speeds.imag) > 1e-6)),
+        w=w, n_eff=n_eff, node=node, res=float(np.linalg.norm(m.rhs(0.0, X))), modes=slow_global_modes(w, n_eff, node)
     )
 
 
-ZONES = (
-    ("riser", GRID, 10, "riser e topo"),
-    ("linha", SERIES["steady"], 12, "linha estratificada a −3°"),
-    ("entrada", "#52514e", 14, "mudança de inclinação na entrada"),
-    ("curva", SERIES["blocked"], 16, "ponto baixo e curva"),
-)
-spec = {ab: spectrum(ab) for ab, _ in sel}
+spec = {ab: steady_modes(ab) for ab, _ in sel}
 fig, axes = plt.subplots(2, 3, figsize=(13, 7.2))
 for j, (ab, lab) in enumerate(sel):
     d = spec[ab]
-    for k, (xl, yl) in enumerate((((-40, 40), (-90, 90)), ((-1.0, 0.3), (-0.6, 0.6)))):
+    w, glob = d["w"], d["n_eff"] >= 4.0
+    for k, (xl, yl) in enumerate((((-15, 12), (-0.1, 6.0)), ((-0.03, 0.09), (-0.004, 0.05)))):
         ax = axes[k, j]
-        for zone, c, sz, lab_z in ZONES:
-            mk = d["where"] == zone
-            ax.scatter(d["w"].real[mk], d["w"].imag[mk], s=sz, color=c, label=lab_z)
+        ax.scatter(w.real[~glob], w.imag[~glob], s=14, color=SERIES["blocked"], label="locais (< 4 nós efetivos)")
+        ax.scatter(w.real[glob], w.imag[glob], s=12, color=SERIES["steady"], label="globais")
         ax.axvline(0, color=INK, lw=0.8)
         ax.set_xlim(*xl)
         ax.set_ylim(*yl)
         ax.grid(alpha=0.3)
         ax.set_xlabel("Parte real (1/s)")
     axes[0, j].set_title(f"abertura {ab:g}: {lab}".replace(".", ","), loc="left", fontsize=10)
-axes[0, 0].set_ylabel("Parte imaginária (rad/s)\nespetro inteiro")
+axes[0, 0].set_ylabel("Parte imaginária (rad/s)\nespetro (Im ≥ 0)")
 axes[1, 0].set_ylabel("Parte imaginária (rad/s)\nzona lenta")
-axes[0, 0].legend(frameon=False, fontsize=8, loc="lower left")
+axes[0, 0].legend(frameon=False, fontsize=8, loc="upper left")
 plt.tight_layout()
 plt.show()
 
 print(
-    f"{'ponto':26s} {'resíduo':>8s} {'vel. complexas':>15s} {'instáveis':>10s} {'na curva':>9s} {'na linha':>9s}"
-    f" {'na entrada':>11s}"
-    f" {'maior (1/s)':>12s} {'lentos: maior parte real':>25s}"
+    f"{'ponto':26s} {'resíduo':>8s} {'classe linear':>14s} {'1.º modo global lento':>24s} {'período':>8s} {'mais instável dos outros':>34s}"
 )
 for ab, lab in sel:
     d = spec[ab]
-    w = d["w"]
-    unst = w.real > 1e-9
-    slow = w[np.abs(w) < 0.5]
+    md = d["modes"]
+    per = f"{2 * np.pi / md['im1']:.0f} s" if abs(md["im1"]) > 1e-9 else "--"
+    oth = f"{md['re_other']:+.2f}{md['im_other']:+.2f}j ({md['n_eff_other']:.1f} nós, nó {md['node_other']})"
     print(
-        f"{f'{ab:g} ({lab})':26s} {d['res']:8.0e} {d['complex_speeds']:15d} {int(unst.sum()):10d}"
-        f" {int((unst & (d['where'] == 'curva')).sum()):9d} {int((unst & (d['where'] == 'linha')).sum()):9d}"
-        f" {int((unst & (d['where'] == 'entrada')).sum()):11d}"
-        f" {w.real.max():12.2f} {slow.real.max() if slow.size else float('nan'):+25.3f}"
-    )
-d = spec[0.13]
-o = np.argsort(-d["w"].real)[:4]
-print("\nponto estável, os quatro modos mais instáveis:")
-print(f"{'autovalor (1/s)':>22s} {'célula':>7s} {'ângulo':>7s} {'fração de gás':>14s}")
-for i in o:
-    k = d["loc"][i]
-    print(
-        f"{d['w'][i].real:+9.2f} {d['w'][i].imag:+9.2f}j {k:7d} {d['th'][min(k, d['th'].size - 1)]:6.0f}° {d['Y'][k, 0]:14.3f}"
+        f"{f'{ab:g} ({lab})':26s} {d['res']:8.0e} {md['cls']:>14s} {md['re1']:+11.5f}{md['im1']:+.5f}j {per:>8s} {oth:>34s}"
     )
 
 # %% [markdown]
-# Os três espetros têm o mesmo desenho. Há dezenas de modos rápidos instáveis, todos locais: os mais fortes no
-# ponto baixo da curva, onde a linha a −3° encontra o arco e o duto está quase cheio de líquido; outros fracos (até
-# 3 /s) e de alta frequência (30 a 50 rad/s) na linha estratificada e na passagem do troço horizontal de entrada para
-# a linha. O riser não tem nenhum. A zona lenta só tem modos amortecidos. O ponto **estável** é o que tem o modo
-# mais instável. Nada no espetro separa o ponto estável da golfada severa; o que os separa é o destino não linear
-# da trajetória, que só a simulação dinâmica mostra.
+# ### O cruzamento com a abertura a 15 bar
+#
+# Parte real e período do modo global lento dominante do estacionário de cada abertura, por cima das classes da
+# simulação dinâmica. O par complexo atravessa o eixo onde o ciclo de pressão começa; mais aberto, o modo dominante
+# passa a real, e é aí que começa a golfada severa.
+
+# %%
+line = sorted([G[("steady", P_SEL, ab)] for ab in openings], key=lambda r: r["ab"])
+ab_l = np.array([r["ab"] for r in line])
+re1 = np.array([r["lin_re1"] for r in line])
+im1 = np.array([r["lin_im1"] for r in line])
+fig, (a1, a2) = plt.subplots(2, 1, figsize=(8.5, 6.2), sharex=True)
+for r in line:
+    for a in (a1, a2):
+        a.axvspan(
+            r["ab"] / 1.08, r["ab"] * 1.08, color=CYCLE_COLORS[G[("blocked", P_SEL, r["ab"])]["cls"]], alpha=0.18, lw=0
+        )
+a1.axhline(0, color=INK, lw=0.8)
+a1.plot(ab_l, re1, color=INK, lw=1.6, marker="o", ms=4)
+a1.set_ylabel("Parte real do modo global\nlento dominante (1/s)")
+cplx = np.abs(im1) > 1e-9
+a2.plot(
+    ab_l[cplx],
+    2 * np.pi / np.abs(im1[cplx]),
+    color=INK,
+    lw=1.6,
+    marker="o",
+    ms=4,
+    label="período linear 2π/Im (par complexo)",
+)
+cyc = [
+    (r["ab"], G[("blocked", P_SEL, r["ab"])]["period"])
+    for r in line
+    if G[("blocked", P_SEL, r["ab"])]["cls"] != "stable"
+]
+a2.plot(
+    [c[0] for c in cyc],
+    [c[1] for c in cyc],
+    color=SERIES["blocked"],
+    lw=0,
+    marker="s",
+    ms=5,
+    label="período do ciclo simulado (partida bloqueada)",
+)
+a2.set_ylabel("Período (s)")
+a2.set_xlabel("Abertura do choke (fração, escala log); faixas: classe dinâmica (partida bloqueada)")
+for a in (a1, a2):
+    a.set_xscale("log")
+    a.grid(alpha=0.3)
+a2.legend(frameon=False, fontsize=8)
+plt.tight_layout()
+plt.show()
+cross = [(line[i]["ab"], line[i + 1]["ab"]) for i in range(len(line) - 1) if re1[i] <= 0 < re1[i + 1]]
+print("o modo global lento passa a instável entre as aberturas", ", ".join(f"{a:g} e {b:g}" for a, b in cross))
+for r in line:
+    per = f"{2 * np.pi / abs(r['lin_im1']):.0f} s" if abs(r["lin_im1"]) > 1e-9 else "real"
+    print(
+        f"abertura {r['ab']:5.3f}: λ1 {r['lin_re1']:+.5f} /s ({per:>6s}), linear {r['lin_cls']:6s} | dinâmica: estacionário {r['cls']:8s} bloqueada {G[('blocked', P_SEL, r['ab'])]['cls']}"
+    )
 
 # %% [markdown]
-# Resultado dos testes da issue 042 (corridas fora deste notebook, guiões em `runs/maps/prototype/`):
+# ### O mapa linear contra o mapa dinâmico
 #
-# | teste | resultado |
-# |---|---|
-# | deslocar ou alargar a regra de bolhas e a mistura por ângulo | o modo muda de célula, não desaparece |
-# | refinar a malha 2× | crescimento de 27 para 37 /s, 7× mais passos |
-# | refinar a malha 4× | a integração falha aos 821 s |
-# | limiar de bolhas a 10 % | crescimento 3,5 /s e 7× menos passos neste ponto; validação mista (Tengesdal melhora, Jansen piora) |
-#
-# **Leitura.** Os autovalores do estacionário não desenham este mapa: passar a golfada é um efeito não linear, que
-# só a simulação dinâmica decide. Um mapa por bifurcação de Hopf exigiria primeiro um fechamento adequado para um
-# ponto baixo quase cheio de líquido, onde o padrão físico é disperso ou intermitente e não estratificado.
+# A classe linear de cada ponto (do seu estacionário, sem simular) e a sua concordância com as classes da
+# simulação dinâmica. Em cada célula do mapa linear, o período do par instável (Hopf) ou o tempo de crescimento
+# 1/λ do modo real.
+
+# %%
+LIN = {"stable": "stable", "hopf": "cycling", "real": "slugging"}
+lin_rows = []
+for r in rows:
+    if r["start"] != "steady":
+        continue
+    q = dict(r)
+    q["cls"] = LIN.get(r["lin_cls"], "stable")
+    q["period"] = (
+        2 * np.pi / abs(r["lin_im1"])
+        if r["lin_cls"] == "hopf"
+        else (1 / r["lin_re1"] if r["lin_cls"] == "real" else np.nan)
+    )
+    q["P_max"] = q["P_mean"] = r["P_ss"]
+    lin_rows.append(q)
+fig, ax = plt.subplots(figsize=(8.5, 7.0))
+xe, ye = cycle_map(ax, lin_rows, best=None)
+ticks = [t for t in (0.03, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0) if xe[0] <= t <= xe[-1]]
+ax.set_xticks(ticks)
+ax.set_xticklabels([f"{t:g}".replace(".", ",") for t in ticks])
+ax.set_xlim(xe[0], xe[-1])
+ax.set_xlabel("Abertura do choke (fração, escala log)")
+ax.set_ylabel("Pressão do reservatório (bar)")
+ax.set_title("Classe linear do estacionário (sem simular)", loc="left", fontsize=11)
+ax.legend(
+    handles=[
+        Patch(fc=CYCLE_COLORS["stable"], label="estável: modos globais lentos amortecidos"),
+        Patch(fc=CYCLE_COLORS["cycling"], label="Hopf: par complexo instável (período)"),
+        Patch(fc=CYCLE_COLORS["slugging"], label="real instável (tempo de crescimento)"),
+    ],
+    loc="upper center",
+    bbox_to_anchor=(0.5, -0.1),
+    ncol=1,
+    frameon=False,
+    fontsize=8,
+)
+plt.tight_layout()
+plt.show()
+
+classes = ("stable", "cycling", "slugging")
+for start in ("steady", "blocked"):
+    print(f"\nclasse linear × classe dinâmica ({START_LABEL[start]}):")
+    print(f"{'':16s} " + " ".join(f"{c:>9s}" for c in classes))
+    hits = 0
+    for lc in ("stable", "hopf", "real"):
+        cnt = [sum(1 for r in rows if r["start"] == start and r["lin_cls"] == lc and r["cls"] == c) for c in classes]
+        hits += cnt[classes.index(LIN[lc])]
+        print(f"{lc:16s} " + " ".join(f"{n:9d}" for n in cnt))
+    print(f"concordância: {hits} de {len(openings) * len(pressures)}")
+
+print("\nqueda no choke (lei monofásica do líquido, produção do estacionário, CV 15) no cruzamento do par lento:")
+print(f"{'P (bar)':>8s} {'abertura crítica':>17s} {'Δp crítico (bar)':>17s} {'abertura de Jansen':>19s}")
+for P in pressures:
+    ln = sorted([G[("steady", P, ab)] for ab in openings], key=lambda r: r["ab"])
+    a_, re_, q_ = (np.array([r[k] for r in ln]) for k in ("ab", "lin_re1", "q_ss"))
+    k = [
+        i for i in range(len(ln) - 1) if re_[i] <= 0 < re_[i + 1] and a_[i] > 0.08
+    ]  # sem as ilhas de choke muito fechado
+    if not k:
+        continue
+    i = k[0]
+    f = -re_[i] / (re_[i + 1] - re_[i])
+    aH = float(np.exp(np.log(a_[i]) + f * np.log(a_[i + 1] / a_[i])))
+    dpH = (q_[i] + f * (q_[i + 1] - q_[i])) ** 2 / 900.0 / (0.0075 * 15.0 * aH) ** 2
+    aJ = jansen_choke_opening(a_, q_, dpc, CV=15.0)
+    print(f"{P:8.0f} {aH:17.3f} {dpH:17.2f} {aJ if aJ else float('nan'):19.3f}")
+
+# %% [markdown]
+# Resultado dos testes da issue 042, feitos antes da correção da matriz de massa (guiões em
+# `runs/maps/prototype/`): suavizar as transições de fechamento na curva não tirava os modos locais, e estes
+# cresciam com o refinamento da malha (a 4× a integração falhava aos 821 s). Com a matriz de massa os modos locais
+# ficam muito menores e só aparecem nas aberturas pequenas. No ponto estável a 15 bar e 0,13 deste mapa, com a
+# fração das faces média (o padrão) há dois modos locais reais no ponto baixo (+9,0 e +1,1 /s); com a fração da
+# célula doadora (issue 044) desaparecem e fica um modo rápido oscilatório fraco (+0,19 /s, período 1,7 s,
+# espalhado por 18 nós). O par global lento é amortecido nos dois casos.
 
 # %% [markdown]
 # ## Lições
 #
 # - **A lei de válvula é parte do modelo de estabilidade.** Com a densidade ponderada por massa o choke não
-#   estabiliza nada; a fronteira só aparece, e coincide com o critério de Jansen, com a densidade por volume.
-# - **Um mapa de estabilidade precisa de duas partidas.** A partida bloqueada dá o pior caso, a do estacionário o
-#   comportamento de um poço já em produção; a diferença é a histerese.
-# - **O tempo de cada corrida deve ser o que ela precisa.** Com a paragem adaptativa, os estáveis param aos 2000 s
-#   e os lentos seguem até aos 8000 s.
-# - **Desconfiar de autovalores rápidos e locais.** Num modelo a dois fluidos discretizado, o estacionário pode ser
-#   linearmente instável por razões de malha e de fechamento que nada têm a ver com a golfada.
+#   estabiliza nada; com a densidade por volume aparece uma fronteira com a forma do critério de Jansen (queda
+#   constante no choke), mas com um limiar mais baixo: ~0,4 bar no próprio modelo contra 0,67 bar do critério, e
+#   aberturas críticas 1,2 a 1,5 vezes as de Jansen. A fronteira dinâmica só parecia seguir Jansen pela resolução da
+#   grelha.
+# - **A estabilidade do estacionário vem do espetro, não de uma corrida.** A partida bloqueada dá o atrator de um
+#   poço que arranca de uma paragem; a classe linear diz se o equilíbrio é estável; a histerese real é o equilíbrio
+#   estável com a partida bloqueada a ciclar (aqui a 8 bar e 0,06 e a 30 bar e 0,6). A partida do estacionário perturbado não vê
+#   instabilidades lentas.
+# - **O tempo de cada corrida deve ser o que ela precisa, mas a paragem adaptativa não é um teste de estabilidade.**
+#   Os estáveis param aos 2000 s e os lentos seguem até aos 8000 s; um crescimento abaixo de ~10⁻³ /s passa
+#   despercebido.
+# - **A linearização de um modelo conservativo leva a matriz de massa.** Os autovalores de J sozinha davam modos
+#   rápidos espúrios e escondiam a bifurcação; com M, o estacionário prevê o mapa: Hopf onde o ciclo de pressão
+#   começa, modo real onde começa a golfada severa.
+# - **Uma partida no equilíbrio pede passo máximo.** Sem ele o BDF dá passos de centenas de segundos, amortece a
+#   instabilidade e a trajetória fica presa ao equilíbrio (issue 047).

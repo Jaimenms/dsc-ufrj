@@ -11,51 +11,85 @@ caso base: cases/severe_slug/well_choke.json | paragem: {'window': 2000.0, 't_mi
 
 ### célula 6
                               estáveis  ciclo  golfada
-partida do estacionário             87     14       25
-partida bloqueada                   79     22       25
+partida do estacionário             81     20       25
+partida bloqueada                   77     24       25
 critério de Jansen: queda crítica no choke 0.61–0.72 bar (eqs. 10 e 5)
 
 ### célula 8
-8 células com classes diferentes
-P_res (bar)  abertura  estacionário  bloqueada  amplitude bloqueada (bar)
-          8     0.060        stable    cycling                       0.24
-         15     0.220        stable    cycling                       0.31
-         19     0.360        stable    cycling                       0.61
-         24     0.460        stable    cycling                       0.42
-         24     0.600        stable    cycling                       0.79
-         24     0.800        stable    cycling                       1.05
-         30     0.800        stable    cycling                       0.73
-         30     1.000        stable    cycling                       0.82
+4 células com classes diferentes entre as partidas
+P_res (bar)  abertura  estacionário  bloqueada  linear   λ1 (1/s)                            leitura
+          8     0.060        stable    cycling  stable   -0.00073        histerese real (subcrítica)
+         15     0.220        stable    cycling    hopf   +0.00013     instabilidade lenta não medida
+         24     0.460        stable    cycling    hopf   +0.00016     instabilidade lenta não medida
+         30     0.600        stable    cycling  stable   -0.00032        histerese real (subcrítica)
+histerese real (estacionário linearmente estável, partida bloqueada a ciclar): 8 bar / 0.06, 30 bar / 0.6
 
 ### célula 10
 abertura estável mais produtiva: 0.22 -> 0.493 kg/s
-abertura total: estacionário 0.528 kg/s, média simulada 0.559 kg/s (slugging)
+abertura total: estacionário 0.528 kg/s, média simulada 0.556 kg/s (slugging)
 ganho possível de segurar o estacionário instável: +7.1%
 
 ### célula 12
-abertura 0.13: stable   P  7.05– 7.07 bar, período      --, saída média 0.445 kg/s, pico  1.0× a média, parou por 'steady' aos 2000
-abertura 0.28: cycling  P  5.50– 6.25 bar, período   <t>s, saída média 0.506 kg/s, pico  1.4× a média, parou por 'cycle' aos 6000
-abertura 0.60: slugging P  4.54– 5.95 bar, período   <t>s, saída média 0.516 kg/s, pico  2.6× a média, parou por 'cycle' aos 4000
+abertura 0.13: stable   P  7.06– 7.07 bar, período      --, saída média 0.445 kg/s, pico  1.0× a média, parou por 'steady' aos 2000
+abertura 0.28: cycling  P  5.52– 6.25 bar, período   <t>s, saída média 0.505 kg/s, pico  1.4× a média, parou por 'cycle' aos 6000
+abertura 0.60: slugging P  4.53– 5.95 bar, período   <t>s, saída média 0.515 kg/s, pico  2.5× a média, parou por 'cycle' aos 4000
 
 ### célula 16
-partida do estacionário : stable   amplitude 0.018 bar, parou por 'steady' aos 2000
-partida bloqueada       : cycling  amplitude 0.792 bar, parou por 'cycle' aos 6000
+classe linear do estacionário: stable, λ1 = -0.00073+0.00693j /s
+partida do estacionário : stable   amplitude 0.011 bar, período --, parou por 'steady' aos 2000
+partida bloqueada       : cycling  amplitude 0.137 bar, período <t>s, parou por 'tf' aos 8000
 
 ### célula 18
 Newton convergiu na partida do estacionário: 126 de 126
                           permanente  ciclo repetido  tempo máximo  passos (mediana)
-partida do estacionário           84              18            24              9288
-partida bloqueada                 76              23            27             12729
+partida do estacionário           77              26            23              8094
+partida bloqueada                 75              26            25             11686
 
 ### célula 20
-ponto                       resíduo  vel. complexas  instáveis  na curva  na linha  na entrada  maior (1/s)  lentos: maior parte real
-0.13 (estável)                8e-12               0         42        20        16           6        26.91                    -0.181
-0.28 (ciclo de pressão)       4e-10               0         44        24        16           4         5.49                    -0.414
-0.6 (golfada severa)          7e-10               0         40        18        16           6         4.82                    -0.440
+ponto                       resíduo  classe linear    1.º modo global lento  período           mais instável dos outros
+0.13 (estável)                7e-13         stable    -0.00397+0.00778j    <t>s       +8.96+0.00j (3.1 nós, nó 17)
+0.28 (ciclo de pressão)       4e-10           hopf    +0.00522+0.01598j    <t>s       +1.46+1.92j (5.0 nós, nó 17)
+0.6 (golfada severa)          7e-10           real    +0.03954+0.00000j       --       -0.14+0.00j (3.4 nós, nó 19)
 
-ponto estável, os quatro modos mais instáveis:
-       autovalor (1/s)  célula  ângulo  fração de gás
-   +26.91     +0.00j      18      9°          0.015
-    +8.26     +0.00j      19     32°          0.102
-    +6.53    +13.76j      19     32°          0.102
-    +6.53    -13.76j      19     32°          0.102
+### célula 22
+o modo global lento passa a instável entre as aberturas 0.17 e 0.22
+abertura 0.030: λ1 -0.00213 /s (  real), linear stable | dinâmica: estacionário stable   bloqueada stable
+abertura 0.045: λ1 -0.00283 /s (  real), linear stable | dinâmica: estacionário stable   bloqueada stable
+abertura 0.060: λ1 -0.00413 /s (  real), linear stable | dinâmica: estacionário stable   bloqueada stable
+abertura 0.080: λ1 -0.00620 /s (<t>s), linear stable | dinâmica: estacionário stable   bloqueada stable
+abertura 0.100: λ1 -0.00517 /s (<t>s), linear stable | dinâmica: estacionário stable   bloqueada stable
+abertura 0.130: λ1 -0.00397 /s ( <t>s), linear stable | dinâmica: estacionário stable   bloqueada stable
+abertura 0.170: λ1 -0.00248 /s ( <t>s), linear stable | dinâmica: estacionário stable   bloqueada stable
+abertura 0.220: λ1 +0.00013 /s ( <t>s), linear hopf   | dinâmica: estacionário stable   bloqueada cycling
+abertura 0.280: λ1 +0.00522 /s ( <t>s), linear hopf   | dinâmica: estacionário cycling  bloqueada cycling
+abertura 0.360: λ1 +0.01075 /s ( <t>s), linear hopf   | dinâmica: estacionário cycling  bloqueada cycling
+abertura 0.460: λ1 +0.01833 /s ( <t>s), linear hopf   | dinâmica: estacionário slugging bloqueada slugging
+abertura 0.600: λ1 +0.03954 /s (  real), linear real   | dinâmica: estacionário slugging bloqueada slugging
+abertura 0.800: λ1 +0.06174 /s (  real), linear real   | dinâmica: estacionário slugging bloqueada slugging
+abertura 1.000: λ1 +0.07610 /s (  real), linear real   | dinâmica: estacionário slugging bloqueada slugging
+
+### célula 24
+
+classe linear × classe dinâmica (partida do estacionário):
+                    stable   cycling  slugging
+stable                  75         0         0
+hopf                     6        19         2
+real                     0         1        23
+concordância: 117 de 126
+
+classe linear × classe dinâmica (partida bloqueada):
+                    stable   cycling  slugging
+stable                  73         2         0
+hopf                     4        21         2
+real                     0         1        23
+concordância: 117 de 126
+
+queda no choke (lei monofásica do líquido, produção do estacionário, CV 15) no cruzamento do par lento:
+ P (bar)  abertura crítica  Δp crítico (bar)  abertura de Jansen
+      10             0.104              0.37               0.068
+      12             0.144              0.44               0.110
+      15             0.217              0.45               0.172
+      19             0.305              0.48               0.254
+      24             0.457              0.42               0.356
+      30             0.607              0.43               0.478
+      38             0.945              0.32               0.640
