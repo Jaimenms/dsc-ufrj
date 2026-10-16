@@ -45,13 +45,32 @@ aparecem nas entrelinhas, como observações gerais medidas com o código de hoj
 8. Um integrador de caixa fechada não deixa conservar, projetar em limites nem escolher tolerâncias por
    faixa; a Jacobiana exata não reduz as iterações quando os fechamentos não são suaves: o ganho está no
    custo por passo (compilação).
-9. Os autovalores do estacionário não desenham a fronteira da golfada (histerese, modos locais rápidos):
-   o mapa faz-se por simulação dinâmica com duas partidas.
+9. ~~Os autovalores do estacionário não desenham a fronteira da golfada~~ (era o espetro sem matriz de massa).
+   Lição certa (048): numa formulação conservativa linearizar com a matriz de massa, J·v = λ·M·v; J sozinha
+   mostra modos rápidos que não existem e esconde o par lento que marca o início dos ciclos (Hopf, com o
+   período do ciclo). As simulações dinâmicas com duas partidas dão a amplitude e a histerese.
+10. A contagem de ciclos por cruzamentos da média é enganada por oscilações curtas (coluna do riser contra o
+   gás do bolsão, ~8 s): média móvel antes de contar (`cycle_class(smooth=)`).
 
 ## Decisões e achados durante a preparação (2026-10-16)
 
+- **Espetro com a matriz de massa (issue 048).** Os espetros (artigo, notebook 043, issues 042/044) usavam J
+  sozinha; no modo conservativo o rhs devolve dT/dt e a linearização é M·ẋ = J·x. Com M, a 15 bar o par lento
+  cruza o eixo em a_H = 0,24 (período ~575 s; Hopf), os transitórios seguem o par (0,36: previsto 455 s e
+  3,6e−3 /s, simulado ciclo de 450 s e 2,9e−3 /s; 0,28: 518 contra 495 s, crescimento mais lento); a ≥ 0,70
+  um modo global real fica instável (relaxação). A fronteira de Hopf sobe com a pressão (~0,07 a 8 bar,
+  ~0,40 a 19 bar). Secção 7.3 reescrita (figura `linear_stability`, tabela `tab_hopf_mesh`).
+- **Mapa linear (artigo, figura do mapa painel a).** Espetro com M nos 107 estacionários do mapa com padrão
+  dinâmico: estável → par lento instável (Hopf) → modo global real instável ao abrir o choke. A fronteira linear
+  tem a forma do critério de Jansen (queda no choke constante) mas com Δp crítico 0,34–0,40 bar (10–24 bar)
+  em vez de 0,67; aberturas críticas 1,3–1,6× as de Jansen. Padrão fixo (043, verificado a 15 bar: a_H 0,217;
+  Δp 0,37–0,48 bar segundo a sessão do 043). A 19–48 bar há um modo rápido global da linha (2–3 s) instável em
+  vários pontos (linha hiperbólica: instabilidade linear, não má-posição). Paragem adaptativa (041) não vê
+  crescimentos lentos (<~1,4e−3/s): a estabilidade do estacionário vem da análise linear; o mapa dinâmico só com
+  a partida bloqueada (`runs/maps/well_auto/blocked/batch.json`).
 - **Fechamentos das faces pela célula doadora (issue 044).** Com a média das células o estacionário discreto
-  tinha um xadrez na fração de gás do riser e um modo de +41 /s na curva; com a doadora o perfil é liso. Na
+  tinha um xadrez na fração de gás do riser e, a 0,13, um par instável local na curva (25 s; o transitório
+  satura numa oscilação de 26 s das células da curva); com a doadora o perfil é liso e o estacionário estável. Na
   dinâmica a doadora muda o ciclo na malha grossa (intervalo 985 s contra 824 s em 1500 s de referência sem
   poço) e o custo por ciclo é parecido (as duas têm fases caras no blowdown); a convergência com a malha
   decide-se no lote `paper01_mesh`. Adotada no exemplo base.

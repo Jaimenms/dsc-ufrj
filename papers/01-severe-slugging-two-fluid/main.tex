@@ -35,6 +35,9 @@
 \newcommand{\bA}{\mathbf{A}}
 \newcommand{\bF}{\mathbf{f}}
 \newcommand{\bT}{\mathbf{T}}
+\newcommand{\bJ}{\mathbf{J}}
+\newcommand{\bM}{\mathbf{M}}
+\newcommand{\bv}{\mathbf{v}}
 
 \begin{document}
 \let\WriteBookmarks\relax
@@ -75,7 +78,7 @@
 
 \begin{abstract}
 % <= 250 palavras, autocontido, sem referências.
-Severe slugging in pipeline--riser systems combines phase disappearance, moving liquid and gas fronts, changes of flow pattern and cycles of hundreds of seconds, which makes it a demanding test for transient two-fluid simulators. This work asks what a one-dimensional, four-equation two-fluid model with pattern-dependent closures needs to reproduce the cycle when the flow pattern is identified dynamically along the whole system, and uses the answer to map the stability of a well--pipeline--riser system with a topside choke. A characteristic analysis shows that the closures are ill-posed in large parts of their domain; a low-void rule and an objective virtual-mass term leave the model hyperbolic in all but \tbd{1}\,\% of the states visited by the simulations, against \tbd{23--30}\,\% without them. Of five spatial discretisations, only a staggered finite-volume scheme with phase-wise donor cells carries the cycle; integrating the non-conservative form loses liquid in one step per blowdown, whereas a conservative residual closes the mass balances to round-off, and evaluating the face closures with the donor void fraction removes an odd--even mode that otherwise destabilises the cells at the bend. A variable-order implicit integrator with physical bounds and range-scaled tolerances, driven by a compiled right-hand side with exact Jacobians, runs one hour of slugging in \tbd{minutes}. On a grid of choke openings and reservoir pressures, the stable region follows the choke criterion of Jansen, Shoham and Taitel; starting from the steady state or from a blocked line gives different answers in \tbd{8} cells, a hysteresis that the eigenvalues of the steady state do not reveal.
+Severe slugging in pipeline--riser systems combines phase disappearance, moving liquid and gas fronts, changes of flow pattern and cycles of hundreds of seconds, which makes it a demanding test for transient two-fluid simulators. This work asks what a one-dimensional, four-equation two-fluid model with pattern-dependent closures needs to reproduce the cycle when the flow pattern is identified dynamically along the whole system, and uses the answer to map the stability of a well--pipeline--riser system with a topside choke. A characteristic analysis shows that the closures are ill-posed in large parts of their domain; a low-void rule and an objective virtual-mass term leave the model hyperbolic in all but \tbd{1}\,\% of the states visited by the simulations, against \tbd{23--30}\,\% without them. Of five spatial discretisations, only a staggered finite-volume scheme with phase-wise donor cells carries the cycle; integrating the non-conservative form loses liquid in one step per blowdown, whereas a conservative residual closes the mass balances to the Newton tolerance, and evaluating the face closures with the donor void fraction removes an odd--even mode and an unstable oscillation of the cells at the bend. A variable-order implicit integrator with physical bounds and range-scaled tolerances, driven by a compiled right-hand side with exact Jacobians, runs one hour of slugging in \tbd{minutes}. Linearised with the mass matrix of the conservative formulation, the steady state loses stability through a slow complex pair whose period is that of the simulated cycles: the onset of slugging is a Hopf bifurcation, at a choke opening that grows with the reservoir pressure. \tbd{On a grid of choke openings and reservoir pressures, the stable region ... Jansen, Shoham and Taitel; starting from the steady state or from a blocked line gives different answers in X cells.}
 \end{abstract}
 
 % 3 a 5 pontos, no máximo 85 caracteres cada (contando espaços).
@@ -84,12 +87,12 @@ Severe slugging in pipeline--riser systems combines phase disappearance, moving 
 \item Low-void rule and virtual mass keep the two-fluid model hyperbolic where it is used
 \item Only conservative staggered finite volumes with donor cells carry the slug cycle
 \item Compiled right-hand side with exact Jacobians makes stability maps affordable
-\item Choke stability boundary follows the Jansen criterion and shows hysteresis
+\item Linearisation with the mass matrix predicts onset and period of slugging
 \end{highlights}
 
 % 1 a 7 palavras-chave.
 \begin{keywords}
-severe slugging \sep two-fluid model \sep well-posedness \sep flow-pattern identification \sep finite volumes \sep automatic differentiation \sep choke
+severe slugging \sep two-fluid model \sep well-posedness \sep flow patterns \sep finite volumes \sep automatic differentiation \sep choke
 \end{keywords}
 
 \maketitle
@@ -105,7 +108,8 @@ This article reports what was needed to make a four-equation two-fluid model wit
 (ii) a characteristic analysis by flow pattern, a regularisation built from physical terms, and a measure of well-posedness along the simulated trajectories rather than on a map;
 (iii) a comparison of collocated and staggered discretisations and of primitive and conservative time integration on the same severe-slugging problem, with exact mass balances, and the identification of an odd--even mode created by inconsistent face void fractions;
 (iv) an implicit integrator and a compiled right-hand side with exact Jacobians that make maps of hundreds of long transients affordable;
-(v) profiles, fronts and flow patterns along the cycle, the linear stability of the steady state at the bend, and a stability map in choke opening and reservoir pressure, with its hysteresis, compared with the criterion of \citet{jansen1996}.
+(v) the linear stability of the steady state of the discretised system, with the mass matrix that a conservative formulation requires, which predicts the onset and the period of the cycles;
+(vi) profiles, fronts and flow patterns along the cycle, and a stability map in choke opening and reservoir pressure, with its hysteresis, compared with the linear boundary and with the criterion of \citet{jansen1996}.
 Section~\ref{sec:lessons} collects the practical recommendations.
 
 \section{Mathematical model}\label{sec:model}
@@ -187,7 +191,7 @@ Five discretisations were applied to the same problem. Four are collocated, with
 
 \subsection{What a severe-slugging cycle demands}\label{sec:demands}
 
-A cycle requires that a front between a liquid column and a gas pocket travel through the bend and up the riser, that a phase vanish from a cell and reappear, and that the inventory of both phases be conserved over many cycles. Table~\ref{tab:discretisation} and Fig.~\ref{fig:discretisation} compare the five schemes on the application case with the choke open. The collocated schemes have no dissipation on the void waves and develop node-to-node oscillations at the fronts; the backward difference applied to the pressure is not an upwind scheme for the acoustic waves, which travel in both directions, and it is unstable. \tbd{None of the collocated schemes reaches the first blowout}, whereas the staggered scheme completes the cycle.
+A cycle requires that a front between a liquid column and a gas pocket travel through the bend and up the riser, that a phase vanish from a cell and reappear, and that the inventory of both phases be conserved over many cycles. Table~\ref{tab:discretisation} and Fig.~\ref{fig:discretisation} compare the five schemes on the application case with the choke open, the staggered one with both time formulations of Section~\ref{sec:conservation}. The collocated schemes have no dissipation on the void waves and develop node-to-node oscillations at the fronts; the backward difference applied to the pressure is not an upwind scheme for the acoustic waves, which travel in both directions, and it is unstable. None of the collocated schemes reaches the first blowout, about \SI{70}{\second} after the start. The backward differences and the Petrov--Galerkin method fail in the first steps (\SI{0.04}{\second} and \SI{0.4}{\second}), at the discontinuity of the initial state between the gas-filled line and the liquid-filled bend; the central differences carry the front for \SI{19}{\second} while node-to-node oscillations grow in the bend and the riser, where the void fraction alternates between 0.001 and 0.8 from one node to the next when the integrator fails\tbd{; the Galerkin method fails after X}; the staggered scheme completes \SI{3000}{\second} with both time formulations.
 
 \begin{table}[htbp]
 \caption{Discretisations on the application case with the choke open (reservoir at \SI{15}{\bar}, start from a blocked line, \SI{3000}{\second}).}\label{tab:discretisation}
@@ -199,7 +203,7 @@ A cycle requires that a front between a liquid column and a gas pocket travel th
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{discretisation}
-\caption{Pressure at the inlet of the line with the five discretisations, up to the end of each run (a failed run stops where the integrator fails), and (b) error of the liquid and gas inventories of the staggered scheme with primitive and conservative time integration.}\label{fig:discretisation}
+\caption{Discretisations on the application case: (a) inlet pressure during the first \SI{100}{\second} (a cross marks where a run fails); (b) inlet pressure over \SI{3000}{\second} with the staggered scheme integrated in conservative and in primitive variables; (c) error of the liquid and gas inventories of the two formulations.}\label{fig:discretisation}
 \end{figure}
 
 \subsection{Vanishing phases}\label{sec:vanishing}
@@ -208,15 +212,15 @@ In a liquid-filled cell the gas momentum equation has no mass and the gas flow r
 
 \subsection{Face void fraction and an odd--even mode}\label{sec:oddeven}
 
-In the momentum equation of a face, the area fraction that multiplies the pressure gradient and the gravity term is that of the donor cell, while the closures (wall and interfacial friction) are naturally evaluated with the state at the face. If that state takes the arithmetic mean of the void fractions of the two neighbouring cells, the steady momentum balance of each face relates the donor fraction to the mean one; with the donor fraction $\alpha_i$ given, the balance fixes $(\alpha_i + \alpha_{i+1})/2$, so that $\alpha_{i+1} \approx 2\alpha^\ast - \alpha_i$ and the discrete steady state admits an odd--even mode. In the riser the void fraction then alternates from cell to cell with an amplitude that grows upwards (Fig.~\ref{fig:bendmodes}a). Evaluating the face closures with the donor void fraction, defined by the sign of the mixture volumetric flux, makes every term of the face balance use the same fraction: the steady profile becomes smooth, and the fastest unstable mode of the linearised steady state, which sits at the liquid front of the low point, grows half as fast (Section~\ref{sec:bend}). \tbd{The two choices give cycles that differ on the coarse mesh and converge with mesh refinement (Section~\ref{sec:mesh}).}
+In the momentum equation of a face, the area fraction that multiplies the pressure gradient and the gravity term is that of the donor cell, while the closures (wall and interfacial friction) are naturally evaluated with the state at the face. If that state takes the arithmetic mean of the void fractions of the two neighbouring cells, the steady momentum balance of each face relates the donor fraction to the mean one; with the donor fraction $\alpha_i$ given, the balance fixes $(\alpha_i + \alpha_{i+1})/2$, so that $\alpha_{i+1} \approx 2\alpha^\ast - \alpha_i$ and the discrete steady state admits an odd--even mode. In the riser the void fraction then alternates from cell to cell with an amplitude that grows upwards (Fig.~\ref{fig:linear}a). Evaluating the face closures with the donor void fraction, defined by the sign of the mixture volumetric flux, makes every term of the face balance use the same fraction: the steady profile becomes smooth, and an unstable oscillation localised in the cells of the bend disappears from the linearised steady state (Section~\ref{sec:linear}). \tbd{The two choices give cycles that differ on the coarse mesh and converge with mesh refinement (Section~\ref{sec:mesh}).}
 
 \subsection{Conservation}\label{sec:conservation}
 
-The staggered scheme conserves mass cell by cell in space, but conservation in time depends on the variables that the time integrator advances. Integrating the primitive form, $\partial\aG/\partial t$ and $\partial P/\partial t$, with an implicit multistep formula does not conserve the phase masses, which are non-linear functions of $\aG$ and $P$. The error is not uniform in time: it accumulates in steps, one per blowout, when a phase vanishes from many cells within a few seconds (Fig.~\ref{fig:discretisation}b), and reaches \tbd{X}\,\% of the liquid and \tbd{X}\,\% of the gas fed in \SI{3000}{\second}. The conservative formulation applies the multistep formula to the masses per unit volume, $\bT(\bx) = (\rho_G\aG, \rho_L\aL)$, while Newton's method still iterates on the primitive variables,
+The staggered scheme conserves mass cell by cell in space, but conservation in time depends on the variables that the time integrator advances. Integrating the primitive form, $\partial\aG/\partial t$ and $\partial P/\partial t$, with an implicit multistep formula does not conserve the phase masses, which are non-linear functions of $\aG$ and $P$. The error is not uniform in time: it accumulates in steps, one per blowout, when a phase vanishes from many cells within a few seconds (Fig.~\ref{fig:discretisation}c). After \SI{3000}{\second} the primitive formulation has lost \SI{1.3}{\kilogram} of liquid and created \SI{15}{\gram} of gas, \SI{0.08}{\percent} of the liquid and \SI{0.45}{\percent} of the gas fed; spikes of the inlet pressure of up to \SI{0.5}{\bar} appear at some of the steps, and the cycles drift apart from those of the conservative formulation after the second blowout (Fig.~\ref{fig:discretisation}b). The conservative formulation applies the multistep formula to the masses per unit volume, $\bT(\bx) = (\rho_G\aG, \rho_L\aL)$, while Newton's method still iterates on the primitive variables,
 \begin{equation}\label{eq:conservative}
 \bT(\bx_{n+1}) - \sum_{j} a_j\, \bT(\bx_{n-j}) - \gamma h\, \bF(\bx_{n+1}) = \mathbf{0},
 \end{equation}
-with the Jacobian $\partial\bT/\partial\bx$ evaluated analytically. The mass balances then close to round-off. The map $\bT$ is singular at $\aG = -\gamma_G/\gamma_L$, so the void fraction is allowed a small undershoot, $\aG \geq -0.005$, well inside that limit. Verifying the balance itself requires care: integrating the boundary fluxes over the output times with the trapezoidal rule leaves an error of the order of a kilogram in each blowout, which is quadrature error and not loss of mass; the boundary fluxes must be integrated with the same multistep recurrence as the states.
+with the Jacobian $\partial\bT/\partial\bx$ evaluated analytically. The mass balances then close to the tolerance of the Newton iterations: the errors stay below \SI{5e-4}{\kilogram}, $3\times10^{-7}$ of the liquid and $4\times10^{-6}$ of the gas fed. The map $\bT$ is singular at $\aG = -\gamma_G/\gamma_L$, so the void fraction is allowed a small undershoot, $\aG \geq -0.005$, well inside that limit. Verifying the balance itself requires care: integrating the boundary fluxes over the output times with the trapezoidal rule leaves an error of the order of a kilogram in each blowout, which is quadrature error and not loss of mass; the boundary fluxes must be integrated with the same multistep recurrence as the states.
 
 \section{Time integration}\label{sec:time}
 
@@ -271,13 +275,40 @@ The system (Fig.~\ref{fig:geometry}) has a horizontal section of \SI{20}{\metre}
 
 \subsection{Steady-state profiles and flow patterns}\label{sec:steadyprofiles}
 
-Fig.~\ref{fig:steadyprofiles} shows the steady states at \SI{15}{\bar} for increasing choke openings. \tbd{(Text to be written with the profiles: the horizontal inlet in intermittent flow, the descending line stratified with a void fraction of about 0.77, the liquid accumulated at the low point, the bubbly riser whose void fraction grows with the expansion of the gas, the pressure drop through the choke; and how the profiles change with the opening.)}
+Fig.~\ref{fig:steadyprofiles} shows the steady states at a reservoir pressure of \SI{15}{\bar} for openings from 0.06 to 1, obtained by Newton's method and continuation (Section~\ref{sec:steady}). They exist at every opening, stable or not, and they are the reference about which the transients of the next sections are perturbed. The descending line runs stratified: a liquid layer that occupies a quarter of the cross-section flows at about \SI{1}{\metre\per\second} under gas that moves ten times more slowly, so that the line holds mostly gas ($\aG = 0.74$--0.82). The liquid gathers at the low point, where the last cell of the line meets a cell almost full of liquid; that cell is identified as intermittent, and the bend and the riser carry bubbly flow with a slip of \SIrange{0.2}{0.3}{\metre\per\second}, the terminal velocity of the bubbles. The pressure is almost uniform along the line and falls by the hydrostatic head of the riser, about \SI{1.5}{\bar}. Opening the choke lowers the inlet pressure from 9.2 to \SI{5.5}{\bar} and raises the production from 0.32 to \SI{0.53}{\kilogram\per\second}; the gas expands, the void fraction of the riser rises from 0.09 to 0.17, and the stratified region extends into the lower cells of the bend. The horizontal section at the inlet sits at the transition between stratified and intermittent flow: its first cell, next to the inflow, is intermittent, the second, whose downstream face is already inclined, stratified.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{steady_profiles}
 \caption{Steady states at a reservoir pressure of \SI{15}{\bar} for increasing choke openings: (a) void fraction and dominant flow pattern along the pipe, (b) pressure, (c) phase velocities.}\label{fig:steadyprofiles}
 \end{figure}
+
+\subsection{Linear stability of the steady state}\label{sec:linear}
+
+In the conservative formulation the semi-discrete system reads $\bM(\bx)\,\dot\bx = \bF(\bx)$ with $\bM = \partial\bT/\partial\bx$, and its linearisation about a steady state is the generalised eigenvalue problem
+\begin{equation}\label{eq:geneig}
+\bJ\,\bv = \lambda\,\bM\,\bv, \qquad \bJ = \pd{\bF}{\bx}.
+\end{equation}
+The eigenvalues of $\bJ$ alone have no meaning here: the rows of the mass balances are scaled by $\rho_L$ and $\rho_G$, and on a bubbly riser they differ by up to a factor of fifteen from those of the same scheme written in primitive variables, with which the eigenvalues of \eqref{eq:geneig} coincide to $10^{-9}$. For the present case the spectrum of $\bJ$ alone shows real unstable modes of 30 to \SI{40}{\per\second} at the low point at every opening, which no transient exhibits, and no slow mode that changes stability; with $\bM$ the picture is the opposite.
+
+Fig.~\ref{fig:linear} shows the slow part of the spectrum at \SI{15}{\bar}, computed with the exact Jacobian along a continuation in the choke opening. At small openings every eigenvalue is stable. The slow eigenvalues form an arc of damped modes around \SI{-0.02}{\per\second}, the void waves of the line and the riser, from which one complex pair separates as the choke opens (Fig.~\ref{fig:linear}c). Its eigenvector, with the states scaled by their ranges, is \SI{89}{\percent} void fraction, \SI{94}{\percent} of its norm in the bend and the riser, coupled to the pressure of the line: the liquid of the bend and riser exchanging volume with the compressible gas pocket, the mechanism of the cycle. Its growth rate increases monotonically with the opening and changes sign at $a_H = 0.24$, with a period of \SI{573}{\second} (Fig.~\ref{fig:linear}d): the onset of the cycles is a Hopf bifurcation of the steady state, as in low-order models of the riser with the choke opening as parameter \citep{storkaas2007}. Above it, the transient from the perturbed steady state follows the pair. At an opening of 0.36 the pair predicts a growth rate of \SI{3.6e-3}{\per\second} and a period of \SI{455}{\second}; the simulation grows at \SI{2.9e-3}{\per\second} and settles on a limit cycle of \SI{450}{\second}. At 0.28, closer to the bifurcation, the period is again that of the pair (495 against \SI{518}{\second}), but the oscillation grows more slowly than predicted (\num{0.4e-3} against \SI{1.3e-3}{\per\second}) and has not saturated after \SI{6000}{\second}. From an opening of 0.70 a real global mode is unstable as well, with growth rates of \SI{0.16}{\per\second} at 0.70 that decrease to \SI{0.05}{\per\second} at full opening; the cycle is then a relaxation cycle, and its period is set by the filling and the blowout of the riser rather than by the pair (Fig.~\ref{fig:linear}e, Section~\ref{sec:opening}).
+
+The fast modes that remain are local. Between the openings of 0.28 and 0.36 one or two real modes of 0.6 to \SI{120}{\per\second} are concentrated at the face between the first cell of the horizontal inlet section, rich in liquid, and the stratified line; at larger openings a pair grows at about \SI{1}{\per\second} at the faces of the bend. They saturate at once: in the transients they appear as a jitter of 0.5 to \SI{3}{\percent} of the liquid flow rate at that face, without effect on the void fractions ($\pm 3\times10^{-4}$) or on the pressure.
+
+The cell at the bottom of the bend, where the stratified pocket meets the liquid gathered at the low point, deserves a remark. With the donor face fraction it is linearly stable at the stable openings. With the mean face fraction of Section~\ref{sec:oddeven}, the steady state at 0.13 has, besides the odd--even profile of the riser (Fig.~\ref{fig:linear}a), an unstable pair localised in the cells of the bend, $\lambda = 0.013 \pm 0.25\mathrm{i}\ \si{\per\second}$ (Fig.~\ref{fig:linear}b); the transient from that steady state saturates in an oscillation of the void fraction of those cells with a period of \SI{26}{\second}, the period of the pair, and a standard deviation of 0.01 to 0.02, invisible in the inlet pressure. The critical opening converges with the mesh, from 0.241 on the base mesh to 0.226 and 0.225 on the fine meshes, uniform and graded (Table~\ref{tab:hopfmesh}); above it the growth rate of the pair increases with refinement, from 3.6 to \SI{8.5e-3}{\per\second} at an opening of 0.36, and its period decreases from 455 to \SI{401}{\second}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{linear_stability}
+\caption{Linear stability of the steady state at a reservoir pressure of \SI{15}{\bar}, from the generalised eigenvalue problem \eqref{eq:geneig}: (a) void fraction near the bend and in the riser with the face closures evaluated with the mean and with the donor void fraction (opening 0.13); (b) slow eigenvalues of the two variants at the same opening; (c) path of the slow pair as the choke opens; (d) growth rate of the slow pair against the opening on three meshes (the arrow marks the opening from which a real global mode is unstable as well, with growth rates of 0.16 to \SI{0.05}{\per\second}, off the scale); (e) period of the slow pair and of the simulated cycles.}\label{fig:linear}
+\end{figure}
+
+\begin{table}[htbp]
+\caption{Onset of the cycles predicted by the linearised steady state at \SI{15}{\bar}, against the mesh.}\label{tab:hopfmesh}
+\footnotesize
+\input{tables/generated/tab_hopf_mesh}
+\input{tables/generated/tab_hopf_mesh_note}
+\end{table}
 
 \subsection{Opening the choke: from stable flow to severe slugging}\label{sec:opening}
 
@@ -293,7 +324,7 @@ Fig.~\ref{fig:steadyprofiles} shows the steady states at \SI{15}{\bar} for incre
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{spacetime}
-\caption{Space--time diagrams of the liquid holdup over the last \SI{80}{\metre} of the line, the bend and the riser at a reservoir pressure of \SI{15}{\bar} for three choke openings, with the inlet pressure and the liquid outflow below.}\label{fig:spacetime}
+\caption{Space--time diagrams of the liquid holdup along the whole system (one row per cell) at a reservoir pressure of \SI{15}{\bar} for three choke openings: (a) 0.13, stable; (b) 0.36, above the Hopf bifurcation; (c) 1, where a real global mode is unstable as well. The lines mark the end of the liquid seal in the line and the top of the liquid column in the riser; below, the inlet pressure and the liquid outflow.}\label{fig:spacetime}
 \end{figure}
 
 \subsection{Anatomy of a cycle}\label{sec:anatomy}
@@ -306,24 +337,16 @@ Fig.~\ref{fig:steadyprofiles} shows the steady states at \SI{15}{\bar} for incre
 \caption{One severe-slugging cycle: (a) dominant flow pattern along the system over time; (b) length of the liquid seal upstream of the low point and height of the liquid column in the riser; (c) inlet and riser-base pressures; (d) liquid and gas flow rates at the outlet.}\label{fig:anatomy}
 \end{figure}
 
-\subsection{Stability of the bend cell and of the linearised steady state}\label{sec:bend}
-
-\tbd{(Text to be written: the spectrum of the steady state at a stable, a cycling and a slugging opening, the local fast modes at the low point of the bend with the mean face fraction and their disappearance with the donor fraction, the residual mode at the cell where the stratified pocket meets the liquid, its growth with mesh refinement and its saturation at negligible amplitude; the slow modes do not cross the imaginary axis at the boundary of the map.)}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\linewidth]{bend_modes}
-\caption{Eigenvalues of the Jacobian at the steady state for three choke openings at \SI{15}{\bar}, coloured by the region of the cell in which each eigenvector is concentrated: (a) face closures with the mean void fraction; (b) with the donor void fraction.}\label{fig:bendmodes}
-\end{figure}
-
 \subsection{Stability map}\label{sec:map}
 
-\tbd{(Text to be written with the map in choke opening and reservoir pressure: the classes, the boundary against the Jansen criterion, the hysteresis between the start from the steady state and from a blocked line, the most productive stable opening and the production lost to the choke.)}
+The analysis of Section~\ref{sec:linear} was repeated on the steady states of a grid of 14 choke openings and 9 reservoir pressures, obtained by continuation from the point at \SI{15}{\bar} and 0.13; 107 of the 126 points have a steady state, and the remaining 19, at reservoir pressures of \SI{30}{\bar} and above with the choke wide open, have none that the continuation reaches. Fig.~\ref{fig:map}a classifies each point by its slow global modes. The region of linear stability is bounded on the open side by the Hopf bifurcation of the slow pair up to \SI{19}{\bar}, at openings that increase from 0.07 at \SI{8}{\bar} to 0.37 at \SI{19}{\bar}, and the period of the pair at the boundary decreases from about \SI{20}{\minute} to \SI{5}{\minute}. Further from the boundary a real global mode becomes unstable as well, at the larger openings of the lower pressures. Along the boundary the pressure drop across the choke, computed from the production of the steady state with the single-phase liquid law of the choke criterion of \citet{jansen1996}, is almost constant: 0.34 to \SI{0.40}{\bar} from 10 to \SI{24}{\bar} (\SI{0.22}{\bar} at \SI{8}{\bar}). The boundary therefore has the form of that criterion, which states that the choke stabilises the flow once the pressure drop across it exceeds a critical value fixed by the geometry and the fluids, but the critical value is about half of the \SI{0.67}{\bar} that the criterion gives for this system, and the critical openings are 1.3 to 1.6 times larger (Fig.~\ref{fig:map}a). Prescribing the flow pattern by inclination instead (stratified below \SI{45}{\degree} and bubbly above, with the same low- and high-void rules) moves the crossing at \SI{15}{\bar} to an opening of 0.217, where the pair grows four times faster at 0.28 (\num{5.2e-3} against \SI{1.3e-3}{\per\second}), and gives critical pressure drops of 0.37 to \SI{0.48}{\bar} between 10 and \SI{30}{\bar}: the form of the boundary does not depend on the flow-pattern identification, its position does, by about one cell of the grid. At the most productive stable opening the inlet pressure is 6.0 to \SI{6.3}{\bar} at every reservoir pressure up to \SI{24}{\bar}, and the production is 7\,\% (at \SI{15}{\bar}) to 22\,\% (at \SI{8}{\bar}) below that of the steady state with the choke wide open, which is unstable. Above \SI{19}{\bar} the slow modes are real and the unstable region is not connected, and a fast oscillatory mode of the stratified line, with a period of 2 to \SI{3}{\second} and spread over about ten cells, is unstable at several points (stars in Fig.~\ref{fig:map}a); the line is hyperbolic at those points, so that this is a linear instability of the stratified layer rather than a loss of well-posedness.
+
+\tbd{(Transient map from a blocked line, Fig.~\ref{fig:map}b: classes against the linear classes, cells where the blocked line cycles although the steady state is stable (bistability), amplitudes and periods; bifurcation diagram at 15 bar.)}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{stability_map}
-\caption{Stability map in choke opening and reservoir pressure, starting (a) from the steady state and (b) from a blocked line. Each cell gives the mean inlet pressure (stable) or the maximum inlet pressure and the period (cycles); the outlined cell of each row is the most productive stable opening; the dashed line is the choke criterion of \citet{jansen1996}.}\label{fig:map}
+\caption{Stability map in choke opening and reservoir pressure: (a) linear stability of the steady state, classified by its slow global modes, with the inlet pressure of the steady state (bar) and, for an unstable slow pair, its period; (b) simulations from a blocked line, with the mean inlet pressure (stable) or the maximum inlet pressure and the period (cycles). The thick line bounds the region where a slow global mode of the steady state is unstable; the outlined cell of each row is the most productive stable opening; the dashed line is the choke criterion of \citet{jansen1996}; stars mark the steady states at which a fast mode of the stratified line is unstable as well.}\label{fig:map}
 \end{figure}
 
 \begin{figure}[htbp]
@@ -357,7 +380,7 @@ The difficulties met along the way are common to transient two-fluid codes; the 
 \item A choke law with a mass-weighted mixture density does not resist gas and is singular in reverse flow; use the no-slip volume-weighted density.
 \item A closed-box integrator prevents conservative residuals, projection on physical bounds and range-scaled tolerances, all of which were needed; an exact Jacobian does not reduce Newton iterations when the closures are not smooth, but compiling the right-hand side reduces the cost of each one.
 \item When a transient starts on, or settles near, an equilibrium, bound the time step: an implicit multistep formula with steps much longer than the time scale of an instability damps it, and the run reports a stable state that is not.
-\item The eigenvalues of the steady state do not delimit severe slugging: fast local modes at fronts dominate the spectrum, and the slugging cycle coexists with a stable steady state in part of the map. Stability maps require transient simulations from two starts.
+\item Linearise a conservative formulation with its mass matrix, $\bJ\bv = \lambda\bM\bv$. The eigenvalues of $\bJ$ alone show fast unstable modes that do not exist and hide the slow pair whose crossing of the imaginary axis marks the onset of the cycles; with the mass matrix the steady state predicts the onset and the period of the cycles near it, and transient simulations are needed for the amplitude of the cycles and where they coexist with a stable steady state.
 \end{enumerate}
 
 \section{Conclusions}\label{sec:conclusions}

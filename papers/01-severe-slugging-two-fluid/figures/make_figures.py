@@ -256,7 +256,8 @@ import os  # noqa: E402
 MAP_DIR = Path(os.environ.get("PAPER01_MAP_DIR", str(fl.RUNS / "maps" / "well_auto")))
 MAP_FIXED_DIR = fl.RUNS / "maps" / "well"  # padrão fixo (issue 043), para comparação
 P_SEL = 15.0  # bar: linha do mapa das figuras de dinâmica
-OPENINGS_SEL = (0.13, 0.28, 0.6)  # estável, ciclo de pressão, golfada severa (a confirmar no mapa dinâmico)
+SMOOTH = 20.0  # média móvel (s) da pressão de entrada na classe e no período (tools/slug_map.py --smooth)
+OPENINGS_SEL = (0.13, 0.36, 1.0)  # estável, ciclo de pressão (par de Hopf), golfada severa (modo real)
 CLASS_LABEL = {"stable": "stable", "cycling": "pressure cycle, smooth outflow", "slugging": "severe slugging"}
 
 
@@ -536,17 +537,27 @@ def spacetime(out, png):
 ANATOMY_OPENING = 0.6
 
 
-def _cycle_events(T, P_in, fr):
-    """Instantes que marcam as fases de um ciclo: riser cheio (a coluna chega ao topo), início do blowout (a
-    coluna deixa de estar cheia: o gás entra pela base) e fim do blowout (mínimo da pressão de entrada)."""
-    from mfsim.analysis import blowdowns
-
-    H = fr["H"]
-    full = np.flatnonzero((fr["level"][1:] >= 0.98 * H) & (fr["level"][:-1] < 0.98 * H)) + 1
-    # início do blowout: a coluna de líquido no riser deixa de estar cheia (o gás entra pela base)
-    open_ = np.flatnonzero((fr["level"][1:] < 0.98 * H) & (fr["level"][:-1] >= 0.98 * H)) + 1
-    tb = blowdowns(T, P_in, min_gap=200.0) if np.ptp(P_in) > 0.3 else np.array([])
-    return T[full], T[open_], tb
+def _cycle_events(T, P_in, fr, hold=20.0):
+    """Fases de cada ciclo completo, alinhadas por ciclo k (entre dois fins de blowout): riser cheio (o nível chega
+    a 0,98 da altura e fica lá pelo menos `hold` s), início do blowout (máximo da pressão de entrada: o gás começa a
+    entrar no riser) e fim do blowout (mínimo da pressão de entrada, `_blowdown_times` depois de 300 s). Devolve
+    (t_full, t_peak, t_end, t_prev) com t_prev o fim do blowout anterior."""
+    T, P_in = np.asarray(T, float), np.asarray(P_in, float)
+    late = T > T[0] + 300.0
+    tb = _blowdown_times(T[late], P_in[late])
+    full = np.asarray(fr["level"]) >= 0.98 * fr["H"]
+    dt = float(np.median(np.diff(T)))
+    n = max(1, int(np.ceil(hold / dt)))
+    c = np.concatenate([[0], np.cumsum(full)])
+    full_d = np.zeros(full.size, bool)
+    full_d[: full.size - n + 1] = (c[n:] - c[:-n]) == n
+    t_full, t_peak = [], []
+    for k in range(1, tb.size):
+        m = (T > tb[k - 1]) & (T < tb[k])
+        t_peak.append(T[np.flatnonzero(m)[np.argmax(P_in[m])]])
+        idx = np.flatnonzero(m & full_d)
+        t_full.append(T[idx[0]] if idx.size else np.nan)
+    return np.array(t_full), np.array(t_peak), tb[1:], tb[:-1]
 
 
 def cycle_anatomy(out, png):
@@ -574,10 +585,13 @@ def cycle_anatomy(out, png):
     T = np.asarray(run.T)
     p = run.pipe(0)
     P_in = p["out"]["P_bar"][1]
-    t_full, t_open, t_bd = _cycle_events(T, P_in, fr)
-    # janela: dois blowouts completos no fim da corrida
-    t1 = T[-1]
-    t0 = t_bd[-3] - 100.0 if t_bd.size >= 3 else max(T[0], t1 - 1800.0)
+    t_full, t_peak, t_end, t_prev = _cycle_events(T, P_in, fr)
+    # janela: os dois últimos ciclos completos
+    if t_end.size >= 2:
+        t0, t1 = t_prev[-2] - 60.0, t_end[-1] + 120.0
+    else:
+        t0, t1 = max(T[0], T[-1] - 1500.0), T[-1]
+    t1 = min(t1, T[-1])
     win = (T >= t0) & (T <= t1)
     dom = W["W"].argmax(-1)
     N = dom.shape[1]
@@ -605,30 +619,139 @@ def cycle_anatomy(out, png):
     axes[2].plot(T[win], P_in[win], color=fl.INK, lw=0.9, label="line inlet")
     axes[2].plot(T[win], p["out"]["P_bar"][kb][win], color=fl.INK2, lw=0.9, ls="--", label="low point")
     axes[2].set_ylabel("P (bar)")
-    axes[2].legend(fontsize=6.0, loc="lower right", ncol=2)
+    axes[2].legend(fontsize=6.0, loc="lower center", ncol=2)
     axes[3].plot(T[win], p["out"]["qL"][-1][win], color=fl.COLORS["stratified"], lw=0.9)
     axes[3].set_ylabel(r"$q_L$ (kg s$^{-1}$)")
     axes[4].plot(T[win], 1e3 * p["out"]["qG"][-1][win], color=fl.COLORS["annular"], lw=0.9)
     axes[4].set_ylabel(r"$q_G$ (g s$^{-1}$)")
     axes[4].set_xlabel("time (s)")
     for a in axes[1:]:
-        for tt, ls in ((t_full, (0, (1, 1.5))), (t_open, (0, (4, 2))), (t_bd, "-")):
-            for t in tt[(tt >= t0) & (tt <= t1)]:
+        for tt, ls in ((t_full, (0, (1, 1.5))), (t_peak, (0, (4, 2))), (t_end, "-")):
+            for t in tt[np.isfinite(tt) & (tt >= t0) & (tt <= t1)]:
                 a.axvline(t, color="0.6", lw=0.6, ls=ls, zorder=0)
-    axes[1].plot([], [], color="0.6", lw=0.6, ls=(0, (1, 1.5)), label="riser full")
-    axes[1].plot([], [], color="0.6", lw=0.6, ls=(0, (4, 2)), label="blowout starts")
-    axes[1].plot([], [], color="0.6", lw=0.6, ls="-", label="end of blowout")
-    axes[1].legend(fontsize=6.0, loc="upper left", ncol=5, bbox_to_anchor=(0.0, 1.32), frameon=False)
+    from matplotlib.lines import Line2D
+
+    ev = [
+        Line2D([], [], color="0.6", lw=0.8, ls=(0, (1, 1.5)), label="riser full"),
+        Line2D([], [], color="0.6", lw=0.8, ls=(0, (4, 2)), label="blowout starts"),
+        Line2D([], [], color="0.6", lw=0.8, ls="-", label="end of blowout"),
+    ]
+    fig.legend(handles=ev, loc="lower center", ncol=3, bbox_to_anchor=(0.5, 0.0), fontsize=6.5, frameon=False)
+    fig.subplots_adjust(bottom=0.08)
+    axes[1].legend(fontsize=6.0, loc="lower center", ncol=2, framealpha=0.9)
+    axes[0].set_xlim(t0, t1)
     for i, a in enumerate(axes):
         fl.panel_label(a, f"({'abcde'[i]})")
     fl.save(fig, out, "cycle_anatomy", png)
 
 
-# ------------------------------------------------------------------------------------------------ mapa de estabilidade
-def _jansen_line(rows):
-    from mfsim.analysis import jansen_choke_dp_crit, jansen_choke_opening
+CYCLE_PHASES = (
+    ("end of blowout", 0.0),
+    ("riser filling", 0.5),
+    ("riser full", 1.0),
+    ("production", 1.5),
+    ("blowout starts", 2.0),
+    ("blowout", 2.5),
+)  # fração do intervalo entre eventos: 0 fim do blowout anterior, 1 riser cheio, 2 início do blowout, 3 fim
 
-    dpc = 0.5 * (jansen_choke_dp_crit(Phi=0.87) + jansen_choke_dp_crit())
+
+def cycle_profiles(out, png):
+    """Perfis ao longo do duto em seis instantes do último ciclo completo da corrida da anatomia: fração de gás e
+    padrão dominante junto à curva, pressão e vazão de líquido em todo o duto."""
+    from matplotlib.patches import Patch
+
+    from mfsim.analysis import cell_states, flow_pattern_weights, slug_fronts
+
+    run = _dense_run(ANATOMY_OPENING)
+    fig = plt.figure(figsize=(fl.DOUBLE, 0.7 * fl.DOUBLE))
+    gs = fig.add_gridspec(3, 2, height_ratios=[1.0, 0.7, 1.0], hspace=0.62, wspace=0.22)
+    ax_a = fig.add_subplot(gs[0, :])
+    ax_p = fig.add_subplot(gs[1, :], sharex=ax_a)
+    ax_c, ax_q = fig.add_subplot(gs[2, 0]), fig.add_subplot(gs[2, 1])
+    if run is None:
+        for ax in (ax_a, ax_p, ax_c, ax_q):
+            fl.placeholder(ax, "dense run not found (batches/paper01_dynamics.json)")
+        fl.save(fig, out, "cycle_profiles", png)
+        return
+    T = np.asarray(run.T)
+    p = run.pipe(0)
+    cs = cell_states(run)
+    fr = slug_fronts(run, cells=cs)
+    t_full, t_peak, t_end, t_prev = _cycle_events(T, p["out"]["P_bar"][1], fr)
+    ok = np.flatnonzero(np.isfinite(t_full))
+    if not ok.size:
+        for ax in (ax_a, ax_p, ax_c, ax_q):
+            fl.placeholder(ax, "no complete cycle in the run")
+        fl.save(fig, out, "cycle_profiles", png)
+        return
+    k = ok[-1]
+    ev = np.array([t_prev[k], t_full[k], t_peak[k], t_end[k]])
+    times = [np.interp(f, [0, 1, 2, 3], ev) for _, f in CYCLE_PHASES]
+    idx = [int(np.argmin(np.abs(T - t))) for t in times]
+    W = flow_pattern_weights(run, cells=cs)
+    dom = W["W"].argmax(-1)
+    sch = run.model.pipes[0].scheme
+    N = sch.N
+    s_c, s_f = np.asarray(sch.x_cells), np.asarray(sch.x_faces)
+    z = _zones(run.model)
+    s0 = z["s_low"] - 60.0
+    shades = plt.get_cmap("cividis")(np.linspace(0.0, 0.9, len(idx)))
+    for (lab, _), i, c in zip(CYCLE_PHASES, idx, shades):
+        a = p["out"]["alphaG"][1 : N + 1][:, i]
+        ax_a.plot(s_c, a, "-o", ms=1.8, lw=0.9, color=c, label=f"{lab} ({T[i] - times[0]:.0f} s)")
+        ax_c.plot(s_c, p["out"]["P_bar"][1 : N + 1][:, i], lw=1.0, color=c)
+        ax_q.plot(s_f, p["out"]["qL"][0 : N + 1][:, i], lw=1.0, color=c)
+    for j, i in enumerate(idx):
+        k_dom = int(np.argmin(np.abs(cs["T"] - T[i])))
+        for m in range(N):
+            ax_p.add_patch(
+                plt.Rectangle(
+                    (s_f[m], j - 0.42),
+                    s_f[m + 1] - s_f[m],
+                    0.84,
+                    fc=fl.COLORS[fl.PATTERNS[dom[k_dom, m]]],
+                    ec="white",
+                    lw=0.3,
+                )
+            )
+    for ax in (ax_a, ax_p):
+        for kk, lab in ((z["k_bend"], "bend"), (z["k_riser"], "riser")):
+            if kk.size:
+                ax.axvline(s_f[kk[0]], color=fl.INK, lw=0.6, ls=(0, (2, 2)))
+    ax_a.set_xlim(s0, s_f[-1])
+    ax_a.set_ylim(0, 1)
+    ax_a.set_ylabel(r"$\alpha_G$")
+    ax_a.legend(ncol=3, fontsize=6.3, loc="upper center", bbox_to_anchor=(0.5, 1.32), frameon=False)
+    plt.setp(ax_a.get_xticklabels(), visible=False)
+    fl.panel_label(ax_a, "(a)")
+    ax_p.set_ylim(len(idx) - 0.4, -0.6)
+    ax_p.set_yticks(range(len(idx)))
+    ax_p.set_yticklabels([lab for lab, _ in CYCLE_PHASES], fontsize=6)
+    ax_p.grid(False)
+    ax_p.legend(
+        handles=[Patch(fc=fl.COLORS[q], label=PATTERN_LABEL[q]) for q in fl.PATTERNS],
+        ncol=4,
+        fontsize=6.3,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.22),
+        frameon=False,
+    )
+    fl.panel_label(ax_p, "(b)")
+    ax_c.set_ylabel("pressure (bar)")
+    ax_c.set_xlabel("position along the pipe (m)")
+    fl.panel_label(ax_c, "(c)")
+    ax_q.set_ylabel(r"$q_L$ (kg s$^{-1}$)")
+    ax_q.set_xlabel("position along the pipe (m)")
+    fl.panel_label(ax_q, "(d)")
+    fl.save(fig, out, "cycle_profiles", png)
+
+
+# ------------------------------------------------------------------------------------------------ mapa de estabilidade
+def _dp_line(rows, dpc):
+    """Abertura em que a queda no choke (lei monofásica do líquido, a produção de cada ponto) vale `dpc` bar, por
+    pressão do reservatório."""
+    from mfsim.analysis import jansen_choke_opening
+
     xs, ys = [], []
     for P in sorted({r["P_res"] for r in rows}):
         line = sorted((r["ab"], r["q_mean"]) for r in rows if r["P_res"] == P)
@@ -636,7 +759,34 @@ def _jansen_line(rows):
         if a_c is not None:
             xs.append(a_c)
             ys.append(P)
-    return np.array(xs), np.array(ys), dpc
+    return np.array(xs), np.array(ys)
+
+
+def _jansen_line(rows):
+    from mfsim.analysis import jansen_choke_dp_crit
+
+    dpc = 0.5 * (jansen_choke_dp_crit(Phi=0.87) + jansen_choke_dp_crit())
+    xs, ys = _dp_line(rows, dpc)
+    return xs, ys, dpc
+
+
+def _linear_dp():
+    """Queda no choke na fronteira linear (cruzamento do modo global lento, interpolado em log da abertura) em
+    cada pressão e a mediana entre 0,1 e 1 bar (exclui as linhas sem fronteira ligada, de pressão alta)."""
+    d = _cached("map_spectrum", _map_spectrum_compute)
+    if "rows" not in d:
+        return {}, np.nan
+    R = d["rows"]
+    out = {}
+    for P in np.unique(R[:, 1]):
+        sub = R[R[:, 1] == P]
+        sub = sub[np.argsort(sub[:, 0])]
+        a_h = _crossing(sub[:, 0], sub[:, 2])
+        if np.isfinite(a_h):
+            q = np.exp(np.interp(np.log(a_h), np.log(sub[:, 0]), np.log(sub[:, 11])))
+            out[float(P)] = (a_h, q**2 / 900.0 / (0.0075 * 15.0 * a_h) ** 2)
+    dps = [dp for _, dp in out.values() if 0.1 < dp < 1.0]
+    return out, float(np.median(dps)) if dps else np.nan
 
 
 def _edges(v):
@@ -645,7 +795,22 @@ def _edges(v):
     return np.exp(np.concatenate([[v[0] - (mid[0] - v[0])], mid, [v[-1] + (v[-1] - mid[-1])]]))
 
 
-def _draw_map(ax, rows, fixed_rows=None):
+def _linear_status():
+    """Estado linear de cada célula do mapa (issue 048): {(pressão, abertura): (instável pelo modo global lento,
+    modo rápido global da linha instável)}."""
+    from mfsim.analysis import N_EFF_GLOBAL
+
+    d = _cached("map_spectrum", _map_spectrum_compute)
+    if "rows" not in d:
+        return {}
+    out = {}
+    for r in d["rows"]:
+        fast = bool(r[6] > 0 and r[8] >= N_EFF_GLOBAL and abs(r[7]) > 1.0)
+        out[(float(r[1]), float(r[0]))] = (bool(r[2] > 0), fast)
+    return out
+
+
+def _draw_map(ax, rows, fixed_rows=None, linear=None, flag_fast=False, dp_fit=None):
     from matplotlib.patches import Rectangle
 
     xs = sorted({r["ab"] for r in rows})
@@ -688,6 +853,9 @@ def _draw_map(ax, rows, fixed_rows=None):
             )
     jx, jy, dpc = _jansen_line(rows)
     ax.plot(jx, jy, color=fl.INK, lw=1.2, ls=(0, (5, 3)), zorder=6)
+    if dp_fit is not None and np.isfinite(dp_fit):
+        fx, fy = _dp_line(rows, dp_fit)
+        ax.plot(fx, fy, color=fl.INK, lw=1.0, ls=(0, (6, 2, 1, 2)), zorder=6)
     if fixed_rows:
         # fronteira do lado aberto com padrão fixo: primeira abertura instável depois da última estável em cada linha
         G2 = {(r["P_res"], r["ab"]): r["cls"] for r in fixed_rows}
@@ -698,6 +866,30 @@ def _draw_map(ax, rows, fixed_rows=None):
                 bx += [xe[max(stable) + 1]] * 2
                 by += [ye[i], ye[i + 1]]
         ax.plot(bx, by, color=fl.INK2, lw=1.0, ls=(0, (1, 1.5)), zorder=6)
+    if linear:
+        # fronteira linear do estacionário: contorno das células em que o modo global lento é instável
+        def unstable(i, j):
+            v = linear.get((ys[i], xs[j])) if 0 <= i < len(ys) and 0 <= j < len(xs) else None
+            return None if v is None else v[0]
+
+        for i in range(len(ys)):
+            for j in range(len(xs)):
+                u = unstable(i, j)
+                if u is None:
+                    continue
+                for di, dj in ((0, 1), (1, 0)):
+                    v = unstable(i + di, j + dj)
+                    if v is None or v == u:
+                        continue
+                    if dj:
+                        ax.plot([xe[j + 1]] * 2, [ye[i], ye[i + 1]], color=fl.INK, lw=1.6, zorder=7)
+                    else:
+                        ax.plot([xe[j], xe[j + 1]], [ye[i + 1]] * 2, color=fl.INK, lw=1.6, zorder=7)
+        if flag_fast:
+            for (P, ab), (_, fast) in linear.items():
+                if fast and P in ys and ab in xs:
+                    i, j = ys.index(P), xs.index(ab)
+                    ax.plot(xe[j + 1] / 1.06, ye[i + 1] / 1.05, marker="*", ms=3.2, color="white", mec=fl.INK, mew=0.4)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ticks = [t for t in (0.03, 0.05, 0.1, 0.2, 0.5, 1.0) if xe[0] <= t <= xe[-1]]
@@ -712,37 +904,83 @@ def _draw_map(ax, rows, fixed_rows=None):
     return dpc
 
 
+LINEAR_LABEL = {
+    "stable": "linearly stable",
+    "cycling": "unstable slow pair (oscillatory)",
+    "slugging": "unstable real global mode",
+}
+
+
+def _linear_rows():
+    """Linhas do mapa linear (issue 048) no formato de `_map_rows`: classe pelo modo global lento dominante (estável,
+    par complexo instável -> "cycling", real instável -> "slugging"), período do par, pressão e produção do
+    estacionário."""
+    d = _cached("map_spectrum", _map_spectrum_compute)
+    if "rows" not in d:
+        return []
+    out = []
+    for r in d["rows"]:
+        ab, P, re1, im1 = r[0], r[1], r[2], r[3]
+        cls = "stable" if not re1 > 0 else ("cycling" if im1 > 1e-9 else "slugging")
+        out.append(
+            dict(
+                start="linear",
+                ab=float(ab),
+                P_res=float(P),
+                cls=cls,
+                period=2 * np.pi / im1 if cls == "cycling" else np.nan,
+                P_mean=float(r[10]),
+                P_max=float(r[10]),
+                q_mean=float(r[11]),
+                success=True,
+            )
+        )
+    return out
+
+
 def stability_map(out, png):
-    """Mapa abertura do choke × pressão do reservatório (padrão dinâmico) nas duas partidas, com o critério de
-    Jansen et al. (1996) e a fronteira do lado aberto com padrão fixo."""
+    """Mapa abertura do choke × pressão do reservatório (padrão dinâmico): (a) estabilidade linear do estacionário
+    (issue 048); (b) classes das simulações a partir da linha bloqueada. Critério de Jansen et al. (1996), fronteira
+    linear e fronteira do lado aberto com padrão fixo."""
     from matplotlib.lines import Line2D
     from matplotlib.patches import Patch
 
-    rows = _map_rows()
-    fixed = _map_rows(MAP_FIXED_DIR)
+    lin_rows = _linear_rows()
+    rows = [r for r in (_map_rows() or []) if r["start"] == "blocked"]
+    fixed = [r for r in (_map_rows(MAP_FIXED_DIR) or []) if r["start"] == "blocked"]
+    lin = _linear_status()
+    _, dp_lin = _linear_dp()
     fig, axes = plt.subplots(1, 2, figsize=(fl.DOUBLE, 0.52 * fl.DOUBLE), sharey=True)
     dpc = None
-    for ax, start, lab in zip(
-        axes, ("steady", "blocked"), ("(a) start from the steady state", "(b) start from a blocked line")
+    for ax, sub, fx, lab in (
+        (axes[0], lin_rows, None, "(a) linear stability of the steady state"),
+        (axes[1], rows, fixed, "(b) simulation from a blocked line"),
     ):
-        sub = [r for r in (rows or []) if r["start"] == start]
         if not sub:
-            fl.placeholder(ax, "map not found (tools/slug_map.py)")
+            fl.placeholder(ax, "not available (tools/slug_map.py)")
             continue
-        dpc = _draw_map(ax, sub, [r for r in (fixed or []) if r["start"] == start])
+        dpc = _draw_map(ax, sub, fx, linear=lin, flag_fast=ax is axes[0], dp_fit=dp_lin)
         ax.set_xlabel("choke opening")
         ax.set_title(lab, fontsize=7.5, loc="left")
     axes[0].set_ylabel("reservoir pressure (bar)")
-    handles = [Patch(fc=fl.COLORS[k], label=CLASS_LABEL[k]) for k in ("stable", "cycling", "slugging")]
+    handles = [Patch(fc=fl.COLORS[k], label=f"{LINEAR_LABEL[k]} / {CLASS_LABEL[k]}") for k in CLASS_LABEL]
     handles += [Patch(fc="none", ec=fl.INK, lw=1.4, label="most productive stable opening")]
+    handles += [Line2D([], [], color=fl.INK, lw=1.6, label="boundary of linear stability (slow modes)")]
+    handles += [
+        Line2D([], [], ls="none", marker="*", ms=5, color="white", mec=fl.INK, mew=0.5, label="fast line mode unstable")
+    ]
     if dpc is not None:
         handles += [Line2D([], [], color=fl.INK, lw=1.2, ls=(0, (5, 3)), label=f"Jansen et al. (1996), {dpc:.2f} bar")]
+    if np.isfinite(dp_lin):
+        handles += [
+            Line2D([], [], color=fl.INK, lw=1.0, ls=(0, (6, 2, 1, 2)), label=f"choke pressure drop of {dp_lin:.2f} bar")
+        ]
     if fixed:
         handles += [
             Line2D([], [], color=fl.INK2, lw=1.0, ls=(0, (1, 1.5)), label="stable boundary, prescribed patterns")
         ]
-    fig.legend(handles=handles, loc="lower center", ncol=3, fontsize=7, frameon=False, bbox_to_anchor=(0.5, -0.02))
-    fig.subplots_adjust(bottom=0.24, wspace=0.05)
+    fig.legend(handles=handles, loc="lower center", ncol=2, fontsize=6.5, frameon=False, bbox_to_anchor=(0.5, -0.04))
+    fig.subplots_adjust(bottom=0.28, wspace=0.05)
     fl.save(fig, out, "stability_map", png)
 
 
@@ -798,20 +1036,40 @@ def _batch_runs(batch):
     return out
 
 
+def _blowdown_times(T, P, frac=0.5, min_gap=150.0):
+    """Instantes dos blowdowns: mínimos da pressão de entrada abaixo de `frac` da faixa entre os percentis 2 e 98
+    (robusta aos picos isolados), separados por pelo menos `min_gap` s. Vazio se a faixa for menor que 0,1 bar."""
+    T, P = np.asarray(T, float), np.asarray(P, float)
+    lo, hi = np.percentile(P, [2.0, 98.0])
+    if hi - lo < 0.1:
+        return np.array([])
+    low = P < lo + frac * (hi - lo)
+    out, i = [], 0
+    while i < T.size:
+        if low[i]:
+            j = i
+            while j < T.size and low[j]:
+                j += 1
+            k = i + int(np.argmin(P[i:j]))
+            if not out or T[k] - out[-1] > min_gap:
+                out.append(T[k])
+            i = j
+        else:
+            i += 1
+    return np.array(out)
+
+
 def _run_summary(run):
     """Fim da corrida, sucesso, passos, CPU, erro de massa (líquido e gás, % do alimentado) e assinatura do
     ciclo (blowdowns pela pressão de entrada, intervalo médio, faixa de pressão, pico de líquido à saída)."""
-    from mfsim.analysis import blowdowns, inventory_error
+    from mfsim.analysis import inventory_error
 
     info = run.info or {}
     T = np.asarray(run.T)
     p = run.pipe(0)
     P1, q = p["out"]["P_bar"][1], p["out"]["qL"][-1]
     sel = T > 300.0
-    from mfsim.simulation import window_signature
-
-    w = window_signature(T[sel], P1[sel]) if sel.sum() > 10 else dict(crossings=0, period=np.nan, amp=0.0)
-    n_cycles = int(w["crossings"] // 2) if w["amp"] > 0.1 else 0
+    tb = _blowdown_times(T[sel], P1[sel]) if sel.sum() > 10 else np.array([])
     e = inventory_error(run)
     errL = errG = np.nan
     if e is not None:
@@ -834,8 +1092,8 @@ def _run_summary(run):
         cpu=info.get("cpu_total", info.get("cpu")),
         errL=errL,
         errG=errG,
-        n_blowdowns=n_cycles,
-        interval=float(w["period"]) if n_cycles >= 2 else np.nan,
+        n_blowdowns=int(tb.size),
+        interval=float(np.mean(np.diff(tb))) if tb.size >= 2 else np.nan,
         P_min=float(P1[sel].min()) if sel.any() else np.nan,
         P_max=float(P1[sel].max()) if sel.any() else np.nan,
         q_peak=float(q[sel].max()) if sel.any() else np.nan,
@@ -866,7 +1124,7 @@ def _summary_rows(batch, labels):
                 fl.fmt(r["errG"], "{:+.1e}"),
                 str(r["n_blowdowns"]),
                 fl.fmt(r["interval"], "{:.0f}"),
-                f"{fl.fmt(r['P_min'])}--{fl.fmt(r['P_max'])}",
+                f"{fl.fmt(r['P_min'])}--{fl.fmt(r['P_max'])}" if np.isfinite(r["P_min"]) else "--",
             ]
         )
     return rows
@@ -879,14 +1137,14 @@ SUMMARY_HEADER = [
     "CPU (s)",
     "liquid error (\\%)",
     "gas error (\\%)",
-    "cycles",
-    "period (s)",
+    "blowdowns",
+    "interval (s)",
     "$P_{in}$ (bar)",
 ]
 SUMMARY_NOTE = (
     "Mass errors: inventory change minus the boundary fluxes integrated with the integrator's own recurrence, at "
-    "the end of the run, in per cent of the mass fed. Cycles and period: up-crossings of the mean inlet pressure after "
-    "\\SI{300}{\\second}."
+    "the end of the run, in per cent of the mass fed. Blowdowns: minima of the inlet pressure below the middle of "
+    "its range (2nd to 98th percentile) after \\SI{300}{\\second}; interval: mean time between them."
 )
 
 DISC_LABELS = {
@@ -896,6 +1154,14 @@ DISC_LABELS = {
     "petrov_galerkin": "Petrov--Galerkin",
     "fd_central": "central differences",
     "fd_upwind": "backward differences",
+}
+DISC_SHORT = {
+    "fv_conservative": "FV, conservative",
+    "fv_primitive": "FV, primitive",
+    "galerkin": "Galerkin",
+    "petrov_galerkin": "Petrov--Galerkin",
+    "fd_central": "central diff.",
+    "fd_upwind": "backward diff.",
 }
 ABL_LABELS = {
     "reference": "configuration of Section 7 (reference)",
@@ -948,7 +1214,7 @@ def discretisation(out, png):
     from mfsim.analysis import inventory_error
 
     fig = plt.figure(figsize=(fl.DOUBLE, 0.62 * fl.DOUBLE))
-    gs = fig.add_gridspec(2, 2, width_ratios=[1.0, 2.2], hspace=0.12, wspace=0.18)
+    gs = fig.add_gridspec(2, 2, width_ratios=[1.4, 2.0], hspace=0.12, wspace=0.2)
     a1 = fig.add_subplot(gs[:, 0])
     a2 = fig.add_subplot(gs[0, 1])
     a3 = fig.add_subplot(gs[1, 1], sharex=a2)
@@ -968,42 +1234,57 @@ def discretisation(out, png):
         P = r.pipe(0)["out"]["P_bar"][1]
         sel = T <= 100.0
         summ = _run_summary(r)
-        a1.plot(T[sel], P[sel], lw=0.9, color=c, label=lab)
-        if summ["t_end"] < 2999:
+        fails = summ["t_end"] < 2999
+        short = DISC_SHORT[name] + (f", fails at {summ['t_end']:.2g} s" if fails else "")
+        a1.plot(T[sel], P[sel], lw=0.9, color=c, label=short)
+        if fails:
             a1.plot([min(summ["t_end"], 100.0)], [P[-1]], "x", ms=6, mew=1.2, color=c)
-            a1.annotate(
-                f"{summ['t_end']:.2g} s",
-                (min(summ["t_end"], 100.0), P[-1]),
-                textcoords="offset points",
-                xytext=(4, 2),
-                fontsize=6,
-                color=c,
-            )
         if name in colors:
-            a2.plot(T, P, lw=0.7, color=c, label=lab)
+            a2.plot(T, P, lw=0.7, color=c, label=DISC_SHORT[name])
     a1.set_xlim(-2, 100)
     a1.set_xlabel("time (s)")
     a1.set_ylabel(r"$P_{in}$ (bar)")
-    a1.legend(fontsize=6, loc="upper right")
+    a1.legend(fontsize=6, loc="upper right", handlelength=1.2)
     fl.panel_label(a1, "(a)")
     a2.set_ylabel(r"$P_{in}$ (bar)")
     a2.legend(fontsize=6.5, ncol=2, loc="lower right")
     plt.setp(a2.get_xticklabels(), visible=False)
     fl.panel_label(a2, "(b)")
-    for name, key, lab in (
-        ("fv_conservative", "conservative", "conservative"),
-        ("fv_primitive", "primitive", "primitive"),
-    ):
+    err_cons = 0.0
+    for name, key in (("fv_conservative", "conservative"), ("fv_primitive", "primitive")):
         r = runs.get(name)
         e = inventory_error(r) if r is not None else None
         if e is None:
             continue
-        a3.plot(e["T"], e["L"], color=fl.COLORS[key], lw=1.0, label=f"liquid, {lab}")
-        a3.plot(e["T"], 100 * e["G"], color=fl.COLORS[key], lw=1.0, ls=(0, (4, 2)), label=f"gas $\\times 100$, {lab}")
+        a3.plot(e["T"], e["L"], color=fl.COLORS[key], lw=1.0)
+        a3.plot(e["T"], 100 * e["G"], color=fl.COLORS[key], lw=1.0, ls=(0, (4, 2)))
+        if key == "conservative":
+            err_cons = max(np.abs(e["L"]).max(), np.abs(e["G"]).max())
     a3.axhline(0, color=fl.GRID, lw=0.6)
     a3.set_ylabel("mass error (kg)")
     a3.set_xlabel("time (s)")
-    a3.legend(fontsize=6.5, ncol=2, loc="lower left")
+    # cor = formulação (legenda de (b)); estilo = fase
+    a3.legend(
+        handles=[
+            plt.Line2D([], [], color=fl.INK, lw=1.0, label="liquid"),
+            plt.Line2D([], [], color=fl.INK, lw=1.0, ls=(0, (4, 2)), label=r"gas $\times 100$"),
+        ],
+        fontsize=6.5,
+        ncol=2,
+        loc="upper left",
+    )
+    if err_cons > 0:
+        ex = int(np.floor(np.log10(err_cons)))
+        m = int(np.ceil(err_cons / 10.0**ex))
+        a3.annotate(
+            rf"conservative: |error| $<{m}\times10^{{{ex}}}$ kg",
+            (0.99, 0.52),
+            xycoords="axes fraction",
+            ha="right",
+            va="bottom",
+            fontsize=6.5,
+            color=fl.INK,
+        )
     fl.panel_label(a3, "(c)")
     fl.save(fig, out, "discretisation", png)
 
@@ -1094,12 +1375,11 @@ def _zone_of_cells(model):
 
 
 def _spectrum(model, X):
-    from mfsim.compiled import get_jax
+    """Autovalores da linearização M·δẋ = J·δx (com a matriz de massa do modo conservativo, issue 048) e a zona
+    da célula onde cada vetor próprio se concentra."""
+    from mfsim.analysis import linear_spectrum
 
-    _, jac = get_jax(model)
-    J = np.asarray(jac(0.0, X))
-    J = J.toarray() if hasattr(J, "toarray") else J
-    w, V = np.linalg.eig(J)
+    w, V = linear_spectrum(model, X, jax=True, vectors=True)
     pb = model.pipes[0]
     nodes = pb.free // 4
     cell = np.clip(nodes[np.argmax(np.abs(V[pb.offset : pb.offset + pb.n_states]), axis=0)] - 1, 0, pb.scheme.N - 1)
@@ -1261,7 +1541,7 @@ def tab_mesh(out):
                 fl.fmt(r["n_steps"], "{:,.0f}").replace(",", "\\,"),
                 fl.fmt(r["cpu"], "{:.0f}"),
                 fl.fmt(r["interval"], "{:.0f}"),
-                f"{fl.fmt(r['P_min'])}--{fl.fmt(r['P_max'])}",
+                f"{fl.fmt(r['P_min'])}--{fl.fmt(r['P_max'])}" if np.isfinite(r["P_min"]) else "--",
                 fl.fmt(r["q_peak"], "{:.1f}"),
             ]
         )
@@ -1377,11 +1657,11 @@ def tab_cycle(out):
         p = run.pipe(0)
         P_in, q = p["out"]["P_bar"][1], p["out"]["qL"][-1]
         sel = T >= T[-1] - 3000.0
-        c = cycle_class(T[sel], P_in[sel], q[sel])
+        c = cycle_class(T[sel], P_in[sel], q[sel], smooth=SMOOTH)
         fr = slug_fronts(run)
-        t_full, t_open, t_bd = _cycle_events(T, P_in, fr)
-        fill = [t_full[t_full > tb][0] - tb for tb in t_bd if (t_full > tb).any()]
-        blow = [tb - t_open[t_open < tb][-1] for tb in t_bd if (t_open < tb).any()]
+        t_full, t_peak, t_end, t_prev = _cycle_events(T, P_in, fr)
+        fill = [f - a for f, a in zip(t_full, t_prev) if np.isfinite(f)]
+        blow = [b - a for a, b in zip(t_peak, t_end)]
         slug = fr["seal"][sel] + fr["level"][sel]
         rows.append(
             [
@@ -1415,77 +1695,331 @@ def tab_cycle(out):
         notes=(
             "Reservoir at \\SI{15}{\\bar}, start from the perturbed steady state, last \\SI{3000}{\\second} of "
             "\\SI{6000}{\\second}. Slug: largest length of liquid that seals the system, in the line upstream of the "
-            "low point plus the column in the riser. Riser fill: from the end of a blowout to a full riser; blowout: "
-            "from the moment the column stops being full to the minimum of the inlet pressure (medians)."
+            "low point plus the column in the riser. Riser fill: from the end of a blowout to a full riser (level at "
+            "\\SI{98}{\\percent} of the riser height for at least \\SI{20}{\\second}); blowout: from the maximum to the "
+            "minimum of the inlet pressure (medians over the cycles)."
         ),
     )
 
 
-# ------------------------------------------------------------------------------------------------ modo da frente contra a malha
-FRONT_MESHES = (
-    ("stable_coarse", "coarse 15 + 5"),
-    ("stable_fine", "fine 30 + 10"),
-    ("stable_fine_graded", "fine, graded"),
-)
+# ------------------------------------------------------------------------------------------------ estabilidade linear
+HOPF_OPENINGS = tuple(float(a) for a in np.round(np.r_[np.arange(0.10, 0.40, 0.01), np.arange(0.40, 1.0001, 0.05)], 3))
+HOPF_MESHES = (
+    ("base", None, "coarse 15 + 5 (base)"),
+    ("fine", "stable_fine", "fine 30 + 10"),
+    ("fine_graded", "stable_fine_graded", "fine, graded"),
+)  # semente a 0,13: o estacionário do mapa (base) ou Newton a partir do fim da corrida estável do lote de malha
 
 
-def _front_mesh_compute():
-    """Estacionário (Newton a partir do estado final da corrida estável de cada malha, lote paper01_mesh) e o
-    modo instável mais rápido: valor, célula e tamanho da célula, número de modos instáveis."""
-    from mfsim.compiled import get_jax
+def _modes(model, X):
+    """Autovalores (Im >= 0), nós efetivos e nó de maior peso (`mfsim.analysis.mode_participation`, issue 048)."""
+    from mfsim.analysis import mode_participation
+
+    return mode_participation(model, X, jax=True)
+
+
+def _mode_row(w, n_eff, node):
+    """[Re1, Im1, Re2, Im2, Re_o, Im_o, n_eff_o, nó_o] de `mfsim.analysis.slow_global_modes`: os dois modos globais
+    lentos de maior parte real e, entre os outros (rápidos ou locais), o de maior parte real."""
+    from mfsim.analysis import slow_global_modes
+
+    g = slow_global_modes(w, n_eff, node)
+    return [g[k] for k in ("re1", "im1", "re2", "im2", "re_other", "im_other", "n_eff_other", "node_other")]
+
+
+def _map_spectrum_compute():
+    """Modos do estacionário de cada ponto do mapa com padrão dinâmico (casos da partida do estacionário):
+    linhas [abertura, pressão] + `_mode_row` + [pressão de entrada (bar), vazão de líquido à saída (kg/s)]."""
+    from mfsim.io import case_from_json
+    from mfsim.simulation import build_model
+
+    rows = []
+    for path in sorted((Path(MAP_DIR) / "steady" / "cases").glob("*.json")):
+        net = case_from_json(str(path))
+        if net.initial != "steady":
+            continue
+        m = (json.load(open(path)).get("meta") or {}).get("map") or {}
+        model = build_model(net)
+        X = model.initial_state()
+        Y = model.assemble(0.0, X)[1][0]
+        N = model.pipes[0].scheme.N
+        rows.append([m["ab"], m["P_res"]] + _mode_row(*_modes(model, X)) + [Y[1, 1] * model.PR / 1e5, Y[N, 2]])
+    return {"rows": np.array(rows)} if rows else {"missing": np.array(1)}
+
+
+def _hopf_compute():
+    """Continuação em abertura a 15 bar (Newton a partir do estacionário vizinho) nas três malhas: linhas
+    [abertura] + `_mode_row` + [N] por malha."""
+    import copy
+
+    from mfsim.io import case_from_json, load_json
     from mfsim.runs import load_run
-    from mfsim.simulation import state_bounds
+    from mfsim.simulation import build_model, state_bounds
     from mfsim.steady import newton_steady
 
     out = {}
-    for name, _ in FRONT_MESHES:
-        path = fl.RUNS / "paper01" / "mesh" / f"{name}.npz"
-        if not path.exists():
-            continue
-        run = load_run(str(path))
-        model = run.model
-        X, info = newton_steady(
-            model, run.X[:, -1], tol=1e-9, verbose=False, bounds=state_bounds(model), jax=True, max_iter=60
-        )
-        if not info["converged"]:
-            continue
-        _, jac = get_jax(model)
-        J = np.asarray(jac(0.0, X))
-        J = J.toarray() if hasattr(J, "toarray") else J
-        w, V = np.linalg.eig(J)
-        k = int(np.argmax(w.real))
-        pb = model.pipes[0]
-        nodes = pb.free // 4
-        cell = int(nodes[np.argmax(np.abs(V[pb.offset : pb.offset + pb.n_states, k]))] - 1)
-        h = np.asarray(pb.mesh["h"])
-        out[f"{name}_w"] = np.array([w[k].real, w[k].imag])
-        out[f"{name}_cell"] = np.array(
-            [cell, pb.scheme.x_cells[cell], h[cell], pb.scheme.N, int((w.real > 1e-9).sum())]
-        )
+    for key, run_name, _ in HOPF_MESHES:
+        if run_name is None:
+            seed = _steady_state(0.13, P_SEL)
+            path = Path(MAP_DIR) / "steady" / "cases" / f"{_name(0.13, P_SEL)}.json"
+            if seed is None:
+                continue
+            src, X0 = load_json(str(path)), seed[1]
+        else:
+            path = fl.RUNS / "paper01" / "mesh" / f"{run_name}.npz"
+            if not path.exists():
+                continue
+            run = load_run(str(path))
+            src, X0 = run.case_json, np.asarray(run.X[:, -1], float)
+        res = {}
+        for up in (True, False):
+            X = X0
+            seq = [a for a in HOPF_OPENINGS if (a >= 0.13 - 1e-9) == up]
+            for ab in seq if up else seq[::-1]:
+                d = copy.deepcopy(src)
+                model = build_model(case_from_json(d, overrides={"network.edges.choke_2.opening": ab}))
+                X, info = newton_steady(
+                    model, X, tol=1e-10, verbose=False, bounds=state_bounds(model), jax=True, max_iter=60
+                )
+                if not info["converged"]:
+                    break
+                res[ab] = [ab] + _mode_row(*_modes(model, X)) + [model.pipes[0].scheme.N]
+        if res:
+            out[key] = np.array([res[a] for a in sorted(res)])
     return out or {"missing": np.array(1)}
 
 
-def tab_front_modes(out):
-    d = _cached("front_modes_mesh", _front_mesh_compute)
+def _crossing(x, y):
+    """Primeiro x em que y passa de negativo a positivo (interpolação linear em log x) ou NaN."""
+    x, y = np.asarray(x, float), np.asarray(y, float)
+    ok = np.isfinite(y)
+    x, y = x[ok], y[ok]
+    k = np.flatnonzero((y[:-1] < 0) & (y[1:] >= 0))
+    if not k.size:
+        return np.nan
+    k = k[0]
+    lx = np.log(x[k]) + (np.log(x[k + 1]) - np.log(x[k])) * (-y[k]) / (y[k + 1] - y[k])
+    return float(np.exp(lx))
+
+
+def tab_hopf_mesh(out):
+    """Abertura crítica (o par lento atravessa o eixo imaginário) e período nesse ponto a 15 bar, contra a malha."""
+    d = _cached("hopf", _hopf_compute)
     rows = []
-    for name, lab in FRONT_MESHES:
-        if f"{name}_w" not in d:
-            rows.append([lab] + ["--"] * 5)
+    for key, _, lab in HOPF_MESHES:
+        if key not in d:
+            rows.append([lab] + ["--"] * 4)
             continue
-        cell, s_c, h_c, N, n_un = d[f"{name}_cell"]
-        rows.append([lab, f"{int(N)}", f"{h_c:.1f}", f"{s_c:.0f}", fl.fmt(d[f"{name}_w"][0], "{:.0f}"), f"{int(n_un)}"])
+        A = d[key]
+        a_h = _crossing(A[:, 0], A[:, 1])
+        im_h = np.interp(np.log(a_h), np.log(A[:, 0]), A[:, 2]) if np.isfinite(a_h) else np.nan
+        k36 = int(np.argmin(np.abs(A[:, 0] - 0.36)))
+        rows.append(
+            [
+                lab,
+                f"{int(A[0, -1])}",
+                fl.fmt(a_h, "{:.3f}"),
+                fl.fmt(2 * np.pi / im_h if im_h > 0 else np.nan, "{:.0f}"),
+                fl.fmt(1e3 * A[k36, 1], "{:+.1f}"),
+                fl.fmt(2 * np.pi / A[k36, 2] if A[k36, 2] > 0 else np.nan, "{:.0f}"),
+            ]
+        )
     fl.tex_table(
         out,
-        "tab_front_modes",
-        ["mesh", "cells", "cell size (m)", "position (m)", "growth rate (s$^{-1}$)", "unstable modes"],
+        "tab_hopf_mesh",
+        [
+            "mesh",
+            "cells",
+            "critical opening",
+            "period at onset (s)",
+            "growth at 0.36 ($10^{-3}$ s$^{-1}$)",
+            "period at 0.36 (s)",
+        ],
         rows,
         align="lrrrrr",
         notes=(
-            "Fastest unstable mode of the linearised steady state at a reservoir pressure of \\SI{15}{\\bar} and an "
-            "opening of 0.13 (a stable point of the map): the cell in which its eigenvector is concentrated, the size "
-            "of that cell and its growth rate."
+            "Slow pair of the linearised steady state at a reservoir pressure of \\SI{15}{\\bar}: the opening at which "
+            "it crosses the imaginary axis (interpolated) and its period there, and its growth rate and period at the "
+            "opening of 0.36."
         ),
     )
+
+
+FACE_COLORS = {"donor": fl.INK, "mean": "#CC79A7"}  # fração das faces nos fechamentos (044)
+
+
+def _dyn_periods():
+    """Classe e período (média móvel de SMOOTH s, últimos 3000 s) das corridas densas a 15 bar: {abertura: (classe,
+    período)}."""
+    from mfsim.analysis import cycle_class
+
+    out = {}
+    for ab in DYN_OPENINGS:
+        run = fl.load_run(f"paper01/dynamics/{_name(ab, P_SEL)}")
+        if run is None:
+            continue
+        T = np.asarray(run.T)
+        p = run.pipe(0)
+        sel = T >= T[-1] - 3000.0
+        c = cycle_class(T[sel], p["out"]["P_bar"][1][sel], p["out"]["qL"][-1][sel], smooth=SMOOTH)
+        out[ab] = (c["cls"], c["period"])
+    return out
+
+
+def linear_stability(out, png):
+    """Estabilidade linear do estacionário (matriz de massa, issue 048) a 15 bar: (a) fração de gás junto à curva e
+    no riser com os fechamentos das faces pela média e pela doadora (abertura 0,13); (b) os modos lentos nas duas
+    variantes; (c) o lugar do par lento ao abrir o choke; (d) a sua taxa de crescimento e a do modo global real;
+    (e) o seu período e o das corridas."""
+    from matplotlib.lines import Line2D
+
+    d = _cached("bend_modes", _bend_compute)
+    h = _cached("hopf", _hopf_compute)
+    fig = plt.figure(figsize=(fl.DOUBLE, 0.72 * fl.DOUBLE))
+    gs = fig.add_gridspec(2, 6, hspace=0.42, wspace=1.1)
+    ax_p, ax_s = fig.add_subplot(gs[0, 0:3]), fig.add_subplot(gs[0, 3:6])
+    ax_l, ax_g, ax_t = fig.add_subplot(gs[1, 0:2]), fig.add_subplot(gs[1, 2:4]), fig.add_subplot(gs[1, 4:6])
+    ab0 = BEND_OPENINGS[0]
+    # (a) perfil junto à curva
+    md = _steady_state(ab0, P_SEL)
+    if md is not None and f"a_donor_{ab0}" in d:
+        s_cells = np.asarray(md[0].pipes[0].scheme.x_cells)
+        sel = s_cells >= 260.0
+        for var, mk in (("mean", "o"), ("donor", "s")):
+            if f"a_{var}_{ab0}" in d:
+                ax_p.plot(
+                    s_cells[sel],
+                    d[f"a_{var}_{ab0}"][sel],
+                    mk + "-",
+                    ms=2.6,
+                    lw=0.9,
+                    color=FACE_COLORS[var],
+                    label=f"{var} face fraction",
+                )
+        z = _zones(md[0])
+        for k, lab in ((z["k_bend"], "bend"), (z["k_riser"], "riser")):
+            if k.size:
+                ax_p.axvline(s_cells[k[0]] - 1.0, color=fl.GRID, lw=0.8)
+                ax_p.text(s_cells[k[0]] - 0.4, 0.84, lab, fontsize=6.5, color=fl.INK2)
+        ax_p.set_xlabel("position along the pipe (m)")
+        ax_p.set_ylabel(r"$\alpha_G$ at steady state")
+        ax_p.legend(fontsize=6.5, loc="center right")
+    else:
+        fl.placeholder(ax_p, "steady state not available")
+    fl.panel_label(ax_p, "(a)")
+    # (b) modos lentos e intermédios a 0,13, média contra doadora
+    for var, kw in (
+        ("mean", dict(s=16, facecolors="none", edgecolors=FACE_COLORS["mean"], lw=0.7)),
+        ("donor", dict(s=8, color=FACE_COLORS["donor"], lw=0)),
+    ):
+        key = f"w_{var}_{ab0}"
+        if key in d:
+            w = d[key]
+            w = w[(w.imag >= 0) & (w.real > -0.06) & (w.imag < 0.32)]
+            ax_s.scatter(w.real, w.imag, label=f"{var} face fraction", **kw)
+            un = w[w.real > 1e-9]
+            for lam in un:
+                ax_s.annotate(
+                    f"{2 * np.pi / lam.imag:.0f} s" if lam.imag > 1e-9 else "real",
+                    (lam.real, lam.imag),
+                    textcoords="offset points",
+                    xytext=(5, -2),
+                    fontsize=6.0,
+                    color=fl.INK2,
+                )
+    ax_s.axvline(0, color=fl.INK, lw=0.6)
+    ax_s.set_xlim(-0.06, 0.025)
+    ax_s.set_ylim(0, 0.32)
+    ax_s.set_xlabel(r"Re $\lambda$ (s$^{-1}$)")
+    ax_s.set_ylabel(r"Im $\lambda$ (rad s$^{-1}$)")
+    ax_s.legend(fontsize=6.5, loc="upper left")
+    ax_s.set_title(f"$a = {ab0:g}$", fontsize=7.5)
+    fl.panel_label(ax_s, "(b)")
+    # (c-e) continuação em abertura
+    A = h.get("base")
+    if A is None:
+        for ax in (ax_l, ax_g, ax_t):
+            fl.placeholder(ax, "continuation not available")
+    else:
+        ab = A[:, 0]
+        cplx = A[:, 2] > 1e-9
+        re_p = np.where(cplx, A[:, 1], A[:, 3])  # o par complexo (1.º ou 2.º modo global)
+        im_p = np.where(cplx, A[:, 2], A[:, 4])
+        re_r = np.where(cplx, np.nan, A[:, 1])  # o modo global real, quando domina
+        a_h = _crossing(ab, re_p)
+        ax_l.plot(re_p, im_p, "-", color=fl.INK, lw=1.0)
+        for a_lab in (0.13, 0.22, 0.28, 0.36, 0.6, 1.0):
+            k = int(np.argmin(np.abs(ab - a_lab)))
+            ax_l.plot(re_p[k], im_p[k], "o", ms=3, color=fl.INK)
+            ax_l.annotate(f"{a_lab:g}", (re_p[k], im_p[k]), textcoords="offset points", xytext=(4, -6), fontsize=6)
+        ax_l.axvline(0, color=fl.INK, lw=0.6)
+        ax_l.set_xlabel(r"Re $\lambda$ ($10^{-3}$ s$^{-1}$)")
+        ax_l.set_ylabel(r"Im $\lambda$ (rad s$^{-1}$)")
+        ax_l.xaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{1e3 * v:g}"))
+        fl.panel_label(ax_l, "(c)")
+        # (d) crescimento contra a abertura, nas malhas
+        styles = {"base": dict(color=fl.INK, lw=1.1), "fine": dict(color=fl.INK2, lw=0.9, ls=(0, (4, 2)))}
+        styles["fine_graded"] = dict(color=fl.INK2, lw=0.9, ls=(0, (1, 1.5)))
+        handles = []
+        for key, _, lab in HOPF_MESHES:
+            B = h.get(key)
+            if B is None:
+                continue
+            c2 = B[:, 2] > 1e-9
+            ax_g.plot(B[:, 0], 1e3 * np.where(c2, B[:, 1], B[:, 3]), **styles[key])
+            handles.append(Line2D([], [], label=lab.replace(" 15 + 5", "").replace(" 30 + 10", ""), **styles[key]))
+        ax_g.axhline(0, color=fl.INK, lw=0.6)
+        ax_g.set_ylim(-7, 32)
+        if np.isfinite(re_r).any():
+            # o modo global real (relaxação) cresce uma ordem de grandeza mais depressa: fora da escala, indicado
+            a_r = ab[np.isfinite(re_r)]
+            ax_g.annotate(
+                "",
+                xy=(a_r[0], 31.5),
+                xytext=(a_r[0], 22),
+                arrowprops=dict(arrowstyle="->", color=fl.COLORS["slugging"], lw=1.1),
+            )
+            ax_g.text(
+                a_r[0] * 1.04,
+                31,
+                "real\nglobal\nmode",
+                ha="left",
+                va="top",
+                fontsize=5.8,
+                color=fl.INK2,
+                bbox=dict(fc="white", ec="none", pad=0.4, alpha=0.85),
+            )
+        if np.isfinite(a_h):
+            ax_g.axvline(a_h, color=fl.GRID, lw=0.8)
+            ax_g.text(a_h * 1.05, -6, f"$a_H = {a_h:.2f}$", fontsize=6.5, color=fl.INK2, va="bottom")
+        ax_g.set_xscale("log")
+        ax_g.set_xticks([0.1, 0.2, 0.5, 1.0])
+        ax_g.set_xticklabels(["0.1", "0.2", "0.5", "1"])
+        ax_g.set_xlabel("choke opening")
+        ax_g.set_ylabel(r"growth rate ($10^{-3}$ s$^{-1}$)")
+        ax_g.legend(handles=handles, fontsize=5.8, loc="upper left", handlelength=1.6)
+        fl.panel_label(ax_g, "(d)")
+        # (e) período do par contra o das corridas
+        ax_t.plot(ab, 2 * np.pi / im_p, color=fl.INK, lw=1.1, label="slow pair")
+        dyn = _dyn_periods()
+        for a_run, (cls, per) in dyn.items():
+            if cls != "stable" and np.isfinite(per):
+                ax_t.plot(a_run, per, "o", ms=4.5, color=fl.COLORS[cls], zorder=5)
+        for cls in ("cycling", "slugging"):
+            if any(c == cls for c, _ in dyn.values()):
+                ax_t.plot(
+                    [], [], "o", ms=4.5, color=fl.COLORS[cls], label=f"simulated, {CLASS_LABEL[cls].split(',')[0]}"
+                )
+        if np.isfinite(a_h):
+            ax_t.axvline(a_h, color=fl.GRID, lw=0.8)
+        ax_t.set_xscale("log")
+        ax_t.set_xticks([0.1, 0.2, 0.5, 1.0])
+        ax_t.set_xticklabels(["0.1", "0.2", "0.5", "1"])
+        ax_t.set_xlabel("choke opening")
+        ax_t.set_ylabel("period (s)")
+        ax_t.legend(fontsize=5.8, loc="upper right")
+        fl.panel_label(ax_t, "(e)")
+    fl.save(fig, out, "linear_stability", png)
 
 
 FIGURES = {
@@ -1494,10 +2028,11 @@ FIGURES = {
     "steady_profiles": steady_profiles,
     "spacetime": spacetime,
     "cycle_anatomy": cycle_anatomy,
+    "cycle_profiles": cycle_profiles,
     "stability_map": stability_map,
     "bifurcation": bifurcation,
     "discretisation": discretisation,
-    "bend_modes": bend_modes,
+    "linear_stability": linear_stability,
 }
 TABLES = {
     "tab_hyperbolicity": tab_hyperbolicity,
@@ -1508,7 +2043,7 @@ TABLES = {
     "tab_performance": tab_performance,
     "tab_case": tab_case,
     "tab_cycle": tab_cycle,
-    "tab_front_modes": tab_front_modes,
+    "tab_hopf_mesh": tab_hopf_mesh,
 }
 
 if __name__ == "__main__":
