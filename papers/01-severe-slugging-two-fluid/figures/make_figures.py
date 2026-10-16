@@ -985,35 +985,94 @@ def stability_map(out, png):
 
 
 def bifurcation(out, png):
-    """Diagrama de bifurcação a 15 bar: faixa da pressão de entrada em cada partida e o estacionário; produção
-    média e a do estacionário."""
-    rows = _map_rows()
+    """Diagrama de bifurcação a 15 bar: (a) pressão de entrada do estacionário (cheia onde é linearmente estável,
+    tracejada onde não é) e faixa da pressão nas simulações a partir do estacionário perturbado (corridas densas)
+    e da linha bloqueada (mapa); (b) produção média e a do estacionário. Linha vertical: abertura de Hopf."""
+    from mfsim.analysis import cycle_class
+
     fig, (a1, a2) = plt.subplots(
         2, 1, figsize=(fl.MID, 0.8 * fl.MID), sharex=True, gridspec_kw=dict(height_ratios=[1.3, 1.0], hspace=0.08)
     )
-    if not rows:
-        fl.placeholder(a1, "map not found")
-        fl.placeholder(a2, "map not found")
+    lin = sorted([r for r in _linear_rows() if r["P_res"] == P_SEL], key=lambda r: r["ab"])
+    if not lin:
+        fl.placeholder(a1, "steady states not found")
+        fl.placeholder(a2, "steady states not found")
         fl.save(fig, out, "bifurcation", png)
         return
-    for start, lab in (("steady", "from the steady state"), ("blocked", "from a blocked line")):
-        sub = sorted([r for r in rows if r["start"] == start and r["P_res"] == P_SEL], key=lambda r: r["ab"])
-        ab = np.array([r["ab"] for r in sub])
-        a1.fill_between(
-            ab, [r["P_min"] for r in sub], [r["P_max"] for r in sub], color=fl.COLORS[start], alpha=0.2, lw=0
+    ab = np.array([r["ab"] for r in lin])
+    Pss = np.array([r["P_mean"] for r in lin])
+    qss = np.array([r["q_mean"] for r in lin])
+    st = np.array([r["cls"] == "stable" for r in lin])
+    for a, y in ((a1, Pss), (a2, qss)):
+        k = int(np.argmax(~st)) if (~st).any() else ab.size  # primeiro estacionário instável
+        a.plot(ab, np.where(st, y, np.nan), color=fl.INK, lw=1.2, label="steady state, stable")
+        a.plot(
+            ab,
+            np.where(~st | (np.arange(ab.size) == k - 1), y, np.nan),
+            color=fl.INK,
+            lw=1.0,
+            ls=(0, (4, 3)),
+            label="steady state, unstable",
         )
-        a1.plot(ab, [r["P_mean"] for r in sub], color=fl.COLORS[start], lw=1.2, label=f"{lab}: mean and range")
-        a2.plot(ab, [r["q_mean"] for r in sub], "o-", ms=2.5, color=fl.COLORS[start], lw=1.2, label=f"{lab}")
-    st = sorted([r for r in rows if r["start"] == "steady" and r["P_res"] == P_SEL], key=lambda r: r["ab"])
-    a1.plot([r["ab"] for r in st], [r["P_ss"] for r in st], color=fl.INK, lw=1.0, ls=(0, (4, 3)), label="steady state")
-    a2.plot([r["ab"] for r in st], [r["q_ss"] for r in st], color=fl.INK, lw=1.0, ls=(0, (4, 3)), label="steady state")
-    jx, jy, _ = _jansen_line([r for r in rows if r["start"] == "steady"])
-    a_c = jx[np.argmin(np.abs(jy - P_SEL))] if jx.size else None
+    # partida do estacionário: corridas densas
+    dyn = []
+    for a_run in DYN_OPENINGS:
+        run = fl.load_run(f"paper01/dynamics/{_name(a_run, P_SEL)}")
+        if run is None:
+            continue
+        T = np.asarray(run.T)
+        pp = run.pipe(0)
+        sel = T >= T[-1] - 3000.0
+        c = cycle_class(T[sel], pp["out"]["P_bar"][1][sel], pp["out"]["qL"][-1][sel], smooth=SMOOTH)
+        dyn.append((a_run, c))
+    if dyn:
+        x = np.array([d[0] for d in dyn])
+        a1.vlines(x, [d[1]["P_min"] for d in dyn], [d[1]["P_max"] for d in dyn], color=fl.COLORS["steady"], lw=2.2)
+        a1.plot(
+            x,
+            [d[1]["P_mean"] for d in dyn],
+            "o",
+            ms=3.5,
+            color=fl.COLORS["steady"],
+            label="from the steady state: mean and range",
+        )
+        a2.plot(x, [d[1]["q_mean"] for d in dyn], "o", ms=3.5, color=fl.COLORS["steady"], label="from the steady state")
+    # partida bloqueada: mapa
+    rows = sorted(
+        [r for r in (_map_rows() or []) if r["start"] == "blocked" and r["P_res"] == P_SEL], key=lambda r: r["ab"]
+    )
+    if rows:
+        xb = np.array([r["ab"] for r in rows])
+        a1.fill_between(
+            xb, [r["P_min"] for r in rows], [r["P_max"] for r in rows], color=fl.COLORS["blocked"], alpha=0.2, lw=0
+        )
+        a1.plot(
+            xb,
+            [r["P_mean"] for r in rows],
+            color=fl.COLORS["blocked"],
+            lw=1.1,
+            label="from a blocked line: mean and range",
+        )
+        a2.plot(xb, [r["q_mean"] for r in rows], color=fl.COLORS["blocked"], lw=1.1, label="from a blocked line")
+    h = _cached("hopf", _hopf_compute)
+    if "base" in h:
+        a_h = _crossing(h["base"][:, 0], h["base"][:, 1])
+        for a in (a1, a2):
+            a.axvline(a_h, color=fl.GRID, lw=0.8)
+        a1.text(
+            a_h * 1.04,
+            0.97,
+            f"$a_H = {a_h:.2f}$",
+            fontsize=6.5,
+            color=fl.INK2,
+            va="top",
+            transform=a1.get_xaxis_transform(),
+        )
     for a in (a1, a2):
-        if a_c is not None:
-            a.axvline(a_c, color="0.85", lw=5, zorder=0)
         a.set_xscale("log")
-        a.legend(fontsize=7)
+        a.legend(fontsize=6.2)
+    a2.set_xticks([0.03, 0.1, 0.3, 1.0])
+    a2.set_xticklabels(["0.03", "0.1", "0.3", "1"])
     a1.set_ylabel("inlet pressure (bar)")
     a2.set_ylabel(r"liquid production (kg s$^{-1}$)")
     a2.set_xlabel("choke opening")
@@ -1134,7 +1193,7 @@ SUMMARY_HEADER = [
     "configuration",
     "outcome",
     "steps",
-    "CPU (s)",
+    "wall time (s)",
     "liquid error (\\%)",
     "gas error (\\%)",
     "blowdowns",
@@ -1144,7 +1203,9 @@ SUMMARY_HEADER = [
 SUMMARY_NOTE = (
     "Mass errors: inventory change minus the boundary fluxes integrated with the integrator's own recurrence, at "
     "the end of the run, in per cent of the mass fed. Blowdowns: minima of the inlet pressure below the middle of "
-    "its range (2nd to 98th percentile) after \\SI{300}{\\second}; interval: mean time between them."
+    "its range (2nd to 98th percentile) after \\SI{300}{\\second}; interval: mean time between them. Wall-clock "
+    "times with eight to twelve simulations sharing the machine; a run is stopped after \\SI{5400}{\\second}, 1.8 "
+    "times the time of the reference."
 )
 
 DISC_LABELS = {
@@ -1203,7 +1264,7 @@ def tab_ablation(out):
         SUMMARY_HEADER,
         _summary_rows("ablation", ABL_LABELS),
         align="llrrrrrrl",
-        notes=SUMMARY_NOTE + " Minimum step \\SI{1e-6}{\\second}: a run that crawls stops with an error.",
+        notes=SUMMARY_NOTE,
     )
 
 
@@ -1557,6 +1618,9 @@ def tab_mesh(out):
 
 def tab_performance(out):
     path = fl.RUNS / "paper01" / "performance" / "timings.json"
+    loaded = not path.exists()  # na falta da medida com a máquina livre, a medida sob carga
+    if loaded:
+        path = path.with_name("timings_loaded.json")
     t = json.load(open(path)) if path.exists() else {}
     runs = dict(_batch_runs("backend"))
     cpu = {k: ((r.info or {}).get("cpu_total") if r is not None else None) for k, r in runs.items()}
@@ -1593,7 +1657,8 @@ def tab_performance(out):
         notes=(
             f"Application case with the choke open; {t.get('n_states', '--')} states, "
             f"{t.get('n_colors', '--')} colours in the finite-difference Jacobian; parity of the two "
-            f"right-hand sides {fl.fmt(t.get('parity_rhs'), '{:.0e}')}. One core of an Apple M5 Pro."
+            f"right-hand sides {fl.fmt(t.get('parity_rhs'), '{:.0e}')}. Apple M5 Pro"
+            + (" \\tbd{(measured with other simulations running)}." if loaded else ".")
         ),
     )
 
@@ -1606,35 +1671,46 @@ def tab_case(out):
     pipe = net.pipes[0]
     integ = net.integration
     rows = [
-        ["geometry", "horizontal 20 m, line 300 m at $-3^\\circ$, bend $R = 5$ m, riser 20 m, top 5 m; $D = 50$ mm"],
+        [
+            "geometry",
+            "horizontal \\SI{20}{\\metre}, line \\SI{300}{\\metre} at \\SI{-3}{\\degree}, bend of radius "
+            "\\SI{5}{\\metre}, riser \\SI{20}{\\metre}, top \\SI{5}{\\metre}; $D = \\SI{50}{\\milli\\metre}$",
+        ],
         ["mesh", f"{int(sum(pipe.n_elements))} cells (2 + 15 + 4 + 5 + 2)"],
         [
             "liquid",
-            f"$\\rho_{{L0}} = {fl_.rhoL0:g}$ kg m$^{{-3}}$, $\\mu_L = {1e3 * fl_.muL:g}$ mPa s, $\\gamma_L = {fl_.gammaL:g}$",
+            f"$\\rho_{{L0}} = \\SI{{{fl_.rhoL0:g}}}{{\\kilogram\\per\\cubic\\metre}}$, "
+            f"$\\mu_L = \\SI{{{1e3 * fl_.muL:g}}}{{\\milli\\pascal\\second}}$, $\\gamma_L = {fl_.gammaL:g}$",
         ],
         [
             "gas",
-            f"$\\rho_{{G0}} = {fl_.rhoG0:g}$ kg m$^{{-3}}$ at {fl_.P0 / 1e5:g} bar, $\\mu_G = {1e6 * fl_.muG:g}$ $\\mu$Pa s, $\\gamma_G = {fl_.gammaG:g}$, $\\sigma = {fl_.sigma:g}$ N m$^{{-1}}$",
+            f"$\\rho_{{G0}} = \\SI{{{fl_.rhoG0:g}}}{{\\kilogram\\per\\cubic\\metre}}$ at \\SI{{{fl_.P0 / 1e5:g}}}{{\\bar}}, "
+            f"$\\mu_G = \\SI{{{1e6 * fl_.muG:g}}}{{\\micro\\pascal\\second}}$, $\\gamma_G = {fl_.gammaG:g}$, "
+            f"$\\sigma = \\SI{{{fl_.sigma:g}}}{{\\newton\\per\\metre}}$",
         ],
         [
             "inflow",
-            f"$J_L = {res.IPL:g}$ kg s$^{{-1}}$ bar$^{{-1}}$, $J_G/J_L = {res.IPG / res.IPL:.2e}$, $P_{{res}}$ 8--48 bar",
+            f"$J_L = \\SI{{{res.IPL:g}}}{{\\kilogram\\per\\second\\per\\bar}}$, $J_G/J_L = \\num{{{res.IPG / res.IPL:.2e}}}$, "
+            "reservoir at 8 to \\SI{48}{\\bar}",
         ],
-        ["choke", f"homogeneous law, $c_v = {ch.CV:g}$, opening 0.03--1; separator 4 bar"],
+        ["choke", f"homogeneous law, $c_v = {ch.CV:g}$, opening 0.03 to 1; separator at \\SI{{4}}{{\\bar}}"],
         [
             "closures",
-            "dynamic pattern (smooth, local, $k = 20$), low-void rule 1\\,\\%, $C_{vm} = 0.5$ ($\\lambda = 1$), physical bubble drag",
+            "dynamic flow pattern (smooth, local, $k = 20$), low-void rule below \\SI{1}{\\percent}, "
+            "$C_{vm} = 0.5$ ($\\lambda = 1$), physical bubble drag",
         ],
         [
             "scheme",
-            "staggered FV, conservative, donor face closures, no-slip relaxation $\\tau = 0.05$ s, $\\nu = 0.05\\,c\\,h$",
+            "staggered finite volumes, conservative, donor face closures, no-slip relaxation with "
+            "$\\tau = \\SI{0.05}{\\second}$, $\\nu = 0.05\\,c\\,h$",
         ],
         [
             "integrator",
-            f"BDF 1--2, rtol {integ.rtol:g}, range-scaled atol {integ.tol_range:g}, Newton budget {integ.max_newton}, JAX",
+            f"BDF of order 1--2, rtol {integ.rtol:g}, range-scaled atol {integ.tol_range:g}, Newton budget "
+            f"{integ.max_newton}, JAX",
         ],
     ]
-    fl.tex_table(out, "tab_case", ["", ""], rows, align="lp{0.78\\linewidth}")
+    fl.tex_table(out, "tab_case", ["component", "setting"], rows, align="lp{0.78\\linewidth}")
 
 
 # ------------------------------------------------------------------------------------------------ tabela dos ciclos
