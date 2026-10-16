@@ -60,6 +60,14 @@ aparecem nas entrelinhas, como observações gerais medidas com o código de hoj
   3,6e−3 /s, simulado ciclo de 450 s e 2,9e−3 /s; 0,28: 518 contra 495 s, crescimento mais lento); a ≥ 0,70
   um modo global real fica instável (relaxação). A fronteira de Hopf sobe com a pressão (~0,07 a 8 bar,
   ~0,40 a 19 bar). Secção 7.3 reescrita (figura `linear_stability`, tabela `tab_hopf_mesh`).
+- **Problema-modelo (secção 2, pedido do dono).** Duas EDP lineares de coeficientes constantes (equações do
+  telégrafo: a linha/bolsão) com fonte linear (IPR) e terminação de um estado com característica cúbica em N
+  (riser + choke `a`): Nagumo e Shimura (1961). Mostra o método todo com o BDF do mfsim e T = M x: Hopf em
+  a_H = 0,976 (período 6,75), colisão no eixo real em a_R = 0,756 (relaxação com refluxo, período 12,3 a 0,5),
+  J sozinha «estável» em todo o a. Código em `toy/model_problem.py`; figura `model_problem`.
+- **Geometria da base do riser (proposta ao dono, à espera de resposta).** Cotovelo (caso da ablação), arco
+  R = 5 m (base), arco R ≈ 15 m, riser em catenária (tangente aos −3°, ~85° no topo), mesmo desnível de 20 m:
+  estabilidade linear a 15 bar (barata) e transitórios a 1,0 depois da ablação.
 - **Mapa linear (artigo, figura do mapa painel a).** Espetro com M nos 107 estacionários do mapa com padrão
   dinâmico: estável → par lento instável (Hopf) → modo global real instável ao abrir o choke. A fronteira linear
   tem a forma do critério de Jansen (queda no choke constante) mas com Δp crítico 0,34–0,40 bar (10–24 bar)
@@ -111,6 +119,7 @@ BDF próprio com `tol_range` 0,01 e lado direito em JAX; fechamentos das faces p
 | `batches/paper01_ablation.json` | caso base menos um ingrediente de cada vez | `runs/paper01/ablation/` |
 | `batches/paper01_mesh.json` | malha grossa, graduada e fina | `runs/paper01/mesh/` |
 | `batches/paper01_backend.json` | numpy × JAX | `runs/paper01/backend/` |
+| `toy/model_problem.py run` | problema-modelo (secção 2): linha de transmissão + terminação de resistência negativa, 4 valores de a | `runs/paper01/toy/` |
 
 ## Decisões em aberto para o dono
 

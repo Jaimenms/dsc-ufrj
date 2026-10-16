@@ -33,3 +33,11 @@ lote. Sem orçamento o comportamento é idêntico ao anterior (goldens inalterad
 ## Referências
 
 Issues 032 (BDF próprio) e 041 (paragem adaptativa); artigo 01 (`papers/01-severe-slugging-two-fluid`).
+
+## Adenda (2026-10-16): falhas do SciPy com a trajetória parcial
+
+Com `partial=True` (o que o CLI e os lotes usam), uma exceção dentro do `solve_ivp` — no artigo 01 a fatoração LU
+singular da matriz de iteração do BDF do SciPy — passa a devolver a trajetória até ao último bloco concluído e o erro
+com o último instante em que o lado direito foi avaliado («… em t=…»), como o BDF próprio já fazia; a corrida fica
+`PARCIAL` em vez de `FALHOU` e o instante da falha entra nas tabelas. Sem `partial` a exceção sobe como antes. Teste
+em `tests/test_max_cpu.py`.

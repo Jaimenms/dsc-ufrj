@@ -2121,6 +2121,132 @@ def linear_stability(out, png):
     fl.save(fig, out, "linear_stability", png)
 
 
+# ------------------------------------------------------------------------------------------------ problema-modelo
+def _toy():
+    """Módulo do problema-modelo (`toy/model_problem.py`, linha de transmissão + terminação de resistência
+    negativa) e os seus parâmetros."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "model_problem", Path(__file__).resolve().parent.parent / "toy" / "model_problem.py"
+    )
+    mp = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mp)
+    return mp, mp.params()
+
+
+TOY_SLOW = 4.4  # módulo máximo dos modos lentos do problema-modelo (o primeiro acústico da linha tem |λ| ≈ 4,55)
+
+
+def _toy_scan():
+    """Os dois modos lentos de maior parte real (|λ| < TOY_SLOW, Im >= 0) com a matriz de massa e o autovalor
+    dominante de J sozinha, contra a resistência `a`."""
+    mp, p = _toy()
+    A = np.array(mp.A_SCAN)
+    W = []
+    for a in A:
+        w = mp.spectrum(a, p)
+        w = w[(np.abs(w) < TOY_SLOW) & (w.imag >= -1e-12)]
+        W.append(np.r_[w[:2], np.full(max(0, 2 - w.size), np.nan + 0j)])
+    WJ = np.array([mp.spectrum(a, p, with_mass=False)[0] for a in A])
+    return A, np.array(W), WJ
+
+
+def model_problem(out, png):
+    """Problema-modelo: (a) plano de fase da terminação, característica f(y) + a y e ciclos simulados; (b) parte
+    real dos modos lentos contra a resistência a, com a matriz de massa, e do autovalor dominante de J sozinha;
+    (c) período do par e dos ciclos simulados; (d) pressão na entrada da linha nas corridas; (e) espaço–tempo do
+    fluxo no ciclo de relaxação."""
+    mp, p = _toy()
+    A, W, WJ = _toy_scan()
+    runs = {}
+    for a in mp.A_RUNS:
+        path = fl.RUNS / "paper01" / "toy" / f"a{a:.2f}.npz"
+        if path.exists():
+            with np.load(path) as d:
+                runs[a] = (d["T"], d["X"])
+    N = p["N"]
+    fig = plt.figure(figsize=(fl.DOUBLE, 0.72 * fl.DOUBLE))
+    gs = fig.add_gridspec(2, 6, hspace=0.5, wspace=1.15)
+    ax_f, ax_g, ax_t = fig.add_subplot(gs[0, 0:2]), fig.add_subplot(gs[0, 2:4]), fig.add_subplot(gs[0, 4:6])
+    ax_p, ax_x = fig.add_subplot(gs[1, 0:3]), fig.add_subplot(gs[1, 3:6])
+    shades = dict(zip(mp.A_RUNS, plt.get_cmap("cividis")(np.linspace(0.0, 0.85, len(mp.A_RUNS)))))
+    # (a) plano de fase: característica f(y) + a y (tracejada) e ciclo simulado (cheio)
+    y = np.linspace(-0.6, 2.6, 300)
+    for a in mp.A_RUNS:
+        ax_f.plot(y, mp.f(y, p) + a * y, color=shades[a], lw=0.8, ls=(0, (3, 2)))
+        if a in runs:
+            T, X = runs[a]
+            late = T > T[-1] - 40.0
+            ax_f.plot(X[-1][late], X[N - 1][late], color=shades[a], lw=1.1, label=f"$a = {a:g}$")
+            ax_f.plot(X[-1][-1], X[N - 1][-1], "o", ms=2.5, color=shades[a])
+    ax_f.set_ylim(0.8, 3.0)
+    ax_f.set_xlabel("terminal flux $y$")
+    ax_f.set_ylabel("pressure $p(1)$")
+    ax_f.legend(fontsize=6, loc="upper left")
+    fl.panel_label(ax_f, "(a)")
+    # (b) crescimento dos modos lentos
+    cplx = np.abs(W[:, 0].imag) > 1e-9
+    real2 = (~cplx) & (np.abs(W[:, 1].imag) < 1e-9)
+    ax_g.plot(A, W[:, 0].real, color=fl.INK, lw=1.1, label="with $\\mathbf{M}$: slow modes")
+    ax_g.plot(A, np.where(real2, W[:, 1].real, np.nan), color=fl.INK, lw=1.1, ls=(0, (4, 2)))
+    ax_g.plot(A, WJ.real, color=fl.COLORS["primitive"], lw=1.0, label="$\\mathbf{J}$ alone: leading")
+    ax_g.axhline(0, color=fl.INK, lw=0.6)
+    a_h = _crossing(A[::-1], W[::-1, 0].real)
+    low = A < a_h if np.isfinite(a_h) else np.zeros(A.size, bool)
+    a_r = A[np.flatnonzero(low & ~cplx)[-1]] if (low & ~cplx).any() else np.nan  # colisão no eixo real
+    for v, lab in ((a_h, "$a_H$"), (a_r, "$a_R$")):
+        if np.isfinite(v):
+            for ax in (ax_g, ax_t):
+                ax.axvline(v, color=fl.GRID, lw=0.8)
+            ax_g.text(v, 1.0, lab, transform=ax_g.get_xaxis_transform(), ha="center", va="bottom", fontsize=6.5)
+    ax_g.set_xlim(0.2, 1.3)
+    ax_g.set_xlabel("terminal resistance $a$")
+    ax_g.set_ylabel("Re $\\lambda$")
+    ax_g.legend(fontsize=5.8, loc="upper right")
+    fl.panel_label(ax_g, "(b)")
+    # (c) período do par e dos ciclos simulados
+    with np.errstate(divide="ignore", invalid="ignore"):
+        per = np.where(cplx, 2 * np.pi / np.abs(W[:, 0].imag), np.nan)
+    ax_t.plot(A, per, color=fl.INK, lw=1.1, label="slow pair")
+    for a, (T, X) in runs.items():
+        late = T > T[-1] - 150.0
+        yy = X[-1][late] - X[-1][late].mean()
+        up = np.flatnonzero((yy[:-1] < 0) & (yy[1:] >= 0))
+        if up.size >= 2 and np.ptp(X[-1][late]) > 1e-3:
+            ax_t.plot(a, (T[late][up[-1]] - T[late][up[0]]) / (up.size - 1), "o", ms=4, color=shades[a])
+    ax_t.plot([], [], "o", ms=4, color="0.5", label="simulated cycles")
+    ax_t.set_ylim(0, 20)
+    ax_t.set_xlabel("terminal resistance $a$")
+    ax_t.set_ylabel("period")
+    ax_t.set_xlim(0.2, 1.3)
+    ax_t.legend(fontsize=6, loc="lower left")
+    fl.panel_label(ax_t, "(c)")
+    # (d) transitórios
+    for a, (T, X) in runs.items():
+        late = T > T[-1] - 30.0
+        ax_p.plot(T[late] - T[late][0], X[0][late], color=shades[a], lw=1.0, label=f"$a = {a:g}$")
+    ax_p.set_xlabel("time")
+    ax_p.set_ylabel("pressure $p(0)$")
+    ax_p.legend(fontsize=6, ncol=4, loc="lower left", bbox_to_anchor=(0.0, 1.0), frameon=False)
+    fl.panel_label(ax_p, "(d)")
+    # (e) espaço–tempo do fluxo na relaxação
+    a_rel = min(runs) if runs else None
+    if a_rel is not None:
+        T, X = runs[a_rel]
+        late = T > T[-1] - 30.0
+        Wf = np.vstack([p["k"] * (p["Pr"] - X[0][late]), X[N : 2 * N - 1][:, late], X[-1][late][None, :]])
+        im = ax_x.pcolormesh(
+            T[late] - T[late][0], np.arange(N + 1) / N, Wf, cmap="Blues", shading="nearest", rasterized=True
+        )
+        fig.colorbar(im, ax=ax_x, label="flux $w$", fraction=0.05)
+        ax_x.set_title(f"$a = {a_rel:g}$", fontsize=7.5)
+    ax_x.set_xlabel("time")
+    ax_x.set_ylabel("position $x$")
+    fl.panel_label(ax_x, "(e)")
+    fl.save(fig, out, "model_problem", png)
+
+
 FIGURES = {
     "geometry": geometry,
     "hyperbolicity": hyperbolicity,
@@ -2132,6 +2258,7 @@ FIGURES = {
     "bifurcation": bifurcation,
     "discretisation": discretisation,
     "linear_stability": linear_stability,
+    "model_problem": model_problem,
 }
 TABLES = {
     "tab_hyperbolicity": tab_hyperbolicity,

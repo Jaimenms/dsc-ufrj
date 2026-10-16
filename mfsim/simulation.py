@@ -254,6 +254,7 @@ def _integrate(model, X0, t_eval, spec, progress=True, verbose=False, partial=Fa
             max_step=spec.max_step,
             progress=progress,
             max_cpu=spec.max_cpu,
+            partial=partial,
         )
     if integrator == "implicit":
         return _integrate_bdf(model, X0, t_eval, spec, progress=progress, verbose=verbose, partial=partial)
