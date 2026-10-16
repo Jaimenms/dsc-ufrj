@@ -479,6 +479,8 @@ def spacetime(out, png):
             T[win], np.arange(N), hold, cmap="Blues", vmin=0, vmax=1, shading="nearest", rasterized=True
         )
         _section_axis(ax0, run.model, side="right" if j == 2 else "left")
+        if j > 0:  # a escala de posições é a mesma nos três painéis: só o primeiro a mostra
+            ax0.set_yticklabels([])
         fr = slug_fronts(run)
         z = _zones(run.model)
         k_low = float(_s_to_index(run.model, z["s_low"]))
@@ -539,10 +541,15 @@ ANATOMY_OPENING = 1.0  # golfada severa de relaxação (modo global real instáv
 
 def _cycle_events(T, P_in, fr, hold=20.0):
     """Fases de cada ciclo completo, alinhadas por ciclo k (entre dois fins de blowout): riser cheio (o nível chega
-    a 0,98 da altura e fica lá pelo menos `hold` s), início do blowout (máximo da pressão de entrada: o gás começa a
-    entrar no riser) e fim do blowout (mínimo da pressão de entrada, `_blowdown_times` depois de 300 s). Devolve
+    a 0,98 da altura e fica lá pelo menos `hold` s), início do blowout (máximo da pressão de entrada com média móvel:
+    o gás começa a entrar no riser) e fim do blowout (mínimo, `_blowdown_times` depois de 300 s). Devolve
     (t_full, t_peak, t_end, t_prev) com t_prev o fim do blowout anterior."""
-    T, P_in = np.asarray(T, float), np.asarray(P_in, float)
+    from mfsim.analysis import moving_average
+
+    T = np.asarray(T, float)
+    # pressão com média móvel de SMOOTH s: os picos de menos de um segundo (coluna do riser a oscilar contra o gás,
+    # face da entrada) não marcam fases do ciclo
+    P_in = moving_average(T, np.asarray(P_in, float), SMOOTH)
     late = T > T[0] + 300.0
     tb = _blowdown_times(T[late], P_in[late])
     full = np.asarray(fr["level"]) >= 0.98 * fr["H"]
@@ -1170,7 +1177,7 @@ def _summary_rows(batch, labels):
         if r["success"] and r["t_end"] >= 2999:
             status = "completed"
         elif r["stopped_by"] == "budget":
-            status = f"too slow, at {r['t_end']:.0f} s"
+            status = f"too slow, at {r['t_end']:.0f} s" if r["t_end"] >= 100 else f"too slow, at {r['t_end']:.3g} s"
         else:
             status = f"fails at {r['t_end']:.3g} s"
         rows.append(
@@ -1285,7 +1292,13 @@ def discretisation(out, png):
             fl.placeholder(a, "runs not found (batches/paper01_discretization.json)")
         fl.save(fig, out, "discretisation", png)
         return
-    colors = {"fv_conservative": fl.COLORS["conservative"], "fv_primitive": fl.COLORS["primitive"]}
+    # as duas formulações do esquema escalonado têm as cores de conservativo e primitivo; o Galerkin, que na paleta
+    # dos esquemas partilha o vermelhão do primitivo, fica cinzento nesta figura
+    colors = {
+        "fv_conservative": fl.COLORS["conservative"],
+        "fv_primitive": fl.COLORS["primitive"],
+        "galerkin": fl.INK2,
+    }
     for name, lab in DISC_LABELS.items():
         r = runs.get(name)
         if r is None:
@@ -1296,11 +1309,12 @@ def discretisation(out, png):
         sel = T <= 100.0
         summ = _run_summary(r)
         fails = summ["t_end"] < 2999
-        short = DISC_SHORT[name] + (f", fails at {summ['t_end']:.2g} s" if fails else "")
+        verb = "too slow, stopped at" if summ["stopped_by"] == "budget" else "fails at"
+        short = DISC_SHORT[name] + (f", {verb} {summ['t_end']:.2g} s" if fails else "")
         a1.plot(T[sel], P[sel], lw=0.9, color=c, label=short)
         if fails:
             a1.plot([min(summ["t_end"], 100.0)], [P[-1]], "x", ms=6, mew=1.2, color=c)
-        if name in colors:
+        if name in ("fv_conservative", "fv_primitive"):
             a2.plot(T, P, lw=0.7, color=c, label=DISC_SHORT[name])
     a1.set_xlim(-2, 100)
     a1.set_xlabel("time (s)")
@@ -1718,16 +1732,17 @@ DYN_OPENINGS = (0.13, 0.22, 0.28, 0.36, 0.6, 1.0)
 
 
 def tab_cycle(out):
-    """Assinatura dos ciclos a 15 bar nas corridas densas: classe, período, faixa de pressão, pico e média da
-    produção, comprimento máximo do tampão (selo na linha mais coluna no riser), tempo de enchimento do riser
-    e duração do blowout (médias sobre os ciclos depois do primeiro)."""
+    """Assinatura dos ciclos a 15 bar nas corridas densas (últimos 3000 s): classe, período, faixa de pressão,
+    produção média e razão pico/média, comprimento máximo do selo de líquido na linha, fração de líquido mínima do
+    riser (distingue a oscilação, em que o riser nunca esvazia, da golfada de relaxação), queda da pressão de
+    entrada (do máximo ao mínimo) e reenchimento do riser (só nos ciclos em que ele esvazia; medianas)."""
     from mfsim.analysis import cycle_class, slug_fronts
 
     rows = []
     for ab in DYN_OPENINGS:
         run = fl.load_run(f"paper01/dynamics/{_name(ab, P_SEL)}")
         if run is None:
-            rows.append([f"{ab:g}"] + ["--"] * 8)
+            rows.append([f"{ab:g}"] + ["--"] * 9)
             continue
         T = np.asarray(run.T)
         p = run.pipe(0)
@@ -1736,9 +1751,15 @@ def tab_cycle(out):
         c = cycle_class(T[sel], P_in[sel], q[sel], smooth=SMOOTH)
         fr = slug_fronts(run)
         t_full, t_peak, t_end, t_prev = _cycle_events(T, P_in, fr)
-        fill = [f - a for f, a in zip(t_full, t_prev) if np.isfinite(f)]
-        blow = [b - a for a, b in zip(t_peak, t_end)]
-        slug = fr["seal"][sel] + fr["level"][sel]
+        late = t_end >= T[-1] - 3000.0
+        hold = np.asarray(fr["riser_holdup"])
+        fall = [b - a for a, b, k in zip(t_peak, t_end, late) if k]
+        refill = []
+        for f, a, b, k in zip(t_full, t_prev, t_end, late):
+            m = (T >= a) & (T <= b)
+            if k and np.isfinite(f) and m.any() and hold[m].min() < 0.5:
+                refill.append(f - a)
+        cyc = c["cls"] != "stable"
         rows.append(
             [
                 f"{ab:g}",
@@ -1747,9 +1768,10 @@ def tab_cycle(out):
                 f"{c['P_min']:.2f}--{c['P_max']:.2f}",
                 fl.fmt(c["q_mean"], "{:.3f}"),
                 fl.fmt(c["surge"], "{:.1f}"),
-                fl.fmt(float(np.max(slug)) if c["cls"] != "stable" else np.nan, "{:.0f}"),
-                fl.fmt(float(np.median(fill[1:] if len(fill) > 1 else fill)) if fill else np.nan, "{:.0f}"),
-                fl.fmt(float(np.median(blow[1:] if len(blow) > 1 else blow)) if blow else np.nan, "{:.0f}"),
+                fl.fmt(float(np.max(fr["seal"][sel])) if cyc else np.nan, "{:.0f}"),
+                fl.fmt(float(np.min(hold[sel])), "{:.2f}"),
+                fl.fmt(float(np.median(fall)) if cyc and fall else np.nan, "{:.0f}"),
+                fl.fmt(float(np.median(refill)) if refill else np.nan, "{:.0f}"),
             ]
         )
     fl.tex_table(
@@ -1762,18 +1784,19 @@ def tab_cycle(out):
             "$P_{in}$ (bar)",
             "$\\bar q_L$ (kg/s)",
             "peak/mean",
-            "slug (m)",
-            "riser fill (s)",
-            "blowout (s)",
+            "seal (m)",
+            "min.\\ riser holdup",
+            "fall of $P_{in}$ (s)",
+            "riser refill (s)",
         ],
         rows,
-        align="llrlrrrrr",
+        align="llrlrrrrrr",
         notes=(
             "Reservoir at \\SI{15}{\\bar}, start from the perturbed steady state, last \\SI{3000}{\\second} of "
-            "\\SI{6000}{\\second}. Slug: largest length of liquid that seals the system, in the line upstream of the "
-            "low point plus the column in the riser. Riser fill: from the end of a blowout to a full riser (level at "
-            "\\SI{98}{\\percent} of the riser height for at least \\SI{20}{\\second}); blowout: from the maximum to the "
-            "minimum of the inlet pressure (medians over the cycles)."
+            "\\SI{6000}{\\second}. Seal: largest length of liquid-filled line upstream of the low point. Fall of "
+            "$P_{in}$: from its maximum to its minimum in a cycle; riser refill: from the end of a blowout to a full "
+            "riser (level at \\SI{98}{\\percent} of its height for at least \\SI{20}{\\second}), only in the cycles in "
+            "which the mean liquid holdup of the riser falls below 0.5 (medians over the cycles)."
         ),
     )
 
