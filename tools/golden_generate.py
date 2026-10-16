@@ -566,7 +566,12 @@ def write_group(name, files, rebaseline, note):
             old = np.load(path)
             devs = []
             for k, v in arrays.items():
-                if k in old.files and old[k].shape == np.asarray(v).shape and np.asarray(v).dtype.kind in "fi":
+                if (
+                    k in old.files
+                    and old[k].shape == np.asarray(v).shape
+                    and np.asarray(v).dtype.kind in "fi"
+                    and np.asarray(v).size  # arrays vazios não têm desvio
+                ):
                     a, b = np.asarray(v, float), np.asarray(old[k], float)
                     devs.append(float(np.max(np.abs(a - b)) / max(1.0, float(np.max(np.abs(b))))))
             max_dev = max(devs) if devs else 0.0

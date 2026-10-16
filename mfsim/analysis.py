@@ -417,3 +417,75 @@ def format_lab(st):
         f"| pico líquido {st['q_peak']:.3f} kg/s ({st['q_peak']/st['q_feed']:.1f}x) | αG base riser {st['aG_base_min']:.2f}-{st['aG_base_max']:.2f} "
         f"| Bøe vSL_min {st['boe_vmin']:.3f} ({'sim' if st['boe_severe'] else 'não'})"
     )
+
+
+# ----------------------------------------------------------------------------- classe do ciclo (issue 043)
+CYCLE_CLASSES = ("stable", "cycling", "slugging")
+
+
+def cycle_class(T, P_in, q_out, amp_stable=0.1, amp_rel=0.01, surge=2.0):
+    """Classe de uma janela de corrida a partir da pressão na entrada da linha (bar) e da vazão
+    de líquido na saída (kg/s):
+
+    - "stable": amplitude da pressão menor do que `amp_stable` bar ou do que `amp_rel` da
+      pressão média (o que for maior), ou sem ciclo na janela (no máximo um cruzamento da média:
+      uma deriva que não chegou a ciclar conta como estável);
+    - "slugging": golfada severa, pico da vazão de saída de pelo menos `surge` vezes a média;
+    - "cycling": ciclo de pressão com a saída suave (o choke absorve o pico).
+
+    Devolve a classe e a assinatura: pressão mínima, média e máxima, amplitude, período
+    (entre cruzamentos ascendentes, `mfsim.simulation.window_signature`), vazão média e de pico
+    e a razão pico/média."""
+    from .simulation import window_signature
+
+    T, P_in, q_out = (np.asarray(a, float) for a in (T, P_in, q_out))
+    w = window_signature(T, P_in)
+    q_mean, q_peak = float(np.mean(q_out)), float(np.max(q_out))
+    ratio = q_peak / q_mean if q_mean > 0 else float("inf")
+    if w["amp"] < max(amp_stable, amp_rel * abs(w["mean"])) or w["crossings"] <= 1:
+        cls = "stable"
+    elif ratio >= surge:
+        cls = "slugging"
+    else:
+        cls = "cycling"
+    return dict(
+        cls=cls,
+        P_min=float(np.min(P_in)),
+        P_mean=w["mean"],
+        P_max=float(np.max(P_in)),
+        amp=w["amp"],
+        period=w["period"] if cls != "stable" else float("nan"),
+        crossings=w["crossings"],
+        q_mean=q_mean,
+        q_peak=q_peak,
+        surge=ratio,
+    )
+
+
+def run_cycle_class(run, window=None, pipe=0, **kw):
+    """`cycle_class` de uma corrida gravada (`mfsim.runs.Run`) na janela final: `window`
+    segundos, ou a última janela da paragem adaptativa (`info["settle"]`), ou a segunda metade.
+    Pressão no nó 1 do duto, vazão de líquido no último nó."""
+    p = run.pipe(pipe)
+    T = run.T
+    if window is None:
+        st = (run.info or {}).get("settle") or {}
+        ws = st.get("windows") or []
+        if ws:
+            window = ws[-1]["t_end"] - (ws[-2]["t_end"] if len(ws) >= 2 else T[0])
+        else:
+            window = 0.5 * (T[-1] - T[0])
+    P1, q = p["out"]["P_bar"][1], p["out"]["qL"][-1]
+    sel = T >= T[-1] - window - 1e-9
+    out = cycle_class(T[sel], P1[sel], q[sel], **kw)
+    # ciclos longos (uma golfada por janela): período, picos e vazões em todas as janelas
+    # depois da primeira (o transitório); a classe continua a ser a da última janela
+    ws = ((run.info or {}).get("settle") or {}).get("windows") or []
+    if out["cls"] != "stable" and len(ws) >= 3:
+        long = T >= ws[0]["t_end"] - 1e-9
+        c = cycle_class(T[long], P1[long], q[long], **kw)
+        if c["cls"] != "stable":
+            for k in ("period", "P_min", "P_max", "q_mean", "q_peak", "surge"):
+                out[k] = c[k]
+    out.update(t_end=float(T[-1]), window=float(window))
+    return out

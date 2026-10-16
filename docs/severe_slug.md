@@ -51,6 +51,7 @@ alimentação), balanço de massa exato, 16.8 mil passos em ≈ 40 s.
 | identificação automática de padrão | [020](issues/020-ipe-da-tese-defeitos.md), [021](issues/021-ipe-suave-e-local.md) |
 | o que sustenta o ciclo: riser, lei do gás, gotas, volume a montante | [022](issues/022-riser-intermitente-vs-bolhas.md), [023](issues/023-lei-do-gas.md), [024](issues/024-arraste-de-gotas.md), [026](issues/026-volume-de-gas-a-montante.md) |
 | fronteira (Bøe, Taitel) | [028](issues/028-criterio-de-boe.md), [029](issues/029-fronteira-da-intermitencia-severa.md) |
+| mapa abertura do choke × pressão do reservatório, lei de válvula, partida do estacionário, paragem adaptativa, modos da curva | [043](issues/043-mapa-de-intermitencia-severa.md), [039](issues/039-lei-de-valvula-homogenea.md), [040](issues/040-partida-do-estacionario.md), [041](issues/041-paragem-adaptativa.md), [042](issues/042-modos-locais-da-curva.md) |
 | rede de dutos, refluxo, modelo de deriva | [025](issues/025-vertices-conservativos.md), [013](issues/013-filtro-anti-refluxo.md), [014](issues/014-inversao-de-sentido.md), [012](issues/012-vf-escalonado-deriva.md) |
 | laboratório | [030](issues/030-validacao-laboratorio.md), [031](issues/031-numerica-a-1-atm.md) |
 | custo: tolerâncias, Newton, JAX | [035](issues/035-config-rapida.md), [034](issues/034-tolerancia-por-faixa.md), [036](issues/036-lado-direito-jax.md) |

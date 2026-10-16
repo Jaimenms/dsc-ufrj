@@ -1,0 +1,17 @@
+{
+ "$extends": "reference.json",
+ "name": "well_choke",
+ "description": "Caso de referência como poço: IPR linear na entrada (0,056 kg/s/bar, razão gás–líquido da referência, reservatório a 15 bar) e choke homogéneo no topo do riser (CV 15, abertura 0,2), a descarregar no separador a 4 bar. Base do mapa abertura × pressão do reservatório (issue 043).",
+ "meta": {"run": null, "map_base": true},
+ "network": {
+  "vertices": [
+   {"id": "Jr1", "kind": "junction", "spec": {"qL": 0.5301437602932776, "qG": 0.001091181148742782}},
+   {"id": "Jc2", "kind": "junction", "spec": {"PT": 0.4}}
+  ],
+  "edges": [
+   {"id": "1", "from": "Jr1", "to": "Jc2"},
+   {"id": "reservoir_1", "type": "reservoir", "from": "1", "to": "Jr1", "IPL": 0.056, "IPG": 0.00011526334723960843, "P_bar": 15.0},
+   {"id": "choke_2", "type": "choke", "from": "Jc2", "to": "2", "CV": 15.0, "law": "homogeneous", "opening": 0.2}
+  ]
+ }
+}

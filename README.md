@@ -37,7 +37,7 @@ O código original (MFSIM/SDMPFLOW, MATLAB, 2010) e os seus resultados gravados 
 para o **mfsim**, reimplementação em Python com o solver próprio da tese: modelo a dois fluidos
 (4 equações), modelo de mistura (3 equações) e monofásicos; Galerkin, diferenças finitas e volumes
 finitos escalonados; BDF implícito próprio com lado direito em numpy ou compilado com JAX. Os
-casos do capítulo 10 reproduzem-se contra os ficheiros MATLAB; as 41 alterações em relação à tese
+casos do capítulo 10 reproduzem-se contra os ficheiros MATLAB; as 43 alterações em relação à tese
 (correções, melhorias e estudos) estão em [docs/issues/INDEX.md](docs/issues/INDEX.md), e a
 resposta à pergunta que a tese não conseguiu fechar, a intermitência severa em geometria
 linha–riser, em [docs/why_no_severe_slug_in_thesis.md](docs/why_no_severe_slug_in_thesis.md).
@@ -61,6 +61,7 @@ uv run pytest -m nightly                       # noturna (≈ 25 min): corridas 
 uv run black --check mfsim tests tools notebooks_src   # formatação (120 colunas)
 uv run mfsim batch batches/thesis.json                         # lote da tese -> runs/chapter10 (os notebooks só leem)
 uv run mfsim batch batches/issues.json                         # lote dos notebooks de issues -> runs/issues (~6 min)
+uv run python tools/slug_map.py build && uv run mfsim batch runs/maps/well/steady/batch.json --jobs 12   # mapa (043)
 uv run mfsim nb notebooks_src/thesis/nb_10_1_1.py --execute    # notebooks a partir de notebooks_src/**/*.py
 ```
 
@@ -119,12 +120,12 @@ uv run python tools/convert_runs.py antiga.npz --out-dir runs/            # corr
 | `mfsim/plotting.py`, `notebook_utils.py` | figuras no estilo da tese e apoio aos notebooks |
 | `cases/`, `generators/` | JSON: `examples/hello_world`, `chapter10/` (11 casos da tese), `severe_slug/` (referência, variantes como `$extends`, laboratório); geradores fora do simulador (`generators/severe_slug.py`: parâmetros físicos → JSON; `generators/column.py`: coluna de líquido da issue 006), `cases/studies/` com os seus casos |
 | `batches/` | lotes de corridas em JSON executados por `mfsim batch` para `runs/`: `thesis.json` (casos da tese tal e qual, sensibilidades de malha, formulação 2 do 10.1.1) e `issues.json` (coluna de líquido, capítulo 10 em numpy e JAX, estacionários, poço de deriva, gas lift 16 000 s) |
-| `tools/`, `tests/`, `notebooks_src/` | `golden_generate` (referências de regressão), `manifest`, `make_nb`, migração do dialeto antigo (`legacy_runs`, `convert_runs`, `severe_run`, `save_run_data`, `export_severe_cases`); testes com `tests/golden/` (nível A = bit a bit, B = tolerância, C = assinaturas de ciclo; `CHANGELOG.md`); fontes dos notebooks: `thesis/` reproduz os casos da tese tal e qual (um por secção), `issues/` ilustra as correções e melhorias (um por grupo de issues, cada um a apontar para `docs/issues/`); nenhum simula, todos leem `runs/` e `notebooks/data` |
+| `tools/`, `tests/`, `notebooks_src/` | `golden_generate` (referências de regressão), `manifest`, `make_nb`, `slug_map` (mapa de intermitência severa, issue 043), migração do dialeto antigo (`legacy_runs`, `convert_runs`, `severe_run`, `save_run_data`, `export_severe_cases`); testes com `tests/golden/` (nível A = bit a bit, B = tolerância, C = assinaturas de ciclo; `CHANGELOG.md`); fontes dos notebooks: `thesis/` reproduz os casos da tese tal e qual (um por secção), `issues/` ilustra as correções e melhorias (um por grupo de issues, cada um a apontar para `docs/issues/`); nenhum simula, todos leem `runs/` e `notebooks/data` |
 | `docs/` | documentação (índice abaixo), índice de issues e o texto da tese (`docs/thesis.pdf`) |
 
 ## Documentação
 
-- [docs/issues/INDEX.md](docs/issues/INDEX.md) — o que mudou em relação ao modelo e ao solver da tese: 41 alterações atómicas (feature, bugfix, estudo), cada uma com antes, depois e benefício medido.
+- [docs/issues/INDEX.md](docs/issues/INDEX.md) — o que mudou em relação ao modelo e ao solver da tese: 43 alterações atómicas (feature, bugfix, estudo), cada uma com antes, depois e benefício medido.
 - [docs/method_thesis_to_modern_code.md](docs/method_thesis_to_modern_code.md) — o método que nos trouxe até aqui (tese + código legado → versão moderna e melhorada) e um prompt consolidado para reutilizar; [CLAUDE.md](CLAUDE.md) é o guia do projeto para sessões do Claude.
 - [docs/why_no_severe_slug_in_thesis.md](docs/why_no_severe_slug_in_thesis.md) — por que a tese não conseguiu simular a intermitência severa, em quatro pontos ligados às issues.
 - [docs/hello_world.md](docs/hello_world.md) — primeiro caso: um duto e duas fronteiras em JSON, correr, ler os resultados, o mesmo caso em Python, variar com `--set`/`$extends`.
@@ -171,7 +172,7 @@ pendências do documento-resumo.
 | 6 | Contorno de entrada com volume de gás a montante (gasoduto compressível, parâmetro do critério de Bøe) em vez de vazões constantes | feito (2026-10-13): o vértice de volume é um tanque de mistura (fração de gás → 0.05) e não acumula gás; o gasoduto a montante representa-se prolongando `L_h1` (resultados na tabela da fronteira); o vértice separador fica pendente |
 | 7 | Arraste e deposição de gotas no anular (forma do pico de produção) | avaliado (2026-10-13): fração arrastada de Ishii–Mishima desprezível (E > 0.1 em ≤ 1 % do tempo com riser cheio de gás; 1–5 % do líquido produzido); sem modelo de gotas |
 | 8 | Validação com dados experimentais (Jansen–Shoham–Taitel 1996, Fabre 1990, Tengesdal 2002) | feito (2026-10-13): [docs/lab_validation.md](docs/lab_validation.md). Com o fechamento de bolhas da tese nenhum caso cicla (gás a 4 m/s com 3 % de fração a 1 atm); com `bubble_drag="fisico"` (sem efeito no caso de campo) Fabre 2 dá 135.8 s contra 137 medidos, Tengesdal 64–68 s contra 79, Jansen 56–63 s contra 46.6 (ensaio com choke), Fabre 1 o tipo certo (penetração contínua, +50 %). Critério de Bøe corrigido. Numérica a 1 atm: banda de undershoot ligada a γG/γL e recálculo da Jacobiana no Newton (`slow`). Por fazer: choke no topo (item 9) para fechar a comparação com Jansen |
-| 9 | Mitigação com os elementos existentes: choke no topo e gas lift na base | não iniciado |
+| 9 | Mitigação com os elementos existentes: choke no topo e gas lift na base | choke feito (2026-10-16): mapa abertura × pressão do reservatório ([043](docs/issues/043-mapa-de-intermitencia-severa.md)) com a lei de válvula homogénea ([039](docs/issues/039-lei-de-valvula-homogenea.md)); a fronteira segue o critério de Jansen et al. (1996); gas lift não iniciado |
 
 ## Licença
 

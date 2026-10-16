@@ -14,7 +14,8 @@ omissão ou `"thesis"` nos casos da tese, issue 039), `integration`. Unidades SI
 tempo como escalar, `{"t": [...], "v": [...]}` ou `{"ramp": [t1, t2], "from": a, "to": b}`;
 pressões como `"P"` (Pa) ou `"PT"` (P/PR). A condição inicial de um duto é uma receita
 (`{"recipe": "blocked" | "shut_in", ...}`, `mfsim/initial/recipes.py`) ou arrays num
-npz ao lado (`{"arrays": {"file": ..., "key": ...}}`).
+npz ao lado (`{"arrays": {"file": ..., "key": ...}}`), nos nós da malha ou, com `"at": "scheme"`, nos nós do
+esquema (estado exato; issue 040).
 Com `time.settle` (`window`, `t_min`, `amp_tol`, `rel_tol`, `signal`) a corrida integra em janelas e
 pára quando o sinal fica permanente ou o ciclo se repete; `tf` passa a ser o tempo máximo (issue 041).
 O estado inicial da corrida é o dos dutos (`initial_state.source = "edges"`), a estimativa
@@ -122,7 +123,8 @@ Um lote declara corridas a partir de casos JSON, para que os notebooks só leiam
 `set` são overrides por caminho (como `mfsim run --set`; `ic=null` retira a condição inicial
 gravada quando a malha muda), `steady` resolve o estado estacionário antes de integrar (como
 `mfsim steady`), `tf`/`dt_out` alteram o tempo. Os caminhos são relativos à raiz do projeto;
-uma entrada cuja saída já existe é saltada (`--force` reexecuta, `--only nome` restringe). Cada
+uma entrada cuja saída já existe é saltada (`--force` reexecuta, `--only nome` restringe, `--jobs N`
+corre N entradas em paralelo, cada uma igual à sequencial). Cada
 saída é uma corrida v2 normal (`case_json` com os overrides aplicados, `info_json` com
 `cpu_total`). `batches/thesis.json` é o lote dos casos da tese e das sensibilidades de malha; `batches/issues.json` o dos
 notebooks de issues (coluna de líquido de `generators/column.py` em `cases/studies/`, capítulo 10 com o

@@ -83,6 +83,8 @@ qual estão em `notebooks_src/thesis/`.
 | [039](039-lei-de-valvula-homogenea.md) | bugfix | Lei de válvula homogénea | densidade ponderada por massa (choke não resiste ao gás; singular em refluxo, 7 falhas) → por volume, padrão; tese só nos seus casos |
 | [040](040-partida-do-estacionario.md) | feature | Partida a partir do estado estacionário | só condições iniciais ou estimativa (Newton não converge dela) → `initial_state.source = "steady"` a partir de um estado gravado, com perturbação |
 | [041](041-paragem-adaptativa.md) | feature | Tempo simulado adaptativo | `tf` fixo (curto para os lentos, longo para os que assentam) → janelas com paragem quando o sinal fica permanente ou o ciclo se repete |
+| [042](042-modos-locais-da-curva.md) | estudo | Modos locais instáveis na curva | hipótese: troca de fechamentos → não; instabilidade de ondas curtas no ponto baixo, cresce com a malha; limiar de bolhas a 10 % reduz-na (resultado misto na validação) |
+| [043](043-mapa-de-intermitencia-severa.md) | feature | Mapa de intermitência severa (abertura × pressão do reservatório) | 10 pontos sem choke nem poço → 2 × 126 corridas em paralelo, sem falhas; fronteira = critério de Jansen; histerese em 8 células |
 
 ## Integrador e desempenho
 
@@ -98,6 +100,6 @@ qual estão em `notebooks_src/thesis/`.
 
 ## Pendências abertas
 
-- Choke no topo e gas lift na base como mitigação (item 9); fecha a comparação com Jansen (030).
+- Gas lift na base como mitigação (item 9; o choke no topo está no mapa, 043); fecha a comparação com Jansen (030).
 - Vértice do tipo separador (fases separadas, fase certa em refluxo) (014, 026).
 - Fechamento de bolhas entre 10 e 30 % de gás (022).

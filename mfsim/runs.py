@@ -26,7 +26,19 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUN_DIRS = tuple(
     os.path.join(ROOT, d) for d in ("runs", os.path.join("notebooks", "data"))
 )  # absolutos: os notebooks e os testes correm noutras pastas
-INFO_KEYS = ("n_steps", "n_rejected", "cpu", "cpu_total", "n_rhs", "n_jac", "success", "error", "note")
+INFO_KEYS = (
+    "n_steps",
+    "n_rejected",
+    "cpu",
+    "cpu_total",
+    "n_rhs",
+    "n_jac",
+    "success",
+    "error",
+    "note",
+    "initial",
+    "settle",
+)
 
 
 @dataclass
@@ -227,7 +239,65 @@ def save_run(path, T, X, case, info=None, acc=None, command=None):
 
 
 # ----------------------------------------------------------------------------- lotes
-def run_batch(spec_path, force=False, only=None, progress=True):
+def _abs_path(path):  # caminhos do lote relativos à raiz do projeto (funciona de qualquer pasta)
+    return path if os.path.isabs(path) else os.path.join(ROOT, path)
+
+
+def _run_entry(entry, spec_path, out_dir, force=False, progress=True):
+    """Executa uma entrada de lote e grava a corrida; devolve (nome, caminho | None, info)."""
+    import time
+
+    from .io.spec import case_from_json
+    from .simulation import simulate, steady_state
+
+    name = entry["name"]
+    path = os.path.join(out_dir, f"{name}.npz")
+    if os.path.exists(path) and not force:
+        if progress:
+            print(f"{name}: existe, saltado ({path})", flush=True)
+        return name, path, {"skipped": True}
+    t0 = time.time()
+    try:
+        case = case_from_json(_abs_path(entry["case"]), overrides=entry.get("set"))
+        time_kw = {k: float(entry[k]) for k in ("tf", "dt_out") if k in entry}
+        if time_kw:
+            case.set_time(**time_kw)
+        if entry.get("steady"):
+            steady_state(case, X0="auto", verbose=False, update_case=True)
+        res = simulate(case, progress=False, partial=True)
+    except Exception as e:  # noqa: BLE001  (uma entrada que rebenta não trava o lote)
+        info = {"success": False, "error": f"{type(e).__name__}: {e}", "cpu_total": time.time() - t0}
+        if progress:
+            print(f"{name}: FALHOU ({info['error'][:120]})", flush=True)
+        return name, None, info
+    info = dict(res.info)
+    info["cpu_total"] = time.time() - t0
+    save_run(
+        path,
+        res.T,
+        res.X,
+        res.model.network,
+        info=info,
+        acc=info.get("accum"),
+        command=f"mfsim batch {spec_path} --only {name}",
+    )
+    if progress:
+        ok = "OK" if info.get("success", True) else "PARCIAL"
+        print(f"{name}: {ok} {info.get('n_steps')} passos, {info['cpu_total']:.1f} s -> {path}", flush=True)
+    return name, path, info
+
+
+def _worker_init():
+    """Processos de um lote paralelo: uma linha de execução por processo (BLAS e XLA)."""
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    os.environ.setdefault("XLA_FLAGS", "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1")
+
+
+def _run_entry_star(args):
+    return _run_entry(*args)
+
+
+def run_batch(spec_path, force=False, only=None, progress=True, jobs=1):
     """Executa um lote de casos declarado em JSON e grava uma corrida v2 por entrada:
 
         {"out_dir": "runs/chapter10",
@@ -238,59 +308,22 @@ def run_batch(spec_path, force=False, only=None, progress=True):
     `set` são overrides `caminho=valor` (como `mfsim run --set`), `steady` resolve o estado
     estacionário antes de integrar (como `mfsim steady`), `tf`/`dt_out` alteram o tempo. Uma
     entrada cuja saída já existe é saltada (`force=True` reexecuta); `only` restringe aos nomes
-    dados. Devolve [(nome, caminho, info)]. É o que os notebooks consomem: eles só leem corridas."""
+    dados; `jobs` > 1 corre as entradas em processos paralelos (cada corrida é independente e
+    igual à sequencial). Devolve [(nome, caminho, info)] na ordem do lote. É o que os notebooks
+    consomem: eles só leem corridas."""
     import json
-    import time
-
-    from .io.spec import case_from_json
-    from .simulation import simulate, steady_state
 
     with open(spec_path, encoding="utf-8") as f:
         spec = json.load(f)
-
-    def _abs(path):  # caminhos do lote relativos à raiz do projeto (funciona de qualquer pasta)
-        return path if os.path.isabs(path) else os.path.join(ROOT, path)
-
-    out_dir = _abs(spec.get("out_dir", "runs"))
+    out_dir = _abs_path(spec.get("out_dir", "runs"))
     os.makedirs(out_dir, exist_ok=True)
-    done = []
-    for entry in spec["runs"]:
-        name = entry["name"]
-        if only and name not in only:
-            continue
-        path = os.path.join(out_dir, f"{name}.npz")
-        if os.path.exists(path) and not force:
-            if progress:
-                print(f"{name}: existe, saltado ({path})", flush=True)
-            continue
-        t0 = time.time()
-        try:
-            case = case_from_json(_abs(entry["case"]), overrides=entry.get("set"))
-            time_kw = {k: float(entry[k]) for k in ("tf", "dt_out") if k in entry}
-            if time_kw:
-                case.set_time(**time_kw)
-            if entry.get("steady"):
-                steady_state(case, X0="auto", verbose=False, update_case=True)
-            res = simulate(case, progress=False, partial=True)
-        except Exception as e:  # noqa: BLE001  (uma entrada que rebenta não trava o lote)
-            info = {"success": False, "error": f"{type(e).__name__}: {e}", "cpu_total": time.time() - t0}
-            if progress:
-                print(f"{name}: FALHOU ({info['error'][:120]})", flush=True)
-            done.append((name, None, info))
-            continue
-        info = dict(res.info)
-        info["cpu_total"] = time.time() - t0
-        save_run(
-            path,
-            res.T,
-            res.X,
-            res.model.network,
-            info=info,
-            acc=info.get("accum"),
-            command=f"mfsim batch {spec_path} --only {name}",
-        )
-        if progress:
-            ok = "OK" if info.get("success", True) else "PARCIAL"
-            print(f"{name}: {ok} {info.get('n_steps')} passos, {info['cpu_total']:.1f} s -> {path}", flush=True)
-        done.append((name, path, info))
-    return done
+    entries = [e for e in spec["runs"] if not only or e["name"] in only]
+    args = [(e, spec_path, out_dir, force, progress) for e in entries]
+    if jobs and jobs > 1 and len(entries) > 1:
+        from concurrent.futures import ProcessPoolExecutor
+
+        with ProcessPoolExecutor(max_workers=int(jobs), initializer=_worker_init) as ex:
+            done = list(ex.map(_run_entry_star, args))
+    else:
+        done = [_run_entry(*a) for a in args]
+    return [d for d in done if not d[2].get("skipped")]  # as saltadas não contam, como antes

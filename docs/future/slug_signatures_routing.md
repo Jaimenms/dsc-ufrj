@@ -83,7 +83,8 @@ o modelo entra para extrapolar a aberturas nunca testadas e para a simulação a
 
 ## Degraus
 
-1. **Catálogo por abertura.** Lote com `set` sobre a abertura do choke do caso de referência
+1. **Catálogo por abertura.** *Feito em 2026-10-16 para o caso do poço (issue 043): mapa abertura × pressão
+   do reservatório com pico de pressão e período por célula, duas partidas.* Lote com `set` sobre a abertura do choke do caso de referência
    (os casos 10.3.x já têm choke; o de referência precisa de um): diagrama de bifurcação abertura
    contra pressão de base, período, volume da golfada e produção média. É o mesmo diagrama que o
    item 9 pede. 1 sessão.

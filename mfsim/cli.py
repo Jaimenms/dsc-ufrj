@@ -96,7 +96,7 @@ def cmd_validate(a):
 def cmd_batch(a):
     from .runs import run_batch
 
-    done = run_batch(a.spec, force=a.force, only=a.only or None)
+    done = run_batch(a.spec, force=a.force, only=a.only or None, jobs=a.jobs)
     return 0 if all(info.get("success", True) for _, _, info in done) else 1
 
 
@@ -218,6 +218,7 @@ def main(argv=None):
     b.add_argument("spec")
     b.add_argument("--force", action="store_true", help="reexecuta mesmo que a saída exista")
     b.add_argument("--only", action="append", default=[], metavar="NOME")
+    b.add_argument("--jobs", type=int, default=1, help="corridas em paralelo (processos)")
     b.set_defaults(func=cmd_batch)
 
     s = sub.add_parser(

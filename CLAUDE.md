@@ -14,7 +14,7 @@ dinâmico de escoamento bifásico em redes de dutos (modelo a dois fluidos a 4 e
 mistura, monofásicos; Galerkin, diferenças finitas, volumes finitos escalonados; BDF implícito
 próprio, numpy ou JAX). Reproduz o capítulo 10 da tese bit a bit contra os ficheiros MATLAB e
 resolve o que a tese não conseguiu: a intermitência severa (severe slugging), validada com dados
-de laboratório. As 41 alterações em relação à tese estão em `docs/issues/` (feature, bugfix, estudo).
+de laboratório. As 43 alterações em relação à tese estão em `docs/issues/` (feature, bugfix, estudo).
 
 ## Mapa do repositório
 
@@ -27,9 +27,9 @@ de laboratório. As 41 alterações em relação à tese estão em `docs/issues/
 | `batches/` | lotes de corridas (`mfsim batch`): `thesis.json` → `runs/chapter10`, `issues.json` → `runs/issues`. |
 | `notebooks_src/` | fontes dos notebooks (`# %%`): `thesis/` reprodução fiel (um por secção), `issues/` melhorias (um por grupo de issues). Nenhum simula: leem `runs/` e `notebooks/data`. |
 | `notebooks/data/` | 80 corridas históricas (fora do git, fixadas em `MANIFEST.sha256`); não são reproduzíveis bit a bit (dinâmica caótica), são dados. |
-| `tests/` | rotina (`uv run pytest`, ≈3 min, 312 testes) e noturna (`-m nightly`, ≈35 min: lotes, corridas longas, laboratório, notebooks contra `tests/golden/notebook_text`). `tests/golden/` só por `tools/golden_generate.py --rebaseline --note`. |
-| `tools/` | `golden_generate`, `manifest`, `make_nb`, migração do dialeto antigo (`legacy_runs`, `convert_runs`, `severe_run`, `save_run_data`, `export_severe_cases`). |
-| `docs/` | documentação; `docs/issues/NNN-*.md` + `INDEX.md`; `docs/future/` (planos não iniciados: criogenia, CO₂, composicional, trifásico); `docs/thesis.pdf`. |
+| `tests/` | rotina (`uv run pytest`, ≈3 min, 335 testes) e noturna (`-m nightly`, ≈35 min: lotes, corridas longas, laboratório, notebooks contra `tests/golden/notebook_text`). `tests/golden/` só por `tools/golden_generate.py --rebaseline --note`. |
+| `tools/` | `golden_generate`, `manifest`, `make_nb`, `slug_map` (mapa de intermitência severa, 043), migração do dialeto antigo (`legacy_runs`, `convert_runs`, `severe_run`, `save_run_data`, `export_severe_cases`). |
+| `docs/` | documentação; `docs/issues/NNN-*.md` + `INDEX.md`; `docs/future/` (planos: criogenia, CO₂, composicional, trifásico, assinaturas de golfada e alocação a separadores, este com o degrau 1 feito em 043); `docs/thesis.pdf`. |
 
 ## Comandos
 
@@ -38,6 +38,8 @@ uv sync
 uv run mfsim validate cases/examples/hello_world.json && uv run mfsim run cases/examples/hello_world.json
 uv run mfsim run caso.json --backend jax --set integration.rtol=1e-4      # overrides por caminho
 uv run mfsim batch batches/thesis.json                                     # corridas dos notebooks fiéis
+uv run mfsim batch lote.json --jobs 12                                     # lote em paralelo (processos)
+uv run python tools/slug_map.py build && uv run python tools/slug_map.py plot   # mapa de intermitência severa (043)
 uv run mfsim nb notebooks_src/thesis/nb_10_1_1.py --execute                # notebook a partir da fonte
 uv run pytest                      # rotina; uv run pytest -m nightly      # noturna
 uv run black --check mfsim tests tools notebooks_src generators thesis     # antes de cada commit
@@ -69,4 +71,7 @@ uv run python tools/manifest.py --check                                    # dad
 - JAX: sequências de passos mudam com 1 ulp na Jacobiana; corridas longas comparam-se por
   assinaturas de ciclo, não ponto a ponto. O período do caso de Jansen não é reprodutível (58–90 s).
 - `tf` menor que `dt_out`: `simulate` inclui sempre `tf` nos instantes de saída.
+- O choke usa por omissão a lei homogénea (039); os casos da tese marcam `"law": "thesis"`, e corridas antigas
+  sem a chave leem-se com a da tese. Um estado guardado como condição inicial nos nós da malha perde exatidão no
+  esquema escalonado: use `state_to_case_ic(X, exact=True)` (040).
 - zsh: `$VAR` não faz word-split; usar `${=VAR}`.

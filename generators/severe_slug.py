@@ -19,7 +19,8 @@ import numpy as np
 
 from mfsim.fluid import Fluid
 from mfsim.core.slots import BC_ABSENT, BC_DIRICHLET, BC_NEUMANN
-from mfsim.network.graph import BoundaryVertex, Network, Pipe, TankVertex, specs
+from mfsim.network.graph import BoundaryVertex, Choke, JunctionVertex, Network, Pipe, Reservoir, TankVertex, specs
+from mfsim.network.schedules import Constant
 
 G = 9.80665
 
@@ -59,8 +60,17 @@ def severe_slug_case(
     grading_riser=1.0,
     model=1,
     upstream_volume=0.0,
+    choke_opening=None,
+    choke_cv=15.0,
+    choke_law="homogeneous",
+    reservoir=None,
 ):
-    """start:
+    """Choke e poço (só duto único): `choke_opening` (fração) põe um choke no topo, entre a
+    saída do duto (junção "Jc2") e o separador, com `choke_cv` e `choke_law`; `reservoir`
+    = {"P_bar", "IPL", "IPG"} troca as vazões impostas na entrada por uma IPR linear
+    (q = IP (P_res - P_entrada), junção "Jr1"); qL e qG passam a ser só a estimativa inicial.
+
+    start:
     "guess"    - estimativa de escoamento estabelecido (initial_guess);
     "shut_in"  - fluido parado, vazões em rampa (t_ramp);
     "blocked"  - estado da fase de bloqueio da intermitência severa: bolsão de
@@ -130,6 +140,8 @@ def severe_slug_case(
     else:
         v_in = BoundaryVertex("1", spec=specs(**spec_in))
     v_out = BoundaryVertex("2", spec=specs(PT=P_out_bar * 1e5 / PR))
+    if (choke_opening is not None or reservoir is not None) and (not single_pipe or upstream_volume > 0):
+        raise ValueError("choke_opening e reservoir só estão implementados no duto único sem upstream_volume")
     extra = dict(extra or {})
     if model == 2:
         # modelo de deriva no escalonado: o hold-up da condição inicial é o dado (bolsão,
@@ -142,11 +154,13 @@ def severe_slug_case(
             else (BC_NEUMANN, BC_ABSENT, BC_DIRICHLET, BC_DIRICHLET)
         )
         vertices = [v_in, v_out]
+        p_from = "Jr1" if reservoir is not None else "1"
+        p_to = "Jc2" if choke_opening is not None else "2"
         pipes = [
             Pipe.legacy(
                 "1",
-                "1",
-                "2",
+                p_from,
+                p_to,
                 x,
                 y,
                 z,
@@ -209,6 +223,31 @@ def severe_slug_case(
                     grading=[grading[k] for k in g],
                 )
             )
+    zero_length = []
+    if single_pipe and choke_opening is not None:
+        vertices.append(JunctionVertex("Jc2", spec=specs(PT=P_out_bar * 1e5 / PR)))
+        zero_length.append(
+            Choke(
+                id="choke_2",
+                v_from="Jc2",
+                v_to="2",
+                CV=float(choke_cv),
+                law=choke_law,
+                opening=Constant(float(choke_opening)),
+            )
+        )
+    if single_pipe and reservoir is not None:
+        vertices.append(JunctionVertex("Jr1", spec=specs(qL=qL, qG=qG)))
+        zero_length.append(
+            Reservoir(
+                id="reservoir_1",
+                v_from="1",
+                v_to="Jr1",
+                IPL=float(reservoir["IPL"]),
+                IPG=float(reservoir["IPG"]),
+                P=float(reservoir["P_bar"]),
+            )
+        )
     # faixas esperadas dos estados (para tolerâncias absolutas uniformes, tol_range):
     # os picos de blowdown chegam a ~20x a alimentação de líquido e ~50x a de gás
     state_ref = dict(qL=20.0 * qL, qG=50.0 * qG, PT=(P_out_bar * 1e5 + 1.1 * fluid.rhoL0 * G * H_riser + 2e5) / PR)
@@ -216,7 +255,7 @@ def severe_slug_case(
         "severe_slug",
         fluid,
         vertices,
-        pipes,
+        pipes + zero_length,
         t0=0.0,
         tf=tf,
         dt_out=dt_out,
