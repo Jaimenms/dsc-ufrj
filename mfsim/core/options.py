@@ -30,6 +30,7 @@ PIPE_PARAM_KEYS = (
     "k_switch",
     "ipe_smooth",
     "ipe_local",
+    "ipe_local_film",
     "alpha_min",
     "alpha_max",
     "legacy_convective",
@@ -102,6 +103,7 @@ class RegimeSpec:
     k_switch: float = 1e6  # automático: suavidade do chaveamento
     smooth: bool = False  # automático: ipe_smooth
     local: bool = False  # automático: ipe_local
+    local_film: bool = False  # automático com local: ponte do filme do anular com a fração local (issue 046)
 
     def to_json(self) -> dict:
         d = {"type": self.type}
@@ -109,6 +111,8 @@ class RegimeSpec:
             d["regime"] = self.regime
         else:
             d.update(k_switch=self.k_switch, smooth=self.smooth, local=self.local)
+            if self.local_film:
+                d["local_film"] = True
         if self.vertical_regime:
             d["vertical"] = {
                 "regime": self.vertical_regime,
@@ -139,6 +143,7 @@ class RegimeSpec:
             k_switch=float(d.get("k_switch", 1e6)),
             smooth=bool(d.get("smooth", False)),
             local=bool(d.get("local", False)),
+            local_film=bool(d.get("local_film", False)),
         )
 
 
@@ -181,6 +186,7 @@ class ModelSpec:
             k_switch=float(e.get("k_switch", 1e6)),
             smooth=bool(e.get("ipe_smooth", False)),
             local=bool(e.get("ipe_local", False)),
+            local_film=bool(e.get("ipe_local_film", False)),
         )
         known = set(PIPE_PARAM_KEYS) | set(SCHEME_KEYS) | {k for k in e if k.startswith("fv_")}
         rest = tuple(sorted((k, v) for k, v in e.items() if k not in known))
@@ -208,6 +214,7 @@ class ModelSpec:
             "k_switch": r.k_switch,
             "ipe_smooth": r.smooth,
             "ipe_local": r.local,
+            "ipe_local_film": r.local_film,
             "alpha_min": self.alpha_min,
             "alpha_max": self.alpha_max,
             "legacy_convective": self.legacy_convective,
@@ -382,6 +389,7 @@ class IntegrationSpec:
     accumulate: bool = False
     tight_bounds: bool = False
     galerkin_band: Optional[int] = None
+    max_cpu: Optional[float] = None  # s: orçamento de tempo de relógio do BDF próprio (issue 045)
     extra: tuple = ()
 
     OPTIONAL = (
@@ -397,6 +405,7 @@ class IntegrationSpec:
         "predict_space",
         "jt_refresh",
         "galerkin_band",
+        "max_cpu",
     )
     FLAGS = ("accumulate", "tight_bounds")
 
@@ -427,7 +436,7 @@ class IntegrationSpec:
         for k in ("max_order", "max_newton", "galerkin_band"):
             if kw[k] is not None:
                 kw[k] = int(kw[k])
-        for k in ("tol_range", "atol_P", "atol_q", "first_step", "newton_tol", "min_step"):
+        for k in ("tol_range", "atol_P", "atol_q", "first_step", "newton_tol", "min_step", "max_cpu"):
             if kw[k] is not None:
                 kw[k] = float(kw[k])
         if kw["slow_exit"] is not None:

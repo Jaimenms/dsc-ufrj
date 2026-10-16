@@ -1,5 +1,5 @@
 {
- "description": "Artigo 01, ablação: o exemplo base (padrão dinâmico, choke aberto, reservatório a 15 bar, partida bloqueada, 3000 s) sem um ingrediente de cada vez (formulação, fase que desaparece, viscosidade artificial, fração das faces, identificação de padrão, regras de fração, massa virtual, arrasto de bolhas, integrador, tolerâncias, Newton, compressibilidade do líquido, lei de válvula, curva). Passo mínimo 1e-6 s: uma corrida que rasteja falha e fica gravada até aí.",
+ "description": "Artigo 01, ablação: o exemplo base (padrão dinâmico, choke aberto, reservatório a 15 bar, partida bloqueada, 3000 s) sem um ingrediente de cada vez (formulação, fase que desaparece, viscosidade artificial, fração das faces, identificação de padrão, regras de fração, massa virtual, arrasto de bolhas, integrador, tolerâncias, Newton, compressibilidade do líquido, lei de válvula, curva). Orçamento de 5400 s de relógio por corrida (integration.max_cpu, issue 045): uma corrida que rasteja pára e fica gravada até aí.",
  "out_dir": "runs/paper01/ablation",
  "runs": [
   {
@@ -7,7 +7,7 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06"
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -16,9 +16,9 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
     "network.edges.1.scheme.options.conservative=false",
-    "network.edges.1.scheme.options.relax_target=\"raw\""
+    "network.edges.1.scheme.options.relax_target=\"raw\"",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -27,8 +27,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "network.edges.1.scheme.options.relax_target=\"raw\""
+    "network.edges.1.scheme.options.relax_target=\"raw\"",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -37,8 +37,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "network.edges.1.scheme.options.flux_limit=false"
+    "network.edges.1.scheme.options.flux_limit=false",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -47,8 +47,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "network.edges.1.scheme.options.art_visc=0.0"
+    "network.edges.1.scheme.options.art_visc=0.0",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -57,8 +57,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "network.edges.1.scheme.options.closure_alpha=\"mean\""
+    "network.edges.1.scheme.options.closure_alpha=\"mean\"",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -67,10 +67,10 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
     "network.edges.1.model.regime.smooth=false",
     "network.edges.1.model.regime.local=false",
-    "network.edges.1.model.regime.k_switch=1000000.0"
+    "network.edges.1.model.regime.k_switch=1000000.0",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -79,8 +79,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "network.edges.1.model.regime.local=false"
+    "network.edges.1.model.regime.local=false",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -89,8 +89,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "network.edges.1.model.regime.low_void.alpha=1e-12"
+    "network.edges.1.model.regime.low_void.alpha=1e-12",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -99,8 +99,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "network.edges.1.model.options.virtual_mass.C_vm=0.0"
+    "network.edges.1.model.options.virtual_mass.C_vm=0.0",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -109,8 +109,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "network.edges.1.model.closures.bubble.drag=\"thesis\""
+    "network.edges.1.model.closures.bubble.drag=\"thesis\"",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -119,8 +119,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "integration.max_order=1"
+    "integration.max_order=1",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -129,11 +129,11 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
     "reference.state_ref.PT=1.0",
     "reference.state_ref.qL=1.0",
     "reference.state_ref.qG=1.0",
-    "integration.tol_range=1e-06"
+    "integration.tol_range=1e-06",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -142,8 +142,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "integration.max_newton=12"
+    "integration.max_newton=12",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -152,11 +152,14 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
     "integration.integrator=\"bdf\"",
     "integration.max_step=1.0",
     "integration.rtol=0.003",
-    "integration.atol=0.001"
+    "integration.atol=0.001",
+    "integration.max_cpu=5400.0",
+    "network.edges.1.scheme.options.conservative=false",
+    "network.edges.1.scheme.options.relax_target=\"raw\"",
+    "integration.accumulate=false"
    ],
    "tf": 3000.0
   },
@@ -165,8 +168,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "fluid.gammaL=1000.0"
+    "fluid.gammaL=1000.0",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -175,8 +178,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "network.edges.choke_2.law=\"thesis\""
+    "network.edges.choke_2.law=\"thesis\"",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -185,7 +188,7 @@
    "case": "cases/paper01/well_choke_auto_sharp_bend.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06"
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   }

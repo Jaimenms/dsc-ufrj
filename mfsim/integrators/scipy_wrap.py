@@ -19,8 +19,11 @@ def integrate_scipy(
     use_sparsity=True,
     progress=True,
     first_step=None,
+    max_cpu=None,
 ):
-    """Integra dX/dt = model.rhs(t, X) e devolve (T, X[n_states x nt], info)."""
+    """Integra dX/dt = model.rhs(t, X) e devolve (T, X[n_states x nt], info). `max_cpu` (s) é um orçamento de
+    tempo de relógio: a integração faz-se em blocos de instantes de saída e pára entre blocos quando ele se
+    esgota (`success = False`), com a trajetória até aí."""
     t_eval = np.asarray(t_eval, float)
     jac_sparsity = model.jac_sparsity() if use_sparsity else None
     t_start = time.time()
@@ -30,28 +33,61 @@ def integrate_scipy(
         n_calls[0] += 1
         return model.rhs(t, x)
 
-    sol = solve_ivp(
-        f,
-        (t_eval[0], t_eval[-1]),
-        np.asarray(X0, float),
-        method=method,
-        t_eval=t_eval,
-        rtol=rtol,
-        atol=atol,
-        max_step=max_step,
-        jac_sparsity=jac_sparsity,
-        first_step=first_step,
-    )
+    def solve(te, x0):
+        return solve_ivp(
+            f,
+            (te[0], te[-1]),
+            np.asarray(x0, float),
+            method=method,
+            t_eval=te,
+            rtol=rtol,
+            atol=atol,
+            max_step=max_step,
+            jac_sparsity=jac_sparsity,
+            first_step=first_step,
+        )
+
+    if max_cpu is None:
+        sol = solve(t_eval, X0)
+        T, Y, ok, message = sol.t, sol.y, sol.success, sol.message
+        nfev, njev, nlu = sol.nfev, sol.njev, sol.nlu
+        stopped = False
+    else:
+        # orçamento de tempo: integra em blocos de instantes de saída e pára entre blocos quando se esgota
+        # (o solve_ivp não tem orçamento; um evento terminal dependente do relógio não é contínuo em t)
+        chunks = np.array_split(np.arange(t_eval.size), max(1, min(50, t_eval.size - 1)))
+        T, Y, x0 = [t_eval[:1]], [np.asarray(X0, float)[:, None]], np.asarray(X0, float)
+        ok, message, stopped, nfev, njev, nlu = True, "", False, 0, 0, 0
+        last = 0
+        for idx in chunks:
+            idx = idx[idx > last]
+            if idx.size == 0:
+                continue
+            te = t_eval[np.concatenate([[last], idx])]
+            sol = solve(te, x0)
+            nfev, njev, nlu = nfev + sol.nfev, njev + sol.njev, nlu + sol.nlu
+            T.append(sol.t[1:])
+            Y.append(sol.y[:, 1:])
+            ok, message = sol.success, sol.message
+            if not sol.success or sol.t.size < te.size:
+                break
+            x0, last = sol.y[:, -1], int(idx[-1])
+            if time.time() - t_start > float(max_cpu):
+                stopped = last < t_eval.size - 1
+                break
+        T, Y = np.concatenate(T), np.concatenate(Y, axis=1)
     info = dict(
-        success=sol.success,
-        message=sol.message,
+        success=bool(ok) and not stopped,
+        message=message,
         n_rhs=n_calls[0],
-        n_steps=int(np.size(sol.t)),
+        n_steps=int(np.size(T)),
         cpu=time.time() - t_start,
-        nfev=sol.nfev,
-        njev=sol.njev,
-        nlu=sol.nlu,
+        nfev=nfev,
+        njev=njev,
+        nlu=nlu,
     )
+    if stopped:
+        info["error"] = f"RuntimeError: orçamento de tempo ({max_cpu:g} s) excedido em t={float(T[-1]):.4g}"
     if progress:
-        print(f"[scipy {method}] {sol.message} | rhs={n_calls[0]} | njev={sol.njev} | {info['cpu']:.1f}s")
-    return np.asarray(sol.t, float), np.asarray(sol.y, float).reshape(len(X0), -1), info
+        print(f"[scipy {method}] {message} | rhs={n_calls[0]} | njev={njev} | {info['cpu']:.1f}s")
+    return np.asarray(T, float), np.asarray(Y, float).reshape(len(X0), -1), info

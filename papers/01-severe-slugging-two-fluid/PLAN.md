@@ -48,6 +48,29 @@ aparecem nas entrelinhas, como observações gerais medidas com o código de hoj
 9. Os autovalores do estacionário não desenham a fronteira da golfada (histerese, modos locais rápidos):
    o mapa faz-se por simulação dinâmica com duas partidas.
 
+## Decisões e achados durante a preparação (2026-10-16)
+
+- **Fechamentos das faces pela célula doadora (issue 044).** Com a média das células o estacionário discreto
+  tinha um xadrez na fração de gás do riser e um modo de +41 /s na curva; com a doadora o perfil é liso. Na
+  dinâmica a doadora muda o ciclo na malha grossa (intervalo 985 s contra 824 s em 1500 s de referência sem
+  poço) e o custo por ciclo é parecido (as duas têm fases caras no blowdown); a convergência com a malha
+  decide-se no lote `paper01_mesh`. Adotada no exemplo base.
+- **Ponte do filme do anular com a fração local (issue 046).** O modo local ainda usava o filme de
+  equilíbrio de Pots e marcava como anular a célula do ponto baixo com 91 % de líquido; corrigido com a
+  opção `local_film` (estacionário igual, padrão intermitente nessa célula).
+- **Orçamento de tempo de relógio (issue 045).** Um passo mínimo de 1e−6 s faz falhar a própria referência
+  (blowdown da partida bloqueada aos 8 s); os lotes de comparação usam `integration.max_cpu = 5400`.
+- **Continuação do mapa com padrão dinâmico.** As quinas da identificação de padrão (tabelas de equilíbrio,
+  máximos suaves) fazem o Newton estagnar em alguns passos; com passagens de preenchimento a partir de
+  vizinhos, 107 de 126 pontos têm estacionário (falham os de pressão alta e choke aberto, ≥ 30 bar); esses
+  partem da linha bloqueada nas duas colunas do mapa.
+- **Boa colocação medida**: mapas por padrão mal postos em 24 % (estratificado, camada de gás fina), 49 %
+  (intermitente), 46 % (bolhas), 94 % (anular); massa virtual objetiva leva as bolhas a 0 % e a simples
+  (λ = 2) a 99 %; na trajetória de referência 0,9 % das células-instante são mal postas (23–30 % sem as duas
+  regularizações nos mesmos estados).
+- **Desempenho (medida sob carga)**: lado direito 2,4 ms (numpy) contra 0,25 ms (JAX), Jacobiana 63 ms
+  (diferenças coloridas) contra 3,3 ms (exata), compilação ≈ 10 s; repetir com a máquina livre.
+
 ## Exemplo base
 
 Caso de referência como poço (`cases/severe_slug/well_choke.json`, issue 043) com **padrão de escoamento
@@ -57,7 +80,7 @@ gás–líquido da referência), choke homogéneo CV 15 a descarregar no separad
 (γL = 100), gás politrópico (γG = 1,05). Modelo a dois fluidos com identificação automática suave e
 local, regra de fração baixa (bolhas abaixo de 1 %), massa virtual (C_vm = 0,5, forma objetiva), arrasto
 físico de bolhas; esquema escalonado conservativo com alvo `noslip`, viscosidade artificial 0,05;
-BDF próprio com `tol_range` 0,01 e lado direito em JAX. Pressão do reservatório de referência 15 bar.
+BDF próprio com `tol_range` 0,01 e lado direito em JAX; fechamentos das faces pela célula doadora (044) e ponte do filme local (046). Pressão do reservatório de referência 15 bar. Ficheiro: `cases/severe_slug/well_choke_auto.json`.
 
 ## Casos de simulação (lotes)
 

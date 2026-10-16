@@ -145,6 +145,18 @@ def _hyperbolicity_compute():
                 )
                 Z[i] = np.abs(m.eigenvalues(y, np.deg2rad(np.full(HYP_SLIP.size, theta))).imag).max(axis=1)
             out[f"{name}_{tag}"] = Z
+    # massa virtual na forma simples (só a diferença das acelerações materiais, lambda = 2)
+    m = TwoFluidModel(
+        fluid,
+        PipeParams(D=D, eps=1e-5, PR=1e6, regime=2, bubble_drag="fisico", virtual_mass=0.5, vm_lambda=2.0),
+    )
+    Z = np.zeros((HYP_ALPHA.size, HYP_SLIP.size))
+    for i, a in enumerate(HYP_ALPHA):
+        y = np.array(
+            [[a, HYP_PRESSURE / 1e6, rhoL * (1 - a) * A * HYP_VL, rhoG * a * A * (HYP_VL + s)] for s in HYP_SLIP]
+        )
+        Z[i] = np.abs(m.eigenvalues(y, np.deg2rad(np.full(HYP_SLIP.size, 90.0))).imag).max(axis=1)
+    out["bubble_lam2"] = Z
     return out
 
 
@@ -202,11 +214,21 @@ def tab_hyperbolicity(out):
     for name, _, theta, _, reg_label in HYP_PANELS:
         rows.append(
             [
-                f"{PATTERN_LABEL[name]} ({theta:g}°)",
+                f"{PATTERN_LABEL[name]} (${theta:g}^\\circ$)",
                 fl.fmt(100 * np.mean(d[f"{name}_raw"] > 1e-6), "{:.0f}"),
                 fl.fmt(float(np.max(d[f"{name}_raw"])), "{:.2f}"),
                 reg_label,
                 fl.fmt(100 * np.mean(d[f"{name}_reg"] > 1e-6), "{:.0f}"),
+            ]
+        )
+    if "bubble_lam2" in d:
+        rows.append(
+            [
+                "bubbly ($90^\\circ$)",
+                fl.fmt(100 * np.mean(d["bubble_raw"] > 1e-6), "{:.0f}"),
+                fl.fmt(float(np.max(d["bubble_raw"])), "{:.2f}"),
+                "virtual mass, $\\lambda = 2$ (not objective)",
+                fl.fmt(100 * np.mean(d["bubble_lam2"] > 1e-6), "{:.0f}"),
             ]
         )
     fl.tex_table(
@@ -384,63 +406,124 @@ def steady_profiles(out, png):
 
 
 # ------------------------------------------------------------------------------------------------ espaço–tempo
+def _section_axis(ax, model, side="left"):
+    """Eixo vertical por índice de célula (cada célula com a mesma altura, para a curva e o riser ficarem
+    visíveis ao lado dos 300 m da linha), com as fronteiras dos trechos e os seus nomes."""
+    z = _zones(model)
+    th = z["th"]
+    n = th.size
+    k_line = int(np.argmax(th < -1.0))
+    k_bend0 = int(z["k_bend"][0]) if z["k_bend"].size else n
+    k_riser0 = int(z["k_riser"][0]) if z["k_riser"].size else n
+    k_top0 = int(z["k_riser"][-1]) + 1 if z["k_riser"].size else n
+    bounds = [
+        (-0.5, k_line - 0.5, "inlet"),
+        (k_line - 0.5, k_bend0 - 0.5, "line"),
+        (k_bend0 - 0.5, k_riser0 - 0.5, "bend"),
+        (k_riser0 - 0.5, k_top0 - 0.5, "riser"),
+        (k_top0 - 0.5, n - 0.5, "top"),
+    ]
+    for lo, hi, lab in bounds:
+        if hi <= lo:
+            continue
+        ax.axhline(lo, color="white", lw=0.6)
+        if side == "right":
+            ax.text(1.01, 0.5 * (lo + hi) / (n - 0.0) + 0.5 / n, lab, transform=ax.transAxes, fontsize=6, va="center")
+    ax.set_ylim(-0.5, n - 0.5)
+    ticks = [k_line, k_bend0, k_riser0, n - 1]
+    ax.set_yticks(ticks)
+    ax.set_yticklabels([f"{z['s'][k]:.0f}" for k in ticks])
+    return z
+
+
+def _s_to_index(model, s_val):
+    z = _zones(model)
+    return np.interp(s_val, z["s"], np.arange(z["s"].size))
+
+
 def spacetime(out, png):
-    """Diagramas x–t da fração de líquido no fim da linha, curva e riser para três aberturas a 15 bar, com a
-    pressão de entrada e a vazão de líquido à saída por baixo."""
+    """Diagramas x–t da fração de líquido ao longo de todo o duto (eixo por célula) para três aberturas a
+    15 bar, com as frentes (selo de líquido na linha e coluna no riser) e, por baixo, a pressão de entrada e a
+    vazão de líquido à saída."""
+    from mfsim.analysis import slug_fronts
+
     runs = [(ab, _dense_run(ab)) for ab in OPENINGS_SEL]
-    fig, axes = plt.subplots(
-        3,
-        3,
-        figsize=(fl.DOUBLE, 0.72 * fl.DOUBLE),
-        sharex="col",
-        gridspec_kw=dict(height_ratios=[2.2, 0.8, 0.8], hspace=0.12, wspace=0.12),
+    fig = plt.figure(figsize=(fl.DOUBLE, 0.78 * fl.DOUBLE))
+    gs = fig.add_gridspec(
+        3, 5, height_ratios=[2.4, 0.75, 0.75], width_ratios=[1, 1, 1, 0.16, 0.045], hspace=0.12, wspace=0.14
     )
     rows = _map_rows() or []
     cls = {(r["start"], r["P_res"], r["ab"]): r["cls"] for r in rows}
-    im = None
+    im, axes = None, np.empty((3, 3), dtype=object)
     for j, (ab, run) in enumerate(runs):
+        ax0 = fig.add_subplot(gs[0, j])
+        ax1 = fig.add_subplot(gs[1, j], sharex=ax0)
+        ax2 = fig.add_subplot(gs[2, j], sharex=ax0)
+        axes[:, j] = ax0, ax1, ax2
         if run is None:
-            for i in range(3):
-                fl.placeholder(axes[i, j], f"run a = {ab:g} not found")
+            for a in (ax0, ax1, ax2):
+                fl.placeholder(a, f"run a = {ab:g} not found")
             continue
         p = run.pipe(0)
-        x = np.asarray(p["x"])
         T = np.asarray(run.T)
         win = T >= T[-1] - 2400.0
-        z = _zones(run.model)
-        sel = x >= 240.0
-        im = axes[0, j].pcolormesh(
-            T[win],
-            x[sel],
-            1.0 - p["out"]["alphaG"][sel][:, win],
-            cmap="Blues",
-            vmin=0,
-            vmax=1,
-            shading="auto",
-            rasterized=True,
+        N = run.model.pipes[0].scheme.N
+        hold = 1.0 - p["out"]["alphaG"][1 : N + 1][:, win]
+        im = ax0.pcolormesh(
+            T[win], np.arange(N), hold, cmap="Blues", vmin=0, vmax=1, shading="nearest", rasterized=True
         )
-        if np.isfinite(z["s_low"]):
-            axes[0, j].axhline(z["s_low"], color=fl.INK, lw=0.6, ls=(0, (4, 3)))
-        if z["k_riser"].size:
-            axes[0, j].axhline(z["s"][z["k_riser"][0]] - 1.5, color=fl.INK, lw=0.6, ls=(0, (1, 2)))
+        _section_axis(ax0, run.model, side="right" if j == 2 else "left")
+        fr = slug_fronts(run)
+        z = _zones(run.model)
+        k_low = float(_s_to_index(run.model, z["s_low"]))
+        seal_idx = _s_to_index(run.model, z["s_low"] - fr["seal"][win])
+        ax0.plot(T[win], seal_idx, color=fl.COLORS["annular"], lw=0.7)
+        lev_s = (
+            np.interp(fr["level"][win], [0.0, fr["H"]], [z["s_low"], z["s"][z["k_riser"][-1]]])
+            if z["k_riser"].size
+            else None
+        )
+        if lev_s is not None:
+            ax0.plot(
+                T[win],
+                np.where(fr["level"][win] > 0, _s_to_index(run.model, lev_s), np.nan),
+                color=fl.COLORS["intermittent"],
+                lw=0.7,
+            )
         lab = CLASS_LABEL.get(cls.get(("steady", P_SEL, ab)), "")
-        axes[0, j].set_title(f"$a = {ab:g}$" + (f": {lab}" if lab else ""), fontsize=7.5)
-        axes[1, j].plot(T[win], p["out"]["P_bar"][1][win], color=fl.INK, lw=0.8)
-        axes[2, j].plot(T[win], p["out"]["qL"][-1][win], color=fl.COLORS["stratified"], lw=0.8)
-        axes[2, j].set_xlabel("time (s)")
-    axes[0, 0].set_ylabel("position (m)")
+        ax0.set_title(f"$a = {ab:g}$" + (f"\n{lab}" if lab else ""), fontsize=7)
+        ax1.plot(T[win], p["out"]["P_bar"][1][win], color=fl.INK, lw=0.8)
+        ax2.plot(T[win], p["out"]["qL"][-1][win], color=fl.COLORS["stratified"], lw=0.8)
+        ax2.set_xlabel("time (s)")
+        for a in (ax0, ax1):
+            plt.setp(a.get_xticklabels(), visible=False)
+        if j > 0:
+            for a in (ax1, ax2):
+                plt.setp(a.get_yticklabels(), visible=False)
+        fl.panel_label(ax0, f"({'abc'[j]})")
+    axes[0, 0].set_ylabel("position along the pipe (m)")
     axes[1, 0].set_ylabel(r"$P_{in}$ (bar)")
     axes[2, 0].set_ylabel(r"$q_{L,out}$ (kg s$^{-1}$)")
     for i in (1, 2):
-        ymin = min(a.get_ylim()[0] for a in axes[i])
-        ymax = max(a.get_ylim()[1] for a in axes[i])
+        lims = [a.get_ylim() for a in axes[i] if a is not None]
         for a in axes[i]:
-            a.set_ylim(ymin, ymax)
-    for j in range(3):
-        fl.panel_label(axes[0, j], f"({'abc'[j]})")
+            a.set_ylim(min(l[0] for l in lims), max(l[1] for l in lims))
     if im is not None:
-        cb = fig.colorbar(im, ax=axes[0, :], shrink=0.9, pad=0.01)
+        cax = fig.add_subplot(gs[0, 4])
+        cb = fig.colorbar(im, cax=cax)
         cb.set_label("liquid holdup")
+    fig.legend(
+        handles=[
+            plt.Line2D([], [], color=fl.COLORS["annular"], lw=1, label="end of the liquid seal in the line"),
+            plt.Line2D([], [], color=fl.COLORS["intermittent"], lw=1, label="top of the liquid column in the riser"),
+        ],
+        loc="lower center",
+        ncol=2,
+        fontsize=7,
+        frameon=False,
+        bbox_to_anchor=(0.5, -0.01),
+    )
+    fig.subplots_adjust(bottom=0.1)
     fl.save(fig, out, "spacetime", png)
 
 

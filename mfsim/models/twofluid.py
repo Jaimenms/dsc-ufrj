@@ -112,7 +112,15 @@ class TwoFluidModel(PipeModel):
         eq = None
         if p.regime == REGIME_AUTO:
             eq = equilibrium_fractions(inp, smooth=p.ipe_smooth, bk=bk)
-            flags, _ = identify_regime(inp, k_switch=p.k_switch, eq=eq, smooth=p.ipe_smooth, local=p.ipe_local, bk=bk)
+            flags, _ = identify_regime(
+                inp,
+                k_switch=p.k_switch,
+                eq=eq,
+                smooth=p.ipe_smooth,
+                local=p.ipe_local,
+                local_film=p.ipe_local_film,
+                bk=bk,
+            )
             if p.low_void_regime:
                 # sem gás não há padrão a identificar: os critérios degeneram (FG* e
                 # FG*c nulos, empates permanentes); abaixo de low_void_alpha vale o
@@ -296,7 +304,9 @@ class TwoFluidModel(PipeModel):
         if eq is not None:
             hD_est, hD_anu, aG_est, aG_anu, aG_bol = eq
             out.update(alfaG_est=aG_est, alfaG_anu=aG_anu, alfaG_bol=aG_bol, hD_est=hD_est)
-            fl_c, _ = identify_regime(inp, k_switch=p.k_switch, eq=eq, smooth=p.ipe_smooth, local=p.ipe_local)
+            fl_c, _ = identify_regime(
+                inp, k_switch=p.k_switch, eq=eq, smooth=p.ipe_smooth, local=p.ipe_local, local_film=p.ipe_local_film
+            )
             out["reg1C"] = fl_c.reg1
         return out
 

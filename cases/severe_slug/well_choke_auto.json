@@ -2,7 +2,7 @@
  "schema": "mfsim-case/1",
  "$extends": "well_choke.json",
  "name": "well_choke_auto",
- "description": "Caso do poço (IPR linear na entrada, choke homogéneo CV 15 no topo, separador a 4 bar) com o padrão de escoamento calculado dinamicamente em todo o duto: identificação automática suave e local (k = 20) com a regra de bolhas abaixo de 1 % de gás, massa virtual e arrasto físico de bolhas herdados; fechamentos das faces avaliados com a fração da célula doadora (issue 044). Exemplo base do artigo 01 (papers/01-severe-slugging-two-fluid).",
+ "description": "Caso do poço (IPR linear na entrada, choke homogéneo CV 15 no topo, separador a 4 bar) com o padrão de escoamento calculado dinamicamente em todo o duto: identificação automática suave e local (k = 20, ponte do filme do anular com a fração local, issue 046) com a regra de bolhas abaixo de 1 % de gás, massa virtual e arrasto físico de bolhas herdados; fechamentos das faces avaliados com a fração da célula doadora (issue 044). Exemplo base do artigo 01 (papers/01-severe-slugging-two-fluid).",
  "meta": {"run": null, "map_base": true, "paper": "01-severe-slugging-two-fluid"},
  "network": {
   "edges": [
@@ -14,6 +14,7 @@
       "k_switch": 20.0,
       "smooth": true,
       "local": true,
+      "local_film": true,
       "low_void": {"regime": "bubble", "alpha": 0.01},
       "$replace": true
      }

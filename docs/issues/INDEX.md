@@ -67,6 +67,7 @@ qual estão em `notebooks_src/thesis/`.
 | [019](019-atrito-interfacial-estratificado.md) | feature | Atrito interfacial do estratificado parametrizado (item 2) | fixo → ×0.5 / ×2 / Taitel & Dukler: ciclo insensível (±2 %) |
 | [020](020-ipe-da-tese-defeitos.md) | bugfix | Identificação de padrão da tese: quatro defeitos | 9834 passos até 1.5 s → partição da unidade, graus, NaN tratados |
 | [021](021-ipe-suave-e-local.md) | feature | Identificação automática suave e local | inutilizável em dinâmica → ciclo reproduzido a 35k passos / 207 s |
+| [046](046-ponte-do-filme-local.md) | bugfix | Ponte do filme do anular com a fração de líquido local (`local_film`) | célula quase cheia de líquido no ponto baixo identificada como anular → intermitente; estacionário igual |
 | [022](022-riser-intermitente-vs-bolhas.md) | estudo | Riser intermitente contra bolhas no blowdown (item 5) | caso base só cicla com bolhas; linha longa cicla com ambos (±10 %) |
 | [023](023-lei-do-gas.md) | estudo | Lei do gás γG (item 4) | 1.05 → 1.3 encurta o intervalo 9–18 %; amplitude igual |
 | [024](024-arraste-de-gotas.md) | estudo | Arraste de gotas no anular (item 7) | sem modelo → desprezível (1–5 % do líquido em picos de segundos) |
@@ -99,6 +100,7 @@ qual estão em `notebooks_src/thesis/`.
 | [036](036-lado-direito-jax.md) | feature | Lado direito compilado e Jacobiana exata (JAX) | 5 min → 45 s (grossa), 58 min → 105 s (fina); paridade 1e−14 |
 | [037](037-tangentes-nan.md) | bugfix | Tangentes NaN na diferenciação automática | "Factor is exactly singular" → Jacobiana finita em repouso e no corte das sigmoides |
 | [038](038-derivadas-beggs-brill.md) | feature | Derivadas do Beggs & Brill exatas (jvp) | diferenças finitas a 1e−3 → exatas; concordam a 1e−4 fora das quinas |
+| [045](045-orcamento-de-tempo.md) | feature | Orçamento de tempo de relógio da integração (`max_cpu`) | corrida que rasteja bloqueava o lote (ou passo mínimo que faz falhar a referência) → pára com a trajetória parcial; SciPy em blocos |
 
 ## Pendências abertas
 

@@ -1,5 +1,5 @@
 {
- "description": "Artigo 01, discretização: o exemplo base (padrão dinâmico, choke aberto, 15 bar, partida bloqueada, 3000 s) com os volumes finitos escalonados (conservativos e primitivos) e os esquemas nodais (Galerkin, Petrov-Galerkin, diferenças centrais e regressivas); passo mínimo 1e-6 s.",
+ "description": "Artigo 01, discretização: o exemplo base (padrão dinâmico, choke aberto, 15 bar, partida bloqueada, 3000 s) com os volumes finitos escalonados (conservativos e primitivos) e os esquemas nodais (Galerkin, Petrov-Galerkin, diferenças centrais e regressivas); orçamento de 5400 s de relógio por corrida (issue 045).",
  "out_dir": "runs/paper01/discretization",
  "runs": [
   {
@@ -7,7 +7,7 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06"
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -16,9 +16,9 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
     "network.edges.1.scheme.options.conservative=false",
-    "network.edges.1.scheme.options.relax_target=\"raw\""
+    "network.edges.1.scheme.options.relax_target=\"raw\"",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -27,8 +27,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "network.edges.1.scheme.type=\"galerkin\""
+    "network.edges.1.scheme.type=\"galerkin\"",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -37,8 +37,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "network.edges.1.scheme.type=\"petrov_galerkin\""
+    "network.edges.1.scheme.type=\"petrov_galerkin\"",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -47,8 +47,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "network.edges.1.scheme.type=\"fd_central\""
+    "network.edges.1.scheme.type=\"fd_central\"",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   },
@@ -57,8 +57,8 @@
    "case": "cases/severe_slug/well_choke_auto.json",
    "set": [
     "network.edges.choke_2.opening=1.0",
-    "integration.min_step=1e-06",
-    "network.edges.1.scheme.type=\"fd_upwind\""
+    "network.edges.1.scheme.type=\"fd_upwind\"",
+    "integration.max_cpu=5400.0"
    ],
    "tf": 3000.0
   }

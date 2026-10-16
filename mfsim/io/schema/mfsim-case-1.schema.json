@@ -480,6 +480,9 @@
         "local": {
           "type": "boolean"
         },
+        "local_film": {
+          "type": "boolean"
+        },
         "vertical": {
           "type": "object",
           "required": [
@@ -1333,6 +1336,9 @@
         "max_newton": {
           "type": "integer",
           "minimum": 1
+        },
+        "max_cpu": {
+          "$ref": "#/$defs/positive"
         },
         "newton_tol": {
           "$ref": "#/$defs/positive"

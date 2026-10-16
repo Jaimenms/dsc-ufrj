@@ -47,6 +47,9 @@ class PipeParams:
     ipe_local: bool = (
         False  # critérios de padrão no estado local (nível/fração reais; fração de bolhas max(aG_bol, alphaG)) em vez dos equilíbrios
     )
+    ipe_local_film: bool = (
+        False  # com ipe_local: ponte do filme do anular também com a fração de líquido local (issue 046)
+    )
     alpha_min: float = 1e-3
     alpha_max: float = 1.0 - 1e-3
     legacy_convective: bool = True  # usa v|v| e 2|v| como no MFSIM original

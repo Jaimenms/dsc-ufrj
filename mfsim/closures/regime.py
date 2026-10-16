@@ -294,7 +294,7 @@ def _froude(rhoL, rhoG, D, vLS, vGS, bk):
     return FL, FG
 
 
-def identify_regime(inp: ClosureInputs, k_switch=1e6, eq=None, smooth=False, local=False, bk=NUMPY):
+def identify_regime(inp: ClosureInputs, k_switch=1e6, eq=None, smooth=False, local=False, local_film=False, bk=NUMPY):
     """Identificação do padrão de escoamento (identificaRegimeEstavel.m).
 
     k_switch controla a suavidade do chaveamento (1e6 no original = quase
@@ -317,6 +317,12 @@ def identify_regime(inp: ClosureInputs, k_switch=1e6, eq=None, smooth=False, loc
     pesos formam uma partição da unidade também com indicadores fracionários
     (o original usava 1 - Bub, com Bub já multiplicado por (1 - Est)(1 - Anu),
     no peso do intermitente, e a soma dos pesos chegava a 1.4 nos empates).
+
+    local_film=True (com local; PipeParams.ipe_local_film, issue 046): o critério de ponte do filme do
+    anular usa também a fração de líquido LOCAL, alphaL_filme = max(alphaL de equilíbrio de Pots, alphaL da
+    célula): uma célula com mais líquido do que o filme que faz ponte (0.35) não pode ser anular, por
+    pequenas que sejam as velocidades superficiais (sem isso a célula do ponto baixo quase cheia de
+    líquido, onde o bolsão encontra o líquido, era identificada como anular).
     """
     xp = bk.xp
     if eq is None:
@@ -330,6 +336,8 @@ def identify_regime(inp: ClosureInputs, k_switch=1e6, eq=None, smooth=False, loc
         hD_est = xp.clip(inp.hD, 1e-6, 1 - 1e-6)
         aG_est = xp.clip(inp.alphaG, 1e-6, 1 - 1e-6)
         aG_bol = xp.clip(smooth_max(aG_bol, inp.alphaG, bk=bk), 1e-6, 1 - 1e-6)
+        if local_film:
+            aG_anu = xp.minimum(aG_anu, xp.clip(inp.alphaG, 1e-6, 1 - 1e-6))
     vLS, vGS = inp.vLS, inp.vGS
     vM = vLS + vGS
     D, eps, th = inp.D, inp.eps, inp.theta

@@ -136,6 +136,8 @@ def _integrate_bdf(model, X0, t_eval, spec, progress=True, verbose=False, partia
     )
     if spec.slow_exit is not None:
         bdf.slow_exit = bool(spec.slow_exit)
+    if spec.max_cpu is not None:
+        bdf.max_cpu = float(spec.max_cpu)
     if spec.predict_space is not None:
         bdf.predict_space = spec.predict_space
     if spec.jt_refresh is not None:
@@ -243,7 +245,15 @@ def _integrate(model, X0, t_eval, spec, progress=True, verbose=False, partial=Fa
     if integrator in ("bdf", "BDF", "Radau", "radau", "LSODA"):
         meth = {"bdf": "BDF", "radau": "Radau"}.get(integrator, integrator)
         return integrate_scipy(
-            model, X0, t_eval, method=meth, rtol=spec.rtol, atol=spec.atol, max_step=spec.max_step, progress=progress
+            model,
+            X0,
+            t_eval,
+            method=meth,
+            rtol=spec.rtol,
+            atol=spec.atol,
+            max_step=spec.max_step,
+            progress=progress,
+            max_cpu=spec.max_cpu,
         )
     if integrator == "implicit":
         return _integrate_bdf(model, X0, t_eval, spec, progress=progress, verbose=verbose, partial=partial)

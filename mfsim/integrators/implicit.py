@@ -80,6 +80,7 @@ class ImplicitBDF:
         self.jac_reuse = jac_reuse
         self.jac_fun = jac_fun  # opcional: jac_fun(t, x) -> Jacobiana densa/esparsa de f (ex.: JAX)
         self.cooldown_steps = 3  # passos sem crescimento do passo após uma rejeição
+        self.max_cpu = None  # s: orçamento de tempo de relógio da integração (None = sem limite); excedido -> erro com a trajetória parcial
         self.groups = color_groups(S) if S is not None else None
         self.n_rhs = 0
         self.n_jac = 0
@@ -388,6 +389,8 @@ class ImplicitBDF:
                 hist.pop(0)
                 t_hist.pop(0)
             self.n_steps += 1
+            if self.max_cpu is not None and time.time() - t_start > self.max_cpu:
+                raise RuntimeError(f"orçamento de tempo ({self.max_cpu:g} s) excedido em t={t:.4g}")
             self._jac_age += 1
             if self._jac_age >= self.jac_reuse or nit > 4:
                 self._jacobian(t, x, f0)

@@ -37,7 +37,7 @@ O código original (MFSIM/SDMPFLOW, MATLAB, 2010) e os seus resultados gravados 
 para o **mfsim**, reimplementação em Python com o solver próprio da tese: modelo a dois fluidos
 (4 equações), modelo de mistura (3 equações) e monofásicos; Galerkin, diferenças finitas e volumes
 finitos escalonados; BDF implícito próprio com lado direito em numpy ou compilado com JAX. Os
-casos do capítulo 10 reproduzem-se contra os ficheiros MATLAB; as 44 alterações em relação à tese
+casos do capítulo 10 reproduzem-se contra os ficheiros MATLAB; as 46 alterações em relação à tese
 (correções, melhorias e estudos) estão em [docs/issues/INDEX.md](docs/issues/INDEX.md), e a
 resposta à pergunta que a tese não conseguiu fechar, a intermitência severa em geometria
 linha–riser, em [docs/why_no_severe_slug_in_thesis.md](docs/why_no_severe_slug_in_thesis.md).
@@ -125,7 +125,7 @@ uv run python tools/convert_runs.py antiga.npz --out-dir runs/            # corr
 
 ## Documentação
 
-- [docs/issues/INDEX.md](docs/issues/INDEX.md) — o que mudou em relação ao modelo e ao solver da tese: 44 alterações atómicas (feature, bugfix, estudo), cada uma com antes, depois e benefício medido.
+- [docs/issues/INDEX.md](docs/issues/INDEX.md) — o que mudou em relação ao modelo e ao solver da tese: 46 alterações atómicas (feature, bugfix, estudo), cada uma com antes, depois e benefício medido.
 - [docs/method_thesis_to_modern_code.md](docs/method_thesis_to_modern_code.md) — o método que nos trouxe até aqui (tese + código legado → versão moderna e melhorada) e um prompt consolidado para reutilizar; [CLAUDE.md](CLAUDE.md) é o guia do projeto para sessões do Claude.
 - [docs/why_no_severe_slug_in_thesis.md](docs/why_no_severe_slug_in_thesis.md) — por que a tese não conseguiu simular a intermitência severa, em quatro pontos ligados às issues.
 - [docs/hello_world.md](docs/hello_world.md) — primeiro caso: um duto e duas fronteiras em JSON, correr, ler os resultados, o mesmo caso em Python, variar com `--set`/`$extends`.
