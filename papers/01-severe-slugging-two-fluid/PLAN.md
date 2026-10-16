@@ -115,6 +115,6 @@ BDF próprio com `tol_range` 0,01 e lado direito em JAX; fechamentos das faces p
 ## Decisões em aberto para o dono
 
 - Revista (proposta: *International Journal of Multiphase Flow*; ver `../00-escolha-da-revista.md`).
-- Autores: Jaime Neiva Miranda de Souza e André Luiz Hemerly Costa (decidido pelo dono em 2026-10-16; Medeiros e Nunes saíram). Falta confirmar as afiliações e o e-mail do autor correspondente.
+- Autores: Jaime Neiva Miranda de Souza (Miradouro Digital) e André Luiz Hemerly Costa (UERJ), decididos pelo dono em 2026-10-16 (Medeiros e Nunes saíram). Faltam a morada da Miradouro Digital e o e-mail do autor correspondente.
 - Fechamentos das faces pela célula doadora (044) como padrão do caso do artigo.
 - Limiar da regra de fração baixa (1 % mantido; 10 % é a alternativa estudada em 042).
