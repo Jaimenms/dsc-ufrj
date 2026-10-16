@@ -73,3 +73,35 @@ def test_cycle_map_draws_one_patch_per_cell():
     assert len(ax.patches) == 4 + 2  # 4 células + 2 contornos da melhor estável por linha
     assert sorted(t.get_text() for t in ax.texts) == ["6,0", "6,0", "7,0\n15 min", "7,0\n60 s"]
     plt.close(fig)
+
+
+def test_slow_global_modes_classes():
+    from mfsim.analysis import slow_global_modes
+
+    n_eff = np.array([6.0, 6.0, 1.2, 5.0])
+    stable = slow_global_modes(np.array([-0.004 + 0.008j, -0.01 + 0.03j, 9.0 + 0j, -0.5 + 0j]), n_eff)
+    assert stable["cls"] == "stable" and abs(stable["re_other"] - 9.0) < 1e-12  # local forte não decide a classe
+    hopf = slow_global_modes(np.array([0.005 + 0.016j, -0.01 + 0.03j, 1.4 + 1.9j, -0.5 + 0j]), n_eff)
+    assert hopf["cls"] == "hopf" and abs(hopf["im1"] - 0.016) < 1e-12
+    real = slow_global_modes(np.array([0.04 + 0j, 0.015 + 0j, -0.1 + 0j, 0.97 + 0.03j]), n_eff)
+    assert real["cls"] == "real" and real["re2"] == 0.015
+    assert abs(real["re_other"] - 0.97) < 1e-12 and real["n_eff_other"] == 5.0  # global rápido entra em "other"
+
+
+def test_mode_participation_on_a_stored_steady_state():
+    """O estacionário exato do ponto estável do mapa (15 bar, 0,13): todos os modos globais lentos amortecidos."""
+    from mfsim.analysis import mode_participation, slow_global_modes
+    from mfsim.runs import find_run, load_run
+
+    try:
+        r = load_run(find_run("severe_slug_map_well_steady_ab0.130_P15.0"))
+    except FileNotFoundError:
+        import pytest
+
+        pytest.skip("dados do mapa ausentes (notebooks/data)")
+    m = r.model
+    X = np.array(r.X[:, 0], float)
+    X[m.state_slots() == 1] /= 1.001
+    w, n_eff, node = mode_participation(m, X)
+    assert np.all(w.imag >= -1e-12) and np.all(n_eff >= 1.0 - 1e-9)
+    assert slow_global_modes(w, n_eff, node)["cls"] == "stable"

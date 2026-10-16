@@ -701,3 +701,58 @@ def inventory_error(run, pipe=0):
         fed_L=accL,
         fed_G=accG,
     )
+
+
+# ----------------------------------------------------------------------------- modos globais e locais (issues 048, 043)
+SLOW_MODE = 0.2  # 1/s: módulo máximo de um modo lento
+N_EFF_GLOBAL = 4.0  # nós efetivos a partir dos quais um modo conta como global
+
+
+def mode_participation(model, X, t=0.0, jax=True, pipe=0):
+    """Autovalores da linearização com a matriz de massa (`linear_spectrum`), só os de parte imaginária ≥ 0, com o
+    número efetivo de nós de cada vetor próprio e o nó de maior peso. A participação usa os estados do duto
+    escalados pela faixa (`state_scales`) e somados por nó; n_eff = 1/Σp² (1 para um modo preso a um nó, o
+    número de nós para um modo uniforme). Devolve (w, n_eff, node)."""
+    w, V = linear_spectrum(model, X, t=t, jax=jax, vectors=True)
+    keep = w.imag >= -1e-12
+    w, V = w[keep], V[:, keep]
+    pb = model.pipes[pipe]
+    sl = slice(pb.offset, pb.offset + pb.n_states)
+    v2 = (np.abs(V[sl]) / model.state_scales(X)[sl, None]) ** 2
+    v2 /= v2.sum(axis=0)
+    nodes = pb.free // 4
+    pn = np.zeros((int(nodes.max()) + 1, w.size))
+    np.add.at(pn, nodes, v2)
+    return w, 1.0 / np.sum(pn**2, axis=0), np.argmax(pn, axis=0)
+
+
+def slow_global_modes(w, n_eff, node=None, slow=SLOW_MODE, n_global=N_EFF_GLOBAL):
+    """Os dois modos globais lentos de maior parte real (|λ| < `slow`, pelo menos `n_global` nós efetivos), o modo
+    de maior parte real entre todos os outros (locais ou globais rápidos, com Im, n_eff e nó) e a classe linear do
+    estacionário pelo 1.º modo global lento: "stable" (amortecido), "hopf" (par complexo instável: o ciclo de
+    pressão nasce de uma bifurcação de Hopf) ou "real" (real e instável: instabilidade monotónica, a da golfada
+    de relaxação; quando domina, o par continua como 2.º modo). Só com Im ≥ 0 (`mode_participation`): um par
+    aparece uma vez, dois reais aparecem os dois. Devolve um dict com re1, im1, re2, im2, re_other, im_other,
+    n_eff_other, node_other e cls."""
+    w, n_eff = np.asarray(w), np.asarray(n_eff)
+    node = np.full(w.size, -1) if node is None else np.asarray(node)
+    m = (np.abs(w) < slow) & (n_eff >= n_global)
+    g = w[m][np.argsort(-w[m].real)]
+    g = np.r_[g[:2], np.full(max(0, 2 - g.size), np.nan + 0j)]
+    rest = np.flatnonzero(~m)
+    k = rest[np.argmax(w[rest].real)] if rest.size else None
+    if not np.isfinite(g[0].real) or g[0].real <= 0:
+        cls = "stable"
+    else:
+        cls = "hopf" if abs(g[0].imag) > 1e-9 else "real"
+    return dict(
+        re1=float(g[0].real),
+        im1=float(g[0].imag),
+        re2=float(g[1].real),
+        im2=float(g[1].imag),
+        re_other=float(w[k].real) if k is not None else float("nan"),
+        im_other=float(w[k].imag) if k is not None else float("nan"),
+        n_eff_other=float(n_eff[k]) if k is not None else float("nan"),
+        node_other=int(node[k]) if k is not None else -1,
+        cls=cls,
+    )

@@ -808,7 +808,10 @@ def _run_summary(run):
     p = run.pipe(0)
     P1, q = p["out"]["P_bar"][1], p["out"]["qL"][-1]
     sel = T > 300.0
-    tb = blowdowns(T[sel], P1[sel]) if sel.sum() > 10 and np.ptp(P1[sel]) > 0.3 else np.array([])
+    from mfsim.simulation import window_signature
+
+    w = window_signature(T[sel], P1[sel]) if sel.sum() > 10 else dict(crossings=0, period=np.nan, amp=0.0)
+    n_cycles = int(w["crossings"] // 2) if w["amp"] > 0.1 else 0
     e = inventory_error(run)
     errL = errG = np.nan
     if e is not None:
@@ -817,15 +820,22 @@ def _run_summary(run):
         fedG = float(np.trapezoid(np.clip(p["out"]["qG"][0], 0.0, None), T))
         errL = 100.0 * float(e["L"][-1]) / fedL if fedL > 0 else np.nan
         errG = 100.0 * float(e["G"][-1]) / fedG if fedG > 0 else np.nan
+    import re
+
+    t_end = float(T[-1])
+    m = re.search(r"em t=([0-9.eE+-]+)", str(info.get("error") or ""))
+    if m:  # falha entre instantes de saída: o instante do erro é mais exato do que a última saída
+        t_end = max(t_end, float(m.group(1)))
     return dict(
-        t_end=float(T[-1]),
+        t_end=t_end,
+        stopped_by=("budget" if "orçamento" in str(info.get("error") or "") else ("min_step" if m else None)),
         success=bool(info.get("success", True)),
         n_steps=info.get("n_steps"),
         cpu=info.get("cpu_total", info.get("cpu")),
         errL=errL,
         errG=errG,
-        n_blowdowns=int(tb.size),
-        interval=float(np.mean(np.diff(tb))) if tb.size > 1 else np.nan,
+        n_blowdowns=n_cycles,
+        interval=float(w["period"]) if n_cycles >= 2 else np.nan,
         P_min=float(P1[sel].min()) if sel.any() else np.nan,
         P_max=float(P1[sel].max()) if sel.any() else np.nan,
         q_peak=float(q[sel].max()) if sel.any() else np.nan,
@@ -840,7 +850,12 @@ def _summary_rows(batch, labels):
             rows.append([lab] + ["--"] * 8)
             continue
         r = _run_summary(run)
-        status = "completed" if r["success"] and r["t_end"] >= 2999 else f"stops at {r['t_end']:.0f} s"
+        if r["success"] and r["t_end"] >= 2999:
+            status = "completed"
+        elif r["stopped_by"] == "budget":
+            status = f"too slow, at {r['t_end']:.0f} s"
+        else:
+            status = f"fails at {r['t_end']:.3g} s"
         rows.append(
             [
                 lab,
@@ -864,13 +879,14 @@ SUMMARY_HEADER = [
     "CPU (s)",
     "liquid error (\\%)",
     "gas error (\\%)",
-    "blowouts",
-    "interval (s)",
+    "cycles",
+    "period (s)",
     "$P_{in}$ (bar)",
 ]
 SUMMARY_NOTE = (
-    "Mass errors: inventory change minus the boundary fluxes integrated with the integrator's own recurrence, "
-    "at the end of the run, in per cent of the net feed. Blowouts: minima of the inlet pressure after \\SI{300}{\\second}."
+    "Mass errors: inventory change minus the boundary fluxes integrated with the integrator's own recurrence, at "
+    "the end of the run, in per cent of the mass fed. Cycles and period: up-crossings of the mean inlet pressure after "
+    "\\SI{300}{\\second}."
 )
 
 DISC_LABELS = {
@@ -926,51 +942,69 @@ def tab_ablation(out):
 
 
 def discretisation(out, png):
-    """Pressão de entrada com cada esquema até ao fim da corrida e erro de massa das duas formulações."""
+    """(a) Pressão de entrada nos primeiros 100 s com os seis esquemas (cruz: onde a corrida falha); (b) a corrida
+    inteira com os volumes finitos conservativos e primitivos; (c) erro dos estoques de líquido e de gás das duas
+    formulações (acumulador BDF)."""
     from mfsim.analysis import inventory_error
 
-    fig, (a1, a2) = plt.subplots(
-        2,
-        1,
-        figsize=(fl.DOUBLE, 0.55 * fl.DOUBLE),
-        sharex=True,
-        gridspec_kw=dict(height_ratios=[1.3, 1.0], hspace=0.08),
-    )
+    fig = plt.figure(figsize=(fl.DOUBLE, 0.62 * fl.DOUBLE))
+    gs = fig.add_gridspec(2, 2, width_ratios=[1.0, 2.2], hspace=0.12, wspace=0.18)
+    a1 = fig.add_subplot(gs[:, 0])
+    a2 = fig.add_subplot(gs[0, 1])
+    a3 = fig.add_subplot(gs[1, 1], sharex=a2)
     runs = dict(_batch_runs("discretization"))
     if not any(r is not None for r in runs.values()):
-        fl.placeholder(a1, "runs not found (batches/paper01_discretization.json)")
-        fl.placeholder(a2, "runs not found")
+        for a in (a1, a2, a3):
+            fl.placeholder(a, "runs not found (batches/paper01_discretization.json)")
         fl.save(fig, out, "discretisation", png)
         return
+    colors = {"fv_conservative": fl.COLORS["conservative"], "fv_primitive": fl.COLORS["primitive"]}
     for name, lab in DISC_LABELS.items():
         r = runs.get(name)
         if r is None:
             continue
-        key = name if name in fl.COLORS else ("fv_upwind" if name == "fv_conservative" else "primitive")
+        c = colors.get(name, fl.COLORS.get(name, fl.INK))
         T = np.asarray(r.T)
-        a1.plot(T, r.pipe(0)["out"]["P_bar"][1], lw=0.9, color=fl.COLORS.get(key, fl.INK), label=lab)
-        if not (r.info or {}).get("success", True) or T[-1] < 2999:
-            a1.plot(T[-1], r.pipe(0)["out"]["P_bar"][1][-1], "x", ms=5, color=fl.COLORS.get(key, fl.INK))
+        P = r.pipe(0)["out"]["P_bar"][1]
+        sel = T <= 100.0
+        summ = _run_summary(r)
+        a1.plot(T[sel], P[sel], lw=0.9, color=c, label=lab)
+        if summ["t_end"] < 2999:
+            a1.plot([min(summ["t_end"], 100.0)], [P[-1]], "x", ms=6, mew=1.2, color=c)
+            a1.annotate(
+                f"{summ['t_end']:.2g} s",
+                (min(summ["t_end"], 100.0), P[-1]),
+                textcoords="offset points",
+                xytext=(4, 2),
+                fontsize=6,
+                color=c,
+            )
+        if name in colors:
+            a2.plot(T, P, lw=0.7, color=c, label=lab)
+    a1.set_xlim(-2, 100)
+    a1.set_xlabel("time (s)")
     a1.set_ylabel(r"$P_{in}$ (bar)")
-    a1.legend(fontsize=6.5, ncol=3, loc="upper right")
+    a1.legend(fontsize=6, loc="upper right")
     fl.panel_label(a1, "(a)")
+    a2.set_ylabel(r"$P_{in}$ (bar)")
+    a2.legend(fontsize=6.5, ncol=2, loc="lower right")
+    plt.setp(a2.get_xticklabels(), visible=False)
+    fl.panel_label(a2, "(b)")
     for name, key, lab in (
         ("fv_conservative", "conservative", "conservative"),
         ("fv_primitive", "primitive", "primitive"),
     ):
         r = runs.get(name)
-        if r is None:
-            continue
-        e = inventory_error(r)
+        e = inventory_error(r) if r is not None else None
         if e is None:
             continue
-        a2.plot(e["T"], e["L"], color=fl.COLORS[key], lw=1.0, label=f"liquid, {lab}")
-        a2.plot(e["T"], 100 * e["G"], color=fl.COLORS[key], lw=1.0, ls="--", label=f"gas (×100), {lab}")
-    a2.axhline(0, color=fl.GRID, lw=0.6)
-    a2.set_ylabel("inventory error (kg)")
-    a2.set_xlabel("time (s)")
-    a2.legend(fontsize=6.5, ncol=2)
-    fl.panel_label(a2, "(b)")
+        a3.plot(e["T"], e["L"], color=fl.COLORS[key], lw=1.0, label=f"liquid, {lab}")
+        a3.plot(e["T"], 100 * e["G"], color=fl.COLORS[key], lw=1.0, ls=(0, (4, 2)), label=f"gas $\\times 100$, {lab}")
+    a3.axhline(0, color=fl.GRID, lw=0.6)
+    a3.set_ylabel("mass error (kg)")
+    a3.set_xlabel("time (s)")
+    a3.legend(fontsize=6.5, ncol=2, loc="lower left")
+    fl.panel_label(a3, "(c)")
     fl.save(fig, out, "discretisation", png)
 
 
@@ -1387,6 +1421,73 @@ def tab_cycle(out):
     )
 
 
+# ------------------------------------------------------------------------------------------------ modo da frente contra a malha
+FRONT_MESHES = (
+    ("stable_coarse", "coarse 15 + 5"),
+    ("stable_fine", "fine 30 + 10"),
+    ("stable_fine_graded", "fine, graded"),
+)
+
+
+def _front_mesh_compute():
+    """Estacionário (Newton a partir do estado final da corrida estável de cada malha, lote paper01_mesh) e o
+    modo instável mais rápido: valor, célula e tamanho da célula, número de modos instáveis."""
+    from mfsim.compiled import get_jax
+    from mfsim.runs import load_run
+    from mfsim.simulation import state_bounds
+    from mfsim.steady import newton_steady
+
+    out = {}
+    for name, _ in FRONT_MESHES:
+        path = fl.RUNS / "paper01" / "mesh" / f"{name}.npz"
+        if not path.exists():
+            continue
+        run = load_run(str(path))
+        model = run.model
+        X, info = newton_steady(
+            model, run.X[:, -1], tol=1e-9, verbose=False, bounds=state_bounds(model), jax=True, max_iter=60
+        )
+        if not info["converged"]:
+            continue
+        _, jac = get_jax(model)
+        J = np.asarray(jac(0.0, X))
+        J = J.toarray() if hasattr(J, "toarray") else J
+        w, V = np.linalg.eig(J)
+        k = int(np.argmax(w.real))
+        pb = model.pipes[0]
+        nodes = pb.free // 4
+        cell = int(nodes[np.argmax(np.abs(V[pb.offset : pb.offset + pb.n_states, k]))] - 1)
+        h = np.asarray(pb.mesh["h"])
+        out[f"{name}_w"] = np.array([w[k].real, w[k].imag])
+        out[f"{name}_cell"] = np.array(
+            [cell, pb.scheme.x_cells[cell], h[cell], pb.scheme.N, int((w.real > 1e-9).sum())]
+        )
+    return out or {"missing": np.array(1)}
+
+
+def tab_front_modes(out):
+    d = _cached("front_modes_mesh", _front_mesh_compute)
+    rows = []
+    for name, lab in FRONT_MESHES:
+        if f"{name}_w" not in d:
+            rows.append([lab] + ["--"] * 5)
+            continue
+        cell, s_c, h_c, N, n_un = d[f"{name}_cell"]
+        rows.append([lab, f"{int(N)}", f"{h_c:.1f}", f"{s_c:.0f}", fl.fmt(d[f"{name}_w"][0], "{:.0f}"), f"{int(n_un)}"])
+    fl.tex_table(
+        out,
+        "tab_front_modes",
+        ["mesh", "cells", "cell size (m)", "position (m)", "growth rate (s$^{-1}$)", "unstable modes"],
+        rows,
+        align="lrrrrr",
+        notes=(
+            "Fastest unstable mode of the linearised steady state at a reservoir pressure of \\SI{15}{\\bar} and an "
+            "opening of 0.13 (a stable point of the map): the cell in which its eigenvector is concentrated, the size "
+            "of that cell and its growth rate."
+        ),
+    )
+
+
 FIGURES = {
     "geometry": geometry,
     "hyperbolicity": hyperbolicity,
@@ -1407,6 +1508,7 @@ TABLES = {
     "tab_performance": tab_performance,
     "tab_case": tab_case,
     "tab_cycle": tab_cycle,
+    "tab_front_modes": tab_front_modes,
 }
 
 if __name__ == "__main__":

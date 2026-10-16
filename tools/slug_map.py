@@ -242,9 +242,39 @@ def summarize(out):
                 q_ss=float(p_out["qL"][-1][0]) if init.get("converged") else float("nan"),
             )
             rows.append(row)
+    spec = spectra(out)
+    for row in rows:
+        lin = spec.get(row["name"], {})
+        row.update({f"lin_{k}": v for k, v in lin.items()})
     with open(os.path.join(out, "summary.json"), "w") as f:
         json.dump(rows, f, indent=1, default=float)
     return rows
+
+
+def spectra(out):
+    """Modos globais lentos do estacionário de cada ponto (`slow_global_modes` sobre `mode_participation`, com a
+    matriz de massa, issue 048), a partir das condições iniciais exatas dos casos da partida do estacionário;
+    guardados em `out/spectra.json` (recalculados se faltar algum ponto). Devolve {nome: dict}."""
+    from mfsim.analysis import mode_participation, slow_global_modes
+    from mfsim.io import case_from_json
+    from mfsim.simulation import build_model
+
+    cache = os.path.join(out, "spectra.json")
+    spec = json.load(open(cache)) if os.path.exists(cache) else {}
+    cdir = os.path.join(out, "steady", "cases")
+    names = sorted(os.path.splitext(f)[0] for f in os.listdir(cdir) if f.endswith(".json"))
+    for nm in names:
+        if nm in spec:
+            continue
+        net = case_from_json(os.path.join(cdir, f"{nm}.json"))
+        if net.initial != "steady":
+            spec[nm] = dict(cls="none")
+            continue
+        model = build_model(net)
+        spec[nm] = slow_global_modes(*mode_participation(model, model.initial_state()))
+    with open(cache, "w") as f:
+        json.dump(spec, f, indent=1, default=float)
+    return spec
 
 
 # ----------------------------------------------------------------------------- figura
@@ -355,12 +385,20 @@ SUMMARY_KEYS = (
     "cpu",
     "P_ss",
     "q_ss",
+    "lin_re1",
+    "lin_im1",
+    "lin_re2",
+    "lin_im2",
+    "lin_re_other",
+    "lin_im_other",
+    "lin_n_eff_other",
+    "lin_node_other",
 )
 
 
 def export(out):
     """Grava em `notebooks/data` o resumo do mapa (`severe_slug_map_well.npz`: uma linha por corrida,
-    colunas de `SUMMARY_KEYS` e as de texto `start`, `name`, `cls`, `settle`, mais `meta` em JSON) e as
+    colunas de `SUMMARY_KEYS` e as de texto `start`, `name`, `cls`, `settle`, `lin_cls`, mais `meta` em JSON) e as
     corridas de `SELECTED` (`severe_slug_map_well_<partida>_<ponto>.npz`), para o notebook de issues
     as ler sem as 252 corridas; registar depois com `tools/manifest.py --write`."""
     import shutil
@@ -368,7 +406,7 @@ def export(out):
 
     rows = summarize(out)
     arrays = {k: np.array([float(r.get(k) if r.get(k) is not None else np.nan) for r in rows]) for k in SUMMARY_KEYS}
-    for k in ("start", "name", "cls", "settle"):
+    for k in ("start", "name", "cls", "settle", "lin_cls"):
         arrays[k] = np.array([str(r.get(k)) for r in rows])
     arrays["initial"] = np.array([bool(r.get("initial")) for r in rows])
     commit = subprocess.run(

@@ -1544,8 +1544,8 @@
    ]
   },
   "notebooks/data/severe_slug_map_well.npz": {
-   "size": 71936,
-   "sha256": "a3ff100f1b755a3daecd70c956a85c6017549d4a500abd87074aa60b36979283",
+   "size": 96376,
+   "sha256": "83efee2597a72d48c6c0c8171c80c79ab0670851c11f5802cde0c7f7ec5ea543",
    "keys": [
     "P_max",
     "P_mean",
@@ -1557,6 +1557,15 @@
     "cls",
     "cpu",
     "initial",
+    "lin_cls",
+    "lin_im1",
+    "lin_im2",
+    "lin_im_other",
+    "lin_n_eff_other",
+    "lin_node_other",
+    "lin_re1",
+    "lin_re2",
+    "lin_re_other",
     "meta",
     "n_steps",
     "name",
@@ -1585,7 +1594,7 @@
      0.13,
      15.0
     ],
-    "commit": "faf17fc",
+    "commit": "802587c",
     "selected": [
      "severe_slug_map_well_steady_ab0.130_P15.0",
      "severe_slug_map_well_steady_ab0.280_P15.0",
@@ -1833,8 +1842,8 @@
    ]
   },
   "tests/golden/network.npz": {
-   "size": 7627730,
-   "sha256": "6e9ffc9f83568f11e0067a3fa0ce6ab44b3a0d37ad857700fbb30b862d0643a6",
+   "size": 7751454,
+   "sha256": "737115b43900c3f1b877abefeb68664d479d0422fa07aea39943dfa529f00dad",
    "keys": [
     "ch10/10.1.1/E",
     "ch10/10.1.1/E_t",
@@ -2212,7 +2221,24 @@
     "severe/well_choke/state_scales",
     "severe/well_choke/state_slots",
     "severe/well_choke/transform",
-    "severe/well_choke/transform_jac"
+    "severe/well_choke/transform_jac",
+    "severe/well_choke_auto/E",
+    "severe/well_choke_auto/E_t",
+    "severe/well_choke_auto/X0",
+    "severe/well_choke_auto/boundary_net_fluxes",
+    "severe/well_choke_auto/breakpoints",
+    "severe/well_choke_auto/info_reservoirs",
+    "severe/well_choke_auto/info_reservoirs_vertex",
+    "severe/well_choke_auto/info_valves",
+    "severe/well_choke_auto/info_valves_vertex",
+    "severe/well_choke_auto/opt_t",
+    "severe/well_choke_auto/rhs",
+    "severe/well_choke_auto/rhs_pert",
+    "severe/well_choke_auto/sparsity",
+    "severe/well_choke_auto/state_scales",
+    "severe/well_choke_auto/state_slots",
+    "severe/well_choke_auto/transform",
+    "severe/well_choke_auto/transform_jac"
    ]
   },
   "tests/golden/nightly.npz": {
