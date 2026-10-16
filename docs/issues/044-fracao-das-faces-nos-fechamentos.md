@@ -19,9 +19,9 @@ relacionava então a fração doadora com a média, e o estacionário discreto g
 - a fração de gás no riser do caso do poço (043) alternava de célula para célula com amplitude crescente
   para cima: 0,110 / 0,147 / 0,097 / 0,179 / 0,073 / 0,238 / 0,015 (padrão dinâmico, abertura 0,13,
   15 bar), e o mesmo xadrez com o padrão fixo (0,119 / 0,134 / 0,115 / 0,151 / 0,110 / 0,180 / 0,094);
-- o espetro do estacionário tinha um modo real rápido e instável na curva (+41 /s com padrão dinâmico,
-  +27 /s com padrão fixo, issue 042), preso às células onde o bolsão estratificado encontra o líquido do
-  ponto baixo.
+- o espetro do estacionário tinha um modo real rápido e instável junto à curva (+41 /s com padrão dinâmico,
+  +27 /s com padrão fixo, issue 042; +67 /s com a ponte do filme local, 046), preso às células onde o bolsão
+  estratificado encontra o líquido do ponto baixo.
 
 ## Depois
 
@@ -36,9 +36,11 @@ pelo vértice continuam com a regra de 014. O mesmo código serve numpy e JAX (p
 - Estacionário liso: no mesmo ponto o riser fica 0,127 / 0,128 / 0,125 / 0,126 / 0,130 / 0,134 / 0,139 /
   0,144 (cresce com a expansão do gás), e o descendente uniforme até ao ponto baixo. Num riser vertical
   isolado em bolhas a amplitude do modo par-ímpar (segundas diferenças) cai 5× (teste).
-- O modo de +41 /s da curva desaparece; os modos instáveis que sobram são fracos (≈ 4–5 /s, 40–45 rad/s)
-  na linha estratificada e, a partir da abertura 0,22, um modo real na célula em que o bolsão encontra o
-  líquido (≈ 20 /s), que satura em amplitude desprezável nas corridas.
+- O modo real rápido da frente (a célula do fim do bolsão, junto ao líquido do ponto baixo) cai para metade:
+  com a ponte do filme local (046), a 15 bar e abertura 0,13, +67 /s com a média contra +34 /s com a doadora
+  (+40 a +41 /s nas aberturas 0,28 e 0,6). Não desaparece: é um modo da frente entre o bolsão e o líquido,
+  resolvida por uma célula, que satura em amplitude desprezável nas corridas (042). Sobram também modos
+  fracos (≈ 3–5 /s, 10–45 rad/s) na linha estratificada.
 - Custo e ciclo: ver a tabela abaixo (malha grossa e fina, 3000 s, referência com padrão dinâmico).
 
 | malha | fração das faces | passos | intervalo entre blowdowns | P_in (bar) | pico (kg/s) |

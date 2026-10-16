@@ -1,5 +1,5 @@
 {
- "description": "Artigo 01, dinâmica a 15 bar: pontos do mapa com padrão dinâmico (partida do estacionário perturbado, casos gerados por tools/slug_map.py build --base cases/severe_slug/well_choke_auto.json --out runs/maps/well_auto) com saída a 1 s e 6000 s sem paragem adaptativa, para os diagramas espaço–tempo, a anatomia do ciclo e a boa colocação ao longo da trajetória.",
+ "description": "Artigo 01, dinâmica a 15 bar: pontos do mapa com padrão dinâmico (partida do estacionário perturbado, casos gerados por tools/slug_map.py build --base cases/severe_slug/well_choke_auto.json --out runs/maps/well_auto) com saída a 1 s, passo máximo de 1 s (issue 047) e 6000 s sem paragem adaptativa, para os diagramas espaço–tempo, a anatomia do ciclo e a boa colocação ao longo da trajetória.",
  "out_dir": "runs/paper01/dynamics",
  "runs": [
   {
@@ -8,7 +8,8 @@
    "set": [
     "time.dt_out=1.0",
     "time.settle.window=100000.0",
-    "time.settle.t_min=100000.0"
+    "time.settle.t_min=100000.0",
+    "integration.max_step=1.0"
    ],
    "tf": 6000.0
   },
@@ -18,7 +19,8 @@
    "set": [
     "time.dt_out=1.0",
     "time.settle.window=100000.0",
-    "time.settle.t_min=100000.0"
+    "time.settle.t_min=100000.0",
+    "integration.max_step=1.0"
    ],
    "tf": 6000.0
   },
@@ -28,7 +30,8 @@
    "set": [
     "time.dt_out=1.0",
     "time.settle.window=100000.0",
-    "time.settle.t_min=100000.0"
+    "time.settle.t_min=100000.0",
+    "integration.max_step=1.0"
    ],
    "tf": 6000.0
   },
@@ -38,7 +41,8 @@
    "set": [
     "time.dt_out=1.0",
     "time.settle.window=100000.0",
-    "time.settle.t_min=100000.0"
+    "time.settle.t_min=100000.0",
+    "integration.max_step=1.0"
    ],
    "tf": 6000.0
   },
@@ -48,7 +52,8 @@
    "set": [
     "time.dt_out=1.0",
     "time.settle.window=100000.0",
-    "time.settle.t_min=100000.0"
+    "time.settle.t_min=100000.0",
+    "integration.max_step=1.0"
    ],
    "tf": 6000.0
   },
@@ -58,7 +63,8 @@
    "set": [
     "time.dt_out=1.0",
     "time.settle.window=100000.0",
-    "time.settle.t_min=100000.0"
+    "time.settle.t_min=100000.0",
+    "integration.max_step=1.0"
    ],
    "tf": 6000.0
   }

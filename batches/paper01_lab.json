@@ -1,0 +1,13 @@
+{
+ "description": "Artigo 01, laboratório: o caso 2 de Fabre et al. (1990) com a configuração do exemplo base (padrão dinâmico, fechamentos das faces pela doadora), 1200 s, orçamento de 7200 s de relógio.",
+ "out_dir": "runs/paper01/lab",
+ "runs": [
+  {
+   "name": "fabre2_auto",
+   "case": "cases/paper01/lab_fabre2_auto.json",
+   "set": [
+    "integration.max_cpu=7200.0"
+   ]
+  }
+ ]
+}

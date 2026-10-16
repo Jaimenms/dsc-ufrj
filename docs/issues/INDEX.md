@@ -88,6 +88,7 @@ qual estão em `notebooks_src/thesis/`.
 | [041](041-paragem-adaptativa.md) | feature | Tempo simulado adaptativo | `tf` fixo (curto para os lentos, longo para os que assentam) → janelas com paragem quando o sinal fica permanente ou o ciclo se repete |
 | [042](042-modos-locais-da-curva.md) | estudo | Modos locais instáveis na curva | hipótese: troca de fechamentos → não; instabilidade de ondas curtas no ponto baixo, cresce com a malha; limiar de bolhas a 10 % reduz-na (resultado misto na validação) |
 | [043](043-mapa-de-intermitencia-severa.md) | feature | Mapa de intermitência severa (abertura × pressão do reservatório) | 10 pontos sem choke nem poço → 2 × 126 corridas em paralelo, sem falhas; fronteira = critério de Jansen; histerese em 8 células |
+| [047](047-passo-maximo-perto-do-equilibrio.md) | bugfix | Passo máximo nas corridas que partem de um equilíbrio | sem limite o BDF amortece a instabilidade e a partida do estacionário fica presa (7 das 8 células de histerese do 043 com 22–97 passos) → `max_step` 1 s no mapa e nos lotes do artigo |
 
 ## Integrador e desempenho
 

@@ -41,6 +41,10 @@ PRESSURES = [8.0, 10.0, 12.0, 15.0, 19.0, 24.0, 30.0, 38.0, 48.0]
 SEED = (0.13, 15.0)  # ponto estável do mapa (assenta depressa a partir da partida bloqueada)
 SETTLE = {"window": 2000.0, "t_min": 2000.0, "amp_tol": 0.1, "rel_tol": 0.1}
 TF, DT_OUT, PERTURB = 8000.0, 5.0, 1e-3
+# passo máximo do integrador nas corridas do mapa (issue 047): sem limite, perto de um equilíbrio o controlo de
+# erro deixa o passo crescer para centenas de segundos e o amortecimento do BDF com |lambda h| grande mantém a
+# trajetória num equilíbrio instável (a partida do estacionário perturbado não sai dele)
+MAX_STEP = 1.0
 
 
 def _base_params():
@@ -71,6 +75,7 @@ def point_case(ab, P, start):
 
     net = case_from_json(BASE, overrides=overrides(ab, P))
     net.set_time(tf=TF, dt_out=DT_OUT, settle=tuple(sorted(SETTLE.items())))
+    net.set_integration(max_step=MAX_STEP)
     net.meta = dict(net.meta or {}, map={"ab": float(ab), "P_res": float(P), "start": start})
     return net
 

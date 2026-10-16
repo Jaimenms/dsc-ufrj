@@ -62,6 +62,8 @@ derivavam no fim.
 
 ## Referências
 
+Correção pendente: as corridas deste mapa não tinham passo máximo; 7 das 8 células de histerese têm partidas do estacionário com 22–97 passos em 2000 s, isto é, ficaram presas ao equilíbrio por amortecimento do BDF (issue [047](047-passo-maximo-perto-do-equilibrio.md)). A coluna «partida do estacionário» tem de ser refeita com `integration.max_step` = 1 s antes de usar as contagens de histerese.
+
 Notebook: [nb_estabilidade_mapa](../../notebooks/issues/nb_estabilidade_mapa.ipynb) (fonte em `notebooks_src/issues/`).
 
 Issues 029 (fronteira por varredura), 039–042. Jansen, Shoham e Taitel (1996), *The

@@ -1,0 +1,27 @@
+{
+ "schema": "mfsim-case/1",
+ "$extends": "../severe_slug/lab_fabre2.json",
+ "name": "lab_fabre2_auto",
+ "description": "Ensaio de Fabre et al. (1990), caso 2 (ar–água, 1 atm, linha de 25 m a −0,57°, riser de 13,5 m), com a configuração do exemplo base do artigo 01: padrão de escoamento dinâmico em todo o duto (suave, local, ponte do filme local, bolhas abaixo de 1 %) e fechamentos das faces pela célula doadora; Jacobiana recalculada no Newton (slow_exit), como nos casos de laboratório (031).",
+ "meta": {"run": null, "paper": "01-severe-slugging-two-fluid"},
+ "network": {
+  "edges": [
+   {
+    "id": "1",
+    "model": {
+     "regime": {
+      "type": "automatic",
+      "k_switch": 20.0,
+      "smooth": true,
+      "local": true,
+      "local_film": true,
+      "low_void": {"regime": "bubble", "alpha": 0.01},
+      "$replace": true
+     }
+    },
+    "scheme": {"options": {"closure_alpha": "donor"}}
+   }
+  ]
+ },
+ "integration": {"slow_exit": true}
+}

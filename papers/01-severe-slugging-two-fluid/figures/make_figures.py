@@ -332,15 +332,16 @@ PROFILE_OPENINGS = (0.06, 0.13, 0.22, 0.36, 1.0)
 def steady_profiles(out, png):
     """Estacionários a 15 bar para aberturas crescentes: fração de gás e padrão dominante ao longo do duto,
     pressão e velocidades das fases."""
-    from mfsim.analysis import PATTERN_FLAGS
-    from mfsim.closures.regime import RegimeFlags  # noqa: F401  (só para garantir a importação do módulo)
+    from matplotlib.patches import Patch
 
-    fig = plt.figure(figsize=(fl.DOUBLE, 0.62 * fl.DOUBLE))
-    gs = fig.add_gridspec(3, 2, height_ratios=[1.0, 0.55, 1.0], hspace=0.45, wspace=0.22)
+    from mfsim.analysis import PATTERN_FLAGS
+
+    fig = plt.figure(figsize=(fl.DOUBLE, 0.66 * fl.DOUBLE))
+    gs = fig.add_gridspec(3, 2, height_ratios=[1.0, 0.62, 1.0], hspace=0.42, wspace=0.22)
     ax_a = fig.add_subplot(gs[0, :])
     ax_p = fig.add_subplot(gs[1, :], sharex=ax_a)
-    ax_c = fig.add_subplot(gs[2, 0])
-    ax_v = fig.add_subplot(gs[2, 1], sharex=ax_c)
+    ax_c = fig.add_subplot(gs[2, 0], sharex=ax_a)
+    ax_v = fig.add_subplot(gs[2, 1], sharex=ax_a)
     data = [(ab, _steady_state(ab, P_SEL)) for ab in PROFILE_OPENINGS]
     data = [(ab, d) for ab, d in data if d is not None]
     if not data:
@@ -348,8 +349,7 @@ def steady_profiles(out, png):
             fl.placeholder(ax, "steady states of the map not found (tools/slug_map.py build)")
         fl.save(fig, out, "steady_profiles", png)
         return
-    cmap = plt.get_cmap("Blues")
-    shades = cmap(np.linspace(0.45, 0.95, len(data)))
+    shades = plt.get_cmap("Blues")(np.linspace(0.45, 0.95, len(data)))
     patterns = []
     for (ab, (model, X)), c in zip(data, shades):
         pb = model.pipes[0]
@@ -357,50 +357,55 @@ def steady_profiles(out, png):
         N = sch.N
         Y = model.assemble(0.0, X)[1][0]
         s = np.asarray(sch.x_cells)
-        aG = Y[1 : N + 1, 0]
-        P = Y[1 : N + 1, 1] * model.PR / 1e5
         Yc = Y[1 : N + 1].copy()
         Yc[:, 2] = 0.5 * (Y[0:N, 2] + Y[1 : N + 1, 2])
         Yc[:, 3] = 0.5 * (Y[0:N, 3] + Y[1 : N + 1, 3])
-        th = sch.theta_nodes[1 : N + 1]
         mod = pb.model
         Yc[:, 0] = np.clip(Yc[:, 0], mod.params.alpha_min, mod.params.alpha_max)
-        inp, _, _ = mod.local_state(Yc, th)
+        inp, _, _ = mod.local_state(Yc, sch.theta_nodes[1 : N + 1])
         _, flags, _ = mod.closures(inp)
         W = np.stack([np.asarray(getattr(flags, f), float) for _, f in PATTERN_FLAGS], axis=1)
-        patterns.append((ab, s, sch.x_faces, W.argmax(1)))
+        patterns.append((ab, sch.x_faces, W.argmax(1)))
         lab = f"$a = {ab:g}$"
-        ax_a.plot(s, aG, "-o", ms=2.2, lw=1.0, color=c, label=lab)
-        ax_c.plot(s, P, "-", lw=1.0, color=c, label=lab)
+        ax_a.plot(s, Y[1 : N + 1, 0], "-o", ms=2.0, lw=0.9, color=c, label=lab)
+        ax_c.plot(s, Y[1 : N + 1, 1] * model.PR / 1e5, "-", lw=1.0, color=c)
         ax_v.plot(s, inp.vL, "-", lw=1.0, color=c)
         ax_v.plot(s, inp.vG, "--", lw=1.0, color=c)
     ax_a.set_ylabel(r"$\alpha_G$")
-    ax_a.legend(ncol=len(data), fontsize=7, loc="upper left")
+    ax_a.set_ylim(0, 1)
+    ax_a.legend(ncol=len(data), fontsize=6.5, loc="upper center", bbox_to_anchor=(0.5, 1.22))
+    plt.setp(ax_a.get_xticklabels(), visible=False)
     fl.panel_label(ax_a, "(a)")
-    # faixas do padrão dominante, uma por abertura
-    for i, (ab, s, xf, dom) in enumerate(patterns):
-        for j in range(s.size):
+    for i, (ab, xf, dom) in enumerate(patterns):
+        for j in range(dom.size):
             ax_p.add_patch(
                 plt.Rectangle(
-                    (xf[j], i - 0.4), xf[j + 1] - xf[j], 0.8, fc=fl.COLORS[fl.PATTERNS[dom[j]]], ec="white", lw=0.3
+                    (xf[j], i - 0.42), xf[j + 1] - xf[j], 0.84, fc=fl.COLORS[fl.PATTERNS[dom[j]]], ec="white", lw=0.3
                 )
             )
     ax_p.set_ylim(-0.6, len(patterns) - 0.4)
     ax_p.set_yticks(range(len(patterns)))
     ax_p.set_yticklabels([f"{ab:g}" for ab, *_ in patterns])
     ax_p.set_ylabel("opening")
-    ax_p.set_xlabel("position along the pipe (m)")
     ax_p.grid(False)
-    _pattern_legend(ax_p, loc="upper center", bbox_to_anchor=(0.5, -0.55))
+    ax_p.legend(
+        handles=[Patch(fc=fl.COLORS[p], label=PATTERN_LABEL[p]) for p in fl.PATTERNS],
+        ncol=4,
+        fontsize=6.5,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.12),
+        frameon=False,
+    )
+    plt.setp(ax_p.get_xticklabels(), visible=False)
     fl.panel_label(ax_p, "(b)")
     ax_c.set_ylabel("pressure (bar)")
     ax_c.set_xlabel("position along the pipe (m)")
     fl.panel_label(ax_c, "(c)")
-    ax_v.set_ylabel(r"velocity (m s$^{-1}$)")
+    ax_v.set_ylabel(r"phase velocity (m s$^{-1}$)")
     ax_v.set_xlabel("position along the pipe (m)")
-    ax_v.plot([], [], "-", color="0.4", label="liquid")
-    ax_v.plot([], [], "--", color="0.4", label="gas")
-    ax_v.legend(fontsize=7, loc="upper left")
+    ax_v.plot([], [], "-", color="0.35", label="liquid")
+    ax_v.plot([], [], "--", color="0.35", label="gas")
+    ax_v.legend(fontsize=6.5, loc="upper right")
     fl.panel_label(ax_v, "(d)")
     fl.save(fig, out, "steady_profiles", png)
 
@@ -531,18 +536,32 @@ def spacetime(out, png):
 ANATOMY_OPENING = 0.6
 
 
+def _cycle_events(T, P_in, fr):
+    """Instantes que marcam as fases de um ciclo: riser cheio (a coluna chega ao topo), início do blowout (a
+    coluna deixa de estar cheia: o gás entra pela base) e fim do blowout (mínimo da pressão de entrada)."""
+    from mfsim.analysis import blowdowns
+
+    H = fr["H"]
+    full = np.flatnonzero((fr["level"][1:] >= 0.98 * H) & (fr["level"][:-1] < 0.98 * H)) + 1
+    # início do blowout: a coluna de líquido no riser deixa de estar cheia (o gás entra pela base)
+    open_ = np.flatnonzero((fr["level"][1:] < 0.98 * H) & (fr["level"][:-1] >= 0.98 * H)) + 1
+    tb = blowdowns(T, P_in, min_gap=200.0) if np.ptp(P_in) > 0.3 else np.array([])
+    return T[full], T[open_], tb
+
+
 def cycle_anatomy(out, png):
-    """Um ciclo de golfada severa: padrão dominante x–t em todo o duto, frentes (selo de líquido a montante do
-    ponto baixo e coluna no riser), pressões e vazões à saída."""
+    """Um ciclo de golfada severa: padrão dominante x–t em todo o duto (eixo por célula) com as frentes, as
+    frentes em metros, as pressões na entrada e no ponto baixo e as vazões à saída; linhas verticais nos
+    instantes em que o riser fica cheio, em que o gás chega ao ponto baixo e no fim do blowout."""
     from mfsim.analysis import cell_states, flow_pattern_weights, slug_fronts
 
     run = _dense_run(ANATOMY_OPENING)
     fig, axes = plt.subplots(
         5,
         1,
-        figsize=(fl.DOUBLE, 0.95 * fl.DOUBLE),
+        figsize=(fl.DOUBLE, 0.98 * fl.DOUBLE),
         sharex=True,
-        gridspec_kw=dict(height_ratios=[2.0, 1.0, 0.8, 0.8, 0.8], hspace=0.1),
+        gridspec_kw=dict(height_ratios=[2.2, 0.9, 0.8, 0.7, 0.7], hspace=0.16),
     )
     if run is None:
         for a in axes:
@@ -553,39 +572,53 @@ def cycle_anatomy(out, png):
     W = flow_pattern_weights(run, cells=cs)
     fr = slug_fronts(run, cells=cs)
     T = np.asarray(run.T)
-    win = T >= T[-1] - 1600.0
-    sch = run.model.pipes[0].scheme
+    p = run.pipe(0)
+    P_in = p["out"]["P_bar"][1]
+    t_full, t_open, t_bd = _cycle_events(T, P_in, fr)
+    # janela: dois blowouts completos no fim da corrida
+    t1 = T[-1]
+    t0 = t_bd[-3] - 100.0 if t_bd.size >= 3 else max(T[0], t1 - 1800.0)
+    win = (T >= t0) & (T <= t1)
     dom = W["W"].argmax(-1)
+    N = dom.shape[1]
     axes[0].pcolormesh(
-        T[win],
-        np.asarray(sch.x_cells),
-        dom[win].T,
-        cmap=_pattern_cmap(),
-        vmin=-0.5,
-        vmax=3.5,
-        shading="nearest",
-        rasterized=True,
+        T[win], np.arange(N), dom[win].T, cmap=_pattern_cmap(), vmin=-0.5, vmax=3.5, shading="nearest", rasterized=True
     )
+    _section_axis(axes[0], run.model, side="right")
+    z = _zones(run.model)
+    axes[0].plot(T[win], _s_to_index(run.model, z["s_low"] - fr["seal"][win]), color="white", lw=0.8)
+    if z["k_riser"].size:
+        lev_s = np.interp(fr["level"][win], [0.0, fr["H"]], [z["s_low"], z["s"][z["k_riser"][-1]]])
+        axes[0].plot(
+            T[win],
+            np.where(fr["level"][win] > 0, _s_to_index(run.model, lev_s), np.nan),
+            color="white",
+            lw=0.8,
+            ls=(0, (3, 1.5)),
+        )
     axes[0].set_ylabel("position (m)")
-    _pattern_legend(axes[0], loc="upper left", ncol=4)
-    axes[1].plot(
-        T[win], fr["seal"][win], color=fl.COLORS["stratified"], lw=1.0, label="liquid seal upstream of the low point"
-    )
+    _pattern_legend(axes[0], loc="lower left", ncol=4, bbox_to_anchor=(0.0, 1.0))
+    axes[1].plot(T[win], fr["seal"][win], color=fl.COLORS["stratified"], lw=1.0, label="liquid seal in the line")
     axes[1].plot(T[win], fr["level"][win], color=fl.COLORS["annular"], lw=1.0, label="liquid column in the riser")
     axes[1].set_ylabel("length (m)")
-    axes[1].legend(fontsize=7, loc="upper left", ncol=2)
-    p = run.pipe(0)
-    z = _zones(run.model)
     kb = int(z["k_bend"][0]) + 1 if z["k_bend"].size else 1
-    axes[2].plot(T[win], p["out"]["P_bar"][1][win], color=fl.INK, lw=0.9, label="line inlet")
+    axes[2].plot(T[win], P_in[win], color=fl.INK, lw=0.9, label="line inlet")
     axes[2].plot(T[win], p["out"]["P_bar"][kb][win], color=fl.INK2, lw=0.9, ls="--", label="low point")
     axes[2].set_ylabel("P (bar)")
-    axes[2].legend(fontsize=7, loc="upper left", ncol=2)
+    axes[2].legend(fontsize=6.0, loc="lower right", ncol=2)
     axes[3].plot(T[win], p["out"]["qL"][-1][win], color=fl.COLORS["stratified"], lw=0.9)
-    axes[3].set_ylabel(r"$q_L$ out (kg s$^{-1}$)")
+    axes[3].set_ylabel(r"$q_L$ (kg s$^{-1}$)")
     axes[4].plot(T[win], 1e3 * p["out"]["qG"][-1][win], color=fl.COLORS["annular"], lw=0.9)
-    axes[4].set_ylabel(r"$q_G$ out (g s$^{-1}$)")
+    axes[4].set_ylabel(r"$q_G$ (g s$^{-1}$)")
     axes[4].set_xlabel("time (s)")
+    for a in axes[1:]:
+        for tt, ls in ((t_full, (0, (1, 1.5))), (t_open, (0, (4, 2))), (t_bd, "-")):
+            for t in tt[(tt >= t0) & (tt <= t1)]:
+                a.axvline(t, color="0.6", lw=0.6, ls=ls, zorder=0)
+    axes[1].plot([], [], color="0.6", lw=0.6, ls=(0, (1, 1.5)), label="riser full")
+    axes[1].plot([], [], color="0.6", lw=0.6, ls=(0, (4, 2)), label="blowout starts")
+    axes[1].plot([], [], color="0.6", lw=0.6, ls="-", label="end of blowout")
+    axes[1].legend(fontsize=6.0, loc="upper left", ncol=5, bbox_to_anchor=(0.0, 1.32), frameon=False)
     for i, a in enumerate(axes):
         fl.panel_label(a, f"({'abcde'[i]})")
     fl.save(fig, out, "cycle_anatomy", png)
@@ -1071,44 +1104,98 @@ def _bend_compute():
 
 
 def bend_modes(out, png):
-    """Espetro da Jacobiana no estacionário (três aberturas a 15 bar) com os fechamentos das faces pela média
-    (em cima) e pela célula doadora (em baixo), cor pela zona onde cada vetor próprio se concentra."""
+    """Estacionário e espetro da Jacobiana a 15 bar: (a) fração de gás junto à curva e no riser com os fechamentos
+    das faces pela média e pela célula doadora (abertura 0,13); (b) espetro nas duas variantes na mesma abertura;
+    (c, d) espetro com a doadora nas aberturas 0,28 e 0,6. Cor pela zona onde cada vetor próprio se concentra."""
     d = _cached("bend_modes", _bend_compute)
-    fig, axes = plt.subplots(2, 3, figsize=(fl.DOUBLE, 0.55 * fl.DOUBLE), sharex=True, sharey=True)
-    letters = iter("abcdef")
-    for i, var in enumerate(("mean", "donor")):
-        for j, ab in enumerate(BEND_OPENINGS):
-            ax = axes[i, j]
+    fig, axes = plt.subplots(2, 2, figsize=(fl.DOUBLE, 0.62 * fl.DOUBLE), gridspec_kw=dict(hspace=0.35, wspace=0.22))
+    ax_p, ax_b, ax_c, ax_d = axes.ravel()
+    ab0 = BEND_OPENINGS[0]
+    s_cells = None
+    model_d = _steady_state(ab0, P_SEL)
+    if model_d is not None:
+        s_cells = np.asarray(model_d[0].pipes[0].scheme.x_cells)
+    if f"a_donor_{ab0}" in d and s_cells is not None:
+        sel = s_cells >= 260.0
+        if f"a_mean_{ab0}" in d:
+            ax_p.plot(
+                s_cells[sel],
+                d[f"a_mean_{ab0}"][sel],
+                "o-",
+                ms=2.5,
+                lw=0.9,
+                color=fl.COLORS["primitive"],
+                label="mean face fraction",
+            )
+        ax_p.plot(
+            s_cells[sel],
+            d[f"a_donor_{ab0}"][sel],
+            "s-",
+            ms=2.5,
+            lw=0.9,
+            color=fl.COLORS["conservative"],
+            label="donor face fraction",
+        )
+        z = _zones(model_d[0])
+        for k, lab in (
+            (z["k_bend"][0] if z["k_bend"].size else None, "bend"),
+            (z["k_riser"][0] if z["k_riser"].size else None, "riser"),
+        ):
+            if k is not None:
+                ax_p.axvline(s_cells[k] - 1.0, color=fl.GRID, lw=0.8)
+                ax_p.text(s_cells[k] - 0.6, 0.86, lab, fontsize=6.5, color=fl.INK2)
+        ax_p.set_xlabel("position along the pipe (m)")
+        ax_p.set_ylabel(r"$\alpha_G$ at steady state")
+        ax_p.legend(fontsize=6.5, loc="center right")
+    else:
+        fl.placeholder(ax_p, "steady state not available")
+    fl.panel_label(ax_p, "(a)")
+
+    def spectrum(ax, key, filled=True, label_zones=False):
+        w, zone = d[key], d["z_" + key[2:]]
+        for k, zn in enumerate(ZONE_NAMES):
+            m = zone == k
+            kw = (
+                dict(s=7, color=ZONE_COLORS[zn], lw=0)
+                if filled
+                else dict(s=12, facecolors="none", edgecolors=ZONE_COLORS[zn], lw=0.6)
+            )
+            ax.scatter(w.real[m], w.imag[m], label=zn if label_zones else None, **kw)
+        return w
+
+    for ax, (ab, variants), lab in (
+        (ax_b, (ab0, ("mean", "donor")), "(b)"),
+        (ax_c, (BEND_OPENINGS[1], ("donor",)), "(c)"),
+        (ax_d, (BEND_OPENINGS[2], ("donor",)), "(d)"),
+    ):
+        txt = []
+        for var in variants:
             key = f"w_{var}_{ab}"
             if key not in d:
-                fl.placeholder(ax, "steady state not available")
                 continue
-            w, zone = d[key], d[f"z_{var}_{ab}"]
-            for k, zn in enumerate(ZONE_NAMES):
-                m = zone == k
-                ax.scatter(w.real[m], w.imag[m], s=6, color=ZONE_COLORS[zn], label=zn, lw=0)
+            w = spectrum(ax, key, filled=(var == "donor"), label_zones=(ax is ax_b and var == "donor"))
+            txt.append(f"{var}: {int((w.real > 1e-9).sum())} unstable, max {w.real.max():.0f} s$^{{-1}}$")
+        if not txt:
+            fl.placeholder(ax, "steady state not available")
+        else:
             ax.axvline(0, color=fl.INK, lw=0.6)
-            n_unst = int((w.real > 1e-9).sum())
+            ax.set_xlim(-30, 75)
+            ax.set_ylim(-80, 80)
+            ax.set_xlabel(r"Re $\lambda$ (s$^{-1}$)")
+            ax.set_ylabel(r"Im $\lambda$ (rad s$^{-1}$)")
+            ax.set_title(f"$a = {ab:g}$", fontsize=7.5)
             ax.text(
-                0.97,
+                0.98,
                 0.04,
-                f"{n_unst} unstable, max {w.real.max():.1f} s$^{{-1}}$",
+                "\n".join(txt),
                 transform=ax.transAxes,
                 ha="right",
-                fontsize=6.2,
+                fontsize=6.0,
                 bbox=dict(fc="white", ec="none", alpha=0.85, pad=1.0),
             )
-            ax.set_xlim(-60, 50)
-            ax.set_ylim(-80, 80)
-            if i == 0:
-                ax.set_title(f"$a = {ab:g}$", fontsize=7.5)
-            if i == 1:
-                ax.set_xlabel(r"Re $\lambda$ (s$^{-1}$)")
-            fl.panel_label(ax, f"({next(letters)})")
-        axes[i, 0].set_ylabel(
-            ("mean" if var == "mean" else "donor") + r" face fraction" + "\n" + r"Im $\lambda$ (rad s$^{-1}$)"
-        )
-    axes[0, 0].legend(fontsize=6.2, loc="upper left", markerscale=1.5)
+        fl.panel_label(ax, lab)
+    ax_b.scatter([], [], s=12, facecolors="none", edgecolors="0.4", lw=0.6, label="mean (open)")
+    ax_b.legend(fontsize=6.0, loc="upper left", ncol=1)
     fl.save(fig, out, "bend_modes", png)
 
 
@@ -1236,6 +1323,70 @@ def tab_case(out):
     fl.tex_table(out, "tab_case", ["", ""], rows, align="lp{0.78\\linewidth}")
 
 
+# ------------------------------------------------------------------------------------------------ tabela dos ciclos
+DYN_OPENINGS = (0.13, 0.22, 0.28, 0.36, 0.6, 1.0)
+
+
+def tab_cycle(out):
+    """Assinatura dos ciclos a 15 bar nas corridas densas: classe, período, faixa de pressão, pico e média da
+    produção, comprimento máximo do tampão (selo na linha mais coluna no riser), tempo de enchimento do riser
+    e duração do blowout (médias sobre os ciclos depois do primeiro)."""
+    from mfsim.analysis import cycle_class, slug_fronts
+
+    rows = []
+    for ab in DYN_OPENINGS:
+        run = fl.load_run(f"paper01/dynamics/{_name(ab, P_SEL)}")
+        if run is None:
+            rows.append([f"{ab:g}"] + ["--"] * 8)
+            continue
+        T = np.asarray(run.T)
+        p = run.pipe(0)
+        P_in, q = p["out"]["P_bar"][1], p["out"]["qL"][-1]
+        sel = T >= T[-1] - 3000.0
+        c = cycle_class(T[sel], P_in[sel], q[sel])
+        fr = slug_fronts(run)
+        t_full, t_open, t_bd = _cycle_events(T, P_in, fr)
+        fill = [t_full[t_full > tb][0] - tb for tb in t_bd if (t_full > tb).any()]
+        blow = [tb - t_open[t_open < tb][-1] for tb in t_bd if (t_open < tb).any()]
+        slug = fr["seal"][sel] + fr["level"][sel]
+        rows.append(
+            [
+                f"{ab:g}",
+                CLASS_LABEL[c["cls"]].split(",")[0],
+                fl.fmt(c["period"], "{:.0f}"),
+                f"{c['P_min']:.2f}--{c['P_max']:.2f}",
+                fl.fmt(c["q_mean"], "{:.3f}"),
+                fl.fmt(c["surge"], "{:.1f}"),
+                fl.fmt(float(np.max(slug)) if c["cls"] != "stable" else np.nan, "{:.0f}"),
+                fl.fmt(float(np.median(fill[1:] if len(fill) > 1 else fill)) if fill else np.nan, "{:.0f}"),
+                fl.fmt(float(np.median(blow[1:] if len(blow) > 1 else blow)) if blow else np.nan, "{:.0f}"),
+            ]
+        )
+    fl.tex_table(
+        out,
+        "tab_cycle",
+        [
+            "opening",
+            "class",
+            "period (s)",
+            "$P_{in}$ (bar)",
+            "$\\bar q_L$ (kg/s)",
+            "peak/mean",
+            "slug (m)",
+            "riser fill (s)",
+            "blowout (s)",
+        ],
+        rows,
+        align="llrlrrrrr",
+        notes=(
+            "Reservoir at \\SI{15}{\\bar}, start from the perturbed steady state, last \\SI{3000}{\\second} of "
+            "\\SI{6000}{\\second}. Slug: largest length of liquid that seals the system, in the line upstream of the "
+            "low point plus the column in the riser. Riser fill: from the end of a blowout to a full riser; blowout: "
+            "from the moment the column stops being full to the minimum of the inlet pressure (medians)."
+        ),
+    )
+
+
 FIGURES = {
     "geometry": geometry,
     "hyperbolicity": hyperbolicity,
@@ -1255,6 +1406,7 @@ TABLES = {
     "tab_mesh": tab_mesh,
     "tab_performance": tab_performance,
     "tab_case": tab_case,
+    "tab_cycle": tab_cycle,
 }
 
 if __name__ == "__main__":
