@@ -1543,6 +1543,157 @@
     1601
    ]
   },
+  "notebooks/data/severe_slug_map_well.npz": {
+   "size": 71936,
+   "sha256": "a3ff100f1b755a3daecd70c956a85c6017549d4a500abd87074aa60b36979283",
+   "keys": [
+    "P_max",
+    "P_mean",
+    "P_min",
+    "P_res",
+    "P_ss",
+    "ab",
+    "amp",
+    "cls",
+    "cpu",
+    "initial",
+    "meta",
+    "n_steps",
+    "name",
+    "period",
+    "q_mean",
+    "q_peak",
+    "q_ss",
+    "settle",
+    "start",
+    "surge",
+    "t_end"
+   ],
+   "meta": {
+    "source": "tools/slug_map.py (build, mfsim batch, export)",
+    "base_case": "cases/severe_slug/well_choke.json",
+    "settle": {
+     "window": 2000.0,
+     "t_min": 2000.0,
+     "amp_tol": 0.1,
+     "rel_tol": 0.1
+    },
+    "tf": 8000.0,
+    "dt_out": 5.0,
+    "perturb": 0.001,
+    "seed": [
+     0.13,
+     15.0
+    ],
+    "commit": "faf17fc",
+    "selected": [
+     "severe_slug_map_well_steady_ab0.130_P15.0",
+     "severe_slug_map_well_steady_ab0.280_P15.0",
+     "severe_slug_map_well_steady_ab0.600_P15.0",
+     "severe_slug_map_well_steady_ab0.600_P24.0",
+     "severe_slug_map_well_blocked_ab0.600_P24.0"
+    ]
+   }
+  },
+  "notebooks/data/severe_slug_map_well_blocked_ab0.600_P24.0.npz": {
+   "size": 1130890,
+   "sha256": "2b90302bc4248f2bddc99002758c206731bbeba952c044e60ae003e6afe6064f",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "case_json",
+    "info_json",
+    "provenance_json"
+   ],
+   "T_shape": [
+    1201
+   ],
+   "X_shape": [
+    112,
+    1201
+   ]
+  },
+  "notebooks/data/severe_slug_map_well_steady_ab0.130_P15.0.npz": {
+   "size": 395414,
+   "sha256": "2ba82896f2698d649c0edf1de3e5c5af45348b5be92363016f7e60a361101297",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "case_json",
+    "ic/1",
+    "info_json",
+    "provenance_json"
+   ],
+   "T_shape": [
+    401
+   ],
+   "X_shape": [
+    112,
+    401
+   ]
+  },
+  "notebooks/data/severe_slug_map_well_steady_ab0.280_P15.0.npz": {
+   "size": 1132346,
+   "sha256": "e32cb257680d4a2b1e69980c9dbf5cb54eabe8e544e68cff60cac8f0c63aeb60",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "case_json",
+    "ic/1",
+    "info_json",
+    "provenance_json"
+   ],
+   "T_shape": [
+    1201
+   ],
+   "X_shape": [
+    112,
+    1201
+   ]
+  },
+  "notebooks/data/severe_slug_map_well_steady_ab0.600_P15.0.npz": {
+   "size": 763882,
+   "sha256": "91b6d737019946856b47b60400078797b5374f6e79d224ea399b5441ebe5cf69",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "case_json",
+    "ic/1",
+    "info_json",
+    "provenance_json"
+   ],
+   "T_shape": [
+    801
+   ],
+   "X_shape": [
+    112,
+    801
+   ]
+  },
+  "notebooks/data/severe_slug_map_well_steady_ab0.600_P24.0.npz": {
+   "size": 395366,
+   "sha256": "30d920106c6820b3a2f47c9d570c3c68588cf2d7eeaddb1815ec245b12c00080",
+   "keys": [
+    "T",
+    "X",
+    "acc",
+    "case_json",
+    "ic/1",
+    "info_json",
+    "provenance_json"
+   ],
+   "T_shape": [
+    401
+   ],
+   "X_shape": [
+    112,
+    401
+   ]
+  },
   "notebooks/data/severe_slug_run.npz": {
    "size": 5666698,
    "sha256": "3c2ed5a3b46aff8610d1abf3cfd22142eadace64187e52cabf2442bba84401d8",
@@ -1682,8 +1833,8 @@
    ]
   },
   "tests/golden/network.npz": {
-   "size": 7503280,
-   "sha256": "23026df47258cdfe6953b7747bf96976b0b63dde6f9c540c72ca50c99c284b03",
+   "size": 7627730,
+   "sha256": "6e9ffc9f83568f11e0067a3fa0ce6ab44b3a0d37ad857700fbb30b862d0643a6",
    "keys": [
     "ch10/10.1.1/E",
     "ch10/10.1.1/E_t",
@@ -2044,7 +2195,24 @@
     "severe/reference_thesis_bubbles/state_scales",
     "severe/reference_thesis_bubbles/state_slots",
     "severe/reference_thesis_bubbles/transform",
-    "severe/reference_thesis_bubbles/transform_jac"
+    "severe/reference_thesis_bubbles/transform_jac",
+    "severe/well_choke/E",
+    "severe/well_choke/E_t",
+    "severe/well_choke/X0",
+    "severe/well_choke/boundary_net_fluxes",
+    "severe/well_choke/breakpoints",
+    "severe/well_choke/info_reservoirs",
+    "severe/well_choke/info_reservoirs_vertex",
+    "severe/well_choke/info_valves",
+    "severe/well_choke/info_valves_vertex",
+    "severe/well_choke/opt_t",
+    "severe/well_choke/rhs",
+    "severe/well_choke/rhs_pert",
+    "severe/well_choke/sparsity",
+    "severe/well_choke/state_scales",
+    "severe/well_choke/state_slots",
+    "severe/well_choke/transform",
+    "severe/well_choke/transform_jac"
    ]
   },
   "tests/golden/nightly.npz": {

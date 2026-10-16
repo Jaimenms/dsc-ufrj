@@ -11,8 +11,8 @@
 ## Pergunta
 
 O estado estacionário do caso de referência com choke e IPR tem autovalores instáveis
-rápidos (períodos abaixo de 1 s, crescimento de 5 a 28 /s), todos presos às células do ponto
-baixo da curva, a −3°, 9° e 32°. A hipótese era que viessem da troca de fechamentos nessa
+rápidos (períodos abaixo de 1 s, crescimento de 5 a 28 /s); os mais fortes estão presos às
+células do ponto baixo da curva, a −3°, 9° e 32°. A hipótese era que viessem da troca de fechamentos nessa
 zona: a regra de fração baixa (bolhas abaixo de 1 %, rampa até 2 %), onde as células do ponto
 baixo estão (1,5 a 2,4 % de gás), e a mistura estratificado–bolhas por ângulo (25° a 65°). Se
 fosse isso, suavizar as transições tiraria estes modos, baixaria o custo do integrador e
@@ -25,13 +25,19 @@ deixaria o mapa de estabilidade pelos autovalores (bifurcação de Hopf) funcion
 2. **Suavizar as transições não os tira.** Deslocar a rampa de fração baixa para 0,5–1 % ou
    3–6 %, alargar a mistura por ângulo e combinar as duas só muda a célula onde o modo vive,
    sempre no ponto baixo. Alargar só a mistura por ângulo nem converge no Newton.
-3. **Não há modo lento que marque a fronteira.** Na continuação da abertura a 15 bar
+3. **Os modos instáveis são todos locais, e não só da curva.** Nos estacionários de três pontos a
+   15 bar (aberturas 0,13 estável, 0,28 ciclo de pressão, 0,6 golfada severa) há 40 a 44 autovalores
+   instáveis: 18 a 24 no ponto baixo e na curva (os mais fortes, até 27 /s), 16 na linha
+   estratificada a −3° (fracos, até 3 /s, 30 a 50 rad/s) e 4 a 6 na passagem do troço horizontal de
+   entrada para a linha; o riser não tem nenhum. O ponto estável é o que tem o modo mais instável
+   (27 /s contra 5,5 e 4,8 /s). Em todos, os modos lentos são amortecidos.
+4. **Não há modo lento que marque a fronteira.** Na continuação da abertura a 15 bar
    (0,10 a 1,0) o único modo lento e global é amortecido (−0,42 ± 0,12–0,20j, período de
    30 a 50 s) e não cruza o eixo perto da fronteira do mapa dinâmico (entre 0,17 e 0,22). O
    modo local é instável em todas as aberturas, incluindo as que a dinâmica dá estáveis, onde
    satura com amplitude desprezável (0,005 bar). Passar a golfada ou não é um efeito não
    linear: os autovalores do estacionário não desenham este mapa.
-4. **Cresce com a resolução.** Refinamento uniforme da malha, no ponto estável 15 bar /
+5. **Cresce com a resolução.** Refinamento uniforme da malha, no ponto estável 15 bar /
    abertura 0,13:
 
 | malha | estados | passos em 3000 s | crescimento máximo |
@@ -43,7 +49,7 @@ deixaria o mapa de estabilidade pelos autovalores (bifurcação de Hopf) funcion
    É uma instabilidade de ondas curtas do estratificado num ponto baixo quase cheio de líquido
    (o padrão físico ali seria disperso ou intermitente). A malha grossa de referência
    amortece-a; malhas mais finas pagam-na em passos e acabam por não integrar.
-5. **Subir o limiar de bolhas reduz o efeito mas muda a física.** No mesmo ponto:
+6. **Subir o limiar de bolhas reduz o efeito mas muda a física.** No mesmo ponto:
 
 | limiar de bolhas | gás na curva | crescimento máximo | passos em 3000 s |
 |---|---|---|---|
@@ -72,6 +78,8 @@ intermitência severa faz-se por simulação dinâmica (043); um mapa por autova
 primeiro um fechamento fisicamente adequado para o ponto baixo quase cheio de líquido.
 
 ## Referências
+
+Notebook: [nb_estabilidade_mapa](../../notebooks/issues/nb_estabilidade_mapa.ipynb) (fonte em `notebooks_src/issues/`).
 
 Issues 017 (regra de fração baixa), 008 (mistura por ângulo no joelho), 018 (massa virtual),
 030 (laboratório) e 043 (mapa). Storkaas e Skogestad (2007) para o mapa por bifurcação de Hopf

@@ -67,6 +67,8 @@ registo legado, corridas antigas, paridade numpy–JAX).
 
 ## Referências
 
+Notebook: [nb_estabilidade_mapa](../../notebooks/issues/nb_estabilidade_mapa.ipynb) (fonte em `notebooks_src/issues/`).
+
 Jansen, Shoham e Taitel (1996), *The elimination of severe slugging — experiments and
 modeling*, IJMF 22 — critério de estabilidade com choke (eqs. 5 e 10). Schmidt, Brill e
 Beggs (1980), *Choking can eliminate severe pipeline-induced slugging*. A tese,

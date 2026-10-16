@@ -463,29 +463,58 @@ def cycle_class(T, P_in, q_out, amp_stable=0.1, amp_rel=0.01, surge=2.0):
 
 
 def run_cycle_class(run, window=None, pipe=0, **kw):
-    """`cycle_class` de uma corrida gravada (`mfsim.runs.Run`) na janela final: `window`
-    segundos, ou a última janela da paragem adaptativa (`info["settle"]`), ou a segunda metade.
-    Pressão no nó 1 do duto, vazão de líquido no último nó."""
+    """`cycle_class` de uma corrida gravada (`mfsim.runs.Run`). Pressão no nó 1 do duto, vazão de
+    líquido no último nó.
+
+    Com a paragem adaptativa (`info["settle"]`) e pelo menos duas janelas, o registo depois do
+    transitório (todas as janelas menos a primeira) decide se houve ciclo e dá o período, os picos e
+    as vazões (ciclos longos, de uma golfada por janela ou menos, só aparecem aí); a amplitude da
+    última janela decide se a corrida terminou permanente. Sem paragem adaptativa, ou com uma só
+    janela, usa a janela final (`window` segundos; omissão: a segunda metade)."""
     p = run.pipe(pipe)
     T = run.T
+    P1, q = p["out"]["P_bar"][1], p["out"]["qL"][-1]
+    ws = ((run.info or {}).get("settle") or {}).get("windows") or []
     if window is None:
-        st = (run.info or {}).get("settle") or {}
-        ws = st.get("windows") or []
         if ws:
             window = ws[-1]["t_end"] - (ws[-2]["t_end"] if len(ws) >= 2 else T[0])
         else:
             window = 0.5 * (T[-1] - T[0])
-    P1, q = p["out"]["P_bar"][1], p["out"]["qL"][-1]
-    sel = T >= T[-1] - window - 1e-9
-    out = cycle_class(T[sel], P1[sel], q[sel], **kw)
-    # ciclos longos (uma golfada por janela): período, picos e vazões em todas as janelas
-    # depois da primeira (o transitório); a classe continua a ser a da última janela
-    ws = ((run.info or {}).get("settle") or {}).get("windows") or []
-    if out["cls"] != "stable" and len(ws) >= 3:
+    last = T >= T[-1] - window - 1e-9
+    out = cycle_class(T[last], P1[last], q[last], **kw)
+    if len(ws) >= 2:
         long = T >= ws[0]["t_end"] - 1e-9
         c = cycle_class(T[long], P1[long], q[long], **kw)
-        if c["cls"] != "stable":
-            for k in ("period", "P_min", "P_max", "q_mean", "q_peak", "surge"):
-                out[k] = c[k]
+        amp_ok = out["amp"] < max(kw.get("amp_stable", 0.1), kw.get("amp_rel", 0.01) * abs(out["P_mean"]))
+        if amp_ok or c["cls"] == "stable":
+            out["cls"] = "stable"
+            out["period"] = float("nan")
+        else:
+            out = dict(c, amp=out["amp"], P_mean=out["P_mean"])
     out.update(t_end=float(T[-1]), window=float(window))
     return out
+
+
+def jansen_choke_dp_crit(alpha=0.74, alpha_p=0.6, L=320.0, H=20.0, P_S=4e5, Phi=1.0, rhoL=900.0, g=9.81):
+    """Queda no choke (bar, relação monofásica do líquido, Δp = C·U_LS²) acima da qual o critério
+    de Jansen, Shoham e Taitel (1996) prevê estabilidade do riser: eq. (5) com Phi = 1 (o gás não
+    acelera o tampão, sem blowout) e eq. (10) com Phi a fração de líquido média do riser em
+    permanente. alpha: fração de gás da linha; alpha_p: fração de gás da frente que entra no riser
+    (0,5–0,75 nos ensaios); L: comprimento da linha com gás; H: altura do riser; P_S: pressão do
+    separador (Pa). Com K = 2 C U_LS²/H, a condição dá C U_LS² (1 + 2 alpha L/(alpha_p H)) >
+    Phi rhoL g (alpha L/alpha_p - H) - P_S."""
+    aL = alpha * L / alpha_p
+    return (Phi * rhoL * g * (aL - H) - P_S) / (1.0 + 2.0 * aL / H) / 1e5
+
+
+def jansen_choke_opening(ab, q_liq, dp_crit, CV, rhoL=900.0):
+    """Abertura em que a queda monofásica do líquido no choke (dp = q²/rhoL/(0,0075 CV ab)², em bar,
+    a relação do choke do mfsim em líquido puro) iguala `dp_crit`, interpolada em log numa série de
+    aberturas `ab` com as vazões médias `q_liq` (kg/s); None se a série não cruza o limiar."""
+    ab, q_liq = np.asarray(ab, float), np.asarray(q_liq, float)
+    o = np.argsort(ab)
+    ab, q_liq = ab[o], q_liq[o]
+    dpl = q_liq**2 / rhoL / (0.0075 * CV * ab) ** 2
+    if not (dpl.max() > dp_crit > dpl.min()):
+        return None
+    return float(np.exp(np.interp(-np.log(dp_crit), -np.log(dpl), np.log(ab))))

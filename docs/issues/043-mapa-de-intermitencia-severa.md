@@ -39,9 +39,9 @@ derivavam no fim.
 
 | | partida do estacionário | partida bloqueada |
 |---|---|---|
-| estáveis | 88 | 85 |
-| ciclo de pressão, saída suave | 13 | 22 |
-| golfada severa | 25 | 19 |
+| estáveis | 87 | 79 |
+| ciclo de pressão, saída suave | 14 | 22 |
+| golfada severa | 25 | 25 |
 | falhas do integrador | 0 | 0 |
 | paragem: permanente / ciclo repetido / tempo máximo | 84 / 18 / 24 | 76 / 23 / 27 |
 | CPU total, passos (mediana) | 5,1 h, 9 349 | 6,0 h, 12 744 |
@@ -49,17 +49,20 @@ derivavam no fim.
 - **Concorda com a teoria**: a fronteira estável do lado aberto segue, linha a linha, o
   critério de choke de Jansen, Shoham e Taitel (1996), queda no choke de cerca de 0,67 bar.
 - **Histerese**: 8 células estáveis a partir do estacionário ciclam a partir da partida
-  bloqueada (15 a 30 bar, aberturas acima da fronteira). Um poço que escoa estável aguenta o
-  choke mais aberto do que um poço a arrancar depois de uma paragem.
+  bloqueada, sete delas logo acima da fronteira entre 15 e 30 bar. Um poço que escoa estável
+  aguenta o choke mais aberto do que um poço a arrancar depois de uma paragem.
 - **Produção**: a abertura estável mais produtiva sobe com a pressão do reservatório (0,10 a
   10 bar; 0,22 a 15 bar a partir do estacionário, 0,17 bloqueada; aberto acima de 30 bar).
-- **Limite conhecido**: a linha de 8 bar tem ciclos de cerca de uma hora, mais longos do que as
-  janelas, e a classe lá oscila entre células vizinhas; 5 das 14 diferenças entre partidas
-  estão nessa linha.
+- **Ciclos longos**: a linha de 8 bar tem ciclos de cerca de uma hora, mais longos do que as
+  janelas de 2000 s. A classe decide-se por isso no registo depois do transitório (todas as janelas
+  menos a primeira, `run_cycle_class`), e não só na última janela; com a última janela apenas,
+  5 golfadas dessa linha passavam por estáveis.
 - A lei de válvula homogénea (039) é o que faz o choke estabilizar; com a lei da tese o
   protótipo tinha 11 células estáveis em 126.
 
 ## Referências
+
+Notebook: [nb_estabilidade_mapa](../../notebooks/issues/nb_estabilidade_mapa.ipynb) (fonte em `notebooks_src/issues/`).
 
 Issues 029 (fronteira por varredura), 039–042. Jansen, Shoham e Taitel (1996), *The
 elimination of severe slugging — experiments and modeling*, IJMF 22 (eqs. 5 e 10). Plano em

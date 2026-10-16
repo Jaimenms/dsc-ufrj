@@ -20,3 +20,42 @@ def test_classes():
     spikes = 0.3 + 5.0 * (np.sin(2 * np.pi * T / 800.0) > 0.98)
     slug = cycle_class(T, P, spikes)
     assert slug["cls"] == "slugging" and slug["surge"] > 2.0
+
+
+def test_jansen_criterion_for_the_reference_geometry():
+    from mfsim.analysis import jansen_choke_dp_crit, jansen_choke_opening
+
+    dp5, dp10 = jansen_choke_dp_crit(), jansen_choke_dp_crit(Phi=0.87)
+    assert 0.70 < dp5 < 0.74 and 0.59 < dp10 < 0.63
+    for a, ap in ((0.6, 0.75), (0.85, 0.5)):  # pouco sensível às frações de gás
+        assert 0.5 < jansen_choke_dp_crit(alpha=a, alpha_p=ap) < 0.8
+    ab = np.array([0.1, 0.2, 0.4])
+    q = np.array([0.5, 0.5, 0.5])
+    a_c = jansen_choke_opening(ab, q, 0.67, 15.0)
+    dp = 0.5**2 / 900.0 / (0.0075 * 15.0 * a_c) ** 2
+    assert abs(dp - 0.67) < 1e-9
+    assert jansen_choke_opening(ab, q, 100.0, 15.0) is None
+
+
+def test_cycle_map_draws_one_patch_per_cell():
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    from mfsim.plotting import cycle_map
+
+    rows = [
+        dict(ab=a, P_res=P, cls=c, P_mean=6.0, P_max=7.0, period=p, q_mean=q, success=True)
+        for (a, P, c, p, q) in [
+            (0.1, 10, "stable", np.nan, 0.2),
+            (0.3, 10, "slugging", 900.0, 0.3),
+            (0.1, 20, "stable", np.nan, 0.4),
+            (0.3, 20, "cycling", 60.0, 0.5),
+        ]
+    ]
+    fig, ax = plt.subplots()
+    cycle_map(ax, rows)
+    assert len(ax.patches) == 4 + 2  # 4 células + 2 contornos da melhor estável por linha
+    assert sorted(t.get_text() for t in ax.texts) == ["6,0", "6,0", "7,0\n15 min", "7,0\n60 s"]
+    plt.close(fig)

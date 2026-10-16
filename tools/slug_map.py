@@ -7,6 +7,7 @@ Tudo passa pelo caminho único (casos JSON corridos por `mfsim batch`):
     uv run mfsim batch runs/maps/well/steady/batch.json --jobs 12        # partida do estacionário
     uv run mfsim batch runs/maps/well/blocked/batch.json --jobs 12       # partida bloqueada
     uv run python tools/slug_map.py plot --out runs/maps/well            # resumo e figura
+    uv run python tools/slug_map.py export --out runs/maps/well          # dados do notebook (notebooks/data)
 
 `build` faz a continuação do estado estacionário pela grelha (Newton de ponto vizinho em ponto
 vizinho, com bissecção do passo quando falha; semente: uma corrida que assenta) e grava-o como
@@ -163,6 +164,9 @@ def build(out, openings=OPENINGS, pressures=PRESSURES):
 
 # ----------------------------------------------------------------------------- resumo
 def summarize(out):
+    """Linhas do mapa (classe e assinatura de cada corrida, `run_cycle_class`), com o estacionário de
+    partida (pressão de entrada e vazão de saída no instante inicial das corridas da partida do
+    estacionário, sem a perturbação) em `P_ss`/`q_ss`; grava `summary.json` em `out`."""
     from mfsim.analysis import run_cycle_class
     from mfsim.runs import load_run
 
@@ -178,12 +182,20 @@ def summarize(out):
             m = (run.case_json.get("meta") or {}).get("map") or {}
             row = dict(start=start, name=r["name"], ab=m.get("ab"), P_res=m.get("P_res"), start_used=m.get("start"))
             row.update(run_cycle_class(run))
+            init = run.info.get("initial") or {}
+            p_out = run.pipe(0)["out"]
             row.update(
                 success=bool(run.info.get("success", True)),
                 settle=(run.info.get("settle") or {}).get("reason"),
-                initial=(run.info.get("initial") or {}).get("converged"),
+                initial=init.get("converged"),
                 n_steps=run.info.get("n_steps"),
                 cpu=run.info.get("cpu_total"),
+                P_ss=(
+                    float(p_out["P_bar"][1][0] / (1.0 + init.get("perturb", 0.0)))
+                    if init.get("converged")
+                    else float("nan")
+                ),
+                q_ss=float(p_out["qL"][-1][0]) if init.get("converged") else float("nan"),
             )
             rows.append(row)
     with open(os.path.join(out, "summary.json"), "w") as f:
@@ -192,130 +204,67 @@ def summarize(out):
 
 
 # ----------------------------------------------------------------------------- figura
-SURF, INK, INK2 = "#fcfcfb", "#0b0b0b", "#52514e"
-COLORS = {"stable": "#2a78d6", "slugging": "#eb6834", "cycling": "#1baf7a", "fail": "#e1e0d9"}
-LABELS = {
-    "stable": "Estável: escoamento permanente",
-    "slugging": "Golfada severa: pico na saída ≥ 2× a média",
-    "cycling": "Ciclo de pressão, saída suave",
-    "fail": "Corrida falhou",
+TITLES = {
+    "steady": "Partida do estado estacionário (perturbação 0,1 %)",
+    "blocked": "Partida bloqueada (linha cheia, riser bloqueado)",
 }
 
 
-def _edges(v, log=False):
-    v = np.log(v) if log else np.asarray(v, float)
-    mid = 0.5 * (v[1:] + v[:-1])
-    e = np.concatenate([[v[0] - (mid[0] - v[0])], mid, [v[-1] + (v[-1] - mid[-1])]])
-    return np.exp(e) if log else e
-
-
-def jansen_dp_crit(alpha=0.74, alpha_p=0.6, L=320.0, H=20.0, P_S=4e5, Phi=1.0, rhoL=900.0, g=9.81):
-    """Queda no choke (bar, relação monofásica do líquido) acima da qual o critério de Jansen,
-    Shoham e Taitel (1996) prevê estabilidade (eq. 5 com Phi = 1, eq. 10 com a fração de líquido
-    do riser em permanente). Insensível a alpha e alpha' nesta geometria (0,53–0,76 bar)."""
-    aL = alpha * L / alpha_p
-    return (Phi * rhoL * g * (aL - H) - P_S) / (1.0 + 2.0 * aL / H) / 1e5
-
-
-def plot(out, rows=None):
-    import matplotlib
-
-    matplotlib.use("Agg")
+def plot_map(rows, axes=None):
+    """Os dois painéis do mapa (partida do estacionário e bloqueada) com o critério de Jansen; devolve a figura."""
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
-    from matplotlib.patches import Patch, Rectangle
+    from matplotlib.patches import Patch
 
-    rows = rows if rows is not None else json.load(open(os.path.join(out, "summary.json")))
-    plt.rcParams.update({"font.family": ["Helvetica", "Arial", "DejaVu Sans"], "font.size": 10})
-    abs_ = sorted({r["ab"] for r in rows})
-    Ps = sorted({r["P_res"] for r in rows})
-    xe, ye = _edges(abs_, log=True), _edges(Ps, log=True)
-    titles = {
-        "steady": "Partida do estado estacionário (perturbação 0,1 %)",
-        "blocked": "Partida bloqueada (linha cheia, riser bloqueado)",
-    }
-    fig, axes = plt.subplots(1, 2, figsize=(16, 8.2), sharey=True, facecolor=SURF)
-    dpc = 0.5 * (jansen_dp_crit(Phi=0.87) + jansen_dp_crit())
+    from mfsim.analysis import jansen_choke_dp_crit, jansen_choke_opening
+    from mfsim.plotting import CYCLE_COLORS, CYCLE_LABELS, cycle_map
+
+    if axes is None:
+        fig, axes = plt.subplots(1, 2, figsize=(16, 8.2), sharey=True, facecolor="#fcfcfb")
+    else:
+        fig = axes[0].figure
+    dpc = 0.5 * (jansen_choke_dp_crit(Phi=0.87) + jansen_choke_dp_crit())
     for ax, start in zip(axes, ("steady", "blocked")):
-        ax.set_facecolor(SURF)
-        G = {(r["P_res"], r["ab"]): r for r in rows if r["start"] == start}
-        for i, P in enumerate(Ps):
-            best = None
-            for j, ab in enumerate(abs_):
-                r = G.get((P, ab))
-                if r is None:
-                    continue
-                cls = r["cls"] if r["success"] else "fail"
-                ax.add_patch(
-                    Rectangle((xe[j], ye[i]), xe[j + 1] - xe[j], ye[i + 1] - ye[i], fc=COLORS[cls], ec=SURF, lw=1.5)
-                )
-                xc, yc = np.sqrt(xe[j] * xe[j + 1]), np.sqrt(ye[i] * ye[i + 1])
-                if cls == "stable":
-                    txt = f"{r['P_mean']:.1f}"
-                    if best is None or r["q_mean"] > best[1]:
-                        best = (ab, r["q_mean"], j)
-                else:
-                    per = r["period"]
-                    txt = (
-                        f"{r['P_max']:.1f}\n{per / 60:.0f} min"
-                        if np.isfinite(per) and per >= 120
-                        else (f"{r['P_max']:.1f}\n{per:.0f} s" if np.isfinite(per) else f"{r['P_max']:.1f}")
-                    )
-                ax.text(
-                    xc, yc, txt.replace(".", ","), ha="center", va="center", fontsize=6.6, color=INK, linespacing=1.05
-                )
-            if best is not None:
-                j = best[2]
-                ax.add_patch(
-                    Rectangle((xe[j], ye[i]), xe[j + 1] - xe[j], ye[i + 1] - ye[i], fc="none", ec=INK, lw=2.0, zorder=5)
-                )
-        # critério de Jansen et al. (1996): abertura em que a queda monofásica no choke iguala o limiar
+        sub = [r for r in rows if r["start"] == start]
+        xe, ye = cycle_map(ax, sub)
         xs, ys = [], []
-        for P in Ps:
-            pts = sorted([(ab, G[(P, ab)]["q_mean"]) for ab in abs_ if (P, ab) in G], key=lambda t: t[0])
-            ab = np.array([p[0] for p in pts])
-            q = np.array([p[1] for p in pts])
-            dpl = q**2 / 900.0 / (0.0075 * 15.0 * ab) ** 2
-            if dpl.max() > dpc > dpl.min():
-                xs.append(float(np.exp(np.interp(-np.log(dpc), -np.log(dpl), np.log(ab)))))
+        for P in sorted({r["P_res"] for r in sub}):
+            line = sorted((r["ab"], r["q_mean"]) for r in sub if r["P_res"] == P)
+            a_c = jansen_choke_opening([t[0] for t in line], [t[1] for t in line], dpc, CV=15.0)
+            if a_c is not None:
+                xs.append(a_c)
                 ys.append(P)
-        ax.plot(xs, ys, color=INK, lw=1.6, ls=(0, (5, 3)), zorder=6)
-        ax.set_xscale("log")
-        ax.set_yscale("log")
+        ax.plot(xs, ys, color="#0b0b0b", lw=1.6, ls=(0, (5, 3)), zorder=6)
         ticks = [t for t in (0.03, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0) if xe[0] <= t <= xe[-1]]
         ax.set_xticks(ticks)
         ax.set_xticklabels([f"{t:g}".replace(".", ",") for t in ticks])
-        ax.set_yticks(Ps)
-        ax.set_yticklabels([f"{P:g}".replace(".", ",") for P in Ps])
-        ax.minorticks_off()
-        ax.set_xlim(xe[0], xe[-1])  # depois das marcas: set_xticks alarga os limites
-        ax.set_ylim(ye[0], ye[-1])
+        ax.set_xlim(xe[0], xe[-1])
         ax.set_xlabel("Abertura do choke (fração, escala log)")
-        ax.set_title(titles[start], loc="left", fontsize=11, color=INK)
-        for s in ax.spines.values():
-            s.set_visible(False)
+        ax.set_title(TITLES[start], loc="left", fontsize=11)
     axes[0].set_ylabel("Pressão do reservatório (bar)")
-    handles = [Patch(fc=COLORS[k], label=LABELS[k]) for k in ("stable", "cycling", "slugging")]
+    handles = [Patch(fc=CYCLE_COLORS[k], label=CYCLE_LABELS[k]) for k in ("stable", "cycling", "slugging")]
     if any(not r["success"] for r in rows):
-        handles.append(Patch(fc=COLORS["fail"], label=LABELS["fail"]))
+        handles.append(Patch(fc=CYCLE_COLORS["fail"], label=CYCLE_LABELS["fail"]))
     handles += [
-        Patch(fc="none", ec=INK, lw=2.0, label="Abertura estável mais produtiva"),
+        Patch(fc="none", ec="#0b0b0b", lw=1.8, label="Abertura estável mais produtiva"),
         Line2D(
             [],
             [],
-            color=INK,
+            color="#0b0b0b",
             lw=1.6,
             ls=(0, (5, 3)),
             label="Critério de Jansen et al. 1996 (queda no choke " + f"{dpc:.2f}".replace(".", ",") + " bar)",
         ),
     ]
     fig.legend(handles=handles, loc="lower center", ncol=3, frameon=False, fontsize=9.5, bbox_to_anchor=(0.5, 0.0))
+    return fig
+
+
+def plot(out, rows=None):
+    rows = rows if rows is not None else json.load(open(os.path.join(out, "summary.json")))
+    fig = plot_map(rows)
     fig.suptitle(
-        "Mapa de intermitência severa: abertura do choke × pressão do reservatório",
-        x=0.05,
-        ha="left",
-        fontsize=13,
-        color=INK,
+        "Mapa de intermitência severa: abertura do choke × pressão do reservatório", x=0.05, ha="left", fontsize=13
     )
     fig.text(
         0.05,
@@ -324,19 +273,89 @@ def plot(out, rows=None):
         "Caso de referência como poço (IPR 0,056 kg/s/bar), choke homogéneo CV 15, separador a 4 bar; "
         "paragem adaptativa até 8000 s. Estável: amplitude da pressão < 0,1 bar ou < 1 % da média, ou sem ciclo até aos 8000 s.",
         fontsize=8.6,
-        color=INK2,
+        color="#52514e",
         wrap=True,
     )
     fig.subplots_adjust(left=0.05, right=0.99, top=0.87, bottom=0.17, wspace=0.04)
     path = os.path.join(out, "slug_map.png")
-    fig.savefig(path, dpi=150, facecolor=SURF)
+    fig.savefig(path, dpi=150, facecolor="#fcfcfb")
     print(f"figura: {path}")
     return path
 
 
+# ----------------------------------------------------------------------------- dados do notebook
+DATA = os.path.join(ROOT, "notebooks", "data")
+DATA_NAME = "severe_slug_map_well"
+# corridas guardadas por inteiro para os perfis: abertura crescente a 15 bar (estável, ciclo,
+# golfada) e a célula de histerese a 24 bar nas duas partidas
+SELECTED = [
+    ("steady", 0.13, 15.0),
+    ("steady", 0.28, 15.0),
+    ("steady", 0.6, 15.0),
+    ("steady", 0.6, 24.0),
+    ("blocked", 0.6, 24.0),
+]
+SUMMARY_KEYS = (
+    "ab",
+    "P_res",
+    "P_min",
+    "P_mean",
+    "P_max",
+    "amp",
+    "period",
+    "q_mean",
+    "q_peak",
+    "surge",
+    "t_end",
+    "n_steps",
+    "cpu",
+    "P_ss",
+    "q_ss",
+)
+
+
+def export(out):
+    """Grava em `notebooks/data` o resumo do mapa (`severe_slug_map_well.npz`: uma linha por corrida,
+    colunas de `SUMMARY_KEYS` e as de texto `start`, `name`, `cls`, `settle`, mais `meta` em JSON) e as
+    corridas de `SELECTED` (`severe_slug_map_well_<partida>_<ponto>.npz`), para o notebook de issues
+    as ler sem as 252 corridas; registar depois com `tools/manifest.py --write`."""
+    import shutil
+    import subprocess
+
+    rows = summarize(out)
+    arrays = {k: np.array([float(r.get(k) if r.get(k) is not None else np.nan) for r in rows]) for k in SUMMARY_KEYS}
+    for k in ("start", "name", "cls", "settle"):
+        arrays[k] = np.array([str(r.get(k)) for r in rows])
+    arrays["initial"] = np.array([bool(r.get("initial")) for r in rows])
+    commit = subprocess.run(
+        ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True
+    ).stdout.strip()
+    meta = dict(
+        source="tools/slug_map.py (build, mfsim batch, export)",
+        base_case=os.path.relpath(BASE, ROOT),
+        settle=SETTLE,
+        tf=TF,
+        dt_out=DT_OUT,
+        perturb=PERTURB,
+        seed=SEED,
+        commit=commit,
+        selected=[f"{DATA_NAME}_{s}_{name(a, P)}" for s, a, P in SELECTED],
+    )
+    arrays["meta"] = np.array(json.dumps(meta))
+    os.makedirs(DATA, exist_ok=True)
+    np.savez(os.path.join(DATA, f"{DATA_NAME}.npz"), **arrays)
+    print(f"resumo: {DATA}/{DATA_NAME}.npz ({len(rows)} corridas)")
+    for s, a, P in SELECTED:
+        batch = json.load(open(os.path.join(out, s, "batch.json")))
+        src = os.path.join(ROOT, batch["out_dir"], f"{name(a, P)}.npz")
+        dst = os.path.join(DATA, f"{DATA_NAME}_{s}_{name(a, P)}.npz")
+        shutil.copy(src, dst)
+        print(f"corrida: {dst}")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("command", choices=["build", "plot"])
+    ap.add_argument("command", choices=["build", "plot", "export"])
     ap.add_argument("--out", default="runs/maps/well")
     ap.add_argument("--openings", help="aberturas separadas por vírgulas (a semente 0.13 tem de estar)")
     ap.add_argument("--pressures", help="pressões do reservatório separadas por vírgulas (a semente 15 tem de estar)")
@@ -346,8 +365,10 @@ def main(argv=None):
         ops = [float(x) for x in a.openings.split(",")] if a.openings else OPENINGS
         prs = [float(x) for x in a.pressures.split(",")] if a.pressures else PRESSURES
         build(out, ops, prs)
-    else:
+    elif a.command == "plot":
         plot(out, summarize(out))
+    else:
+        export(out)
 
 
 if __name__ == "__main__":

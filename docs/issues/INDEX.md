@@ -27,7 +27,8 @@ em `notebooks/issues/`): `nb_reproducao_capitulo10` (001–002), `nb_esquema_e_c
 (002–005, 027), `nb_joelho_malha_acustica` (006–011), `nb_fechamentos_hiperbolicidade` (015–019),
 `nb_identificacao_de_padrao` (020–021), `nb_fronteira_riser_gas_gotas` (022–024, 026, 028–029),
 `nb_laboratorio` (030–031), `nb_integrador_e_jax` (032–038), `nb_rede_refluxo_deriva` (012–014,
-025) e `nb_gas_lift_intermitencia` (033, 034, 036, caso além da tese). Os casos da tese tal e
+025), `nb_gas_lift_intermitencia` (033, 034, 036, caso além da tese) e `nb_estabilidade_mapa`
+(039–043, o mapa de intermitência severa com choke e poço). Os casos da tese tal e
 qual estão em `notebooks_src/thesis/`.
 
 ## Reprodução da tese

@@ -26,7 +26,7 @@ de laboratório. As 43 alterações em relação à tese estão em `docs/issues/
 | `cases/` | casos JSON: `examples/hello_world`, `chapter10/` (11 da tese), `severe_slug/` (referência, variantes `$extends`, laboratório), `studies/`. |
 | `batches/` | lotes de corridas (`mfsim batch`): `thesis.json` → `runs/chapter10`, `issues.json` → `runs/issues`. |
 | `notebooks_src/` | fontes dos notebooks (`# %%`): `thesis/` reprodução fiel (um por secção), `issues/` melhorias (um por grupo de issues). Nenhum simula: leem `runs/` e `notebooks/data`. |
-| `notebooks/data/` | 80 corridas históricas (fora do git, fixadas em `MANIFEST.sha256`); não são reproduzíveis bit a bit (dinâmica caótica), são dados. |
+| `notebooks/data/` | 80 corridas históricas e os dados do mapa de intermitência severa (`severe_slug_map_well*.npz`, de `tools/slug_map.py export`; 043), fora do git, fixados em `MANIFEST.sha256`; não são reproduzíveis bit a bit (dinâmica caótica), são dados. |
 | `tests/` | rotina (`uv run pytest`, ≈3 min, 335 testes) e noturna (`-m nightly`, ≈35 min: lotes, corridas longas, laboratório, notebooks contra `tests/golden/notebook_text`). `tests/golden/` só por `tools/golden_generate.py --rebaseline --note`. |
 | `tools/` | `golden_generate`, `manifest`, `make_nb`, `slug_map` (mapa de intermitência severa, 043), migração do dialeto antigo (`legacy_runs`, `convert_runs`, `severe_run`, `save_run_data`, `export_severe_cases`). |
 | `docs/` | documentação; `docs/issues/NNN-*.md` + `INDEX.md`; `docs/future/` (planos: criogenia, CO₂, composicional, trifásico, assinaturas de golfada e alocação a separadores, este com o degrau 1 feito em 043); `docs/thesis.pdf`. |

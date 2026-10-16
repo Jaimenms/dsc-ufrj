@@ -164,3 +164,80 @@ def lab_validation_figure(run, tag, t0=None, t1=None, out=None, dpi=90):
     if out:
         fig.savefig(out, dpi=dpi)
     return fig
+
+
+# ----------------------------------------------------------------------------- mapa de classes (issue 043)
+CYCLE_COLORS = {"stable": "#2a78d6", "cycling": "#1baf7a", "slugging": "#eb6834", "fail": "#e1e0d9"}
+CYCLE_LABELS = {
+    "stable": "Estável: escoamento permanente",
+    "cycling": "Ciclo de pressão, saída suave",
+    "slugging": "Golfada severa: pico na saída ≥ 2× a média",
+    "fail": "Corrida falhou",
+}
+
+
+def _cell_edges(v, log=False):
+    v = np.log(v) if log else np.asarray(v, float)
+    mid = 0.5 * (v[1:] + v[:-1])
+    e = np.concatenate([[v[0] - (mid[0] - v[0])], mid, [v[-1] + (v[-1] - mid[-1])]])
+    return np.exp(e) if log else e
+
+
+def cycle_map(ax, rows, x="ab", y="P_res", logx=True, logy=True, annotate=True, best="q_mean", surface="#fcfcfb"):
+    """Mapa de classes de ciclo (`mfsim.analysis.cycle_class`) numa grelha de dois parâmetros.
+
+    `rows`: dicts com `x`, `y`, `cls` (e `success`); com `annotate`, cada célula leva a pressão
+    média (estável) ou a pressão máxima e o período (com ciclo), com vírgula decimal; com `best`,
+    a célula estável de maior `best` de cada linha fica contornada. Devolve as arestas (xe, ye)."""
+    from matplotlib.patches import Rectangle
+
+    xs = sorted({r[x] for r in rows})
+    ys = sorted({r[y] for r in rows})
+    xe, ye = _cell_edges(xs, log=logx), _cell_edges(ys, log=logy)
+    G = {(r[y], r[x]): r for r in rows}
+    for i, yv in enumerate(ys):
+        top = None
+        for j, xv in enumerate(xs):
+            r = G.get((yv, xv))
+            if r is None:
+                continue
+            cls = r["cls"] if r.get("success", True) else "fail"
+            ax.add_patch(
+                Rectangle(
+                    (xe[j], ye[i]), xe[j + 1] - xe[j], ye[i + 1] - ye[i], fc=CYCLE_COLORS[cls], ec=surface, lw=1.2
+                )
+            )
+            if annotate:
+                if cls == "stable":
+                    txt = f"{r['P_mean']:.1f}"
+                else:
+                    per = r.get("period", np.nan)
+                    if np.isfinite(per):
+                        txt = f"{r['P_max']:.1f}\n" + (f"{per / 60:.0f} min" if per >= 120 else f"{per:.0f} s")
+                    else:
+                        txt = f"{r['P_max']:.1f}"
+                xc, yc = (np.sqrt(xe[j] * xe[j + 1]) if logx else 0.5 * (xe[j] + xe[j + 1])), (
+                    np.sqrt(ye[i] * ye[i + 1]) if logy else 0.5 * (ye[i] + ye[i + 1])
+                )
+                ax.text(xc, yc, txt.replace(".", ","), ha="center", va="center", fontsize=6.0, color="#0b0b0b")
+            if best and cls == "stable" and (top is None or r[best] > top[0]):
+                top = (r[best], j)
+        if best and top is not None:
+            j = top[1]
+            ax.add_patch(
+                Rectangle(
+                    (xe[j], ye[i]), xe[j + 1] - xe[j], ye[i + 1] - ye[i], fc="none", ec="#0b0b0b", lw=1.8, zorder=5
+                )
+            )
+    if logx:
+        ax.set_xscale("log")
+    if logy:
+        ax.set_yscale("log")
+    ax.set_yticks(ys)
+    ax.set_yticklabels([f"{v:g}".replace(".", ",") for v in ys])
+    ax.minorticks_off()
+    ax.set_xlim(xe[0], xe[-1])
+    ax.set_ylim(ye[0], ye[-1])
+    for s in ax.spines.values():
+        s.set_visible(False)
+    return xe, ye

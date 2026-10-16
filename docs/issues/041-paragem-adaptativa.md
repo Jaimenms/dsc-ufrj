@@ -47,4 +47,6 @@ janelas. Valores por omissão: `window` 2000 s, `t_min` = `window`, `amp_tol` 0,
 
 ## Referências
 
+Notebook: [nb_estabilidade_mapa](../../notebooks/issues/nb_estabilidade_mapa.ipynb) (fonte em `notebooks_src/issues/`).
+
 Issues 005 (acumulador BDF), 040 (partida do estacionário) e 043 (mapa).

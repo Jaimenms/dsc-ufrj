@@ -57,6 +57,8 @@ inicial nos nós do esquema e recusa-a.
 
 ## Referências
 
+Notebook: [nb_estabilidade_mapa](../../notebooks/issues/nb_estabilidade_mapa.ipynb) (fonte em `notebooks_src/issues/`).
+
 Issue 027 (condições iniciais por receita) e 043 (mapa). Kelley e Keyes (1998), *Convergence
 analysis of pseudo-transient continuation*, sobre por que a continuação pseudo-transiente
 procura equilíbrios estáveis.
