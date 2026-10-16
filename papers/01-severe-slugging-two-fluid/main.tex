@@ -45,20 +45,17 @@
 \def\textpagefraction{.001}
 
 \shorttitle{Severe slugging with a two-fluid model and dynamic flow-pattern identification}
-\shortauthors{J.N.M. de Souza et~al.}
+\shortauthors{J.N.M. de Souza and A.L.H. Costa}
 
 \title[mode = title]{Severe slugging with a four-equation two-fluid model and dynamic flow-pattern identification: well-posedness, discretisation, time integration and choke stability maps}
 
-% Autores e afiliações. TODO: confirmar a lista de autores, as afiliações e o e-mail do autor correspondente.
+% Autores e afiliações (lista decidida pelo dono em 2026-10-16). TODO: confirmar as afiliações e o e-mail do autor
+% correspondente.
 \author[1]{Jaime Neiva Miranda de Souza}
 \cormark[1]
 \ead{corresponding.author@example.org}  % TODO
 
-\author[1]{Jos\'e Luiz de Medeiros}
-
 \author[2]{Andr\'e Luiz Hemerly Costa}
-
-\author[1]{Giovani Cavalcanti Nunes}
 
 \affiliation[1]{organization={Escola de Qu\'imica, Universidade Federal do Rio de Janeiro},
                 addressline={Av. Athos da Silveira Ramos 149, Centro de Tecnologia, Bloco E},
@@ -174,7 +171,7 @@ Three terms remove the ill-posed regions without changing the equations elsewher
 
 \subsection{Well-posedness along the simulated trajectories}\label{sec:trajectories}
 
-A map shows where a closure is ill-posed, not whether a simulation goes there. The eigenvalues of $\bA$ were therefore evaluated in every cell and at every output time of the simulations of Section~\ref{sec:application}. With the low-void rule and the virtual mass, \tbd{0.9}\,\% of the cell--time states are ill-posed, \tbd{all} of them in annular or intermittent cells of the riser during the blowout, with imaginary parts of the order of \tbd{\SI{1}{\milli\metre\per\second}}; evaluated on the same states without the two terms, the fraction rises to \tbd{23--30}\,\%, with \tbd{88}\,\% of the bubbly cells ill-posed (Table~\ref{tab:trajectory}). The interfacial-pressure term would remove the residual \tbd{0.9}\,\% at a cost of about \tbd{1.6} times the integration steps without changing the cycle; it is not used in what follows.
+A map shows where a closure is ill-posed, not whether a simulation goes there. The eigenvalues of $\bA$ were therefore evaluated in every cell and at every output time of the simulations of Section~\ref{sec:application}. With the low-void rule and the virtual mass, \tbd{0.9}\,\% of the cell--time states are ill-posed, \tbd{all} of them in annular or intermittent cells of the riser during the blowout, with imaginary parts of the order of \tbd{\SI{1}{\milli\metre\per\second}}; evaluated on the same states without the two terms, the fraction rises to \tbd{23--30}\,\%, with \tbd{88}\,\% of the bubbly cells ill-posed (Table~\ref{tab:trajectory}). The interfacial-pressure term would remove the residual \tbd{0.9}\,\% (last row of Table~\ref{tab:trajectory}); since it has no physical basis in the annular and intermittent patterns, it is not used in what follows.
 
 \begin{table}[htbp]
 \caption{Ill-posed fraction of the cell--time states of a severe-slugging simulation, by dominant flow pattern, with the regularisation of the model and with the low-void rule or the virtual mass removed a posteriori on the same states.}\label{tab:trajectory}

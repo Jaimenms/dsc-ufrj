@@ -534,7 +534,7 @@ def spacetime(out, png):
 
 
 # ------------------------------------------------------------------------------------------------ anatomia do ciclo
-ANATOMY_OPENING = 0.6
+ANATOMY_OPENING = 1.0  # golfada severa de relaxação (modo global real instável)
 
 
 def _cycle_events(T, P_in, fr, hold=20.0):
@@ -1351,7 +1351,7 @@ def discretisation(out, png):
 
 
 # ------------------------------------------------------------------------------------------------ boa colocação na trajetória
-TRAJ_RUN = ("dynamics", 0.6)  # corrida de golfada severa onde se mede a hiperbolicidade
+TRAJ_RUN = ("dynamics", 1.0)  # corrida de golfada severa onde se mede a hiperbolicidade
 TRAJ_VARIANTS = (
     ("model", {}),
     ("no_vm", dict(virtual_mass=0.0)),
