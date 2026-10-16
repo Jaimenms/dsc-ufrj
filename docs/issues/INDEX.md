@@ -82,6 +82,7 @@ qual estão em `notebooks_src/thesis/`.
 | [031](031-numerica-a-1-atm.md) | bugfix | Numérica a 1 atm | banda de undershoot cruzava a singularidade; Newton estagnado → `state_bounds` com γL, `slow_exit` |
 | [039](039-lei-de-valvula-homogenea.md) | bugfix | Lei de válvula homogénea | densidade ponderada por massa (choke não resiste ao gás; singular em refluxo, 7 falhas) → por volume, padrão; tese só nos seus casos |
 | [040](040-partida-do-estacionario.md) | feature | Partida a partir do estado estacionário | só condições iniciais ou estimativa (Newton não converge dela) → `initial_state.source = "steady"` a partir de um estado gravado, com perturbação |
+| [041](041-paragem-adaptativa.md) | feature | Tempo simulado adaptativo | `tf` fixo (curto para os lentos, longo para os que assentam) → janelas com paragem quando o sinal fica permanente ou o ciclo se repete |
 
 ## Integrador e desempenho
 

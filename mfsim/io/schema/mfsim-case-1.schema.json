@@ -118,6 +118,50 @@
         "dt_out": {
           "type": "number",
           "exclusiveMinimum": 0
+        },
+        "settle": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Paragem adaptativa (issue 041): integra em janelas e pára quando o sinal fica permanente ou o ciclo se repete; tf passa a ser o tempo máximo.",
+          "properties": {
+            "window": {
+              "$ref": "#/$defs/positive",
+              "description": "duração de cada janela [s]"
+            },
+            "t_min": {
+              "type": "number",
+              "minimum": 0,
+              "description": "tempo mínimo antes de parar [s]"
+            },
+            "amp_tol": {
+              "$ref": "#/$defs/positive",
+              "description": "amplitude abaixo da qual o sinal é permanente (unidades do sinal)"
+            },
+            "rel_tol": {
+              "$ref": "#/$defs/positive",
+              "description": "concordância relativa de amplitude e período entre duas janelas"
+            },
+            "signal": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "edge": {
+                  "type": "string"
+                },
+                "node": {
+                  "type": "integer"
+                },
+                "var": {
+                  "enum": [
+                    "P",
+                    "alphaG",
+                    "qL",
+                    "qG"
+                  ]
+                }
+              }
+            }
+          }
         }
       }
     },

@@ -307,16 +307,29 @@ class SchemeSpec:
 
 @dataclass(frozen=True)
 class TimeSpec:
+    """t0, tf, dt_out [s]; `settle` (issue 041): pares ordenados das opções de paragem
+    adaptativa (window, t_min, amp_tol, rel_tol, signal); com elas `tf` é o tempo máximo."""
+
     t0: float = 0.0
     tf: float = 200.0
     dt_out: float = 2.0
+    settle: tuple = ()
 
     def to_json(self):
-        return {"t0": self.t0, "tf": self.tf, "dt_out": self.dt_out}
+        d = {"t0": self.t0, "tf": self.tf, "dt_out": self.dt_out}
+        if self.settle:
+            d["settle"] = {k: (dict(v) if isinstance(v, tuple) else v) for k, v in self.settle}
+        return d
 
     @classmethod
     def from_json(cls, d):
-        return cls(float(d.get("t0", 0.0)), float(d.get("tf", 200.0)), float(d.get("dt_out", 2.0)))
+        settle = d.get("settle") or {}
+        return cls(
+            float(d.get("t0", 0.0)),
+            float(d.get("tf", 200.0)),
+            float(d.get("dt_out", 2.0)),
+            tuple(sorted((k, v if not isinstance(v, dict) else tuple(sorted(v.items()))) for k, v in settle.items())),
+        )
 
 
 @dataclass(frozen=True)

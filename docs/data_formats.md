@@ -15,6 +15,8 @@ tempo como escalar, `{"t": [...], "v": [...]}` ou `{"ramp": [t1, t2], "from": a,
 pressões como `"P"` (Pa) ou `"PT"` (P/PR). A condição inicial de um duto é uma receita
 (`{"recipe": "blocked" | "shut_in", ...}`, `mfsim/initial/recipes.py`) ou arrays num
 npz ao lado (`{"arrays": {"file": ..., "key": ...}}`).
+Com `time.settle` (`window`, `t_min`, `amp_tol`, `rel_tol`, `signal`) a corrida integra em janelas e
+pára quando o sinal fica permanente ou o ciclo se repete; `tf` passa a ser o tempo máximo (issue 041).
 O estado inicial da corrida é o dos dutos (`initial_state.source = "edges"`), a estimativa
 automática (`"guess"`) ou o estacionário por Newton a partir de um deles (`"steady"`, com
 `from`, `perturb`, `max_iter` e `on_failure`; issue 040).

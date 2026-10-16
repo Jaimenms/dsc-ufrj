@@ -218,6 +218,7 @@ def simulate(
             X0, start_info = steady_start(model, jax=spec.backend == "jax")
         else:
             X0 = model.initial_state()
+    settle_ok = t_eval is None  # instantes explícitos desligam a paragem adaptativa
     if t_eval is None:
         t_eval = output_times(model.t0, model.tf, model.dt_out)
     t_eval = np.asarray(t_eval, float)
@@ -227,19 +228,130 @@ def simulate(
         if start_info is not None:
             info["initial"] = start_info
         return Results(model, t_eval, X0[:, None], info)
-    integrator = spec.integrator
-    if integrator in ("bdf", "BDF", "Radau", "radau", "LSODA"):
-        meth = {"bdf": "BDF", "radau": "Radau"}.get(integrator, integrator)
-        T, X, info = integrate_scipy(
-            model, X0, t_eval, method=meth, rtol=spec.rtol, atol=spec.atol, max_step=spec.max_step, progress=progress
-        )
-    elif integrator == "implicit":
-        T, X, info = _integrate_bdf(model, X0, t_eval, spec, progress=progress, verbose=verbose, partial=partial)
+    settle = dict(model.network.time.settle) if (settle_ok and model.network.time.settle) else {}
+    if settle:
+        T, X, info = _integrate_settled(model, X0, spec, settle, progress=progress, verbose=verbose, partial=partial)
     else:
-        raise ValueError(integrator)
+        T, X, info = _integrate(model, X0, t_eval, spec, progress=progress, verbose=verbose, partial=partial)
     if start_info is not None:
         info = dict(info, initial=start_info)
     return Results(model, T, X, info)
+
+
+def _integrate(model, X0, t_eval, spec, progress=True, verbose=False, partial=False):
+    integrator = spec.integrator
+    if integrator in ("bdf", "BDF", "Radau", "radau", "LSODA"):
+        meth = {"bdf": "BDF", "radau": "Radau"}.get(integrator, integrator)
+        return integrate_scipy(
+            model, X0, t_eval, method=meth, rtol=spec.rtol, atol=spec.atol, max_step=spec.max_step, progress=progress
+        )
+    if integrator == "implicit":
+        return _integrate_bdf(model, X0, t_eval, spec, progress=progress, verbose=verbose, partial=partial)
+    raise ValueError(integrator)
+
+
+SETTLE_DEFAULTS = dict(window=2000.0, amp_tol=0.05, rel_tol=0.1)
+_SIGNAL_SLOT = {"alphaG": 0, "P": 1, "qL": 2, "qG": 3}
+
+
+def _signal(model, T, X, sig):
+    """Série do sinal monitorizado (P em bar; alphaG; qL, qG em kg/s) num nó de um duto."""
+    edge = sig.get("edge")
+    k = 0 if edge is None else next(i for i, pb in enumerate(model.pipes) if str(pb.pipe.id) == str(edge))
+    node, slot = int(sig.get("node", 1)), _SIGNAL_SLOT[sig.get("var", "P")]
+    y = np.array([model.assemble(T[i], X[:, i])[1][k][node, slot] for i in range(T.size)])
+    return y * model.PR / 1e5 if slot == 1 else y
+
+
+def window_signature(T, y):
+    """Assinatura de uma janela: amplitude, média, número de cruzamentos da média e período
+    médio entre o primeiro e o último cruzamento ascendente (interpolados; NaN com menos de
+    dois)."""
+    T, y = np.asarray(T, float), np.asarray(y, float)
+    m = float(np.mean(y))
+    d = y - m
+    sg = np.sign(d)
+    nz = sg[sg != 0]
+    n = int(np.sum(nz[1:] != nz[:-1]))
+    up = np.flatnonzero((d[:-1] < 0) & (d[1:] >= 0))
+    t_up = T[up] - d[up] * (T[up + 1] - T[up]) / (d[up + 1] - d[up])
+    return dict(
+        t_end=float(T[-1]),
+        amp=float(np.max(y) - np.min(y)),
+        mean=m,
+        crossings=n,
+        period=float((t_up[-1] - t_up[0]) / (t_up.size - 1)) if t_up.size >= 2 else float("nan"),
+    )
+
+
+def settled(windows, amp_tol, rel_tol):
+    """ "steady" se a amplitude da última janela é menor do que amp_tol; "cycle" se as duas
+    últimas janelas têm pelo menos 4 cruzamentos e amplitude e período iguais a rel_tol;
+    None caso contrário (incluindo uma deriva sem ciclo)."""
+    w = windows[-1]
+    if w["amp"] < amp_tol:
+        return "steady"
+    if len(windows) >= 2:
+        a = windows[-2]
+        if a["crossings"] >= 4 and w["crossings"] >= 4:
+            if (
+                abs(a["amp"] - w["amp"]) <= rel_tol * w["amp"]
+                and abs(a["period"] - w["period"]) <= rel_tol * w["period"]
+            ):
+                return "cycle"
+    return None
+
+
+def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, partial=False):
+    """Paragem adaptativa (issue 041): integra em janelas de `window` segundos a partir do
+    estado final da anterior e pára, depois de `t_min`, quando o sinal monitorizado fica
+    permanente ou o ciclo se repete (`settled`); `tf` é o tempo máximo. As saídas ficam nos
+    instantes de `dt_out`, o acumulador dos fluxos de contorno é contínuo entre janelas e a
+    informação junta as contagens e a lista de assinaturas em info["settle"]."""
+    opt = dict(SETTLE_DEFAULTS, **settle)
+    window = float(opt["window"])
+    t_min = float(opt.get("t_min", window))
+    sig = dict(opt.get("signal") or {})
+    t0, tf, dt = model.t0, model.tf, model.dt_out
+    Ts, Xs, accs, windows = [np.array([t0])], [np.asarray(X0, float)[:, None]], [], []
+    tot = dict(n_steps=0, n_rejected=0, n_rhs=0, n_jac=0, cpu=0.0)
+    acc_off, reason, info = None, None, {}
+    t_cur, X_cur = t0, np.asarray(X0, float)
+    while t_cur < tf - 1e-9 * max(1.0, dt):
+        t_end = min(t_cur + window, tf)
+        te = output_times(t_cur, t_end, dt)
+        T, X, info = _integrate(model, X_cur, te, spec, progress=False, verbose=verbose, partial=partial)
+        for k in tot:
+            tot[k] += info.get(k, 0) or 0
+        Ts.append(np.asarray(T)[1:])
+        Xs.append(np.asarray(X)[:, 1:])
+        if info.get("accum") is not None:
+            a = np.asarray(info["accum"], float)
+            if acc_off is None:
+                accs.append(a)
+            else:
+                accs.append(a[:, 1:] + acc_off[:, None])
+            acc_off = (accs[-1][:, -1]).copy()
+        if not info.get("success", True) or np.asarray(T).size < 2:
+            reason = "failure"
+            break
+        windows.append(window_signature(np.asarray(T), _signal(model, np.asarray(T), np.asarray(X), sig)))
+        t_cur, X_cur = float(T[-1]), np.asarray(X)[:, -1]
+        if t_cur - t0 >= t_min - 1e-9:
+            reason = settled(windows, float(opt["amp_tol"]), float(opt["rel_tol"]))
+            if reason:
+                break
+    out = dict(info)
+    out.update(tot)
+    out["success"] = reason != "failure" and info.get("success", True)
+    if accs:
+        out["accum"] = np.concatenate(accs, axis=1)
+    out["settle"] = dict(reason=reason or "tf", t_end=float(t_cur), windows=windows)
+    if progress:
+        print(
+            f"[settle] {out['settle']['reason']} em t={t_cur:.0f} s ({len(windows)} janelas, {tot['n_steps']} passos)"
+        )
+    return np.concatenate(Ts), np.concatenate(Xs, axis=1), out
 
 
 def steady_start(model, jax=False):
