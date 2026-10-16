@@ -1,0 +1,66 @@
+{
+ "description": "Artigo 01, malha: o exemplo base com o choke aberto (15 bar, partida bloqueada, 4000 s) nas malhas grossa (15 + 5), graduada (razões 0,25 no descendente e 3 no riser), fina (30 + 10) e fina graduada, e a fração das faces pela média nas malhas grossa e fina (issue 044).",
+ "out_dir": "runs/paper01/mesh",
+ "runs": [
+  {
+   "name": "coarse",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0"
+   ],
+   "tf": 4000.0
+  },
+  {
+   "name": "coarse_mean",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "network.edges.1.scheme.options.closure_alpha=\"mean\""
+   ],
+   "tf": 4000.0
+  },
+  {
+   "name": "graded",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "network.edges.1.geometry.segments.1.grading=0.25",
+    "network.edges.1.geometry.segments.6.grading=3.0"
+   ],
+   "tf": 4000.0
+  },
+  {
+   "name": "fine",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "network.edges.1.geometry.segments.1.n=30",
+    "network.edges.1.geometry.segments.6.n=10"
+   ],
+   "tf": 4000.0
+  },
+  {
+   "name": "fine_mean",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "network.edges.1.geometry.segments.1.n=30",
+    "network.edges.1.geometry.segments.6.n=10",
+    "network.edges.1.scheme.options.closure_alpha=\"mean\""
+   ],
+   "tf": 4000.0
+  },
+  {
+   "name": "fine_graded",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "network.edges.1.geometry.segments.1.n=30",
+    "network.edges.1.geometry.segments.6.n=10",
+    "network.edges.1.geometry.segments.1.grading=0.25",
+    "network.edges.1.geometry.segments.6.grading=3.0"
+   ],
+   "tf": 4000.0
+  }
+ ]
+}

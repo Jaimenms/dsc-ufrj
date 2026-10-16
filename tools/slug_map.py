@@ -9,6 +9,13 @@ Tudo passa pelo caminho único (casos JSON corridos por `mfsim batch`):
     uv run python tools/slug_map.py plot --out runs/maps/well            # resumo e figura
     uv run python tools/slug_map.py export --out runs/maps/well          # dados do notebook (notebooks/data)
 
+Outro caso base (por exemplo o do artigo 01, com padrão de escoamento dinâmico) com `--base` e outro nome
+para os dados exportados com `--name`:
+
+    uv run python tools/slug_map.py build --base cases/severe_slug/well_choke_auto.json --out runs/maps/well_auto
+    uv run python tools/slug_map.py export --base cases/severe_slug/well_choke_auto.json --out runs/maps/well_auto \
+        --name severe_slug_map_well_auto
+
 `build` faz a continuação do estado estacionário pela grelha (Newton de ponto vizinho em ponto
 vizinho, com bissecção do passo quando falha; semente: uma corrida que assenta) e grava-o como
 condição inicial de cada caso (`initial_state.source = "steady"`, perturbação 1e-3; issue 040).
@@ -37,7 +44,10 @@ TF, DT_OUT, PERTURB = 8000.0, 5.0, 1e-3
 
 
 def _base_params():
-    d = json.load(open(BASE))
+    """IPR do líquido e razão gás–líquido do reservatório do caso base (com a herança `$extends` resolvida)."""
+    from mfsim.io.spec import load_json
+
+    d = load_json(BASE)
     res = next(e for e in d["network"]["edges"] if e["id"] == "reservoir_1")
     return res["IPL"], res["IPG"] / res["IPL"]
 
@@ -103,8 +113,34 @@ def seed_state():
 
 
 def continuation(openings, pressures, log=print):
-    """Estados estacionários de toda a grelha {(i, j): X ou None}: coluna da semente em P,
-    depois cada linha em abertura, para os dois lados."""
+    """Estados estacionários de toda a grelha {(i, j): X ou None}: coluna da semente em P, depois cada
+    linha em abertura, para os dois lados, e por fim passagens de preenchimento: cada ponto que falhou
+    tenta a partir de qualquer vizinho convergido (abertura ou pressão ao lado), até não haver progresso.
+    Com o padrão dinâmico os fechamentos têm quinas (tabelas de equilíbrio, máximos suaves) e um passo de
+    continuação pode estagnar numa direção e passar noutra."""
+    X = _continuation_sweeps(openings, pressures, log)
+    while True:
+        new = 0
+        for i in range(len(pressures)):
+            for j in range(len(openings)):
+                if X.get((i, j)) is not None:
+                    continue
+                for di, dj in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+                    Xn = X.get((i + di, j + dj))
+                    if Xn is None:
+                        continue
+                    Xs = _path(Xn, openings[j + dj], pressures[i + di], openings[j], pressures[i])
+                    if Xs is not None:
+                        X[(i, j)] = Xs
+                        new += 1
+                        break
+        log(f"  preenchimento: +{new} ({sum(x is not None for x in X.values())}/{len(openings) * len(pressures)})")
+        if not new:
+            return X
+
+
+def _continuation_sweeps(openings, pressures, log=print):
+    """Coluna da semente em P, depois cada linha em abertura, para os dois lados."""
     j0, i0 = openings.index(SEED[0]), pressures.index(SEED[1])
     X = {(i0, j0): seed_state()}
     for rng in (range(i0 + 1, len(pressures)), range(i0 - 1, -1, -1)):
@@ -354,12 +390,19 @@ def export(out):
 
 
 def main(argv=None):
+    global BASE, DATA_NAME
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("command", choices=["build", "plot", "export"])
     ap.add_argument("--out", default="runs/maps/well")
     ap.add_argument("--openings", help="aberturas separadas por vírgulas (a semente 0.13 tem de estar)")
     ap.add_argument("--pressures", help="pressões do reservatório separadas por vírgulas (a semente 15 tem de estar)")
+    ap.add_argument("--base", help="caso base (JSON com o reservatório reservoir_1 e o choke choke_2)")
+    ap.add_argument("--name", help=f"nome dos dados exportados em notebooks/data (padrão {DATA_NAME})")
     a = ap.parse_args(argv)
+    if a.base:
+        BASE = a.base if os.path.isabs(a.base) else os.path.join(ROOT, a.base)
+    if a.name:
+        DATA_NAME = a.name
     out = a.out if os.path.isabs(a.out) else os.path.join(ROOT, a.out)
     if a.command == "build":
         ops = [float(x) for x in a.openings.split(",")] if a.openings else OPENINGS

@@ -1,0 +1,23 @@
+{
+ "description": "Artigo 01, backends: o exemplo base com o choke aberto (15 bar, partida bloqueada) durante 1000 s com o lado direito compilado em JAX (Jacobiana exata) e em numpy (Jacobiana por diferenças finitas coloridas).",
+ "out_dir": "runs/paper01/backend",
+ "runs": [
+  {
+   "name": "jax",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0"
+   ],
+   "tf": 1000.0
+  },
+  {
+   "name": "numpy",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.backend=\"numpy\""
+   ],
+   "tf": 1000.0
+  }
+ ]
+}

@@ -1,0 +1,829 @@
+% =============================================================================
+% Bibliografia canónica — intermitência severa com o modelo a dois fluidos
+% (artigos do mfsim; compilada para o artigo 01, Int. J. Multiph. Flow, Elsevier, citação autor–ano).
+%
+% Verificação (2026-10-16): todos os DOI foram consultados na API REST do
+% Crossref (api.crossref.org/works/<DOI>) e resolvidos em https://doi.org/
+% (HTTP 302 para a página do editor); volume, número, páginas e ano vêm dos
+% metadados do Crossref. Entradas sem DOI estão assinaladas e justificadas no relatório da
+% compilação (sessão de 2026-10-16). Chave = apelido do primeiro autor (minúsculas, ASCII) + ano.
+% Títulos de artigos: o estilo cas-model2-names.bst passa-os a "sentence
+% case", por isso nomes próprios e siglas vão entre chavetas.
+% =============================================================================
+
+% -----------------------------------------------------------------------------
+% Intermitência severa: experiências, critérios e modelos simplificados
+% -----------------------------------------------------------------------------
+
+@article{schmidt1980,
+  author  = {Schmidt, Zelimir and Brill, James P. and Beggs, H. Dale},
+  title   = {Experimental study of severe slugging in a two-phase-flow pipeline--riser pipe system},
+  journal = {Soc. Pet. Eng. J.},
+  volume  = {20},
+  number  = {5},
+  pages   = {407--414},
+  year    = {1980},
+  doi     = {10.2118/8306-PA}
+}
+
+% Sem DOI (revista profissional). Data do número (12 nov. 1979) e páginas
+% confirmadas por Taitel (1986), Jansen et al. (1996) e US 6,041,803;
+% volume 77 = 1979 e n.º 46 (46.ª segunda-feira de 1979) inferidos da data.
+@article{schmidt1979,
+  author  = {Schmidt, Zelimir and Brill, James P. and Beggs, H. Dale},
+  title   = {Choking can eliminate severe pipeline slugging},
+  journal = {Oil Gas J.},
+  volume  = {77},
+  number  = {46},
+  pages   = {230--238},
+  year    = {1979},
+  note    = {Issue of 12 November 1979}
+}
+
+% Sem DOI (apontamentos de curso na NTH); citado assim por Jansen et al. (1996).
+@inproceedings{boe1981,
+  author    = {B{\o}e, A.},
+  title     = {Severe slugging characteristics; {Part I}: Flow regime for severe slugging; {Part II}: Point model simulation study},
+  booktitle = {Selected Topics in Two-Phase Flow},
+  publisher = {NTH},
+  address   = {Trondheim, Norway},
+  year      = {1981}
+}
+
+@article{pots1987,
+  author  = {Pots, Bert F. M. and Bromilow, Ian G. and Konijn, Martin J. W. F.},
+  title   = {Severe slug flow in offshore flowline/riser systems},
+  journal = {SPE Prod. Eng.},
+  volume  = {2},
+  number  = {4},
+  pages   = {319--324},
+  year    = {1987},
+  doi     = {10.2118/13723-PA}
+}
+
+@article{taitel1986,
+  author  = {Taitel, Yehuda},
+  title   = {Stability of severe slugging},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {12},
+  number  = {2},
+  pages   = {203--217},
+  year    = {1986},
+  doi     = {10.1016/0301-9322(86)90026-1}
+}
+
+@article{taitel1990a,
+  author  = {Taitel, Y. and Vierkandt, S. and Shoham, O. and Brill, J. P.},
+  title   = {Severe slugging in a riser system: Experiments and modeling},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {16},
+  number  = {1},
+  pages   = {57--68},
+  year    = {1990},
+  doi     = {10.1016/0301-9322(90)90037-J}
+}
+
+@article{fabre1990,
+  author  = {Fabre, Jean and Peresson, Lucien L. and Corteville, Jacques and Odello, Robert and Bourgeois, Thierry},
+  title   = {Severe slugging in pipeline/riser systems},
+  journal = {SPE Prod. Eng.},
+  volume  = {5},
+  number  = {3},
+  pages   = {299--305},
+  year    = {1990},
+  doi     = {10.2118/16846-PA}
+}
+
+@article{sarica1991,
+  author  = {Sarica, C. and Shoham, O.},
+  title   = {A simplified transient model for pipeline-riser systems},
+  journal = {Chem. Eng. Sci.},
+  volume  = {46},
+  number  = {9},
+  pages   = {2167--2179},
+  year    = {1991},
+  doi     = {10.1016/0009-2509(91)85118-H}
+}
+
+@article{jansen1996,
+  author  = {Jansen, F. E. and Shoham, O. and Taitel, Y.},
+  title   = {The elimination of severe slugging---experiments and modeling},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {22},
+  number  = {6},
+  pages   = {1055--1072},
+  year    = {1996},
+  doi     = {10.1016/0301-9322(96)00027-4}
+}
+
+% Sem DOI. Título, autor e data confirmados na cópia da tese publicada pelo
+% BSEE (TAP, projeto 397) como relatório final do TUSSP.
+@phdthesis{tengesdal2002,
+  author  = {Tengesdal, Jarl {\O}ystein},
+  title   = {Investigation of self-lifting concept for severe slugging elimination in deep-water pipeline/riser systems},
+  school  = {The Pennsylvania State University},
+  address = {University Park, PA, USA},
+  type    = {{Ph.D.} thesis},
+  year    = {2002},
+  url     = {https://www.bsee.gov/sites/bsee.gov/files/tap-technical-assessment-program/397aa.pdf}
+}
+
+@article{malekzadeh2012,
+  author  = {Malekzadeh, R. and Henkes, R. A. W. M. and Mudde, R. F.},
+  title   = {Severe slugging in a long pipeline--riser system: Experiments and predictions},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {46},
+  pages   = {9--21},
+  year    = {2012},
+  doi     = {10.1016/j.ijmultiphaseflow.2012.06.004}
+}
+
+@article{balino2010,
+  author  = {Bali{\~n}o, J. L. and Burr, K. P. and Nemoto, R. H.},
+  title   = {Modeling and simulation of severe slugging in air--water pipeline--riser systems},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {36},
+  number  = {8},
+  pages   = {643--660},
+  year    = {2010},
+  doi     = {10.1016/j.ijmultiphaseflow.2010.04.003}
+}
+
+@article{storkaas2007,
+  author  = {Storkaas, Espen and Skogestad, Sigurd},
+  title   = {Controllability analysis of two-phase pipeline-riser systems at riser slugging conditions},
+  journal = {Control Eng. Pract.},
+  volume  = {15},
+  number  = {5},
+  pages   = {567--581},
+  year    = {2007},
+  doi     = {10.1016/j.conengprac.2006.10.007}
+}
+
+@article{jahanshahi2011,
+  author  = {Jahanshahi, Esmaeil and Skogestad, Sigurd},
+  title   = {Simplified dynamical models for control of severe slugging in multiphase risers},
+  journal = {IFAC Proc. Vol.},
+  volume  = {44},
+  number  = {1},
+  pages   = {1634--1639},
+  year    = {2011},
+  doi     = {10.3182/20110828-6-IT-1002.00981}
+}
+
+% -----------------------------------------------------------------------------
+% Intermitência severa: estudos recentes com modelos 1D (2012–2023)
+% -----------------------------------------------------------------------------
+
+@article{han2015,
+  author  = {Han, Pengfei and Guo, Liejin},
+  title   = {Numerical simulation of terrain-induced severe slugging coupled by hydrodynamic slugs in a pipeline--riser system},
+  journal = {Int. J. Heat Fluid Flow},
+  volume  = {56},
+  pages   = {355--366},
+  year    = {2015},
+  doi     = {10.1016/j.ijheatfluidflow.2015.10.005}
+}
+
+@article{kjeldby2013,
+  author  = {Kjeldby, T. K. and Henkes, R. A. W. M. and Nydal, O. J.},
+  title   = {{Lagrangian} slug flow modeling and sensitivity on hydrodynamic slug initiation methods in a severe slugging case},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {53},
+  pages   = {29--39},
+  year    = {2013},
+  doi     = {10.1016/j.ijmultiphaseflow.2013.01.002}
+}
+
+@article{smith2016,
+  author  = {Smith, Ivar Eskerud and Nydal, Ole J{\o}rgen},
+  title   = {The effect of boundary conditions and droplet entrainment on severe slugging using a {Lagrangian} slug tracking model},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {85},
+  pages   = {245--257},
+  year    = {2016},
+  doi     = {10.1016/j.ijmultiphaseflow.2016.06.014}
+}
+
+@article{park2014,
+  author  = {Park, Sangmin and Nydal, Ole J{\o}rgen},
+  title   = {Study on severe slugging in an {S}-shaped riser: Small-scale experiments compared with simulations},
+  journal = {Oil Gas Facil.},
+  volume  = {3},
+  number  = {4},
+  pages   = {72--80},
+  year    = {2014},
+  doi     = {10.2118/171559-PA}
+}
+
+@article{li2022,
+  author  = {Li, Nailiang and Chen, Bin and Du, Xueping and Han, Dongtai},
+  title   = {Experimental and numerical study on the elimination of severe slugging by riser outlet choking},
+  journal = {Energies},
+  volume  = {15},
+  number  = {19},
+  pages   = {7284},
+  year    = {2022},
+  doi     = {10.3390/en15197284}
+}
+
+@article{azevedo2023,
+  author  = {Azevedo, G. R. and Bali{\~n}o, J. L. and Andreolli, I.},
+  title   = {Nonlinear stability analysis for severe slugging in an air--water two-phase flow},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {159},
+  pages   = {104334},
+  year    = {2023},
+  doi     = {10.1016/j.ijmultiphaseflow.2022.104334}
+}
+
+% -----------------------------------------------------------------------------
+% Simuladores transitórios e captura de golfadas com o modelo a dois fluidos
+% -----------------------------------------------------------------------------
+
+@article{bendiksen1991,
+  author  = {Bendiksen, Kjell H. and Malnes, Dag and Moe, Randi and Nuland, Sven},
+  title   = {The dynamic two-fluid model {OLGA}: Theory and application},
+  journal = {SPE Prod. Eng.},
+  volume  = {6},
+  number  = {2},
+  pages   = {171--180},
+  year    = {1991},
+  doi     = {10.2118/19451-PA}
+}
+
+@inproceedings{pauchon1994,
+  author    = {Pauchon, C. L. and Dhulesia, H. and Binh-Cirlot, G. and Fabre, J.},
+  title     = {{TACITE}: A transient tool for multiphase pipeline and well simulation},
+  booktitle = {SPE Annual Technical Conference and Exhibition, New Orleans, Louisiana, 25--28 September 1994},
+  publisher = {Society of Petroleum Engineers},
+  year      = {1994},
+  note      = {Paper SPE-28545-MS},
+  doi       = {10.2118/28545-MS}
+}
+
+@article{masella1998,
+  author  = {Masella, J. M. and Tran, Q. H. and Ferre, D. and Pauchon, C.},
+  title   = {Transient simulation of two-phase flows in pipes},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {24},
+  number  = {5},
+  pages   = {739--755},
+  year    = {1998},
+  doi     = {10.1016/S0301-9322(98)00004-4}
+}
+
+@article{issa2003,
+  author  = {Issa, R. I. and Kempf, M. H. W.},
+  title   = {Simulation of slug flow in horizontal and nearly horizontal pipes with the two-fluid model},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {29},
+  number  = {1},
+  pages   = {69--95},
+  year    = {2003},
+  doi     = {10.1016/S0301-9322(02)00127-1}
+}
+
+@article{bonizzi2009,
+  author  = {Bonizzi, M. and Andreussi, P. and Banerjee, S.},
+  title   = {Flow regime independent, high resolution multi-field modelling of near-horizontal gas--liquid flows in pipelines},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {35},
+  number  = {1},
+  pages   = {34--46},
+  year    = {2009},
+  doi     = {10.1016/j.ijmultiphaseflow.2008.09.001}
+}
+
+% -----------------------------------------------------------------------------
+% Modelo a dois fluidos: formulação, boa colocação e regularização
+% -----------------------------------------------------------------------------
+
+@book{ishii2011,
+  author    = {Ishii, Mamoru and Hibiki, Takashi},
+  title     = {Thermo-Fluid Dynamics of Two-Phase Flow},
+  edition   = {2nd},
+  publisher = {Springer},
+  address   = {New York},
+  year      = {2011},
+  doi       = {10.1007/978-1-4419-7985-8}
+}
+
+@book{drew1999,
+  author    = {Drew, Donald A. and Passman, Stephen L.},
+  title     = {Theory of Multicomponent Fluids},
+  series    = {Applied Mathematical Sciences},
+  volume    = {135},
+  publisher = {Springer},
+  address   = {New York},
+  year      = {1999},
+  doi       = {10.1007/b97678}
+}
+
+@article{stuhmiller1977,
+  author  = {Stuhmiller, J. H.},
+  title   = {The influence of interfacial pressure forces on the character of two-phase flow model equations},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {3},
+  number  = {6},
+  pages   = {551--560},
+  year    = {1977},
+  doi     = {10.1016/0301-9322(77)90029-5}
+}
+
+@article{ramshaw1978,
+  author  = {Ramshaw, John D. and Trapp, John A.},
+  title   = {Characteristics, stability, and short-wavelength phenomena in two-phase flow equation systems},
+  journal = {Nucl. Sci. Eng.},
+  volume  = {66},
+  number  = {1},
+  pages   = {93--102},
+  year    = {1978},
+  doi     = {10.13182/NSE78-A15191}
+}
+
+@article{drew1979,
+  author  = {Drew, D. and Cheng, L. and Lahey, R. T.},
+  title   = {The analysis of virtual mass effects in two-phase flow},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {5},
+  number  = {4},
+  pages   = {233--242},
+  year    = {1979},
+  doi     = {10.1016/0301-9322(79)90023-5}
+}
+
+@article{bestion1990,
+  author  = {Bestion, D.},
+  title   = {The physical closure laws in the {CATHARE} code},
+  journal = {Nucl. Eng. Des.},
+  volume  = {124},
+  number  = {3},
+  pages   = {229--245},
+  year    = {1990},
+  doi     = {10.1016/0029-5493(90)90294-8}
+}
+
+% Número de revisões anuais com paginação própria (suplemento); o Crossref
+% não regista número.
+@article{barnea1994,
+  author  = {Barnea, D. and Taitel, Y.},
+  title   = {Interfacial and structural stability of separated flow},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {20},
+  number  = {Suppl.},
+  pages   = {387--414},
+  year    = {1994},
+  doi     = {10.1016/0301-9322(94)90078-7}
+}
+
+% Publicado em linha em 2007; número 4 do volume 73 é de 2008.
+@article{holmas2008,
+  author  = {Holm{\aa}s, H. and Sira, T. and Nordsveen, M. and Langtangen, H. P. and Schulkes, R.},
+  title   = {Analysis of a {1D} incompressible two-fluid model including artificial diffusion},
+  journal = {IMA J. Appl. Math.},
+  volume  = {73},
+  number  = {4},
+  pages   = {651--667},
+  year    = {2008},
+  doi     = {10.1093/imamat/hxm066}
+}
+
+@article{liao2008,
+  author  = {Liao, Jun and Mei, Renwei and Klausner, James F.},
+  title   = {A study on the numerical stability of the two-fluid model near ill-posedness},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {34},
+  number  = {11},
+  pages   = {1067--1087},
+  year    = {2008},
+  doi     = {10.1016/j.ijmultiphaseflow.2008.02.010}
+}
+
+@article{fullmer2014,
+  author  = {Fullmer, William D. and Ransom, Victor H. and {Lopez de Bertodano}, Martin A.},
+  title   = {Linear and nonlinear analysis of an unstable, but well-posed, one-dimensional two-fluid model for two-phase flow based on the inviscid {Kelvin--Helmholtz} instability},
+  journal = {Nucl. Eng. Des.},
+  volume  = {268},
+  pages   = {173--184},
+  year    = {2014},
+  doi     = {10.1016/j.nucengdes.2013.04.043}
+}
+
+@book{lopezdebertodano2017,
+  author    = {{L{\'o}pez de Bertodano}, Mart{\'\i}n and Fullmer, William and Clausse, Alejandro and Ransom, Victor H.},
+  title     = {Two-Fluid Model Stability, Simulation and Chaos},
+  publisher = {Springer},
+  address   = {Cham},
+  year      = {2017},
+  doi       = {10.1007/978-3-319-44968-5}
+}
+
+@article{sanderse2017,
+  author  = {Sanderse, Benjamin and Smith, Ivar Eskerud and Hendrix, Maurice H. W.},
+  title   = {Analysis of time integration methods for the compressible two-fluid model for pipe flow simulations},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {95},
+  pages   = {155--174},
+  year    = {2017},
+  doi     = {10.1016/j.ijmultiphaseflow.2017.05.002}
+}
+
+% -----------------------------------------------------------------------------
+% Padrões de escoamento e fechos (identificação automática do padrão)
+% -----------------------------------------------------------------------------
+
+@article{taitel1976,
+  author  = {Taitel, Yehuda and Dukler, A. E.},
+  title   = {A model for predicting flow regime transitions in horizontal and near horizontal gas--liquid flow},
+  journal = {AIChE J.},
+  volume  = {22},
+  number  = {1},
+  pages   = {47--55},
+  year    = {1976},
+  doi     = {10.1002/aic.690220105}
+}
+
+@article{taitel1980,
+  author  = {Taitel, Yehuda and Barnea, Dvora and Dukler, A. E.},
+  title   = {Modelling flow pattern transitions for steady upward gas--liquid flow in vertical tubes},
+  journal = {AIChE J.},
+  volume  = {26},
+  number  = {3},
+  pages   = {345--354},
+  year    = {1980},
+  doi     = {10.1002/aic.690260304}
+}
+
+@article{barnea1982,
+  author  = {Barnea, Dvora and Shoham, Ovadia and Taitel, Yehuda},
+  title   = {Flow pattern transition for downward inclined two phase flow; horizontal to vertical},
+  journal = {Chem. Eng. Sci.},
+  volume  = {37},
+  number  = {5},
+  pages   = {735--740},
+  year    = {1982},
+  doi     = {10.1016/0009-2509(82)85033-1}
+}
+
+@article{barnea1987,
+  author  = {Barnea, D.},
+  title   = {A unified model for predicting flow-pattern transitions for the whole range of pipe inclinations},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {13},
+  number  = {1},
+  pages   = {1--12},
+  year    = {1987},
+  doi     = {10.1016/0301-9322(87)90002-4}
+}
+
+@article{andritsos1987,
+  author  = {Andritsos, Nikolaos and Hanratty, T. J.},
+  title   = {Influence of interfacial waves in stratified gas--liquid flows},
+  journal = {AIChE J.},
+  volume  = {33},
+  number  = {3},
+  pages   = {444--454},
+  year    = {1987},
+  doi     = {10.1002/aic.690330310}
+}
+
+@article{kowalski1987,
+  author  = {Kowalski, J. E.},
+  title   = {Wall and interfacial shear stress in stratified flow in a horizontal pipe},
+  journal = {AIChE J.},
+  volume  = {33},
+  number  = {2},
+  pages   = {274--281},
+  year    = {1987},
+  doi     = {10.1002/aic.690330214}
+}
+
+@article{zuber1965,
+  author  = {Zuber, N. and Findlay, J. A.},
+  title   = {Average volumetric concentration in two-phase flow systems},
+  journal = {J. Heat Transf.},
+  volume  = {87},
+  number  = {4},
+  pages   = {453--468},
+  year    = {1965},
+  doi     = {10.1115/1.3689137}
+}
+
+@article{bendiksen1984,
+  author  = {Bendiksen, Kjell H.},
+  title   = {An experimental investigation of the motion of long bubbles in inclined tubes},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {10},
+  number  = {4},
+  pages   = {467--483},
+  year    = {1984},
+  doi     = {10.1016/0301-9322(84)90057-0}
+}
+
+@article{gregory1969,
+  author  = {Gregory, G. A. and Scott, D. S.},
+  title   = {Correlation of liquid slug velocity and frequency in horizontal cocurrent gas--liquid slug flow},
+  journal = {AIChE J.},
+  volume  = {15},
+  number  = {6},
+  pages   = {933--935},
+  year    = {1969},
+  doi     = {10.1002/aic.690150623}
+}
+
+@article{gregory1978,
+  author  = {Gregory, G. A. and Nicholson, M. K. and Aziz, K.},
+  title   = {Correlation of the liquid volume fraction in the slug for horizontal gas--liquid slug flow},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {4},
+  number  = {1},
+  pages   = {33--39},
+  year    = {1978},
+  doi     = {10.1016/0301-9322(78)90023-X}
+}
+
+@article{nicholson1978,
+  author  = {Nicholson, M. K. and Aziz, K. and Gregory, G. A.},
+  title   = {Intermittent two phase flow in horizontal pipes: Predictive models},
+  journal = {Can. J. Chem. Eng.},
+  volume  = {56},
+  number  = {6},
+  pages   = {653--663},
+  year    = {1978},
+  doi     = {10.1002/cjce.5450560601}
+}
+
+@article{barnea1985,
+  author  = {Barnea, Dvora and Brauner, Neima},
+  title   = {Holdup of the liquid slug in two phase intermittent flow},
+  journal = {Int. J. Multiph. Flow},
+  volume  = {11},
+  number  = {1},
+  pages   = {43--49},
+  year    = {1985},
+  doi     = {10.1016/0301-9322(85)90004-7}
+}
+
+@article{zabaras2000,
+  author  = {Zabaras, G. J.},
+  title   = {Prediction of slug frequency for gas/liquid flows},
+  journal = {SPE J.},
+  volume  = {5},
+  number  = {3},
+  pages   = {252--258},
+  year    = {2000},
+  doi     = {10.2118/65093-PA}
+}
+
+@article{mendelson1967,
+  author  = {Mendelson, Harvey D.},
+  title   = {The prediction of bubble terminal velocities from wave theory},
+  journal = {AIChE J.},
+  volume  = {13},
+  number  = {2},
+  pages   = {250--253},
+  year    = {1967},
+  doi     = {10.1002/aic.690130213}
+}
+
+@article{ishii1979,
+  author  = {Ishii, Mamoru and Zuber, Novak},
+  title   = {Drag coefficient and relative velocity in bubbly, droplet or particulate flows},
+  journal = {AIChE J.},
+  volume  = {25},
+  number  = {5},
+  pages   = {843--855},
+  year    = {1979},
+  doi     = {10.1002/aic.690250513}
+}
+
+@article{ishii1989,
+  author  = {Ishii, Mamoru and Mishima, Kaichiro},
+  title   = {Droplet entrainment correlation in annular two-phase flow},
+  journal = {Int. J. Heat Mass Transf.},
+  volume  = {32},
+  number  = {10},
+  pages   = {1835--1846},
+  year    = {1989},
+  doi     = {10.1016/0017-9310(89)90155-5}
+}
+
+@article{hinze1955,
+  author  = {Hinze, J. O.},
+  title   = {Fundamentals of the hydrodynamic mechanism of splitting in dispersion processes},
+  journal = {AIChE J.},
+  volume  = {1},
+  number  = {3},
+  pages   = {289--295},
+  year    = {1955},
+  doi     = {10.1002/aic.690010303}
+}
+
+% Sem DOI (1958); referência confirmada em listas de referências de trabalhos
+% que a citam.
+@article{calderbank1958,
+  author  = {Calderbank, P. H.},
+  title   = {Physical rate processes in industrial fermentation. {Part I}: The interfacial area in gas--liquid contacting with mechanical agitation},
+  journal = {Trans. Inst. Chem. Eng.},
+  volume  = {36},
+  pages   = {443--463},
+  year    = {1958}
+}
+
+@book{fan1990,
+  author    = {Fan, Liang-Shih and Tsuchiya, Katsumi},
+  title     = {Bubble Wake Dynamics in Liquids and Liquid--Solid Suspensions},
+  series    = {Butterworth-Heinemann Series in Chemical Engineering},
+  publisher = {Butterworth-Heinemann},
+  address   = {Boston},
+  year      = {1990},
+  doi       = {10.1016/C2009-0-24002-5}
+}
+
+% Sem DOI (McGraw-Hill, 1969).
+@book{wallis1969,
+  author    = {Wallis, Graham B.},
+  title     = {One-Dimensional Two-Phase Flow},
+  publisher = {McGraw-Hill},
+  address   = {New York},
+  year      = {1969}
+}
+
+% Capítulo de série (Advances in Heat Transfer), citado como revista.
+@article{taitel1990b,
+  author  = {Taitel, Yehuda and Barnea, Dvora},
+  title   = {Two-phase slug flow},
+  journal = {Adv. Heat Transf.},
+  volume  = {20},
+  pages   = {83--132},
+  year    = {1990},
+  doi     = {10.1016/S0065-2717(08)70026-1}
+}
+
+@book{shoham2006,
+  author    = {Shoham, Ovadia},
+  title     = {Mechanistic Modeling of Gas-Liquid Two-Phase Flow in Pipes},
+  publisher = {Society of Petroleum Engineers},
+  address   = {Richardson, TX},
+  year      = {2006},
+  doi       = {10.2118/9781555631079}
+}
+
+% Sem DOI: a edição original (Hemisphere, 1980) não tem DOI; só a reedição
+% da CRC Press (2018) tem um (10.1201/9781482234213), que não se usa aqui.
+@book{patankar1980,
+  author    = {Patankar, Suhas V.},
+  title     = {Numerical Heat Transfer and Fluid Flow},
+  publisher = {Hemisphere},
+  address   = {Washington, DC},
+  year      = {1980}
+}
+
+% Sem DOI (revista profissional Chemical Engineering, 7 nov. 1977).
+@article{churchill1977,
+  author  = {Churchill, Stuart W.},
+  title   = {Friction-factor equation spans all fluid-flow regimes},
+  journal = {Chem. Eng.},
+  volume  = {84},
+  number  = {24},
+  pages   = {91--92},
+  year    = {1977}
+}
+
+% -----------------------------------------------------------------------------
+% Métodos numéricos: malha escalonada, volumes finitos, BDF, Jacobiana
+% -----------------------------------------------------------------------------
+
+@article{harlow1965,
+  author  = {Harlow, Francis H. and Welch, J. Eddie},
+  title   = {Numerical calculation of time-dependent viscous incompressible flow of fluid with free surface},
+  journal = {Phys. Fluids},
+  volume  = {8},
+  number  = {12},
+  pages   = {2182--2189},
+  year    = {1965},
+  doi     = {10.1063/1.1761178}
+}
+
+@book{leveque2002,
+  author    = {LeVeque, Randall J.},
+  title     = {Finite Volume Methods for Hyperbolic Problems},
+  series    = {Cambridge Texts in Applied Mathematics},
+  volume    = {31},
+  publisher = {Cambridge University Press},
+  address   = {Cambridge},
+  year      = {2002},
+  doi       = {10.1017/CBO9780511791253}
+}
+
+@book{hairer1996,
+  author    = {Hairer, Ernst and Wanner, Gerhard},
+  title     = {Solving Ordinary Differential Equations {II}: Stiff and Differential-Algebraic Problems},
+  edition   = {2nd rev.},
+  series    = {Springer Series in Computational Mathematics},
+  volume    = {14},
+  publisher = {Springer},
+  address   = {Berlin},
+  year      = {1996},
+  doi       = {10.1007/978-3-642-05221-7}
+}
+
+@article{shampine1997,
+  author  = {Shampine, Lawrence F. and Reichelt, Mark W.},
+  title   = {The {MATLAB} {ODE} suite},
+  journal = {SIAM J. Sci. Comput.},
+  volume  = {18},
+  number  = {1},
+  pages   = {1--22},
+  year    = {1997},
+  doi     = {10.1137/S1064827594276424}
+}
+
+% Publicado em 1974 no J. Inst. Math. Appl.; a OUP indexa-o hoje como
+% IMA J. Appl. Math. (nome usado pelo Crossref).
+@article{curtis1974,
+  author  = {Curtis, A. R. and Powell, M. J. D. and Reid, J. K.},
+  title   = {On the estimation of sparse {Jacobian} matrices},
+  journal = {IMA J. Appl. Math.},
+  volume  = {13},
+  number  = {1},
+  pages   = {117--119},
+  year    = {1974},
+  doi     = {10.1093/imamat/13.1.117}
+}
+
+@article{kelley1998,
+  author  = {Kelley, C. T. and Keyes, David E.},
+  title   = {Convergence analysis of pseudo-transient continuation},
+  journal = {SIAM J. Numer. Anal.},
+  volume  = {35},
+  number  = {2},
+  pages   = {508--523},
+  year    = {1998},
+  doi     = {10.1137/S0036142996304796}
+}
+
+@book{griewank2008,
+  author    = {Griewank, Andreas and Walther, Andrea},
+  title     = {Evaluating Derivatives: Principles and Techniques of Algorithmic Differentiation},
+  edition   = {2nd},
+  publisher = {SIAM},
+  address   = {Philadelphia},
+  year      = {2008},
+  doi       = {10.1137/1.9780898717761}
+}
+
+% -----------------------------------------------------------------------------
+% Software
+% -----------------------------------------------------------------------------
+
+% Sem DOI. Autores, título e URL do bloco de citação do README do JAX
+% (ordem alfabética); o README pede a versão usada: 0.11.2 (uv.lock do mfsim).
+@misc{bradbury2018,
+  author = {Bradbury, James and Frostig, Roy and Hawkins, Peter and Johnson, Matthew James and Katariya, Yash and Leary, Chris and Maclaurin, Dougal and Necula, George and Paszke, Adam and {VanderPlas}, Jake and Wanderman-Milne, Skye and Zhang, Qiao},
+  title  = {{JAX}: composable transformations of {Python}+{NumPy} programs},
+  year   = {2018},
+  url    = {http://github.com/jax-ml/jax},
+  note   = {[software], version 0.11.2}
+}
+
+@article{harris2020,
+  author  = {Harris, Charles R. and Millman, K. Jarrod and {van der Walt}, St{\'e}fan J. and Gommers, Ralf and Virtanen, Pauli and Cournapeau, David and Wieser, Eric and Taylor, Julian and Berg, Sebastian and Smith, Nathaniel J. and Kern, Robert and Picus, Matti and Hoyer, Stephan and {van Kerkwijk}, Marten H. and Brett, Matthew and Haldane, Allan and {del R{\'\i}o}, Jaime Fern{\'a}ndez and Wiebe, Mark and Peterson, Pearu and G{\'e}rard-Marchant, Pierre and Sheppard, Kevin and Reddy, Tyler and Weckesser, Warren and Abbasi, Hameer and Gohlke, Christoph and Oliphant, Travis E.},
+  title   = {Array programming with {NumPy}},
+  journal = {Nature},
+  volume  = {585},
+  number  = {7825},
+  pages   = {357--362},
+  year    = {2020},
+  doi     = {10.1038/s41586-020-2649-2}
+}
+
+% Lista de autores da citação oficial do SciPy (34 nomes + consórcio).
+@article{virtanen2020,
+  author  = {Virtanen, Pauli and Gommers, Ralf and Oliphant, Travis E. and Haberland, Matt and Reddy, Tyler and Cournapeau, David and Burovski, Evgeni and Peterson, Pearu and Weckesser, Warren and Bright, Jonathan and {van der Walt}, St{\'e}fan J. and Brett, Matthew and Wilson, Joshua and Millman, K. Jarrod and Mayorov, Nikolay and Nelson, Andrew R. J. and Jones, Eric and Kern, Robert and Larson, Eric and Carey, C J and Polat, {\.I}lhan and Feng, Yu and Moore, Eric W. and {VanderPlas}, Jake and Laxalde, Denis and Perktold, Josef and Cimrman, Robert and Henriksen, Ian and Quintero, E. A. and Harris, Charles R. and Archibald, Anne M. and Ribeiro, Ant{\^o}nio H. and Pedregosa, Fabian and {van Mulbregt}, Paul and {SciPy 1.0 Contributors}},
+  title   = {{SciPy} 1.0: Fundamental algorithms for scientific computing in {Python}},
+  journal = {Nat. Methods},
+  volume  = {17},
+  number  = {3},
+  pages   = {261--272},
+  year    = {2020},
+  doi     = {10.1038/s41592-019-0686-2}
+}
+
+% -----------------------------------------------------------------------------
+% Origem do modelo
+% -----------------------------------------------------------------------------
+
+% Sem DOI. "Miranda{ }de" mantém a partícula no fim do nome próprio sem que o
+% BibTeX a abrevie ("Souza, J.N.M."). Aprovada em fevereiro de 2010;
+% xxvi + 265 p.; Programa TPQB.
+@phdthesis{souza2010,
+  author  = {Souza, Jaime Neiva Miranda{ }de},
+  title   = {Modelagem e simula{\c{c}}{\~a}o de escoamento multif{\'a}sico em dutos de produ{\c{c}}{\~a}o de {\'o}leo e g{\'a}s natural},
+  school  = {Escola de Qu{\'\i}mica, Universidade Federal do Rio de Janeiro},
+  address = {Rio de Janeiro, Brazil},
+  type    = {{D.Sc.} thesis},
+  year    = {2010},
+  note    = {In Portuguese}
+}

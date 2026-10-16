@@ -67,6 +67,7 @@ SCHEME_KEYS = (
     "flux_limit",
     "art_visc",
     "relax_target",
+    "closure_alpha",
     "drift_relax",
     "drift_den_min",
     "ic_holdup",

@@ -734,6 +734,12 @@
                 "noslip"
               ]
             },
+            "closure_alpha": {
+              "enum": [
+                "mean",
+                "donor"
+              ]
+            },
             "drift_relax": {
               "$ref": "#/$defs/positive"
             },

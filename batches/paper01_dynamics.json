@@ -1,0 +1,66 @@
+{
+ "description": "Artigo 01, dinâmica a 15 bar: pontos do mapa com padrão dinâmico (partida do estacionário perturbado, casos gerados por tools/slug_map.py build --base cases/severe_slug/well_choke_auto.json --out runs/maps/well_auto) com saída a 1 s e 6000 s sem paragem adaptativa, para os diagramas espaço–tempo, a anatomia do ciclo e a boa colocação ao longo da trajetória.",
+ "out_dir": "runs/paper01/dynamics",
+ "runs": [
+  {
+   "name": "ab0.130_P15.0",
+   "case": "runs/maps/well_auto/steady/cases/ab0.130_P15.0.json",
+   "set": [
+    "time.dt_out=1.0",
+    "time.settle.window=100000.0",
+    "time.settle.t_min=100000.0"
+   ],
+   "tf": 6000.0
+  },
+  {
+   "name": "ab0.220_P15.0",
+   "case": "runs/maps/well_auto/steady/cases/ab0.220_P15.0.json",
+   "set": [
+    "time.dt_out=1.0",
+    "time.settle.window=100000.0",
+    "time.settle.t_min=100000.0"
+   ],
+   "tf": 6000.0
+  },
+  {
+   "name": "ab0.280_P15.0",
+   "case": "runs/maps/well_auto/steady/cases/ab0.280_P15.0.json",
+   "set": [
+    "time.dt_out=1.0",
+    "time.settle.window=100000.0",
+    "time.settle.t_min=100000.0"
+   ],
+   "tf": 6000.0
+  },
+  {
+   "name": "ab0.360_P15.0",
+   "case": "runs/maps/well_auto/steady/cases/ab0.360_P15.0.json",
+   "set": [
+    "time.dt_out=1.0",
+    "time.settle.window=100000.0",
+    "time.settle.t_min=100000.0"
+   ],
+   "tf": 6000.0
+  },
+  {
+   "name": "ab0.600_P15.0",
+   "case": "runs/maps/well_auto/steady/cases/ab0.600_P15.0.json",
+   "set": [
+    "time.dt_out=1.0",
+    "time.settle.window=100000.0",
+    "time.settle.t_min=100000.0"
+   ],
+   "tf": 6000.0
+  },
+  {
+   "name": "ab1.000_P15.0",
+   "case": "runs/maps/well_auto/steady/cases/ab1.000_P15.0.json",
+   "set": [
+    "time.dt_out=1.0",
+    "time.settle.window=100000.0",
+    "time.settle.t_min=100000.0"
+   ],
+   "tf": 6000.0
+  }
+ ]
+}

@@ -1,0 +1,379 @@
+%% Artigo 01 do mfsim — intermitência severa com o modelo a dois fluidos a quatro equações e padrão de escoamento
+%% dinâmico: boa colocação do modelo, discretizações, integrador, backends e mapa de estabilidade com choke.
+%%
+%% Revista alvo (proposta, a confirmar): International Journal of Multiphase Flow (Elsevier); ver
+%% ../00-escolha-da-revista.md. Plano, casos e o que cada figura mostra: PLAN.md. Construção: `make` nesta pasta
+%% (figures/make_figures.py gera todas as figuras e os fragmentos de tabela a partir das corridas gravadas).
+%%
+%% Decisões do dono (2026-10-16): não comparar com os resultados da tese (citada só como origem do modelo); as
+%% escolhas que não funcionaram entram como lições gerais medidas com o código atual; o padrão de escoamento é
+%% calculado dinamicamente em todo o duto (nenhum trecho com padrão fixo). Sem secção CRediT (como no research-factory).
+%%
+%% \tbd{...} marca números que ainda dependem de corridas em curso (aparecem a vermelho no PDF).
+
+\documentclass[a4paper,fleqn]{cas-sc}
+%\documentclass[a4paper,fleqn,review]{cas-sc}
+
+\usepackage[authoryear,longnamesfirst]{natbib}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{url}
+\usepackage{placeins}
+\usepackage{xcolor}
+
+\graphicspath{{figures/generated/}{figures/static/}}
+
+% Macros do artigo
+\newcommand{\tbd}[1]{\textcolor{red}{#1}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\aG}{\alpha_G}
+\newcommand{\aL}{\alpha_L}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\by}{\mathbf{y}}
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bF}{\mathbf{f}}
+\newcommand{\bT}{\mathbf{T}}
+
+\begin{document}
+\let\WriteBookmarks\relax
+\def\floatpagepagefraction{1}
+\def\textpagefraction{.001}
+
+\shorttitle{Severe slugging with a two-fluid model and dynamic flow-pattern identification}
+\shortauthors{J.N.M. de Souza et~al.}
+
+\title[mode = title]{Severe slugging with a four-equation two-fluid model and dynamic flow-pattern identification: well-posedness, discretisation, time integration and choke stability maps}
+
+% Autores e afiliações. TODO: confirmar a lista de autores, as afiliações e o e-mail do autor correspondente.
+\author[1]{Jaime Neiva Miranda de Souza}
+\cormark[1]
+\ead{corresponding.author@example.org}  % TODO
+
+\author[1]{Jos\'e Luiz de Medeiros}
+
+\author[2]{Andr\'e Luiz Hemerly Costa}
+
+\author[1]{Giovani Cavalcanti Nunes}
+
+\affiliation[1]{organization={Escola de Qu\'imica, Universidade Federal do Rio de Janeiro},
+                addressline={Av. Athos da Silveira Ramos 149, Centro de Tecnologia, Bloco E},
+                city={Rio de Janeiro},
+                postcode={21941-909},
+                state={RJ},
+                country={Brazil}}
+
+\affiliation[2]{organization={Instituto de Qu\'imica, Universidade do Estado do Rio de Janeiro},
+                addressline={Rua S\~ao Francisco Xavier 524},
+                city={Rio de Janeiro},
+                postcode={20550-900},
+                state={RJ},
+                country={Brazil}}
+
+\cortext[1]{Corresponding author.}
+
+\begin{abstract}
+% <= 250 palavras, autocontido, sem referências.
+Severe slugging in pipeline--riser systems combines phase disappearance, moving liquid and gas fronts, changes of flow pattern and cycles of hundreds of seconds, which makes it a demanding test for transient two-fluid simulators. This work asks what a one-dimensional, four-equation two-fluid model with pattern-dependent closures needs to reproduce the cycle when the flow pattern is identified dynamically along the whole system, and uses the answer to map the stability of a well--pipeline--riser system with a topside choke. A characteristic analysis shows that the closures are ill-posed in large parts of their domain; a low-void rule and an objective virtual-mass term leave the model hyperbolic in all but \tbd{1}\,\% of the states visited by the simulations, against \tbd{23--30}\,\% without them. Of five spatial discretisations, only a staggered finite-volume scheme with phase-wise donor cells carries the cycle; integrating the non-conservative form loses liquid in one step per blowdown, whereas a conservative residual closes the mass balances to round-off, and evaluating the face closures with the donor void fraction removes an odd--even mode that otherwise destabilises the cells at the bend. A variable-order implicit integrator with physical bounds and range-scaled tolerances, driven by a compiled right-hand side with exact Jacobians, runs one hour of slugging in \tbd{minutes}. On a grid of choke openings and reservoir pressures, the stable region follows the choke criterion of Jansen, Shoham and Taitel; starting from the steady state or from a blocked line gives different answers in \tbd{8} cells, a hysteresis that the eigenvalues of the steady state do not reveal.
+\end{abstract}
+
+% 3 a 5 pontos, no máximo 85 caracteres cada (contando espaços).
+\begin{highlights}
+\item Severe slugging simulated with the flow pattern identified along the whole system
+\item Low-void rule and virtual mass keep the two-fluid model hyperbolic where it is used
+\item Only conservative staggered finite volumes with donor cells carry the slug cycle
+\item Compiled right-hand side with exact Jacobians makes stability maps affordable
+\item Choke stability boundary follows the Jansen criterion and shows hysteresis
+\end{highlights}
+
+% 1 a 7 palavras-chave.
+\begin{keywords}
+severe slugging \sep two-fluid model \sep well-posedness \sep flow-pattern identification \sep finite volumes \sep automatic differentiation \sep choke
+\end{keywords}
+
+\maketitle
+
+\section{Introduction}\label{sec:intro}
+
+Severe slugging is the cyclic blockage and blowout of a riser by liquid that accumulates at a low point of a production line \citep{schmidt1980,boe1981,pots1987}. When the gas in the line cannot carry the liquid up the riser, the liquid seals the riser base, the line pressurises while the riser fills, and once the pressure in the line overcomes the hydrostatic head the gas penetrates the riser and expels the liquid in a short burst, after which the liquid falls back and the cycle restarts \citep{taitel1986,fabre1990,taitel1990a}. The cycle loads separators with liquid surges, causes pressure oscillations along the system and reduces production. Choking at the top of the riser can stabilise the flow \citep{schmidt1979,jansen1996}, at the price of a back-pressure, which makes the stability boundary in the plane of choke opening and inflow conditions the central question for operation.
+
+Models of severe slugging range from lumped descriptions of the cycle \citep{taitel1990a,sarica1991} and low-order models for control \citep{storkaas2007,jahanshahi2011}, through drift-flux formulations \citep{balino2010}, to one-dimensional two-fluid models of the kind used in commercial transient simulators \citep{bendiksen1991,pauchon1994,masella1998} and slug-capturing studies \citep{issa2003,bonizzi2009,malekzadeh2012}. The two-fluid model is the natural framework, because it represents the slip between the phases, the fronts and the flow-pattern changes that a cycle involves, but it brings well-known difficulties: the model is not hyperbolic for every state and closure \citep{stuhmiller1977,ramshaw1978,lopezdebertodano2017}, phases appear and disappear, the closures change with the flow pattern, and the dynamics combine acoustic and void-wave time scales with a cycle of hundreds of seconds. Commercial codes resolve these difficulties in ways that are not published in full, and open studies usually prescribe the flow pattern of each section of the system.
+
+This article reports what was needed to make a four-equation two-fluid model with pattern-dependent closures \citep{souza2010} simulate severe slugging with the flow pattern identified dynamically along the whole system, from the well inflow to the separator, and what can then be learnt from it about the stability of a well--pipeline--riser system with a topside choke. The presentation follows the chain of decisions in the order in which they matter: the model and its well-posedness (Sections~\ref{sec:model} and \ref{sec:wellposed}), the spatial discretisation (Section~\ref{sec:space}), the time integration and what happens when its ingredients are removed (Section~\ref{sec:time}), the compiled backend (Section~\ref{sec:backend}), and the application to a well--pipeline--riser system (Section~\ref{sec:application}). The contributions are:
+(i) a dynamic flow-pattern identification, smooth and evaluated on the local state, that can be used inside an implicit transient solver;
+(ii) a characteristic analysis by flow pattern, a regularisation built from physical terms, and a measure of well-posedness along the simulated trajectories rather than on a map;
+(iii) a comparison of collocated and staggered discretisations and of primitive and conservative time integration on the same severe-slugging problem, with exact mass balances, and the identification of an odd--even mode created by inconsistent face void fractions;
+(iv) an implicit integrator and a compiled right-hand side with exact Jacobians that make maps of hundreds of long transients affordable;
+(v) profiles, fronts and flow patterns along the cycle, the linear stability of the steady state at the bend, and a stability map in choke opening and reservoir pressure, with its hysteresis, compared with the criterion of \citet{jansen1996}.
+Section~\ref{sec:lessons} collects the practical recommendations.
+
+\section{Mathematical model}\label{sec:model}
+
+\subsection{Two-fluid equations}\label{sec:equations}
+
+The gas ($k = G$) and liquid ($k = L$) phases flow in a pipe of constant cross-section $A$ and inclination $\theta(x)$. With the area fractions $\aG + \aL = 1$, the phase mass flow rates $q_k = \rho_k \alpha_k A v_k$ and a common pressure $P$, the mass and momentum balances are
+\begin{gather}
+\pd{}{t}\left(\rho_k \alpha_k A\right) + \pd{q_k}{x} = 0, \label{eq:mass}\\
+\pd{q_k}{t} + \pd{}{x}\left(q_k v_k\right) = -\alpha_k A \pd{P}{x} - A\pd{}{x}\left(\alpha_k \Delta P_k\right) - \Gamma_k - \rho_k \alpha_k A g \sin\theta + F^{vm}_k, \label{eq:momentum}
+\end{gather}
+where $\Delta P_k$ is the difference between the average pressure of phase $k$ and $P$ (the hydrostatic level gradient in stratified flow, the interfacial pressure of dispersed flow), $\Gamma_k$ the wall and interfacial shear forces per unit length and $F^{vm}_k$ the virtual-mass force. Each phase follows a polytropic law, $\rho_k = \rho_{k0}(P/P_0)^{1/\gamma_k}$, with $\gamma_G$ close to one for the gas and a large $\gamma_L$ for the liquid. For the analysis the system is written in the primitive variables $\by = (\aG, P, q_L, q_G)$ as
+\begin{equation}\label{eq:quasilinear}
+\pd{\by}{t} + \bA(\by)\,\pd{\by}{x} + \mathbf{b}(\by) = \mathbf{0},
+\end{equation}
+whose matrix $\bA$ contains the convective terms, the pressure coupling through the phase compressibilities and the derivatives of $\Delta P_k$ with respect to $\aG$ and $P$. The virtual-mass force acts in dispersed bubbly flow and is written in the objective form of \citet{drew1979},
+\begin{equation}\label{eq:vm}
+F^{vm}_G = -F^{vm}_L = -C_{vm}\, w_B\, \aG \rho_L A \left[\frac{D_G v_G}{Dt} - \frac{D_L v_L}{Dt} + (v_G - v_L)\left((\lambda - 2)\pd{v_G}{x} + (1 - \lambda)\pd{v_L}{x}\right)\right],
+\end{equation}
+with $C_{vm} = 0.5$, $\lambda = 1$ and $w_B$ the weight of the bubbly pattern (Section~\ref{sec:patterns}).
+
+\subsection{Closure relations}\label{sec:closures}
+
+The closures follow the flow pattern. In \emph{stratified} flow the wetted perimeters and the hydrostatic pressure corrections follow from the liquid level \citep{taitel1976}, the wall friction from the Fanning factor of \citet{churchill1977} on each phase's hydraulic diameter, and the interfacial friction from \citet{andritsos1987}. In \emph{annular} flow the film friction follows \citet{kowalski1987} and the interfacial friction the same correlation on the film thickness. In \emph{bubbly} flow the bubble diameter is limited by the Hinze--Calderbank breakup diameter \citep{hinze1955}, the terminal velocity follows \citet{mendelson1967} and \citet{fan1990}, the interfacial drag balances buoyancy at the terminal velocity, and the interfacial pressure is $\Delta P_L = 0.25\rho_L (v_G - v_L)^2$ \citep{stuhmiller1977}. In \emph{intermittent} flow a slug unit made of an aerated liquid slug and a stratified film region \citep{taitel1990b} weighs the bubbly and stratified closures by the lengths of the two regions, with the slug-body holdup of \citet{barnea1985}, the translational velocity of \citet{bendiksen1984}, the slug length of \citet{nicholson1978} and the slug frequency of \citet{zabaras2000}. Where a phase vanishes, its velocity is undefined; Section~\ref{sec:space} treats this numerically.
+
+\subsection{Dynamic flow-pattern identification}\label{sec:patterns}
+
+The flow pattern is identified at every cell and every time from stability criteria: the Kelvin--Helmholtz criterion for the stability of stratified flow and the liquid-film trajectory criterion for downward flow \citep{taitel1976,barnea1982}, wind-generated waves for the wavy subpattern, the film-bridging and Froude criteria for annular flow \citep{taitel1980,barnea1987}, and the dispersion and coalescence criteria that separate bubbly from intermittent flow \citep{taitel1980,barnea1987}. The criteria are combined into weights $w_S$, $w_A$, $w_B$, $w_I$ of the stratified, annular, bubbly and intermittent closures,
+\begin{equation}\label{eq:weights}
+w_A = (1 - w_S)\,p_A, \qquad w_B = (1 - w_S)(1 - w_A)\,p_B, \qquad w_I = (1 - w_S)(1 - w_A)(1 - p_B),
+\end{equation}
+so that $w_S + w_A + w_B + w_I = 1$ for any value of the indicators. The closure terms are the weighted sums of the four closures.
+
+Steady-state flow-pattern maps compare superficial velocities with equilibrium solutions of the stratified and annular momentum balances; used as they are inside a transient solver they fail in three ways, which the present identification avoids. First, a sharp switch of the closures makes the residual non-smooth, and a Newton iteration then alternates between patterns from one iteration to the next; the indicators are therefore logistic functions whose width is a fraction of the critical value, $1/(1 + e^{-k (X - X_c)/|X_c|})$ with $k = 20$, so that criteria of very different magnitudes switch over the same relative interval. Second, the equilibrium level computed from superficial velocities does not describe a cell whose content is far from equilibrium: a gas pocket at rest in front of a liquid column has small superficial velocities and would be classified as bubbly flow. The criteria are therefore evaluated on the local state, with the actual level and void fraction in place of the equilibrium ones, stratified flow excluded in vertical sections and annular flow assigned above $\aG = 0.9$. Third, when the gas fraction is very small no pattern can be identified, since the criteria degenerate; below $\aG = 0.01$ the closures blend smoothly into the bubbly ones (low-void rule; Section~\ref{sec:wellposed}).
+
+\subsection{Well inflow, choke and separator}\label{sec:bc}
+
+The pipe receives the reservoir fluids through a linear inflow performance relation, $q_k = J_k\max(0, P_{res} - P_{in})$, with $J_G/J_L$ equal to the gas--liquid mass ratio of the reservoir fluid, and discharges through a choke into a separator at fixed pressure. The choke follows a homogeneous law: the mixture crosses the valve with the no-slip density weighted by volume, $\Delta P = \dot m\, Q/(c_v\, a)^2$, with $\dot m$ and $Q$ the mass and volumetric flow rates, $a$ the opening and $c_v$ the valve coefficient. A density weighted by mass flow, $\rho_M = (q_L\rho_L + q_G\rho_G)/(q_L + q_G)$, which is sometimes used, makes the choke almost transparent to gas, because the gas carries little mass, and becomes singular when the gas flows back through the choke at the end of a blowout and $q_L + q_G$ crosses zero; with it the choke does not stabilise the riser (Section~\ref{sec:map}).
+
+\section{Well-posedness}\label{sec:wellposed}
+
+\subsection{Characteristic analysis by flow pattern}\label{sec:characteristics}
+
+The system~\eqref{eq:quasilinear} is hyperbolic when the eigenvalues of $\bA$ are real; complex eigenvalues make the initial-value problem ill-posed, with growth rates proportional to the wavenumber, so that the numerical solution does not converge as the mesh is refined \citep{lopezdebertodano2017}. Fig.~\ref{fig:hyperbolicity} maps the largest imaginary part of the characteristic velocities over void fraction and slip for each closure at the conditions of the riser base of the application (\SI{6}{\bar}, $v_L = \SI{0.5}{\metre\per\second}$), and Table~\ref{tab:hyperbolicity} gives the ill-posed fractions. Four regions are ill-posed. The stratified closure loses hyperbolicity when the gas layer becomes very thin, $\aG \lesssim 0.005$, for any slip: the hydrostatic level gradient, which makes stratified flow hyperbolic up to the inviscid Kelvin--Helmholtz limit \citep{barnea1994}, vanishes when the level reaches the top of the pipe. This is precisely the state in which every liquid-filled cell is evaluated, since the void fraction of a cell without gas is cut at a small positive value. The bubbly closure is ill-posed at low void fraction with slip, the classical result of \citet{stuhmiller1977}. The annular closure, with both phases at the same pressure, is ill-posed for almost any slip, and the intermittent closure at low void fraction and at large slip.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{hyperbolicity}
+\caption{Largest imaginary part of the characteristic velocities over void fraction and slip, for the stratified, intermittent, bubbly and annular closures at \SI{6}{\bar} and $v_L = \SI{0.5}{\metre\per\second}$: (a, c, e, g) as closed; (b, d, f, h) with the regularisation named in each panel. White: hyperbolic.}\label{fig:hyperbolicity}
+\end{figure}
+
+\begin{table}[htbp]
+\caption{Ill-posed fraction of the void fraction--slip map by closure, without and with regularisation.}\label{tab:hyperbolicity}
+\footnotesize
+\input{tables/generated/tab_hyperbolicity}
+\input{tables/generated/tab_hyperbolicity_note}
+\end{table}
+
+\subsection{Regularisation}\label{sec:regularisation}
+
+Three terms remove the ill-posed regions without changing the equations elsewhere. The low-void rule blends the closures of any pattern into the bubbly ones below $\aG = 0.01$ with a $C^1$ ramp, which removes the thin-layer limit of the stratified closure; physically, a stratified gas layer of one per cent of the cross-section is not a flow pattern. The objective virtual-mass term \eqref{eq:vm} makes bubbly flow hyperbolic for every slip \citep{drew1979}; with $\lambda = 2$, which keeps only the difference of material accelerations, the bubbly map becomes \emph{more} ill-posed (\tbd{98}\,\% of the map), so the objective terms are essential. An interfacial-pressure term of the form proposed by \citet{bestion1990}, $\Delta P_i = \delta\, \aG \aL \rho_G \rho_L (v_G - v_L)^2/(\aG\rho_L + \aL\rho_G)$ with $\delta \geq 1$, makes the annular and intermittent closures hyperbolic (Fig.~\ref{fig:hyperbolicity}d, h), but has no physical basis in those patterns and does not act on the thin stratified layer, where it is proportional to $\aG$. Surface tension adds a third-order dispersive term that limits the growth of capillary waves at millimetre scale; it does not change the characteristics and is irrelevant at cell sizes of metres.
+
+\subsection{Well-posedness along the simulated trajectories}\label{sec:trajectories}
+
+A map shows where a closure is ill-posed, not whether a simulation goes there. The eigenvalues of $\bA$ were therefore evaluated in every cell and at every output time of the simulations of Section~\ref{sec:application}. With the low-void rule and the virtual mass, \tbd{0.9}\,\% of the cell--time states are ill-posed, \tbd{all} of them in annular or intermittent cells of the riser during the blowout, with imaginary parts of the order of \tbd{\SI{1}{\milli\metre\per\second}}; evaluated on the same states without the two terms, the fraction rises to \tbd{23--30}\,\%, with \tbd{88}\,\% of the bubbly cells ill-posed (Table~\ref{tab:trajectory}). The interfacial-pressure term would remove the residual \tbd{0.9}\,\% at a cost of about \tbd{1.6} times the integration steps without changing the cycle; it is not used in what follows.
+
+\begin{table}[htbp]
+\caption{Ill-posed fraction of the cell--time states of a severe-slugging simulation, by dominant flow pattern, with the regularisation of the model and with the low-void rule or the virtual mass removed a posteriori on the same states.}\label{tab:trajectory}
+\footnotesize
+\input{tables/generated/tab_trajectory_wellposed}
+\input{tables/generated/tab_trajectory_wellposed_note}
+\end{table}
+
+\section{Spatial discretisation}\label{sec:space}
+
+\subsection{Schemes}\label{sec:schemes}
+
+Five discretisations were applied to the same problem. Four are collocated, with the four primitive variables at the same nodes: the Galerkin and Petrov--Galerkin finite-element methods, and central and backward finite differences, the latter applied to all variables, the pressure included. The fifth is a staggered finite-volume scheme in the spirit of \citet{harlow1965} and \citet{patankar1980}: void fraction and pressure at the cell centres, phase mass flow rates at the faces. The mass fluxes and the momentum flux of each phase use the donor cell defined by the sign of that phase's flow rate, the pressure gradient is centred between neighbouring cells, and the pressure corrections $\Delta P_k$ are differenced between cell centres.
+
+\subsection{What a severe-slugging cycle demands}\label{sec:demands}
+
+A cycle requires that a front between a liquid column and a gas pocket travel through the bend and up the riser, that a phase vanish from a cell and reappear, and that the inventory of both phases be conserved over many cycles. Table~\ref{tab:discretisation} and Fig.~\ref{fig:discretisation} compare the five schemes on the application case with the choke open. The collocated schemes have no dissipation on the void waves and develop node-to-node oscillations at the fronts; the backward difference applied to the pressure is not an upwind scheme for the acoustic waves, which travel in both directions, and it is unstable. \tbd{None of the collocated schemes reaches the first blowout}, whereas the staggered scheme completes the cycle.
+
+\begin{table}[htbp]
+\caption{Discretisations on the application case with the choke open (reservoir at \SI{15}{\bar}, start from a blocked line, \SI{3000}{\second}).}\label{tab:discretisation}
+\footnotesize
+\input{tables/generated/tab_discretisation}
+\input{tables/generated/tab_discretisation_note}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{discretisation}
+\caption{Pressure at the inlet of the line with the five discretisations, up to the end of each run (a failed run stops where the integrator fails), and (b) error of the liquid and gas inventories of the staggered scheme with primitive and conservative time integration.}\label{fig:discretisation}
+\end{figure}
+
+\subsection{Vanishing phases}\label{sec:vanishing}
+
+In a liquid-filled cell the gas momentum equation has no mass and the gas flow rate is undetermined. Three choices proved necessary. The mass flux of a phase through a face is multiplied by a $C^1$ limiter of the donor cell's fraction of that phase, so that a cell without a phase cannot give it away; this keeps the inventories non-negative without limiting the void fraction itself. A limiter on the void fraction, the obvious alternative, destroys mass whenever it acts and produces cycles that are artefacts of the lost liquid. The flow rate of the vanishing phase is relaxed, with a time constant of \SI{0.05}{\second}, to the value it would have without slip, computed with the donor cell's fraction floored at the small value at which the closures see the phase; relaxing it to a zero flow rate instead leaves a virtual gas layer at rest above the moving liquid, and the stratified closure then exerts on a liquid-filled pipe an interfacial friction forty to sixty times the wall friction, which halves the acceleration of a liquid column. Finally, an artificial viscosity $\nu = C c h$ in the momentum equations, with $c$ the phase sound speed, $h$ the cell size and $C = 0.05$, damps the acoustic ringing of the short liquid columns that form at the riser base after a blowout, which otherwise forces time steps of milliseconds; it vanishes as $h \to 0$ and does not affect waves much longer than a cell.
+
+\subsection{Face void fraction and an odd--even mode}\label{sec:oddeven}
+
+In the momentum equation of a face, the area fraction that multiplies the pressure gradient and the gravity term is that of the donor cell, while the closures (wall and interfacial friction) are naturally evaluated with the state at the face. If that state takes the arithmetic mean of the void fractions of the two neighbouring cells, the steady momentum balance of each face relates the donor fraction to the mean one, and the discrete steady state admits an odd--even mode: the void fraction alternates from cell to cell with an amplitude that grows along the riser (Fig.~\ref{fig:steadyprofiles}), and the linearisation of the steady state has a fast unstable mode in the cells of the bend (Section~\ref{sec:bend}). Evaluating the face closures with the donor void fraction, defined by the sign of the mixture volumetric flux, makes every term of the face balance use the same fraction; the steady profile becomes smooth and the mode disappears. \tbd{The cycle period changes by X\,\% on the coarse mesh and the two choices converge with mesh refinement (Section~\ref{sec:mesh}).}
+
+\subsection{Conservation}\label{sec:conservation}
+
+The staggered scheme conserves mass cell by cell in space, but conservation in time depends on the variables that the time integrator advances. Integrating the primitive form, $\partial\aG/\partial t$ and $\partial P/\partial t$, with an implicit multistep formula does not conserve the phase masses, which are non-linear functions of $\aG$ and $P$. The error is not uniform in time: it accumulates in steps, one per blowout, when a phase vanishes from many cells within a few seconds (Fig.~\ref{fig:discretisation}b), and reaches \tbd{X}\,\% of the liquid and \tbd{X}\,\% of the gas fed in \SI{3000}{\second}. The conservative formulation applies the multistep formula to the masses per unit volume, $\bT(\bx) = (\rho_G\aG, \rho_L\aL)$, while Newton's method still iterates on the primitive variables,
+\begin{equation}\label{eq:conservative}
+\bT(\bx_{n+1}) - \sum_{j} a_j\, \bT(\bx_{n-j}) - \gamma h\, \bF(\bx_{n+1}) = \mathbf{0},
+\end{equation}
+with the Jacobian $\partial\bT/\partial\bx$ evaluated analytically. The mass balances then close to round-off. The map $\bT$ is singular at $\aG = -\gamma_G/\gamma_L$, so the void fraction is allowed a small undershoot, $\aG \geq -0.005$, well inside that limit. Verifying the balance itself requires care: integrating the boundary fluxes over the output times with the trapezoidal rule leaves an error of the order of a kilogram in each blowout, which is quadrature error and not loss of mass; the boundary fluxes must be integrated with the same multistep recurrence as the states.
+
+\section{Time integration}\label{sec:time}
+
+\subsection{Integrator}\label{sec:bdf}
+
+The semi-discrete system is integrated by a backward differentiation formula of order one or two with variable step \citep{hairer1996}, a modified Newton method with the Jacobian reused while the convergence is fast, and an error estimate from the difference between the corrector and the predictor. Four features are not available in general-purpose stiff integrators and were needed here. The states are projected onto their physical bounds after each step, and the order falls back to one after a projection, since the history used by the second-order formula is inconsistent with a projected state. The absolute tolerance of each state is a fraction ($10^{-2}$) of the range that the state is expected to cover in the case (void fraction one, pressure up to the hydrostatic head of the riser, flow rates up to twenty times the liquid feed and fifty times the gas feed in a blowout), instead of a single value for states whose scales differ by four orders of magnitude; with a single tolerance the controller resolves the acoustic ringing of the liquid columns at a few per cent of the feed and the cost multiplies. The Newton iteration has a budget of twenty iterations, because its convergence is limited by the non-smoothness of the closures rather than by the quality of the Jacobian. The boundary fluxes are integrated with the same recurrence as the states, which gives an exact balance (Section~\ref{sec:conservation}).
+
+\subsection{Steady states, continuation and adaptive end time}\label{sec:steady}
+
+Steady states are computed by Newton's method on $\bF(\bx) = \mathbf{0}$. From a generic initial estimate, the iteration does not converge for this problem; from a state reached by a transient that settles, or from the steady state of a neighbouring point, it converges in a few iterations, and continuation in the choke opening and the reservoir pressure gives the steady state of every point of a map, stable or not. Pseudo-transient continuation is not used, because it converges only to stable equilibria \citep{kelley1998}. Transients that start from a steady state are perturbed by \SI{0.1}{\percent} in pressure. The simulated time is adaptive: the integration proceeds in windows of \SI{2000}{\second} and stops when the inlet pressure stays within \SI{0.1}{\bar} or when two consecutive windows have the same amplitude and period within \SI{10}{\percent}, up to \SI{8000}{\second}.
+
+\subsection{What breaks without each ingredient}\label{sec:ablation}
+
+Table~\ref{tab:ablation} removes one ingredient at a time from the configuration of the application and reports whether \SI{3000}{\second} of severe slugging are completed, at what cost, with which mass error and with which cycle. \tbd{(Text to be written after the ablation batch: which runs fail, crawl, lose mass or change the cycle.)}
+
+\begin{table}[htbp]
+\caption{Ablation: the application case (choke open, reservoir at \SI{15}{\bar}, start from a blocked line, \SI{3000}{\second}) without one ingredient at a time.}\label{tab:ablation}
+\footnotesize
+\resizebox{\textwidth}{!}{\input{tables/generated/tab_ablation}}
+\input{tables/generated/tab_ablation_note}
+\end{table}
+
+\section{Compiled backend}\label{sec:backend}
+
+The fluid properties, closures, flow-pattern identification, schemes and network equations are written once against an injected array backend: the same code runs with NumPy and with JAX \citep{bradbury2018}, where the right-hand side is compiled just in time and its Jacobian is obtained exactly by forward-mode automatic differentiation \citep{griewank2008}. The two backends agree to a relative $10^{-14}$. Three rules make the physics differentiable and compilable: no in-place assignment, loops with a data-independent structure, and branches on values written as selections, with guards before functions with restricted domains so that tangents remain finite (a product $0 \times \infty$ in a tangent gives a NaN that only appears in the Jacobian). Table~\ref{tab:performance} compares the backends. The compiled right-hand side is \tbd{five} times faster than the NumPy one, the exact Jacobian \tbd{twelve} times faster than coloured finite differences \citep{curtis1974}, and a cycle of \SI{3000}{\second} runs in \tbd{X} instead of \tbd{X}. The exact Jacobian does not reduce the number of Newton iterations, which is set by the non-smoothness of the closures, so the gain is in the cost per step. On a CPU the compiled code is limited by latency, not by throughput: the systems have one to a few hundred unknowns, and parallelism pays between simulations, which is how the maps of Section~\ref{sec:map} were run.
+
+\begin{table}[htbp]
+\caption{NumPy and JAX backends on the application case.}\label{tab:performance}
+\footnotesize
+\input{tables/generated/tab_performance}
+\input{tables/generated/tab_performance_note}
+\end{table}
+
+\section{Severe slugging in a well--pipeline--riser system}\label{sec:application}
+
+\subsection{Case}\label{sec:case}
+
+The system (Fig.~\ref{fig:geometry}) has a horizontal section of \SI{20}{\metre} fed by the reservoir, a line of \SI{300}{\metre} descending at \SI{3}{\degree}, a bend of \SI{5}{\metre} radius, a vertical riser of \SI{20}{\metre} and a horizontal section of \SI{5}{\metre} that ends at the choke, which discharges into a separator at \SI{4}{\bar}; the internal diameter is \SI{50}{\milli\metre}. The liquid has a density of \SI{900}{\kilogram\per\cubic\metre} and a viscosity of \SI{2}{\milli\pascal\second}; the gas has a density of \SI{1.2}{\kilogram\per\cubic\metre} at \SI{1}{\bar} and $\gamma_G = 1.05$. The liquid compressibility is increased to $\gamma_L = 100$ (a sound speed of \SI{258}{\metre\per\second}), which leaves the slow dynamics of the cycle unchanged and shortens the acoustic time scales that limit the time step. The productivity index is \SI{0.056}{\kilogram\per\second\per\bar} for the liquid, with the gas--liquid mass ratio of \num{2.1e-3}, which at a reservoir pressure of \SI{15}{\bar} gives about \SI{0.5}{\kilogram\per\second} of liquid (superficial velocities of about 0.3 and \SI{0.1}{\metre\per\second} at the riser base). The mesh has 28 cells (2 in the horizontal inlet section, 15 in the descending line, 4 in the bend, 5 in the riser and 2 at the top); Section~\ref{sec:mesh} examines the mesh dependence. All the simulations use the configuration of the previous sections; Table~\ref{tab:case} summarises it.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{geometry}
+\caption{(a) Pipeline--riser system with the cell centres of the base mesh; (b) the bend at true scale with the inclination of each cell.}\label{fig:geometry}
+\end{figure}
+
+\begin{table}[htbp]
+\caption{Configuration of the application case.}\label{tab:case}
+\footnotesize
+\input{tables/generated/tab_case}
+\input{tables/generated/tab_case_note}
+\end{table}
+
+\subsection{Steady-state profiles and flow patterns}\label{sec:steadyprofiles}
+
+Fig.~\ref{fig:steadyprofiles} shows the steady states at \SI{15}{\bar} for increasing choke openings. \tbd{(Text to be written with the profiles: the horizontal inlet in intermittent flow, the descending line stratified with a void fraction of about 0.77, the liquid accumulated at the low point, the bubbly riser whose void fraction grows with the expansion of the gas, the pressure drop through the choke; and how the profiles change with the opening.)}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{steady_profiles}
+\caption{Steady states at a reservoir pressure of \SI{15}{\bar} for increasing choke openings: (a) void fraction and dominant flow pattern along the pipe, (b) pressure, (c) phase velocities.}\label{fig:steadyprofiles}
+\end{figure}
+
+\subsection{Opening the choke: from stable flow to severe slugging}\label{sec:opening}
+
+\tbd{(Text to be written with the dense runs at \SI{15}{\bar}: stable at small openings, pressure cycles with a smooth outflow near the boundary, severe slugging above it; space--time diagrams of the liquid holdup and of the flow pattern.)}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{spacetime}
+\caption{Space--time diagrams of the liquid holdup over the last \SI{80}{\metre} of the line, the bend and the riser at a reservoir pressure of \SI{15}{\bar} for three choke openings, with the inlet pressure and the liquid outflow below.}\label{fig:spacetime}
+\end{figure}
+
+\subsection{Anatomy of a cycle}\label{sec:anatomy}
+
+\tbd{(Text to be written: the four stages of the cycle located by the fronts, the length of liquid that seals the line upstream of the low point and the level of liquid in the riser; the flow pattern along the system during the cycle.)}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{cycle_anatomy}
+\caption{One severe-slugging cycle: (a) dominant flow pattern along the system over time; (b) length of the liquid seal upstream of the low point and height of the liquid column in the riser; (c) inlet and riser-base pressures; (d) liquid and gas flow rates at the outlet.}\label{fig:anatomy}
+\end{figure}
+
+\subsection{Stability of the bend cell and of the linearised steady state}\label{sec:bend}
+
+\tbd{(Text to be written: the spectrum of the steady state at a stable, a cycling and a slugging opening, the local fast modes at the low point of the bend with the mean face fraction and their disappearance with the donor fraction, the residual mode at the cell where the stratified pocket meets the liquid, its growth with mesh refinement and its saturation at negligible amplitude; the slow modes do not cross the imaginary axis at the boundary of the map.)}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{bend_modes}
+\caption{Eigenvalues of the Jacobian at the steady state for three choke openings at \SI{15}{\bar}, coloured by the region of the cell in which each eigenvector is concentrated: (a) face closures with the mean void fraction; (b) with the donor void fraction.}\label{fig:bendmodes}
+\end{figure}
+
+\subsection{Stability map}\label{sec:map}
+
+\tbd{(Text to be written with the map in choke opening and reservoir pressure: the classes, the boundary against the Jansen criterion, the hysteresis between the start from the steady state and from a blocked line, the most productive stable opening and the production lost to the choke.)}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{stability_map}
+\caption{Stability map in choke opening and reservoir pressure, starting (a) from the steady state and (b) from a blocked line. Each cell gives the mean inlet pressure (stable) or the maximum inlet pressure and the period (cycles); the outlined cell of each row is the most productive stable opening; the dashed line is the choke criterion of \citet{jansen1996}.}\label{fig:map}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\linewidth]{bifurcation}
+\caption{Bifurcation diagram at a reservoir pressure of \SI{15}{\bar}: (a) range of the inlet pressure from each start and the steady state; (b) mean liquid production and that of the steady state.}\label{fig:bifurcation}
+\end{figure}
+
+\subsection{Mesh dependence}\label{sec:mesh}
+
+\tbd{(Text to be written with the mesh study.)}
+
+\begin{table}[htbp]
+\caption{Mesh dependence of the cycle (choke open, reservoir at \SI{15}{\bar}).}\label{tab:mesh}
+\footnotesize
+\input{tables/generated/tab_mesh}
+\input{tables/generated/tab_mesh_note}
+\end{table}
+
+\section{Practical recommendations}\label{sec:lessons}
+
+The difficulties met along the way are common to transient two-fluid codes; the following recommendations summarise what was measured.
+\begin{enumerate}
+\item A numerical method that does not require hyperbolicity does not make an ill-posed model usable: ill-posedness appears as growth that increases with mesh refinement. Check the characteristics on the states the simulation visits, and regularise with physical terms where it goes.
+\item Collocated schemes without dissipation on the void waves, and backward differences applied to all variables, cannot carry the fronts of a severe-slugging cycle; a staggered scheme with phase-wise donor cells can.
+\item Use the same void fraction in every term of a face momentum balance; mixing the donor value with the mean creates an odd--even mode.
+\item Do not limit the void fraction to keep it in bounds; limit the fluxes of the phase that the donor cell does not have, and relax the vanishing phase towards no slip, not towards rest.
+\item Integrate conservative variables. Verify the mass balance with the boundary fluxes integrated by the same recurrence as the states, never by quadrature of the outputs.
+\item Flow-pattern criteria built for steady flow must be evaluated on the local state, with smooth switches of relative width and weights that form a partition of unity, before they can be used in a transient implicit solver.
+\item Closure terms that are dimensionally inconsistent may compensate each other at one scale and fail at another; check them at more than one pressure and diameter.
+\item A choke law with a mass-weighted mixture density does not resist gas and is singular in reverse flow; use the no-slip volume-weighted density.
+\item A closed-box integrator prevents conservative residuals, projection on physical bounds and range-scaled tolerances, all of which were needed; an exact Jacobian does not reduce Newton iterations when the closures are not smooth, but compiling the right-hand side reduces the cost of each one.
+\item The eigenvalues of the steady state do not delimit severe slugging: fast local modes at fronts dominate the spectrum, and the slugging cycle coexists with a stable steady state in part of the map. Stability maps require transient simulations from two starts.
+\end{enumerate}
+
+\section{Conclusions}\label{sec:conclusions}
+
+\tbd{(To be written after the results.)}
+
+\section*{Acknowledgements}
+% TODO: financiamento.
+The authors thank the Programa de P\'os-Gradua\c{c}\~ao em Tecnologia de Processos Qu\'imicos e Bioqu\'imicos of the Escola de Qu\'imica, Universidade Federal do Rio de Janeiro.
+
+\section*{Declaration of competing interest}
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+\section*{Declaration of generative AI and AI-assisted technologies in the writing process}
+% Obrigatória na submissão; ajustar ao uso real.
+During the preparation of this work the authors used AI-assisted tools for code development and language editing. After using these tools, the authors reviewed and edited the content as needed and take full responsibility for the content of the publication.
+
+\section*{Data availability}
+% TODO: DOI do repositório (Zenodo) ou endereço público do código e dos casos.
+The simulator, the case definitions, the recorded runs and the script that produces every figure and table of this article are available in a public repository.
+
+\FloatBarrier
+
+\bibliographystyle{cas-model2-names}
+\bibliography{../_common/references,refs}
+
+\end{document}

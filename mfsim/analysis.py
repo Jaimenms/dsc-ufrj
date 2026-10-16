@@ -518,3 +518,136 @@ def jansen_choke_opening(ab, q_liq, dp_crit, CV, rhoL=900.0):
     if not (dpl.max() > dp_crit > dpl.min()):
         return None
     return float(np.exp(np.interp(-np.log(dp_crit), -np.log(dpl), np.log(ab))))
+
+
+# ----------------------------------------------------------------------------- diagnósticos de trajetória (artigo 01)
+PATTERN_FLAGS = (("stratified", "Est"), ("intermittent", "Int"), ("bubble", "Bub"), ("annular", "Anu"))
+
+
+def cell_states(run, pipe=0, every=1):
+    """Estados nas células de um duto do esquema escalonado ao longo de uma corrida gravada: dict com `T` (nt,),
+    `s` e `theta` dos centros das células (N,) e `Y` (nt, N, 4) = (alphaG, PT, qL, qG) com as vazões médias das
+    duas faces da célula (as mesmas entradas com que o esquema avalia os fechamentos nas células)."""
+    model = run.model
+    pb = model.pipes[pipe]
+    sch = pb.scheme
+    N = sch.N
+    Yn = run.pipe(pipe)["Y"][::every]  # (nt, N + 2, 4) primitivas
+    Y = Yn[:, 1 : N + 1].copy()
+    Y[:, :, 2] = 0.5 * (Yn[:, 0:N, 2] + Yn[:, 1 : N + 1, 2])
+    Y[:, :, 3] = 0.5 * (Yn[:, 0:N, 3] + Yn[:, 1 : N + 1, 3])
+    return dict(
+        T=np.asarray(run.T)[::every], s=np.asarray(sch.x_cells), theta=np.asarray(sch.theta_nodes[1 : N + 1]), Y=Y
+    )
+
+
+def flow_pattern_weights(run, pipe=0, every=1, cells=None):
+    """Pesos dos quatro fechamentos (estratificado, intermitente, bolhas, anular) em cada célula e instante, com
+    a política de padrão do caso (fixa com misturas ou identificação automática): dict com `T`, `s`, `theta` e
+    `W` (nt, N, 4) na ordem de `PATTERN_FLAGS`; o padrão dominante é `W.argmax(-1)`."""
+    cs = cells or cell_states(run, pipe, every)
+    mod = run.model.pipes[pipe].model
+    p = mod.params
+    W = np.zeros(cs["Y"].shape[:2] + (len(PATTERN_FLAGS),))
+    for it, Y in enumerate(cs["Y"]):
+        Y = Y.copy()
+        Y[:, 0] = np.clip(Y[:, 0], p.alpha_min, p.alpha_max)
+        inp, _, _ = mod.local_state(Y, cs["theta"])
+        _, flags, _ = mod.closures(inp)
+        W[it] = np.stack([np.asarray(getattr(flags, f), float) for _, f in PATTERN_FLAGS], axis=1)
+    return dict(T=cs["T"], s=cs["s"], theta=cs["theta"], W=W)
+
+
+def characteristic_imag(run, pipe=0, every=1, cells=None, **params):
+    """max |Im λ| (m/s) das velocidades características do modelo em cada célula e instante (0 = hiperbólico),
+    com parâmetros do modelo opcionalmente trocados (`virtual_mass`, `low_void_regime`, `interfacial_pressure`,
+    ...) para avaliar, nos mesmos estados, o que dariam outras regularizações. Devolve (nt, N)."""
+    from dataclasses import replace
+
+    cs = cells or cell_states(run, pipe, every)
+    mod = run.model.pipes[pipe].model
+    m2 = type(mod)(mod.fluid, replace(mod.params, **params)) if params else mod
+    p = m2.params
+    out = np.zeros(cs["Y"].shape[:2])
+    for it, Y in enumerate(cs["Y"]):
+        Y = Y.copy()
+        Y[:, 0] = np.clip(Y[:, 0], p.alpha_min, p.alpha_max)
+        out[it] = np.abs(m2.eigenvalues(Y, cs["theta"]).imag).max(axis=1)
+    return out
+
+
+def _crossing(s, a, thr):
+    """Primeira posição (interpolada entre centros de células) em que a série `a(s)` passa a `thr` ou mais;
+    `s[-1]` se nunca passa."""
+    k = np.flatnonzero(a >= thr)
+    if k.size == 0:
+        return float(s[-1])
+    j = int(k[0])
+    if j == 0:
+        return float(s[0])
+    return float(s[j - 1] + (thr - a[j - 1]) * (s[j] - s[j - 1]) / (a[j] - a[j - 1]))
+
+
+def slug_fronts(run, pipe=0, every=1, thr=0.5, cells=None):
+    """Frentes da golfada severa ao longo de uma corrida (duto único com descendente, curva e riser): a partir
+    do ponto mais baixo do traçado, o comprimento de duto cheio de líquido a montante (`seal`: até onde o
+    tampão penetra no descendente, fração de gás < `thr`), a altura da coluna de líquido no riser acima do
+    ponto baixo (`level`, m, até à primeira célula com fração de gás >= `thr`) e a fração de líquido média do
+    riser (`riser_holdup`). Devolve dict com `T`, `seal` (m), `level` (m), `riser_holdup` e `H` (altura do
+    riser acima do ponto baixo, m)."""
+    from .geometry import pipe_mesh
+
+    cs = cells or cell_states(run, pipe, every)
+    pipe_ = run.model.pipes[pipe].pipe
+    pts = np.asarray(pipe_.points, float)
+    mesh = pipe_mesh(pts[:, 0], pts[:, 1], pts[:, 2], np.asarray(pipe_.n_elements, int), grading=pipe_.grading)
+    z_nodes = mesh["xyz"][:, 2]
+    s_nodes = mesh["s"]
+    s, aG = cs["s"], cs["Y"][:, :, 0]
+    z = np.interp(s, s_nodes, z_nodes)
+    k_low = int(np.argmin(z))
+    th = np.rad2deg(cs["theta"])
+    riser = np.flatnonzero(th > 45.0)
+    z_top = float(z[riser].max()) if riser.size else float(z.max())
+    H = z_top - z[k_low]
+    seal, level, hold = [], [], []
+    for a in aG:
+        up = a[k_low::-1]  # do ponto baixo para montante
+        d_up = s[k_low] - s[k_low::-1]
+        seal.append(_crossing(d_up, up, thr) if up[0] < thr else 0.0)
+        dn = a[k_low:]
+        zz = z[k_low:] - z[k_low]
+        level.append(min(_crossing(zz, dn, thr), H) if dn[0] < thr else 0.0)
+        hold.append(float(np.mean(1.0 - a[riser])) if riser.size else np.nan)
+    return dict(T=cs["T"], seal=np.array(seal), level=np.array(level), riser_holdup=np.array(hold), H=H)
+
+
+def inventory_error(run, pipe=0):
+    """Erro do balanço de massa de cada fase ao longo de uma corrida do esquema escalonado com o acumulador
+    BDF-consistente (`run.acc`, issue 005): estoque(t) − estoque(0) − ∫(entrada − saída) dt, em kg, com o
+    estoque somado sobre as células com a fração de gás sem corte (o modo conservativo admite um pequeno
+    undershoot). Devolve dict com `T`, `L`, `G` (erros) e `mass_L`, `mass_G` (estoques) ou None sem `acc`."""
+    if run.acc is None:
+        return None
+    model = run.model
+    pb = model.pipes[pipe]
+    sch = pb.scheme
+    N = sch.N
+    Y = run.pipe(pipe)["Y"][:, 1 : N + 1]
+    A = np.pi * pb.pipe.D**2 / 4
+    h = np.asarray(pb.mesh["h"])
+    rhoL, rhoG, _, _ = model.fluid.props(Y[:, :, 1] * model.PR)
+    mL = np.sum(rhoL * (1.0 - Y[:, :, 0]) * A * h, axis=1)
+    mG = np.sum(rhoG * Y[:, :, 0] * A * h, axis=1)
+    acc = np.asarray(run.acc, float)
+    nt = min(acc.shape[1], mL.size)
+    accL, accG = acc[2 * pipe, :nt] - acc[2 * pipe, 0], acc[2 * pipe + 1, :nt] - acc[2 * pipe + 1, 0]
+    return dict(
+        T=np.asarray(run.T)[:nt],
+        L=(mL[:nt] - mL[0]) - accL,
+        G=(mG[:nt] - mG[0]) - accG,
+        mass_L=mL[:nt],
+        mass_G=mG[:nt],
+        fed_L=accL,
+        fed_G=accG,
+    )

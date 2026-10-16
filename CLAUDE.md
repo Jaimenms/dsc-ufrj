@@ -2,6 +2,7 @@
 
 Leia por esta ordem: este ficheiro, [README.md](README.md), [docs/issues/INDEX.md](docs/issues/INDEX.md),
 [docs/why_no_severe_slug_in_thesis.md](docs/why_no_severe_slug_in_thesis.md), [docs/data_formats.md](docs/data_formats.md).
+Para os artigos: [papers/README.md](papers/README.md) e o `PLAN.md` de cada artigo.
 O método que nos trouxe até aqui está em [docs/method_thesis_to_modern_code.md](docs/method_thesis_to_modern_code.md).
 
 ## O que é
@@ -14,7 +15,7 @@ dinâmico de escoamento bifásico em redes de dutos (modelo a dois fluidos a 4 e
 mistura, monofásicos; Galerkin, diferenças finitas, volumes finitos escalonados; BDF implícito
 próprio, numpy ou JAX). Reproduz o capítulo 10 da tese bit a bit contra os ficheiros MATLAB e
 resolve o que a tese não conseguiu: a intermitência severa (severe slugging), validada com dados
-de laboratório. As 43 alterações em relação à tese estão em `docs/issues/` (feature, bugfix, estudo).
+de laboratório. As 44 alterações em relação à tese estão em `docs/issues/` (feature, bugfix, estudo).
 
 ## Mapa do repositório
 
@@ -28,7 +29,8 @@ de laboratório. As 43 alterações em relação à tese estão em `docs/issues/
 | `notebooks_src/` | fontes dos notebooks (`# %%`): `thesis/` reprodução fiel (um por secção), `issues/` melhorias (um por grupo de issues). Nenhum simula: leem `runs/` e `notebooks/data`. |
 | `notebooks/data/` | 80 corridas históricas e os dados do mapa de intermitência severa (`severe_slug_map_well*.npz`, de `tools/slug_map.py export`; 043), fora do git, fixados em `MANIFEST.sha256`; não são reproduzíveis bit a bit (dinâmica caótica), são dados. |
 | `tests/` | rotina (`uv run pytest`, ≈3 min, 335 testes) e noturna (`-m nightly`, ≈35 min: lotes, corridas longas, laboratório, notebooks contra `tests/golden/notebook_text`). `tests/golden/` só por `tools/golden_generate.py --rebaseline --note`. |
-| `tools/` | `golden_generate`, `manifest`, `make_nb`, `slug_map` (mapa de intermitência severa, 043), migração do dialeto antigo (`legacy_runs`, `convert_runs`, `severe_run`, `save_run_data`, `export_severe_cases`). |
+| `tools/` | `golden_generate`, `manifest`, `make_nb`, `slug_map` (mapa de intermitência severa, 043; `--base` para outro caso base), `new_paper` (artigo novo a partir de `papers/_template`), `measure_performance` (tempos numpy × JAX por chamada), migração do dialeto antigo (`legacy_runs`, `convert_runs`, `severe_run`, `save_run_data`, `export_severe_cases`). |
+| `papers/` | artigos para revistas (mecanismo trazido do research-factory em 2026-10-16): `_common/` (`paper.mk`, `figlib.py`, estilo, `references.bib` canónica com DOI verificados), `_template/`, `00-escolha-da-revista.md`; um artigo por pasta `NN-<slug>/` (`main.tex` Elsevier CAS, `PLAN.md`, `figures/make_figures.py` que só lê corridas, `build/` com o PDF versionado). `01-severe-slugging-two-fluid`: intermitência severa com padrão dinâmico, boa colocação, discretizações, integrador, JAX e mapa com choke; lotes `batches/paper01_*.json`, casos `cases/paper01/` e `cases/severe_slug/well_choke_auto.json`. |
 | `docs/` | documentação; `docs/issues/NNN-*.md` + `INDEX.md`; `docs/future/` (planos: criogenia, CO₂, composicional, trifásico, assinaturas de golfada e alocação a separadores, este com o degrau 1 feito em 043); `docs/thesis.pdf`. |
 
 ## Comandos
@@ -44,6 +46,7 @@ uv run mfsim nb notebooks_src/thesis/nb_10_1_1.py --execute                # not
 uv run pytest                      # rotina; uv run pytest -m nightly      # noturna
 uv run black --check mfsim tests tools notebooks_src generators thesis     # antes de cada commit
 uv run python tools/manifest.py --check                                    # dados fora do git
+make -C papers/01-severe-slugging-two-fluid                                # artigo 01: figuras (de runs/) + PDF (tectonic)
 ```
 
 ## Regras acordadas com o dono (não negociar sem perguntar)
@@ -74,4 +77,6 @@ uv run python tools/manifest.py --check                                    # dad
 - O choke usa por omissão a lei homogénea (039); os casos da tese marcam `"law": "thesis"`, e corridas antigas
   sem a chave leem-se com a da tese. Um estado guardado como condição inicial nos nós da malha perde exatidão no
   esquema escalonado: use `state_to_case_ic(X, exact=True)` (040).
-- zsh: `$VAR` não faz word-split; usar `${=VAR}`.
+- zsh: `$VAR` não faz word-split; usar `${=VAR}` (também em `for c in "a b"; set -- $c`).
+- Artigos: o guião de figuras não simula; tudo o que o PDF mostra vem de `runs/` (lotes) ou de caches em
+  `runs/<artigo>/cache/` calculados do modelo sem integrar no tempo (apagar o cache para recalcular).

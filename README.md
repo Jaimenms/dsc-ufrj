@@ -37,7 +37,7 @@ O código original (MFSIM/SDMPFLOW, MATLAB, 2010) e os seus resultados gravados 
 para o **mfsim**, reimplementação em Python com o solver próprio da tese: modelo a dois fluidos
 (4 equações), modelo de mistura (3 equações) e monofásicos; Galerkin, diferenças finitas e volumes
 finitos escalonados; BDF implícito próprio com lado direito em numpy ou compilado com JAX. Os
-casos do capítulo 10 reproduzem-se contra os ficheiros MATLAB; as 43 alterações em relação à tese
+casos do capítulo 10 reproduzem-se contra os ficheiros MATLAB; as 44 alterações em relação à tese
 (correções, melhorias e estudos) estão em [docs/issues/INDEX.md](docs/issues/INDEX.md), e a
 resposta à pergunta que a tese não conseguiu fechar, a intermitência severa em geometria
 linha–riser, em [docs/why_no_severe_slug_in_thesis.md](docs/why_no_severe_slug_in_thesis.md).
@@ -125,7 +125,7 @@ uv run python tools/convert_runs.py antiga.npz --out-dir runs/            # corr
 
 ## Documentação
 
-- [docs/issues/INDEX.md](docs/issues/INDEX.md) — o que mudou em relação ao modelo e ao solver da tese: 43 alterações atómicas (feature, bugfix, estudo), cada uma com antes, depois e benefício medido.
+- [docs/issues/INDEX.md](docs/issues/INDEX.md) — o que mudou em relação ao modelo e ao solver da tese: 44 alterações atómicas (feature, bugfix, estudo), cada uma com antes, depois e benefício medido.
 - [docs/method_thesis_to_modern_code.md](docs/method_thesis_to_modern_code.md) — o método que nos trouxe até aqui (tese + código legado → versão moderna e melhorada) e um prompt consolidado para reutilizar; [CLAUDE.md](CLAUDE.md) é o guia do projeto para sessões do Claude.
 - [docs/why_no_severe_slug_in_thesis.md](docs/why_no_severe_slug_in_thesis.md) — por que a tese não conseguiu simular a intermitência severa, em quatro pontos ligados às issues.
 - [docs/hello_world.md](docs/hello_world.md) — primeiro caso: um duto e duas fronteiras em JSON, correr, ler os resultados, o mesmo caso em Python, variar com `--set`/`$extends`.
@@ -135,6 +135,7 @@ uv run python tools/convert_runs.py antiga.npz --out-dir runs/            # corr
 - [docs/severe_slug.md](docs/severe_slug.md) — intermitência severa: o caso, a configuração recomendada e o mapa dos temas para as issues.
 - [docs/lab_validation.md](docs/lab_validation.md) — validação com dados de laboratório (Jansen, Fabre, Tengesdal): casos, comandos e resultado em uma linha.
 - [docs/findings_for_paper.md](docs/findings_for_paper.md) — achados para o artigo (resumo).
+- [papers/README.md](papers/README.md) — artigos para revistas: mecanismo de construção (LaTeX Elsevier CAS, figuras e tabelas geradas por código a partir das corridas), escolha da revista e o artigo 01 (intermitência severa com padrão de escoamento dinâmico: boa colocação, discretização, integrador, JAX e mapa de estabilidade com choke).
 - [docs/future/README.md](docs/future/README.md) — planos para temas futuros, não iniciados: chill-down criogénico (hidrogénio líquido), despressurização de dutos de CO₂, composição e transferência de massa, água como terceira fase, catálogo de assinaturas de golfada e alocação de poços a separadores (linha de controle anti-slug e gêmeo digital).
 - `tests/golden/CHANGELOG.md` — registo das referências de regressão; `docs/thesis.pdf` — a tese.
 

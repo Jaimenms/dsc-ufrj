@@ -1,0 +1,70 @@
+{
+ "schema": "mfsim-case/1",
+ "$extends": "../severe_slug/well_choke_auto.json",
+ "name": "well_choke_auto_sharp_bend",
+ "network": {
+  "edges": [
+   {
+    "id": "1",
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        20.0,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        319.58886042637215,
+        -15.70078687288315
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        319.58886042637215,
+        4.29921312711685
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        324.58886042637215,
+        4.29921312711685
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 2
+      },
+      {
+       "n": 15
+      },
+      {
+       "n": 5
+      },
+      {
+       "n": 2
+      }
+     ]
+    },
+    "ic": {
+     "s_front": 320.0,
+     "s_top": 340.0
+    }
+   }
+  ]
+ },
+ "description": "Exemplo base do artigo 01 com a curva angulosa: o descendente liga ao riser num só nó (sem o arco de 5 m), a mesma malha nos trechos retos; para a ablação do tratamento da curva (issue 008)."
+}

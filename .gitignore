@@ -11,3 +11,7 @@ notebooks/data/*.npz
 
 # saídas de corridas (regeneráveis pelos lotes)
 runs/
+
+# artigos: figuras e fragmentos de tabela gerados (reproduzíveis com `make` em papers/<artigo>/); build/ fica no git
+papers/*/figures/generated/
+papers/*/tables/generated/

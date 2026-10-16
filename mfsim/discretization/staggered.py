@@ -138,6 +138,15 @@ class StaggeredFVBase(PipeScheme):
             raise ValueError(f"relax_target: {self.relax_target}")
         if self.relax_target != "raw" and not self.conservative:
             raise ValueError("relax_target='noslip' exige o modo conservativo (limitador de fluxo)")
+        # fração de gás com que se avaliam os fechamentos nas faces (atrito de parede e interfacial,
+        # velocidades da relaxação): "mean" (média das células vizinhas, como até aqui) ou "donor"
+        # (célula doadora pela vazão volumétrica da mistura, a mesma fração dos termos de transporte e de
+        # gravidade). Com "mean" cada equação de momento de face mistura as duas frações e o estacionário
+        # discreto ganha um modo par-ímpar: xadrez de alphaG no riser e um modo local instável na curva
+        # (issue 044)
+        self.closure_alpha = str(self.settings.get("closure_alpha", "mean"))
+        if self.closure_alpha not in ("mean", "donor"):
+            raise ValueError(f"closure_alpha: {self.closure_alpha}")
         N = self.N
         h = self.h
         # centros das células e faces
@@ -345,6 +354,12 @@ class StaggeredFVBase(PipeScheme):
         # faces: média das células vizinhas para alphaG, PT; vazões das faces
         aG_f = 0.5 * (Yc[0 : N + 1, SLOT_ALPHA] + Yc[1 : N + 2, SLOT_ALPHA])
         P_f = 0.5 * (Yc[0 : N + 1, SLOT_P] + Yc[1 : N + 2, SLOT_P])
+        if self.closure_alpha == "donor" and SLOT_ALPHA in model.slots:
+            # célula doadora pela vazão volumétrica da mistura, escrita como vazão mássica equivalente de
+            # líquido (qL + qG rhoL/rhoG) para usar as larguras do chaveamento do líquido
+            rhoL_f, rhoG_f, _, _ = model.fluid.props(model.params.PR * P_f)
+            w = self._switch(Y[0 : N + 1, SLOT_QL] + Y[0 : N + 1, SLOT_QG] * (rhoL_f / rhoG_f), "L")
+            aG_f = w * Yc[0 : N + 1, SLOT_ALPHA] + (1.0 - w) * Yc[1 : N + 2, SLOT_ALPHA]
         # faces de contorno com alphaG imposto pelo vértice (Dirichlet): a fração da
         # face é a do lado doador (célula em saída, vértice em entrada), não a média —
         # o conteúdo do vértice só entra no duto quando o escoamento entra

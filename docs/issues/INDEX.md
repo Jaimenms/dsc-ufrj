@@ -54,6 +54,7 @@ qual estão em `notebooks_src/thesis/`.
 | [012](012-vf-escalonado-deriva.md) | feature | Volumes finitos escalonados para o modelo de deriva | só esquema nodal → 10.3.1 escalonado e conservativo; severe slug com B&B não é simulável (físico) |
 | [013](013-filtro-anti-refluxo.md) | bugfix | Filtro anti-refluxo removido | remendo nas saídas marcadas `check` → equações puras; 10.2.2 inalterado |
 | [014](014-inversao-de-sentido.md) | feature | Inversão de sentido com fração imposta nas extremidades | fração livre em refluxo → fantasma doador; inversão enche o duto com o líquido do separador |
+| [044](044-fracao-das-faces-nos-fechamentos.md) | bugfix | Fração das faces nos fechamentos pela célula doadora (`closure_alpha`) | média das células: xadrez no riser e modo de +41 /s na curva no estacionário → doadora: perfil liso, modo da curva desaparece |
 
 ## Fechamentos e modelo físico
 

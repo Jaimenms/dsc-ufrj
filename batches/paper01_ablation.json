@@ -1,0 +1,193 @@
+{
+ "description": "Artigo 01, ablação: o exemplo base (padrão dinâmico, choke aberto, reservatório a 15 bar, partida bloqueada, 3000 s) sem um ingrediente de cada vez (formulação, fase que desaparece, viscosidade artificial, fração das faces, identificação de padrão, regras de fração, massa virtual, arrasto de bolhas, integrador, tolerâncias, Newton, compressibilidade do líquido, lei de válvula, curva). Passo mínimo 1e-6 s: uma corrida que rasteja falha e fica gravada até aí.",
+ "out_dir": "runs/paper01/ablation",
+ "runs": [
+  {
+   "name": "reference",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06"
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "primitive",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "network.edges.1.scheme.options.conservative=false",
+    "network.edges.1.scheme.options.relax_target=\"raw\""
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "relax_raw",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "network.edges.1.scheme.options.relax_target=\"raw\""
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "no_flux_limiter",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "network.edges.1.scheme.options.flux_limit=false"
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "no_art_visc",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "network.edges.1.scheme.options.art_visc=0.0"
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "closure_mean",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "network.edges.1.scheme.options.closure_alpha=\"mean\""
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "ipe_thesis",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "network.edges.1.model.regime.smooth=false",
+    "network.edges.1.model.regime.local=false",
+    "network.edges.1.model.regime.k_switch=1000000.0"
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "ipe_smooth_only",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "network.edges.1.model.regime.local=false"
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "no_low_void",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "network.edges.1.model.regime.low_void.alpha=1e-12"
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "no_virtual_mass",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "network.edges.1.model.options.virtual_mass.C_vm=0.0"
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "bubble_drag_thesis",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "network.edges.1.model.closures.bubble.drag=\"thesis\""
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "bdf1",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "integration.max_order=1"
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "uniform_atol",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "reference.state_ref.PT=1.0",
+    "reference.state_ref.qL=1.0",
+    "reference.state_ref.qG=1.0",
+    "integration.tol_range=1e-06"
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "newton12",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "integration.max_newton=12"
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "scipy_bdf",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "integration.integrator=\"bdf\"",
+    "integration.max_step=1.0",
+    "integration.rtol=0.003",
+    "integration.atol=0.001"
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "gammaL1000",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "fluid.gammaL=1000.0"
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "valve_thesis",
+   "case": "cases/severe_slug/well_choke_auto.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06",
+    "network.edges.choke_2.law=\"thesis\""
+   ],
+   "tf": 3000.0
+  },
+  {
+   "name": "sharp_bend",
+   "case": "cases/paper01/well_choke_auto_sharp_bend.json",
+   "set": [
+    "network.edges.choke_2.opening=1.0",
+    "integration.min_step=1e-06"
+   ],
+   "tf": 3000.0
+  }
+ ]
+}
