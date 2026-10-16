@@ -54,7 +54,7 @@ qual estão em `notebooks_src/thesis/`.
 | [012](012-vf-escalonado-deriva.md) | feature | Volumes finitos escalonados para o modelo de deriva | só esquema nodal → 10.3.1 escalonado e conservativo; severe slug com B&B não é simulável (físico) |
 | [013](013-filtro-anti-refluxo.md) | bugfix | Filtro anti-refluxo removido | remendo nas saídas marcadas `check` → equações puras; 10.2.2 inalterado |
 | [014](014-inversao-de-sentido.md) | feature | Inversão de sentido com fração imposta nas extremidades | fração livre em refluxo → fantasma doador; inversão enche o duto com o líquido do separador |
-| [044](044-fracao-das-faces-nos-fechamentos.md) | bugfix | Fração das faces nos fechamentos pela célula doadora (`closure_alpha`) | média das células: xadrez no riser e modo de +41 /s na curva no estacionário → doadora: perfil liso, modo da curva desaparece |
+| [044](044-fracao-das-faces-nos-fechamentos.md) | bugfix | Fração das faces nos fechamentos pela célula doadora (`closure_alpha`) | média das células: xadrez par-ímpar no riser e par instável de 25 s nas células da curva (a 0,13, satura numa oscilação local) → doadora: perfil liso e estacionário estável (espetro com a matriz de massa, 048) |
 
 ## Fechamentos e modelo físico
 
@@ -86,9 +86,10 @@ qual estão em `notebooks_src/thesis/`.
 | [039](039-lei-de-valvula-homogenea.md) | bugfix | Lei de válvula homogénea | densidade ponderada por massa (choke não resiste ao gás; singular em refluxo, 7 falhas) → por volume, padrão; tese só nos seus casos |
 | [040](040-partida-do-estacionario.md) | feature | Partida a partir do estado estacionário | só condições iniciais ou estimativa (Newton não converge dela) → `initial_state.source = "steady"` a partir de um estado gravado, com perturbação |
 | [041](041-paragem-adaptativa.md) | feature | Tempo simulado adaptativo | `tf` fixo (curto para os lentos, longo para os que assentam) → janelas com paragem quando o sinal fica permanente ou o ciclo se repete |
-| [042](042-modos-locais-da-curva.md) | estudo | Modos locais instáveis na curva | hipótese: troca de fechamentos → não; instabilidade de ondas curtas no ponto baixo, cresce com a malha; limiar de bolhas a 10 % reduz-na (resultado misto na validação) |
+| [042](042-modos-locais-da-curva.md) | estudo | Modos locais instáveis na curva | hipótese: troca de fechamentos → não; instabilidade de ondas curtas no ponto baixo, cresce com a malha; limiar de bolhas a 10 % reduz-na (resultado misto na validação); espetros sem matriz de massa, revistos em 048 |
 | [043](043-mapa-de-intermitencia-severa.md) | feature | Mapa de intermitência severa (abertura × pressão do reservatório) | 10 pontos sem choke nem poço → 2 × 126 corridas em paralelo, sem falhas; fronteira = critério de Jansen; histerese em 8 células |
 | [047](047-passo-maximo-perto-do-equilibrio.md) | bugfix | Passo máximo nas corridas que partem de um equilíbrio | sem limite o BDF amortece a instabilidade e a partida do estacionário fica presa (7 das 8 células de histerese do 043 com 22–97 passos) → `max_step` 1 s no mapa e nos lotes do artigo |
+| [048](048-espetro-com-matriz-de-massa.md) | bugfix | Espetro do modelo conservativo com a matriz de massa (`linear_spectrum`) | autovalores de J sozinha: modos rápidos de +27–41 /s e nenhum par lento a cruzar → M⁻¹J: par lento cruza na fronteira do mapa (Hopf, período do ciclo); validado contra a forma primitiva a 1e−9 |
 
 ## Integrador e desempenho
 

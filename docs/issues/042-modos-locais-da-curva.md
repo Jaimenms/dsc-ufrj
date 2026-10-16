@@ -4,9 +4,16 @@
 |---|---|
 | tipo | estudo |
 | área | fechamentos |
-| estado | feito (2026-10-16); sem alteração do modelo; o limiar de bolhas a 10 % fica como opção a decidir |
+| estado | feito (2026-10-16); sem alteração do modelo; o limiar de bolhas a 10 % fica como opção a decidir; espetros revistos em 048 |
 | onde | `regime.low_void.alpha`, `regime.vertical` (opções já existentes); espetro com `mfsim.compiled.get_jax` |
 | dados | `runs/maps/prototype/` (fora do git): `bend_modes.py`, `slow_modes.py`, `bend_refine.py`, `low_void_test.py`; `runs/lowvoid/` (validação com o limiar a 10 %) |
+
+> **Correção (048).** Os espetros deste estudo são os da Jacobiana J sozinha; no modo conservativo a
+> linearização é M·δẋ = J·δx (M = ∂T/∂x) e os autovalores certos são os de M⁻¹J (`mfsim.analysis.linear_spectrum`).
+> Com M os modos rápidos do ponto baixo caem para 6–9 /s (padrão fixo, 0,10 a 0,22) e desaparecem a partir de 0,46,
+> e o par lento **atravessa** o eixo entre 0,17 e 0,22, a fronteira do mapa (bifurcação de Hopf, período ~470 s);
+> a 0,6 e 1,0 colide no eixo real. Os itens 3 a 6 e a leitura abaixo ficam como registo do que se concluiu com o
+> espetro errado; as conclusões válidas estão em 048.
 
 ## Pergunta
 

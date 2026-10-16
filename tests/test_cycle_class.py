@@ -22,6 +22,20 @@ def test_classes():
     assert slug["cls"] == "slugging" and slug["surge"] > 2.0
 
 
+def test_smooth_ignores_short_oscillations_of_the_riser_column():
+    # ciclo de 400 s com oscilações de 8 s (coluna do riser contra o gás do bolsão) que cruzam a média
+    T1 = np.arange(0.0, 4000.0, 1.0)
+    P = 6.0 + 0.25 * np.sin(2 * np.pi * T1 / 400.0)
+    for tk in np.arange(30.0, 4000.0, 400.0):
+        on = T1 >= tk
+        P[on] += 0.4 * np.sin(2 * np.pi * (T1[on] - tk) / 8.0) * np.exp(-(T1[on] - tk) / 15.0)
+    q = np.full(T1.size, 0.5)
+    raw, smooth = cycle_class(T1, P, q), cycle_class(T1, P, q, smooth=20.0)
+    assert raw["period"] < 300.0  # cruzamentos a mais encurtam o período
+    assert smooth["cls"] == "cycling" and abs(smooth["period"] - 400.0) < 5.0
+    assert smooth["P_max"] == raw["P_max"]  # extremos do registo, não da média móvel
+
+
 def test_jansen_criterion_for_the_reference_geometry():
     from mfsim.analysis import jansen_choke_dp_crit, jansen_choke_opening
 

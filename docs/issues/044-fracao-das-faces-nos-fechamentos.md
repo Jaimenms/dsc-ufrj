@@ -19,9 +19,8 @@ relacionava então a fração doadora com a média, e o estacionário discreto g
 - a fração de gás no riser do caso do poço (043) alternava de célula para célula com amplitude crescente
   para cima: 0,110 / 0,147 / 0,097 / 0,179 / 0,073 / 0,238 / 0,015 (padrão dinâmico, abertura 0,13,
   15 bar), e o mesmo xadrez com o padrão fixo (0,119 / 0,134 / 0,115 / 0,151 / 0,110 / 0,180 / 0,094);
-- o espetro do estacionário tinha um modo real rápido e instável junto à curva (+41 /s com padrão dinâmico,
-  +27 /s com padrão fixo, issue 042; +67 /s com a ponte do filme local, 046), preso às células onde o bolsão
-  estratificado encontra o líquido do ponto baixo.
+- o espetro do estacionário parecia ter um modo real rápido e instável junto à curva (+41 /s com padrão
+  dinâmico, +27 /s com padrão fixo, 042); eram autovalores da Jacobiana sem a matriz de massa (correção em 048).
 
 ## Depois
 
@@ -36,11 +35,14 @@ pelo vértice continuam com a regra de 014. O mesmo código serve numpy e JAX (p
 - Estacionário liso: no mesmo ponto o riser fica 0,127 / 0,128 / 0,125 / 0,126 / 0,130 / 0,134 / 0,139 /
   0,144 (cresce com a expansão do gás), e o descendente uniforme até ao ponto baixo. Num riser vertical
   isolado em bolhas a amplitude do modo par-ímpar (segundas diferenças) cai 5× (teste).
-- O modo real rápido da frente (a célula do fim do bolsão, junto ao líquido do ponto baixo) cai para metade:
-  com a ponte do filme local (046), a 15 bar e abertura 0,13, +67 /s com a média contra +34 /s com a doadora
-  (+40 a +41 /s nas aberturas 0,28 e 0,6). Não desaparece: é um modo da frente entre o bolsão e o líquido,
-  resolvida por uma célula, que satura em amplitude desprezável nas corridas (042). Sobram também modos
-  fracos (≈ 3–5 /s, 10–45 rad/s) na linha estratificada.
+- ~~O modo real rápido da frente cai para metade (+67 /s com a média contra +34 /s com a doadora).~~ Correção
+  (048): estes números são autovalores da Jacobiana sem a matriz de massa do modo conservativo e não têm
+  significado. Com o problema generalizado, a 15 bar e abertura 0,13:
+  - com a média, o estacionário tem um par instável local na curva, +0,0127 ± 0,247j /s (25 s); o transitório
+    (1500 s a partir do estacionário perturbado, passo máximo 1 s) satura numa oscilação de 26 s da fração de gás
+    das células da curva (desvio-padrão 0,01 a 0,02), invisível na pressão de entrada (0,0004 bar);
+  - com a doadora o estacionário é estável (par lento −0,0033 ± 0,0067j /s, nenhum modo instável) e a
+    perturbação decai.
 - Custo e ciclo: ver a tabela abaixo (malha grossa e fina, 3000 s, referência com padrão dinâmico).
 
 | malha | fração das faces | passos | intervalo entre blowdowns | P_in (bar) | pico (kg/s) |

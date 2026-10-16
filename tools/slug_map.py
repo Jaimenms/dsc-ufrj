@@ -45,6 +45,9 @@ TF, DT_OUT, PERTURB = 8000.0, 5.0, 1e-3
 # erro deixa o passo crescer para centenas de segundos e o amortecimento do BDF com |lambda h| grande mantém a
 # trajetória num equilíbrio instável (a partida do estacionário perturbado não sai dele)
 MAX_STEP = 1.0
+# média móvel (s) da pressão de entrada na classificação (`--smooth`): 0 no mapa 043; o artigo 01 usa 20 s,
+# acima das oscilações de alguns segundos da coluna do riser contra o gás do bolsão e abaixo dos ciclos
+SMOOTH = 0.0
 
 
 def _base_params():
@@ -222,7 +225,7 @@ def summarize(out):
             run = load_run(path)
             m = (run.case_json.get("meta") or {}).get("map") or {}
             row = dict(start=start, name=r["name"], ab=m.get("ab"), P_res=m.get("P_res"), start_used=m.get("start"))
-            row.update(run_cycle_class(run))
+            row.update(run_cycle_class(run, smooth=SMOOTH))
             init = run.info.get("initial") or {}
             p_out = run.pipe(0)["out"]
             row.update(
@@ -395,7 +398,7 @@ def export(out):
 
 
 def main(argv=None):
-    global BASE, DATA_NAME
+    global BASE, DATA_NAME, SMOOTH
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("command", choices=["build", "plot", "export"])
     ap.add_argument("--out", default="runs/maps/well")
@@ -403,7 +406,14 @@ def main(argv=None):
     ap.add_argument("--pressures", help="pressões do reservatório separadas por vírgulas (a semente 15 tem de estar)")
     ap.add_argument("--base", help="caso base (JSON com o reservatório reservoir_1 e o choke choke_2)")
     ap.add_argument("--name", help=f"nome dos dados exportados em notebooks/data (padrão {DATA_NAME})")
+    ap.add_argument(
+        "--smooth",
+        type=float,
+        default=SMOOTH,
+        help="média móvel (s) da pressão de entrada antes da classe e do período (`cycle_class`; 0 = registo cru)",
+    )
     a = ap.parse_args(argv)
+    SMOOTH = a.smooth
     if a.base:
         BASE = a.base if os.path.isabs(a.base) else os.path.join(ROOT, a.base)
     if a.name:

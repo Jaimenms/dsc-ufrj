@@ -45,11 +45,43 @@ def dense_jacobian(model, X, t=0.0, rel=1e-7, abs_=1e-9):
     return J
 
 
+def mass_matrix(model, X):
+    """Matriz de massa M da linearização M·δẋ = J·δx em X. Nos dutos conservativos o lado direito devolve
+    dT/dt, com T(x) = (ρG αG, ρL αL) nas células (e as massas dos vértices dinâmicos), não dx/dt: M = ∂T/∂x
+    (`transform_jacobian`). Nos demais modelos, a identidade (issue 048)."""
+    X = np.asarray(X, float)
+    if getattr(model, "conservative", False):
+        return model.transform_jacobian(X).toarray()
+    return np.eye(X.size)
+
+
+def linear_spectrum(model, X, t=0.0, jax=False, vectors=False):
+    """Autovalores da linearização em (t, X), ordenados por parte real decrescente: os do problema
+    generalizado J·v = λ·M·v (`mass_matrix`), com J exata (JAX, `jax=True`) ou por diferenças finitas
+    (`dense_jacobian`). Nos modelos conservativos os autovalores de J sozinha não têm significado (as linhas
+    das massas vêm escaladas por ρL ≈ 10³ e ρG ≈ 1–10). Com `vectors=True` devolve (λ, V)."""
+    X = np.asarray(X, float)
+    if jax:
+        from .compiled import get_jax
+
+        _, jac = get_jax(model)
+        J = jac(t, X)
+        J = np.asarray(J.toarray() if hasattr(J, "toarray") else J, float)
+    else:
+        J = dense_jacobian(model, X, t)
+    A = np.linalg.solve(mass_matrix(model, X), J)
+    if vectors:
+        w, V = np.linalg.eig(A)
+        o = np.argsort(-w.real)
+        return w[o], V[:, o]
+    w = np.linalg.eigvals(A)
+    return w[np.argsort(-w.real)]
+
+
 def jacobian_eigenvalues(model, X, t=0.0):
-    """Autovalores da Jacobiana dX/dt em (t, X), ordenados por parte real decrescente."""
-    J = dense_jacobian(model, X, t)
-    ev = np.linalg.eigvals(J)
-    return ev[np.argsort(-ev.real)]
+    """Autovalores da linearização em (t, X) (`linear_spectrum`, com a matriz de massa nos modelos
+    conservativos), ordenados por parte real decrescente."""
+    return linear_spectrum(model, X, t)
 
 
 def stability_report(model, X, t=0.0, tol=1e-9):
@@ -423,7 +455,22 @@ def format_lab(st):
 CYCLE_CLASSES = ("stable", "cycling", "slugging")
 
 
-def cycle_class(T, P_in, q_out, amp_stable=0.1, amp_rel=0.01, surge=2.0):
+def moving_average(T, y, width):
+    """Média móvel centrada de `width` segundos (grelha uniforme com o passo mediano de T, bordas
+    repetidas); devolve y sem alteração com width <= 0 ou janelas de menos de dois pontos."""
+    T, y = np.asarray(T, float), np.asarray(y, float)
+    if width <= 0 or T.size < 3:
+        return y
+    dt = float(np.median(np.diff(T)))
+    n = int(round(width / dt)) if dt > 0 else 0
+    if n < 2:
+        return y
+    Tu = np.arange(T[0], T[-1] + 0.5 * dt, dt)
+    yp = np.pad(np.interp(Tu, T, y), (n // 2, n - 1 - n // 2), mode="edge")
+    return np.interp(T, Tu, np.convolve(yp, np.ones(n) / n, mode="valid"))
+
+
+def cycle_class(T, P_in, q_out, amp_stable=0.1, amp_rel=0.01, surge=2.0, smooth=0.0):
     """Classe de uma janela de corrida a partir da pressão na entrada da linha (bar) e da vazão
     de líquido na saída (kg/s):
 
@@ -435,11 +482,14 @@ def cycle_class(T, P_in, q_out, amp_stable=0.1, amp_rel=0.01, surge=2.0):
 
     Devolve a classe e a assinatura: pressão mínima, média e máxima, amplitude, período
     (entre cruzamentos ascendentes, `mfsim.simulation.window_signature`), vazão média e de pico
-    e a razão pico/média."""
+    e a razão pico/média. Com `smooth` > 0 (s) a amplitude, a média e os cruzamentos vêm da pressão
+    com média móvel dessa largura: as oscilações de alguns segundos da coluna do riser contra o gás
+    do bolsão, excitadas quando o gás entra na curva, cruzam a média e encurtam o período; a pressão
+    mínima e a máxima continuam as do registo."""
     from .simulation import window_signature
 
     T, P_in, q_out = (np.asarray(a, float) for a in (T, P_in, q_out))
-    w = window_signature(T, P_in)
+    w = window_signature(T, moving_average(T, P_in, smooth))
     q_mean, q_peak = float(np.mean(q_out)), float(np.max(q_out))
     ratio = q_peak / q_mean if q_mean > 0 else float("inf")
     if w["amp"] < max(amp_stable, amp_rel * abs(w["mean"])) or w["crossings"] <= 1:
