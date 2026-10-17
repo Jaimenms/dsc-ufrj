@@ -3224,8 +3224,8 @@ def cycle_branch(out, png):
     if A is not None:
         cl = _linear_classes(A)
         near = lambda re_: re_ > -1e-3  # noqa: E731
-        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_col"]), cl["T_col"], np.nan), color=fl.COLORS["bubble"], lw=1.0, label="column mode (linear)")
-        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_inv"]), cl["T_inv"], np.nan), color="0.5", lw=1.0, label="liquid-exchange mode (linear)")
+        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_col"]), cl["T_col"], np.nan), color=fl.COLORS["bubble"], lw=1.0, label="linear mode: riser column on the gas pocket (~70 s)")
+        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_inv"]), cl["T_inv"], np.nan), color="0.5", lw=1.0, label="linear mode: liquid exchange flowline--riser")
     for ab in abs_:
         s = sig[ab]
         if s["cls"] == "stable":
