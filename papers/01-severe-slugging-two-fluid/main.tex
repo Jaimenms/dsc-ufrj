@@ -376,6 +376,16 @@ Newton's method on $\bF = \mathbf{0}$ converges on the steady state of the run a
 \input{tables/generated/tab_linear_note}
 \end{table}
 
+\subsection{The branch of cycles}\label{sec:branch}
+
+\tbd{Dense sweep in the opening (runs in progress): the observed branch of cycles from the Hopf point to the open choke --- amplitude, period, surge and riser holdup against the opening, the two linear periods, and the opening at which the period doubles.}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{cycle_branch}
+\caption{The branch of cycles observed against the choke opening (seventeen transients from the blocked state, last \SI{8000}{\second} of \SI{16000}{\second}): (a) range and mean of the flowline inlet pressure, with the steady state (solid where linearly stable); (b) interval between blowdowns, the two values where blowouts alternate, with the periods of the two linear pairs; (c) peak and mean liquid flow rate through the choke; (d) minimum of the mean liquid holdup of the riser. Colour: class of the cycle; squares: period doubled.}\label{fig:branch}
+\end{figure}
+
 \subsection{Mesh dependence}\label{sec:mesh}
 
 Table~\ref{tab:mesh} compares the base mesh with a coarser one (cells twice as long) and a finer one (half as long) on \SI{8000}{\second} of the run with the choke open. The three carry the cycle and give the same pressure range (12.5 to \SI{31}{\bar}), but its period and its surge are not converged at the base mesh: from the coarse to the fine mesh the interval between blowdowns falls from 1980 to \SI{1540}{\second} and the surge rises from 36 to \SI{52}{\kilogram\per\second}, with the base mesh in between (\SI{1640}{\second}, \SI{39}{\kilogram\per\second}). The seal in the flowline is 100 to \SI{200}{\metre} long at the end of a blowout --- one cell of the base mesh, half a cell of the coarse one, two cells of the fine one --- and the front that bounds it is what the meshes resolve differently; the cost grows with the cell count, \num{6800}, \num{11100} and \num{21600} steps.

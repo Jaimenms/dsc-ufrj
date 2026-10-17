@@ -1,0 +1,114 @@
+{
+ "description": "Artigo 01, sistema offshore: varrimento denso da abertura do choke no ponto base (ramo de ciclos entre as aberturas do lote da dinâmica), partida bloqueada gravada no caso, saída a 2 s.",
+ "out_dir": "runs/paper01/offshore_sweep",
+ "runs": [
+  {
+   "name": "ab0.120",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.12"
+   ],
+   "tf": 16000.0
+  },
+  {
+   "name": "ab0.140",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.14"
+   ],
+   "tf": 16000.0
+  },
+  {
+   "name": "ab0.150",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.15"
+   ],
+   "tf": 16000.0
+  },
+  {
+   "name": "ab0.160",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.16"
+   ],
+   "tf": 16000.0
+  },
+  {
+   "name": "ab0.180",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.18"
+   ],
+   "tf": 16000.0
+  },
+  {
+   "name": "ab0.250",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.25"
+   ],
+   "tf": 16000.0
+  },
+  {
+   "name": "ab0.350",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.35"
+   ],
+   "tf": 16000.0
+  },
+  {
+   "name": "ab0.400",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.4"
+   ],
+   "tf": 16000.0
+  },
+  {
+   "name": "ab0.500",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.5"
+   ],
+   "tf": 16000.0
+  },
+  {
+   "name": "ab0.700",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.7"
+   ],
+   "tf": 16000.0
+  },
+  {
+   "name": "ab0.800",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.8"
+   ],
+   "tf": 16000.0
+  },
+  {
+   "name": "ab0.900",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.9"
+   ],
+   "tf": 16000.0
+  }
+ ]
+}

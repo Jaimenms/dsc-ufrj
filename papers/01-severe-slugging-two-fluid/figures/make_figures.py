@@ -3151,6 +3151,118 @@ def tab_linear(out):
     )
 
 
+# ------------------------------------------------------------------------------ ramo de ciclos (varrimento denso)
+SWEEP_BATCHES = ("offshore_dynamics", "offshore_sweep")
+
+
+def _branch_signatures():
+    """Assinatura (últimos CYCLE_WINDOW s) de todas as corridas com o choke em cada abertura (lotes da dinâmica e do
+    varrimento): {abertura: dict(cls, period, P_min, P_max, P_mean, q_mean, q_peak, holdup_min, p2, intervals)}, com
+    `p2` quando os intervalos entre fins de sopro alternam (razão entre consecutivos acima de 1,25)."""
+    from mfsim.analysis import cycle_class, moving_average, slug_fronts
+
+    out = {}
+    for batch in SWEEP_BATCHES:
+        for name, run in _batch_runs(batch):
+            if run is None or not name.startswith("ab"):
+                continue
+            ab = float(name[2:])
+            T = np.asarray(run.T)
+            p = run.pipe(0)
+            P_in, q = p["out"]["P_bar"][1], p["out"]["qL"][-1]
+            sel = T >= T[-1] - CYCLE_WINDOW
+            c = cycle_class(T[sel], P_in[sel], q[sel], smooth=SMOOTH)
+            fr = slug_fronts(run)
+            hold = np.asarray(fr["riser_holdup"])
+            Ps = moving_average(T, P_in, SMOOTH)
+            lo = np.percentile(Ps[sel], 30)
+            mins = []
+            for j in np.flatnonzero(sel)[1:-1]:
+                if Ps[j] < Ps[j - 1] and Ps[j] <= Ps[j + 1] and Ps[j] < lo and (not mins or T[j] - T[mins[-1]] > 150):
+                    mins.append(j)
+            iv = np.diff(T[mins]) if len(mins) >= 2 else np.array([])
+            ratios = iv[1:] / iv[:-1] if iv.size >= 2 else np.array([])
+            p2 = bool(ratios.size >= 2 and np.max(np.maximum(ratios, 1 / ratios)) > 1.25 and c["cls"] != "stable")
+            out[ab] = dict(c, holdup_min=float(hold[sel].min()), p2=p2, intervals=iv, period_mean=float(iv.mean()) if iv.size else c["period"])
+    return out
+
+
+def cycle_branch(out, png):
+    """Ramo de ciclos observado contra a abertura do choke (lotes da dinâmica e do varrimento, partida bloqueada,
+    últimos 8000 s de 16 000 s): (a) faixa e média de P_in com o estacionário; (b) intervalo médio entre sopros (e os
+    dois quando alternam) com os períodos dos pares lineares; (c) pico e média de q_L; (d) fração de líquido mínima do
+    riser. Cor: classe; quadrado: período 2."""
+    from matplotlib.lines import Line2D
+
+    sig = _branch_signatures()
+    fig, axes = plt.subplots(2, 2, figsize=(fl.DOUBLE, 0.66 * fl.DOUBLE), sharex=True, gridspec_kw=dict(hspace=0.16, wspace=0.26))
+    axes = axes.ravel()
+    if not sig:
+        for a in axes:
+            fl.placeholder(a, "runs of the opening sweep not found")
+        fl.save(fig, out, "cycle_branch", png)
+        return
+    A = _offshore_linear()
+    abs_ = sorted(sig)
+
+    def mk(s):
+        return dict(marker="s" if s["p2"] else "o", ms=4.5, mfc=fl.COLORS[s["cls"]], mec="white", mew=0.6, ls="none", zorder=4)
+
+    # (a) P_in
+    ax = axes[0]
+    if A is not None:
+        c = LINEAR_COLS
+        _branch(ax, A[:, c["ab"]], A[:, c["P_in"]], A[:, c["re1"]] < 0, "0.5")
+    for ab in abs_:
+        s = sig[ab]
+        ax.plot([ab, ab], [s["P_min"], s["P_max"]], color=fl.COLORS[s["cls"]], lw=2.2, solid_capstyle="butt", zorder=3)
+        ax.plot(ab, s["P_mean"], **mk(s))
+    ax.set_ylabel(r"$P_{in}$ (bar): range and mean")
+    # (b) períodos
+    ax = axes[1]
+    if A is not None:
+        cl = _linear_classes(A)
+        near = lambda re_: re_ > -1e-3  # noqa: E731
+        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_col"]), cl["T_col"], np.nan), color=fl.COLORS["bubble"], lw=1.0, label="column mode (linear)")
+        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_inv"]), cl["T_inv"], np.nan), color="0.5", lw=1.0, label="liquid-exchange mode (linear)")
+    for ab in abs_:
+        s = sig[ab]
+        if s["cls"] == "stable":
+            continue
+        iv = s["intervals"]
+        if s["p2"] and iv.size >= 2:
+            for v in (np.mean(iv[-2::-2]), np.mean(iv[-1::-2])):
+                ax.plot(ab, v, **mk(s))
+            ax.plot([ab, ab], [np.mean(iv[-2::-2]), np.mean(iv[-1::-2])], color=fl.COLORS[s["cls"]], lw=0.8, zorder=3)
+        else:
+            ax.plot(ab, s["period_mean"], **mk(s))
+    ax.set_ylabel("interval between blowdowns (s)")
+    ax.legend(fontsize=6.5, frameon=False, loc="upper left")
+    # (c) produção e surto
+    ax = axes[2]
+    for ab in abs_:
+        s = sig[ab]
+        ax.plot(ab, s["q_peak"], **mk(s))
+        ax.plot(ab, s["q_mean"], marker="_", ms=7, mec=fl.COLORS[s["cls"]], ls="none", zorder=4)
+    ax.set_ylabel(r"$q_L$ through the choke (kg s$^{-1}$): peak (dot), mean (dash)")
+    ax.set_xlabel("choke opening $a$")
+    # (d) holdup mínimo do riser
+    ax = axes[3]
+    for ab in abs_:
+        s = sig[ab]
+        ax.plot(ab, s["holdup_min"], **mk(s))
+    ax.set_ylabel("minimum mean liquid holdup of the riser")
+    ax.set_xlabel("choke opening $a$")
+    for a_ in axes[2:]:
+        _opening_axis(a_)
+    handles = [Line2D([], [], marker="o", ls="none", ms=5, mfc=fl.COLORS[k], mec="white", label=CLASS_LABEL[k].split(",")[0]) for k in ("stable", "cycling", "slugging")]
+    handles += [Line2D([], [], marker="s", ls="none", ms=5, mfc="0.3", mec="white", label="period doubled (alternating blowouts)"), Line2D([], [], color="0.5", lw=1.0, label="steady state (solid: stable)")]
+    fig.legend(handles=handles, fontsize=6.5, frameon=False, loc="lower center", ncol=5, bbox_to_anchor=(0.5, -0.03))
+    for i, a_ in enumerate(axes):
+        fl.panel_label(a_, f"({'abcd'[i]})")
+    fl.save(fig, out, "cycle_branch", png)
+
+
 # ---------------------------------------------------------------------------------------- órbitas periódicas (059)
 ORBITS_DIR = fl.RUNS / "paper01" / "offshore_orbits"  # de tools/periodic_orbit.py (shooting com a monodromia do BDF)
 
@@ -3289,6 +3401,7 @@ FIGURES = {
     "linear_stability": linear_stability,
     "linear_offshore": linear_offshore,
     "orbits": orbits,
+    "cycle_branch": cycle_branch,
     "model_problem": model_problem,
     "gor": gor,
 }

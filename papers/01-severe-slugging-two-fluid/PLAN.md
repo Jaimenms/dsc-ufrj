@@ -300,6 +300,14 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
 - **Pendência de texto (16:25):** as afirmações da §5.2 sobre os esquemas colocados (Galerkin, diferenças) vêm do
   estudo de discretização do caso à escala piloto (`runs/paper01/discretization`, 15 bar) e não foram refeitas a 2 km;
   ficam como observações qualitativas sem números. Refazer exigiria um lote de discretização para o caso offshore.
+- **Órbitas periódicas por shooting (17:00, pedido do dono: figura do ramo de ciclos pelo método do artigo 03):**
+  implementada a sensibilidade ao estado inicial no BDF (059, testada no problema-modelo e no hello_world) e a
+  ferramenta `tools/periodic_orbit.py`. **No caso offshore a monodromia não é fiável:** o mapa de um período é áspero
+  a todas as escalas (frentes a atravessar células, chaveamentos, projeções) — derivadas direcionais por diferenças
+  finitas inconsistentes entre ε de 0,1 % a 10 %, multiplicador trivial e M·v errados por 50 % a 65×, sem padrão com a
+  tolerância; o primeiro passo do Newton produz um estado que o integrador não arranca. Decisão do dono: **varrimento
+  denso em abertura** (lote `paper01_offshore_sweep`, 12 corridas de 16 000 s) e a figura `cycle_branch` (§8.6) com o
+  ramo de ciclos observado; os ciclos instáveis ficam para o artigo 03 (colocação da órbita ou mapa suavizado).
 - **Quando se refizer a campanha:** `newton_damping=armijo` como omissão do gerador (o estado anterior como iterado
   inicial só ganha no bloqueio, −63 %, e não soma à busca em linha: 295 contra 249 passos); a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
   Newton melhor antes de afirmar que "as faces pela média falham no sopro".

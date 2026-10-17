@@ -23,6 +23,7 @@ from generators.offshore import offshore_case, write_case  # noqa: E402
 CASES = os.path.join(ROOT, "cases", "paper01")
 BATCHES = os.path.join(ROOT, "batches")
 OPENINGS = (1.0, 0.6, 0.3, 0.2, 0.1)
+SWEEP = (0.12, 0.14, 0.15, 0.16, 0.18, 0.25, 0.35, 0.4, 0.5, 0.7, 0.8, 0.9)  # ramo de ciclos (figura cycle_branch)
 GORS = (30.0, 50.0, 80.0, 122.13)
 ABLATION = {
     "primitive": [
@@ -137,6 +138,14 @@ def main(argv=None):
                 {"name": f"ab{ab:.3f}", "case": base_rel, "set": [f"network.edges.choke_2.opening={ab}"]}
                 for ab in OPENINGS
             ],
+            a.tf,
+        )
+    )
+    out.append(
+        _batch(
+            "sweep",
+            f"Artigo 01, sistema offshore: varrimento denso da abertura do choke no ponto base (P_res {a.P_res:g} bar, RGO {a.GOR:g} Sm³/Sm³), partida bloqueada gravada no caso, saída a 2 s.",
+            [{"name": f"ab{ab:.3f}", "case": base_rel, "set": [f"network.edges.choke_2.opening={ab}"]} for ab in SWEEP],
             a.tf,
         )
     )

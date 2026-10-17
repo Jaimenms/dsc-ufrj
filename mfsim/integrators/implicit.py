@@ -130,6 +130,7 @@ class ImplicitBDF:
         # própria no estado aceite (a do Newton não muda: a trajetória é a mesma com e sem sensibilidades); S final
         # em info["S"] — a matriz de monodromia quando se integra um período
         self.sensitivity = None
+        self.n_sens_fallback = 0  # diagnóstico: passos em que a matriz das sensibilidades foi singular
         self.jac_rate = 0.3  # "rate": contração err/err_prev acima da qual J é reavaliada no iterado atual
         self.jac_refresh_max = 3  # "rate": reavaliações por Newton, no máximo
         self.n_backtracks = 0  # diagnóstico: reduções de passo de Newton pela busca em linha
@@ -540,7 +541,12 @@ class ImplicitBDF:
                     rhs_s = rhs_s + w2 * JTS_prev2
                 JT_acc = self._JT_dense(x)
                 A_s = (sp.csc_matrix(JT_acc) - gcoef * h * self._jac_at(t, x, f0)).tocsc()
-                S_new = spla.splu(A_s).solve(np.asarray(rhs_s, float))
+                try:
+                    S_new = spla.splu(A_s).solve(np.asarray(rhs_s, float))
+                except RuntimeError:
+                    # matriz singular no estado aceite (estado projetado num limite): usa a LU do Newton deste passo
+                    self.n_sens_fallback += 1
+                    S_new = self._LU.solve(np.asarray(rhs_s, float)) if self._LU is not None else S_prev
                 if self.bounds is not None:
                     S_new[(x <= self.bounds[0]) | (x >= self.bounds[1]), :] = 0.0
                 S_prev2, S_prev = S_prev, S_new

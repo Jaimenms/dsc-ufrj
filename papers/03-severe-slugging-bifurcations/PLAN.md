@@ -103,6 +103,18 @@ seu estado inicial como incógnita e continuidade entre troços.
 | uma órbita (3–6 iterações, a partir de uma dinâmica) | ~1–3 h |
 | um diagrama a um parâmetro (~20 pontos) | ~1 dia de máquina |
 
+## O que o primeiro ensaio mostrou (2026-10-17, sessão do artigo 01)
+
+A sensibilidade ao estado inicial no `ImplicitBDF` existe (issue 059: `integration.sensitivity = "state"`, matriz n × n
+em `info["S"]`, 2 % das diferenças finitas no problema-modelo) e a ferramenta `tools/periodic_orbit.py` faz o
+*shooting* simples com a secção em P_in. No caso de 2 km, porém, **o mapa de um período é áspero a todas as escalas**:
+derivadas direcionais por diferenças finitas inconsistentes entre ε de 0,1 % a 10 % das faixas (40–130 % de
+diferença entre ε consecutivos), multiplicador trivial e M·v errados por 50 % a 65× e sem padrão com a tolerância;
+as quinas suaves da 052 não mudam nada. O Newton com essa Jacobiana estraga o estado. Caminhos a estudar aqui:
+colocação da órbita (problema de valores de contorno, sem propagar sensibilidades por um período inteiro), *shooting*
+múltiplo com troços curtos, mapa suavizado (malha fina, troca de célula doadora regularizada) ou estabilidade por
+Poincaré a partir das dinâmicas. O artigo 01 ficou com o ramo observado por varrimento denso (`cycle_branch`).
+
 ## Riscos e planos alternativos
 
 - **Mapa pouco suave** (frentes, chaveamentos de padrão): bacia de convergência estreita. Partir sempre de corridas
