@@ -3151,6 +3151,131 @@ def tab_linear(out):
     )
 
 
+# ---------------------------------------------------------------------------------------- órbitas periódicas (059)
+ORBITS_DIR = fl.RUNS / "paper01" / "offshore_orbits"  # de tools/periodic_orbit.py (shooting com a monodromia do BDF)
+
+
+def _orbits():
+    """Órbitas periódicas convergidas de `branch.json`: lista de dicts ordenada pela abertura, com `p2` = ramo de
+    período 2 (sufixo `_p2` na chave)."""
+    path = ORBITS_DIR / "branch.json"
+    if not path.exists():
+        return []
+    d = json.load(open(path))
+    rows = []
+    for key, r in d.items():
+        r = dict(r)
+        r["p2"] = key.endswith("_p2")
+        rows.append(r)
+    return sorted(rows, key=lambda r: (r["p2"], r["a"]))
+
+
+def orbits(out, png):
+    """Ramo de órbitas periódicas contra a abertura do choke (shooting com a matriz de monodromia, 059): (a) faixa de
+    P_in da órbita (cheia onde estável, aberta onde instável) com o estacionário e as corridas; (b) período da
+    órbita, do par lento do estacionário e das corridas; (c) maior multiplicador de Floquet não trivial."""
+    from matplotlib.lines import Line2D
+
+    orb = [r for r in _orbits() if r.get("converged")]
+    fig, axes = plt.subplots(1, 3, figsize=(fl.DOUBLE, 0.36 * fl.DOUBLE), gridspec_kw=dict(wspace=0.32))
+    if not orb:
+        for a in axes:
+            fl.placeholder(a, "periodic orbits not found")
+        fl.save(fig, out, "orbits", png)
+        return
+    A = _offshore_linear()
+    dyn = _dyn_signatures()
+    mk_st = dict(marker="o", ms=4.5, mec=fl.INK, mfc=fl.INK, ls="none", zorder=5)
+    mk_un = dict(marker="o", ms=4.5, mec=fl.INK, mfc="white", mew=0.8, ls="none", zorder=5)
+    mk_p2 = dict(marker="s", ms=4.5, mec=fl.COLORS["slugging"], mfc=fl.COLORS["slugging"], ls="none", zorder=5)
+    # (a) faixa de P_in
+    ax = axes[0]
+    if A is not None:
+        c = LINEAR_COLS
+        _branch(ax, A[:, c["ab"]], A[:, c["P_in"]], A[:, c["re1"]] < 0, "0.55")
+    for a_d, sd in sorted(dyn.items()):
+        ax.plot([a_d, a_d], [sd["P_min"], sd["P_max"]], color=fl.COLORS[sd["cls"]], lw=5, alpha=0.35, solid_capstyle="butt", zorder=2)
+    for r in orb:
+        mk = mk_p2 if r["p2"] else (mk_st if r["stable"] else mk_un)
+        ax.plot([r["a"], r["a"]], [r["P_min"], r["P_max"]], color=fl.COLORS["slugging"] if r["p2"] else fl.INK, lw=1.0, zorder=4)
+        ax.plot([r["a"]] * 2, [r["P_min"], r["P_max"]], **mk)
+    ax.set_ylabel(r"$P_{in}$ (bar)")
+    # (b) período
+    ax = axes[1]
+    if A is not None:
+        cl = _linear_classes(A)
+        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(cl["re_inv"] > -1e-3, cl["T_inv"], np.nan), color="0.55", lw=1.0, label="slow pair of the steady state")
+    for a_d, sd in sorted(dyn.items()):
+        if sd["cls"] != "stable" and np.isfinite(sd["period"]):
+            ax.plot(a_d, sd["period"], marker="D", ms=4, mfc=fl.COLORS[sd["cls"]], mec="white", mew=0.5, ls="none", zorder=3)
+    for r in orb:
+        mk = mk_p2 if r["p2"] else (mk_st if r["stable"] else mk_un)
+        ax.plot(r["a"], r["T"], **mk)
+    p1 = [r for r in orb if not r["p2"]]
+    ax.plot([r["a"] for r in p1], [r["T"] for r in p1], color=fl.INK, lw=0.8, zorder=1)
+    ax.set_ylabel("period (s)")
+    # (c) multiplicador de Floquet dominante
+    ax = axes[2]
+    ax.axhline(1.0, color=fl.GRID, lw=0.8)
+    for r in orb:
+        mu = r["mu_abs"]
+        mu_lead = abs(complex(*r["mu_lead"])) if r.get("mu_lead") and np.isfinite(r["mu_lead"][0]) else np.nan
+        mk = mk_p2 if r["p2"] else (mk_st if r["stable"] else mk_un)
+        ax.plot(r["a"], mu_lead, **mk)
+    ax.plot([r["a"] for r in p1], [abs(complex(*r["mu_lead"])) for r in p1], color=fl.INK, lw=0.8, zorder=1)
+    ax.set_ylabel(r"leading Floquet multiplier $|\mu|$")
+    ax.set_yscale("log")
+    for a_ in axes:
+        _opening_axis(a_)
+        a_.set_xlabel("choke opening $a$")
+    handles = [
+        Line2D([], [], label="periodic orbit, stable", **mk_st),
+        Line2D([], [], label="periodic orbit, unstable", **mk_un),
+        Line2D([], [], label="period-2 orbit", **mk_p2),
+        Line2D([], [], color="0.55", lw=1.0, label="steady state"),
+        Line2D([], [], color=fl.COLORS["slugging"], lw=5, alpha=0.35, label="runs (range)"),
+    ]
+    fig.legend(handles=handles, fontsize=6.5, frameon=False, loc="lower center", ncol=5, bbox_to_anchor=(0.5, -0.08))
+    for i, a_ in enumerate(axes):
+        fl.panel_label(a_, f"({'abc'[i]})")
+    fl.save(fig, out, "orbits", png)
+
+
+def tab_orbits(out):
+    """Órbitas periódicas por abertura: período, faixa de P_in, pico e média de q_L, holdup mínimo do riser, maior
+    multiplicador de Floquet não trivial, estabilidade, resíduo e iterações do shooting."""
+    rows = []
+    for r in _orbits():
+        mu = abs(complex(*r["mu_lead"])) if r.get("mu_lead") and np.isfinite(r["mu_lead"][0]) else np.nan
+        rows.append(
+            [
+                f"{r['a']:g}" + (" (period 2)" if r["p2"] else ""),
+                fl.fmt(r["T"], "{:.0f}"),
+                f"{r['P_min']:.2f}--{r['P_max']:.2f}",
+                fl.fmt(r["q_mean"], "{:.2f}"),
+                fl.fmt(r["q_peak"], "{:.1f}"),
+                fl.fmt(r["holdup_min"], "{:.2f}"),
+                fl.fmt(mu, "{:.3f}"),
+                "stable" if r["stable"] else "unstable",
+                fl.fmt(r["residual"], "{:.3f}"),
+                f"{int(r['n_iter'])}" + ("" if r["converged"] else " (not converged)"),
+            ]
+        )
+    fl.tex_table(
+        out,
+        "tab_orbits",
+        ["$a$", "$T$ (s)", "$P_{in}$ (bar)", "$\\bar q_L$ (kg/s)", "peak $q_L$", "min.\\ riser holdup", "$|\\mu|$", "stability", "residual", "iterations"],
+        rows,
+        align="lrlrrrrlrr",
+        notes=(
+            "Periodic orbits of the base point by single shooting on $(\\bx_0, T)$ with the monodromy matrix propagated "
+            "inside the integrator and a Poincar\\'e section on $P_{in}$; $|\\mu|$: largest Floquet multiplier apart "
+            "from the trivial one; residual: RMS of $\\phi_T(\\bx_0) - \\bx_0$ in the tolerance scales of the states "
+            "(the integrator's own error over one period is of order one in these units)."
+        ),
+    )
+
+
 FIGURES = {
     "geometry": geometry,
     "hyperbolicity": hyperbolicity,
@@ -3163,6 +3288,7 @@ FIGURES = {
     "discretisation": discretisation,
     "linear_stability": linear_stability,
     "linear_offshore": linear_offshore,
+    "orbits": orbits,
     "model_problem": model_problem,
     "gor": gor,
 }
@@ -3179,6 +3305,7 @@ TABLES = {
     "tab_gor": tab_gor,
     "tab_hopf_mesh": tab_hopf_mesh,
     "tab_linear": tab_linear,
+    "tab_orbits": tab_orbits,
     "tab_newton": tab_newton,
     "tab_geometry": tab_geometry,
     "tab_parameters": tab_parameters,

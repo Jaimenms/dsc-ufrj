@@ -429,6 +429,7 @@ class IntegrationSpec:
     jac_policy: Optional[str] = None  # "legacy" | "step" | "rate" (issue 053)
     predictor: Optional[str] = None  # "extrapolate" | "none" | "euler" (issue 053)
     error_estimate: Optional[str] = None  # "thesis" | "milne" (issue 058)
+    sensitivity: Optional[str] = None  # "state": ∂x/∂x0 propagada no BDF, info["S"] (issue 059)
     jac_rate: Optional[float] = None  # "rate": contração acima da qual J é reavaliada (omissão 0,3; issue 053)
     jac_refresh_max: Optional[int] = None  # "rate": reavaliações por Newton (omissão 3; issue 053)
     extra: tuple = ()
@@ -451,6 +452,7 @@ class IntegrationSpec:
         "jac_policy",
         "predictor",
         "error_estimate",
+        "sensitivity",
         "jac_rate",
         "jac_refresh_max",
     )

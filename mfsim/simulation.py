@@ -148,7 +148,7 @@ def _integrate_bdf(model, X0, t_eval, spec, progress=True, verbose=False, partia
         bdf.predict_space = spec.predict_space
     if spec.jt_refresh is not None:
         bdf.jt_refresh = spec.jt_refresh
-    for key in ("newton_damping", "jac_policy", "predictor", "error_estimate"):  # issues 053, 055, 058
+    for key in ("newton_damping", "jac_policy", "predictor", "error_estimate", "sensitivity"):  # 053, 055, 058, 059
         if getattr(spec, key) is not None:
             setattr(bdf, key, str(getattr(spec, key)))
     if spec.jac_rate is not None:

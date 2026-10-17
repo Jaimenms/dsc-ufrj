@@ -1391,6 +1391,12 @@
           ],
           "description": "estimativa do erro local na ordem 2 do BDF próprio: thesis (preditor linear e r/(1+2r)·(x − pred), de 1.ª ordem) ou milne (preditor quadrático pelos três estados do histórico e constante de Milne; o Newton continua a partir do linear; issue 058)"
         },
+        "sensitivity": {
+          "enum": [
+            "state"
+          ],
+          "description": "state: sensibilidade da trajetória ao estado inicial propagada em cada passo aceite do BDF próprio (matriz n × n em info[\"S\"]; a matriz de monodromia quando se integra um período; issue 059)"
+        },
         "jac_policy": {
           "enum": [
             "legacy",

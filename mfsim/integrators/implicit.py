@@ -126,6 +126,10 @@ class ImplicitBDF:
         self.error_estimate = "thesis"
         self._err_coef = 0.5
         self._pred_lin = None
+        # issue 059: "state" propaga S = ∂x_n/∂x_0 (n × n) com a recorrência de cada passo aceite, com uma Jacobiana
+        # própria no estado aceite (a do Newton não muda: a trajetória é a mesma com e sem sensibilidades); S final
+        # em info["S"] — a matriz de monodromia quando se integra um período
+        self.sensitivity = None
         self.jac_rate = 0.3  # "rate": contração err/err_prev acima da qual J é reavaliada no iterado atual
         self.jac_refresh_max = 3  # "rate": reavaliações por Newton, no máximo
         self.n_backtracks = 0  # diagnóstico: reduções de passo de Newton pela busca em linha
@@ -187,6 +191,36 @@ class ImplicitBDF:
         self.n_jac += 1
         self._jac_age = 0
         self._LU = None
+
+    def _jac_at(self, t, x, f0):
+        """Jacobiana (csc) de f em (t, x) à parte da do Newton: não toca em `_J`, `_LU` nem `_jac_age` (issue 059)."""
+        n = x.size
+        if self.jac_fun is not None:
+            J = sp.csc_matrix(self.jac_fun(t, x))
+        elif self.S is None:
+            J = np.empty((n, n))
+            for j in range(n):
+                h = 1e-7 * abs(x[j]) + 1e-9
+                xp = x.copy()
+                xp[j] += h
+                J[:, j] = (self._f(t, xp) - f0) / h
+            J = sp.csc_matrix(J)
+        else:
+            J = colored_jacobian(
+                lambda y: self._f(t, y), x, f0=f0, S=self.S, groups=self.groups, rel=self.fd_rel, abs_=self.fd_abs
+            )
+        self.n_jac += 1
+        return J
+
+    def _JT_dense(self, x):
+        """Jacobiana densa do mapa conservativo em x (identidade sem mapa; issue 059)."""
+        if self.transform is None:
+            return np.eye(x.size)
+        if self.transform_jac is None:
+            raise NotImplementedError(
+                "sensibilidades (issue 059) exigem transform_jac, a Jacobiana do mapa conservativo"
+            )
+        return np.asarray(sp.csc_matrix(self.transform_jac(x)).todense())
 
     def _factor(self, gamma):
         n = self._J.shape[0]
@@ -356,6 +390,10 @@ class ImplicitBDF:
         cooldown = 0
         at_bound = False
         self._clipped = False
+        sens = self.sensitivity == "state"
+        if sens:
+            S_prev2, S_prev = None, np.eye(x.size)
+            JTS_prev2, JTS_prev = None, self._JT_dense(x) @ S_prev
         while t < t_end - 1e-12 * max(1.0, abs(t_end)):
             h = min(h, self.max_step, t_end - t)
             if next_bp < bps.size and t + h > bps[next_bp] - 1e-12:
@@ -492,6 +530,21 @@ class ImplicitBDF:
             if len(hist) > 3:
                 hist.pop(0)
                 t_hist.pop(0)
+            if sens:
+                # issue 059: (J_T − γJ)(x_{n+1}) S_{n+1} = w1 J_T(x_n) S_n + w2 J_T(x_{n−1}) S_{n−1}, a derivada do
+                # passo aceite (ordem e pesos do histórico iguais aos do passo); estados presos num limite não
+                # dependem do estado inicial
+                w1, w2 = self._hist_w
+                rhs_s = w1 * JTS_prev
+                if w2 != 0.0 and JTS_prev2 is not None:
+                    rhs_s = rhs_s + w2 * JTS_prev2
+                JT_acc = self._JT_dense(x)
+                A_s = (sp.csc_matrix(JT_acc) - gcoef * h * self._jac_at(t, x, f0)).tocsc()
+                S_new = spla.splu(A_s).solve(np.asarray(rhs_s, float))
+                if self.bounds is not None:
+                    S_new[(x <= self.bounds[0]) | (x >= self.bounds[1]), :] = 0.0
+                S_prev2, S_prev = S_prev, S_new
+                JTS_prev2, JTS_prev = JTS_prev, JT_acc @ S_new
             self.n_steps += 1
             if self.max_cpu is not None and time.time() - t_start > self.max_cpu:
                 raise RuntimeError(f"orçamento de tempo ({self.max_cpu:g} s) excedido em t={t:.4g}")
@@ -558,6 +611,8 @@ class ImplicitBDF:
         )
         if out_acc is not None:
             info["accum"] = np.array(out_acc).T  # (m, nt): integral BDF-consistente de g
+        if sens:
+            info["S"] = S_prev  # (n, n): ∂x(t_end)/∂x(t_0) da trajetória discreta (issue 059)
         return t_eval, X, info
 
 
