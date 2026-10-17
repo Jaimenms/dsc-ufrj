@@ -116,6 +116,7 @@ qual estão em `notebooks_src/thesis/`.
 
 ## Pendências abertas
 
+- Ensaio de Fabre 2 com o padrão automático (`cases/paper01/lab_fabre2_auto.json`): arranca desde a 057, mas emperra perto do primeiro sopro do riser a 1 atm (91 s sem a 054, 96,5 s em 2 h com ela); falta o diagnóstico (estado exato do Newton, como na 054) antes de validar a 054 com dados de laboratório.
 - Gas lift na base como mitigação (item 9; o choke no topo está no mapa, 043); fecha a comparação com Jansen (030).
 - Vértice do tipo separador (fases separadas, fase certa em refluxo) (014, 026).
 - Fechamento de bolhas entre 10 e 30 % de gás (022).

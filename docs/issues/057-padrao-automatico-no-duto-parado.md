@@ -29,8 +29,11 @@ automático arranca.
 
 ## Benefício
 
-- `lab_fabre2_auto` passa de 0 passos a integrar. Sem a 054 pára no passo mínimo aos 91 s (41 332 passos);
-  com a 054 a comparação com o ensaio (≈ 137 s, 126–235 kPa) está em curso.
+- `lab_fabre2_auto` passa de 0 passos a integrar, mas ainda não chega ao primeiro ciclo: sem a 054 pára no passo
+  mínimo aos 91 s (41 332 passos, 162–236 kPa); com a 054 rasteja até 96,5 s em 2 h de relógio (1,39 milhões de
+  passos, ~7e-5 s por passo, 104–236 kPa). Os dois emperram perto do primeiro sopro do riser a 1 atm; o mesmo ensaio
+  com os padrões fixos da 030 dá 135,8 s contra 137 s medidos. A validação de laboratório com o padrão automático
+  continua por fazer (pendência no índice).
 - A rotina e os goldens de nível A ficam iguais (402 testes).
 
 ## Referências
