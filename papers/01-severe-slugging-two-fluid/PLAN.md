@@ -297,6 +297,9 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   2 s com cache). Overrides com `null` removem a chave (uniform_atol); `compile` gravado na info das corridas.
   Rotina 410 passed. **Decisão pendente do dono:** manter `error_estimate = milne` por omissão no gerador (custa
   +19 % no ciclo offshore; ganha 20–50 % no problema-modelo) ou voltar a `thesis`.
+- **Pendência de texto (16:25):** as afirmações da §5.2 sobre os esquemas colocados (Galerkin, diferenças) vêm do
+  estudo de discretização do caso à escala piloto (`runs/paper01/discretization`, 15 bar) e não foram refeitas a 2 km;
+  ficam como observações qualitativas sem números. Refazer exigiria um lote de discretização para o caso offshore.
 - **Quando se refizer a campanha:** `newton_damping=armijo` como omissão do gerador (o estado anterior como iterado
   inicial só ganha no bloqueio, −63 %, e não soma à busca em linha: 295 contra 249 passos); a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
   Newton melhor antes de afirmar que "as faces pela média falham no sopro".
