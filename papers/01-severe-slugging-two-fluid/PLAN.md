@@ -270,6 +270,13 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   passos); ambos emperram perto do primeiro sopro do riser a 1 atm. A 054 entra no ponto base do artigo por decisão
   do dono, mas **ainda não está validada com laboratório**; `batches/paper01_lab.json` fica fora da campanha até ao
   diagnóstico (registado na 057 e nas pendências do INDEX).
+- **Passagem de texto a fazer com os resultados (lista para não esquecer):** §3.3 (l. 175, identificação de padrão:
+  critério de bolhas com a fração local, 054) e Apêndice B (l. 488); §4.2 (l. 202–209, regra de fração baixa a 0,025 e a
+  fração mal-posta por padrão: estratificado a 0 %); §5.1 (l. 245–247: a configuração passa a ter a busca em linha até
+  à convergência e a estimativa de Milne; parágrafo e `tab_newton` refeitos com as janelas do novo ciclo e as variantes
+  referência / sem busca / Armijo em todas / estimativa da tese / Jacobiana pela taxa / estado anterior); §5.3 (l. 262:
+  16 variantes); §8 inteiro (ciclo de período 2, aberturas, RGO, estabilidade linear, malhas); conclusões (l. 402) e
+  resumo; `tab_parameters`/`tab_analysis` conferir que leem as opções novas do caso.
 - **Quando se refizer a campanha:** `newton_damping=armijo` como omissão do gerador (o estado anterior como iterado
   inicial só ganha no bloqueio, −63 %, e não soma à busca em linha: 295 contra 249 passos); a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
   Newton melhor antes de afirmar que "as faces pela média falham no sopro".
