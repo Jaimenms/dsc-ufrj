@@ -2735,6 +2735,10 @@ def tab_analysis(out):
             f"stable if the range of the smoothed $P_{{in}}$ is below max({cc['amp_stable'].default:g} bar, {100 * cc['amp_rel'].default:g} \\% of its mean) or it crosses its mean at most once; severe slugging if the liquid outflow peaks at {cc['surge'].default:g} times its mean or more; pressure cycle otherwise",
         ],
         [
+            "pressures and flow rates",
+            "$P_{in}$: first cell of the flowline (centre \\SI{94}{\\metre} from the wellhead along the pipe); low point: first cell of the bend; top of the riser: last cell before the choke; flow rates through the choke: last face of the pipe; cell values are the staggered-scheme unknowns, not interpolated",
+        ],
+        [
             "smoothing, period",
             f"centred moving average of {SMOOTH:g} s on $P_{{in}}$; period = mean time between up-crossings of the mean",
         ],
