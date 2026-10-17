@@ -1800,6 +1800,8 @@ def gor(out, png):
 def tab_gor(out):
     """Assinatura do ciclo por razão gás–óleo (choke aberto): fração de gás, vazão média, classe, intervalo entre
     blowdowns, faixa de pressão e pico de líquido."""
+    from mfsim.analysis import cycle_class
+
     rows = []
     for g, name in GOR_RUNS:
         run = _gor_run(g, name)
@@ -1808,12 +1810,16 @@ def tab_gor(out):
             continue
         r = _run_summary(run)
         w = (run.case.meta or {}).get("mass", {}).get("w_gas", np.nan) if getattr(run, "case", None) is not None else np.nan
+        T = np.asarray(run.T)
+        p = run.pipe(0)
+        sel = T >= T[-1] - CYCLE_WINDOW
+        c = cycle_class(T[sel], p["out"]["P_bar"][1][sel], p["out"]["qL"][-1][sel], smooth=SMOOTH)
         rows.append(
             [
                 f"{g:g}",
                 fl.fmt(w, "{:.3f}"),
-                fl.fmt(r.get("q_mean"), "{:.2f}"),
-                r.get("cls", "--") if isinstance(r.get("cls"), str) else "--",
+                fl.fmt(c["q_mean"], "{:.2f}"),
+                CLASS_LABEL[c["cls"]].split(",")[0],
                 fl.fmt(r["interval"], "{:.0f}"),
                 f"{fl.fmt(r['P_min'])}--{fl.fmt(r['P_max'])}" if np.isfinite(r["P_min"]) else "--",
                 fl.fmt(r["q_peak"], "{:.1f}"),
