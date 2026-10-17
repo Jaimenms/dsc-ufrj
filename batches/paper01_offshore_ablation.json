@@ -47,8 +47,8 @@
    "case": "cases/paper01/offshore.json",
    "set": [
     "time.dt_out=2.0",
-    "network.edges.1.model.regime.low_void=null",
-    "network.edges.well.model.regime.low_void=null"
+    "network.edges.1.model.regime.low_void.alpha=1e-12",
+    "network.edges.well.model.regime.low_void.alpha=1e-12"
    ],
    "tf": 4000.0
   },

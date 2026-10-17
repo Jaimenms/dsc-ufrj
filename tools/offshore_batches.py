@@ -36,7 +36,10 @@ ABLATION = {
         "network.edges.1.scheme.options.closure_alpha=mean",
         "network.edges.well.scheme.options.closure_alpha=mean",
     ],
-    "no_low_void": ["network.edges.1.model.regime.low_void=null", "network.edges.well.model.regime.low_void=null"],
+    "no_low_void": [
+        "network.edges.1.model.regime.low_void.alpha=1e-12",
+        "network.edges.well.model.regime.low_void.alpha=1e-12",
+    ],
     "no_virtual_mass": [
         "network.edges.1.model.options.virtual_mass.C_vm=0.0",
         "network.edges.well.model.options.virtual_mass.C_vm=0.0",
