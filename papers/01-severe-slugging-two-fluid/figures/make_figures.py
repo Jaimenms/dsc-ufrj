@@ -3017,8 +3017,8 @@ def linear_offshore(out, png):
     # (b) período dos pares e dos ciclos simulados
     ax = axes[1]
     near = lambda re_: re_ > -1e-3  # noqa: E731  # só os pares perto do eixo imaginário ou instáveis
-    ax.plot(ab, np.where(near(cl["re_col"]), cl["T_col"], np.nan), color=fl.COLORS["bubble"], lw=1.3)
-    ax.plot(ab, np.where(near(cl["re_inv"]), cl["T_inv"], np.nan), color=fl.INK, lw=1.3)
+    ax.plot(ab, np.where(near(cl["re_col"]), cl["T_col"], np.nan), color=fl.COLORS["bubble"], lw=1.3, marker=".", ms=3.5)
+    ax.plot(ab, np.where(near(cl["re_inv"]), cl["T_inv"], np.nan), color=fl.INK, lw=1.3, marker=".", ms=3.5)
     for a_d, s in sorted(dyn.items()):
         if s["cls"] != "stable" and np.isfinite(s["period"]):
             ax.plot(a_d, s["period"], mfc=fl.COLORS[s["cls"]], **mk)
@@ -3224,8 +3224,9 @@ def cycle_branch(out, png):
     if A is not None:
         cl = _linear_classes(A)
         near = lambda re_: re_ > -1e-3  # noqa: E731
-        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_col"]), cl["T_col"], np.nan), color=fl.COLORS["bubble"], lw=1.0, label="linear mode: riser column on the gas pocket (~70 s)")
-        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_inv"]), cl["T_inv"], np.nan), color="0.5", lw=1.0, label="linear mode: liquid exchange flowline--riser")
+        lin = dict(lw=1.0, marker=".", ms=3.5, zorder=2)  # marcas nas aberturas da continuação (sem simulação)
+        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_col"]), cl["T_col"], np.nan), color=fl.COLORS["bubble"], label="linear mode: riser column on the gas pocket (~70 s)", **lin)
+        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_inv"]), cl["T_inv"], np.nan), color="0.5", label="linear mode: liquid exchange flowline--riser", **lin)
     for ab in abs_:
         s = sig[ab]
         if s["cls"] == "stable":
