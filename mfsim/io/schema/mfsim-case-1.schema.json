@@ -483,6 +483,10 @@
         "local_film": {
           "type": "boolean"
         },
+        "local_bubble": {
+          "type": "boolean",
+          "description": "com local: os critérios de bolhas (transição bolhas/intermitente a 0,25 e verificação das bolhas dispersas) usam só a fração de gás da célula, sem a fração de deriva calculada das vazões (issue 054)"
+        },
         "vertical": {
           "type": "object",
           "required": [

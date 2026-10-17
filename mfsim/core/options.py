@@ -31,6 +31,7 @@ PIPE_PARAM_KEYS = (
     "ipe_smooth",
     "ipe_local",
     "ipe_local_film",
+    "ipe_local_bubble",
     "alpha_min",
     "alpha_max",
     "legacy_convective",
@@ -108,6 +109,7 @@ class RegimeSpec:
     smooth: bool = False  # automático: ipe_smooth
     local: bool = False  # automático: ipe_local
     local_film: bool = False  # automático com local: ponte do filme do anular com a fração local (issue 046)
+    local_bubble: bool = False  # automático com local: critérios de bolhas só com a fração local (issue 054)
 
     def to_json(self) -> dict:
         d = {"type": self.type}
@@ -117,6 +119,8 @@ class RegimeSpec:
             d.update(k_switch=self.k_switch, smooth=self.smooth, local=self.local)
             if self.local_film:
                 d["local_film"] = True
+            if self.local_bubble:
+                d["local_bubble"] = True
         if self.vertical_regime:
             d["vertical"] = {
                 "regime": self.vertical_regime,
@@ -148,6 +152,7 @@ class RegimeSpec:
             smooth=bool(d.get("smooth", False)),
             local=bool(d.get("local", False)),
             local_film=bool(d.get("local_film", False)),
+            local_bubble=bool(d.get("local_bubble", False)),
         )
 
 
@@ -196,6 +201,7 @@ class ModelSpec:
             smooth=bool(e.get("ipe_smooth", False)),
             local=bool(e.get("ipe_local", False)),
             local_film=bool(e.get("ipe_local_film", False)),
+            local_bubble=bool(e.get("ipe_local_bubble", False)),
         )
         known = set(PIPE_PARAM_KEYS) | set(SCHEME_KEYS) | {k for k in e if k.startswith("fv_")}
         rest = tuple(sorted((k, v) for k, v in e.items() if k not in known))
@@ -227,6 +233,7 @@ class ModelSpec:
             "ipe_smooth": r.smooth,
             "ipe_local": r.local,
             "ipe_local_film": r.local_film,
+            "ipe_local_bubble": r.local_bubble,
             "alpha_min": self.alpha_min,
             "alpha_max": self.alpha_max,
             "legacy_convective": self.legacy_convective,

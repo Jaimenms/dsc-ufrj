@@ -302,7 +302,9 @@ def _froude(rhoL, rhoG, D, vLS, vGS, bk):
     return FL, FG
 
 
-def identify_regime(inp: ClosureInputs, k_switch=1e6, eq=None, smooth=False, local=False, local_film=False, bk=NUMPY):
+def identify_regime(
+    inp: ClosureInputs, k_switch=1e6, eq=None, smooth=False, local=False, local_film=False, local_bubble=False, bk=NUMPY
+):
     """Identificação do padrão de escoamento (identificaRegimeEstavel.m).
 
     k_switch controla a suavidade do chaveamento (1e6 no original = quase
@@ -331,6 +333,13 @@ def identify_regime(inp: ClosureInputs, k_switch=1e6, eq=None, smooth=False, loc
     célula): uma célula com mais líquido do que o filme que faz ponte (0.35) não pode ser anular, por
     pequenas que sejam as velocidades superficiais (sem isso a célula do ponto baixo quase cheia de
     líquido, onde o bolsão encontra o líquido, era identificada como anular).
+
+    local_bubble=True (com local; PipeParams.ipe_local_bubble, issue 054): a fração de bolhas dos critérios
+    (bolhas/intermitente a 0,25, verificação das bolhas dispersas) é só a da célula, sem a fração de deriva
+    aG_bol calculada das vazões. No modelo a dois fluidos a fração é um estado: com max(aG_bol, alphaG) o padrão
+    de uma célula com 2 % de gás dependia da vazão de gás da face, e a troca bolhas -> intermitente (arrasto
+    ~20 vezes menor) com qG crescente dava um arrasto efetivo negativo, uma instabilidade espúria de ~1e4 s^-1
+    na equação de momento do gás.
     """
     xp = bk.xp
     if eq is None:
@@ -343,7 +352,10 @@ def identify_regime(inp: ClosureInputs, k_switch=1e6, eq=None, smooth=False, loc
     if local:
         hD_est = xp.clip(inp.hD, 1e-6, 1 - 1e-6)
         aG_est = xp.clip(inp.alphaG, 1e-6, 1 - 1e-6)
-        aG_bol = xp.clip(smooth_max(aG_bol, inp.alphaG, bk=bk), 1e-6, 1 - 1e-6)
+        if local_bubble:
+            aG_bol = xp.clip(inp.alphaG, 1e-6, 1 - 1e-6)
+        else:
+            aG_bol = xp.clip(smooth_max(aG_bol, inp.alphaG, bk=bk), 1e-6, 1 - 1e-6)
         if local_film:
             aG_anu = xp.minimum(aG_anu, xp.clip(inp.alphaG, 1e-6, 1 - 1e-6))
     vLS, vGS = inp.vLS, inp.vGS

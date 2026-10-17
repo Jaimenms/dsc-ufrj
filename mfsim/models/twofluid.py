@@ -123,6 +123,7 @@ class TwoFluidModel(PipeModel):
                 smooth=p.ipe_smooth,
                 local=p.ipe_local,
                 local_film=p.ipe_local_film,
+                local_bubble=p.ipe_local_bubble,
                 bk=bk,
             )
             if p.low_void_regime:
@@ -313,7 +314,13 @@ class TwoFluidModel(PipeModel):
             hD_est, hD_anu, aG_est, aG_anu, aG_bol = eq
             out.update(alfaG_est=aG_est, alfaG_anu=aG_anu, alfaG_bol=aG_bol, hD_est=hD_est)
             fl_c, _ = identify_regime(
-                inp, k_switch=p.k_switch, eq=eq, smooth=p.ipe_smooth, local=p.ipe_local, local_film=p.ipe_local_film
+                inp,
+                k_switch=p.k_switch,
+                eq=eq,
+                smooth=p.ipe_smooth,
+                local=p.ipe_local,
+                local_film=p.ipe_local_film,
+                local_bubble=p.ipe_local_bubble,
             )
             out["reg1C"] = fl_c.reg1
         return out
