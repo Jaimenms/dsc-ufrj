@@ -329,19 +329,185 @@ def offshore_case(**kw):
     return case
 
 
+# ------------------------------------------------------------------------------------------ estado inicial
+def _equilibrium_alpha(pb, fluid, P, qL, qG, theta):
+    """Fração de gás de equilíbrio do padrão provável num nó: estratificado (Taitel e Dukler) até 45°, deriva
+    (C0 1,25 e bolha de Harmathy) acima; a sem escorregamento quando o equilíbrio não existe."""
+    from mfsim.closures import ClosureInputs, equilibrium_fractions
+    from mfsim.geometry import stratified_level
+
+    pp = pb.model.params
+    rhoL, rhoG, CL, CG = fluid.props(P)
+    A = np.pi * pp.D**2 / 4
+    vLS, vGS = qL / rhoL / A, qG / rhoG / A
+    lam = vGS / (vLS + vGS)
+    hD, beta = stratified_level(np.array([0.5]))
+    one = np.ones(1)
+    inp = ClosureInputs(
+        alphaG=0.5 * one, alphaL=0.5 * one, vL=2 * vLS * one, vLS=vLS * one, vG=2 * vGS * one, vGS=vGS * one,
+        AreaL=A / 2 * one, AreaG=A / 2 * one, D=pp.D * one, eps=pp.eps * one, theta=theta * one, rhoL=rhoL * one,
+        rhoG=rhoG * one, muL=fluid.muL * one, muG=fluid.muG * one, CL=CL * one, CG=CG * one, sigma=fluid.sigma * one,
+        beta=beta, hD=hD,
+    )  # fmt: skip
+    _, _, aG_est, _, aG_bol = equilibrium_fractions(inp)
+    a = float(aG_est[0]) if abs(theta) < np.pi / 4 else float(aG_bol[0])
+    return float(np.clip(a if np.isfinite(a) else lam, 0.02, 0.98)), float(lam)
+
+
+def _node_alpha(mode, pb, fluid, P, qL, qG, theta, is_line, is_top):
+    """Fração de gás de um nó segundo o modo da estimativa: "noslip" (sem escorregamento em todo o lado) ou
+    "blocked" (partida bloqueada: linha estratificada no equilíbrio nos troços horizontais e descendentes, curva e
+    riser cheios de líquido, topo e poço sem escorregamento)."""
+    rhoL, rhoG, _, _ = fluid.props(P)
+    lam = float(np.clip((qG / rhoG) / (qL / rhoL + qG / rhoG), 0.02, 0.98))
+    if mode == "noslip" or not is_line or is_top:
+        return lam
+    deg = np.rad2deg(theta)
+    if deg > 1.0:
+        return 0.02
+    a, _ = _equilibrium_alpha(pb, fluid, P, qL, qG, theta)
+    return max(a, lam)
+
+
+def _march(pb, fluid, P_out, qL, qG, alpha_of, n_sub=4):
+    """Pressão (Pa) e fração de gás nos nós do esquema de um duto, marchando da saída para a entrada com
+    dP/ds = rho g sin(theta) + 2 f rho_ns v_m^2/D (densidade local com a fração do nó no termo hidrostático, sem
+    escorregamento no atrito)."""
+    from mfsim.friction import fanning
+
+    sch = pb.scheme
+    x = np.asarray(sch.x_nodes, float)
+    th_n = np.asarray(sch.theta_nodes, float)
+    zc = np.concatenate([[0.0], np.cumsum(np.sin(pb.mesh["theta"]) * pb.mesh["h"])])
+    z = np.interp(x, pb.mesh["s"], zc)
+    D, eps = float(pb.model.params.D), float(pb.model.params.eps)
+    A = np.pi * D**2 / 4
+    P, a = np.zeros_like(x), np.zeros_like(x)
+    P[-1] = P_out
+    a[-1] = alpha_of(P_out, th_n[-1])
+
+    def grad(Pi, dz_ds, th):
+        rhoL, rhoG, _, _ = fluid.props(Pi)
+        aG = alpha_of(Pi, th)
+        lam = (qG / rhoG) / (qL / rhoL + qG / rhoG)
+        rho, rho_ns = (1 - aG) * rhoL + aG * rhoG, (1 - lam) * rhoL + lam * rhoG
+        v_m = (qL / rhoL + qG / rhoG) / A
+        f, _ = fanning(np.array([v_m]), rho_ns, fluid.muL, D, eps)
+        return rho * G * dz_ds + 2.0 * float(f[0]) * rho_ns * v_m**2 / D
+
+    for i in range(x.size - 1, 0, -1):
+        ds = x[i] - x[i - 1]
+        dz_ds = (z[i] - z[i - 1]) / ds if ds > 0 else 0.0
+        th = float(th_n[i - 1])
+        Pi, h = P[i], ds / n_sub
+        for _ in range(n_sub):
+            Pi = Pi + h * grad(Pi, dz_ds, th)
+        P[i - 1] = Pi
+        a[i - 1] = alpha_of(Pi, th)
+    return P, a
+
+
+def initial_state_guess(model, net, w_gas, mode="noslip"):
+    """Estado inicial do sistema offshore (vetor de estados do modelo): vazão total da IPR por bissecção, pressão
+    marchada do separador (choke, linha com riser, poço) e fração de gás por nó segundo `mode`."""
+    from mfsim.core.slots import SLOT_ALPHA, SLOT_P, SLOT_QG, SLOT_QL
+    from mfsim.network.elements import valve_upstream_pressure
+    from mfsim.network.graph import Choke, Reservoir
+
+    PR, fluid = model.PR, model.fluid
+    ch = [e for e in net.edges if isinstance(e, Choke)][0]
+    rs = [e for e in net.edges if isinstance(e, Reservoir)][0]
+    P_sep = [v for v in net.vertices if v.id == ch.v_to][0].spec["PT"](0.0) * PR
+    ab = float(ch.opening(0.0))
+    line, well = model.pipes[0], model.pipes[1]
+    s_top = float(np.asarray(line.scheme.x_nodes)[-1]) - float(net.meta["generator_params"]["L_h2"]) - 1.0
+
+    def profile(m):
+        qL, qG = (1 - w_gas) * m, w_gas * m
+        ZP, _ = valve_upstream_pressure(P_sep / PR, qL, qG, ab, ch.CV, fluid, PR, law=ch.law)
+        xs = np.asarray(line.scheme.x_nodes, float)
+        th_n = np.asarray(line.scheme.theta_nodes, float)
+        # o topo horizontal da linha identifica-se pela posição (a marcha dá o ângulo, não a posição)
+        pos = {float(t): x for x, t in zip(xs, th_n)}
+        P_line, a_line = _march(
+            line,
+            fluid,
+            float(ZP) * PR,
+            qL,
+            qG,
+            lambda P, th: _node_alpha(mode, line, fluid, P, qL, qG, th, True, False),
+        )
+        if mode == "blocked":
+            a_line = np.array(
+                [
+                    _node_alpha(mode, line, fluid, P_line[i], qL, qG, th_n[i], True, xs[i] > s_top)
+                    for i in range(xs.size)
+                ]
+            )
+        P_well, a_well = _march(
+            well, fluid, P_line[0], qL, qG, lambda P, th: _node_alpha(mode, well, fluid, P, qL, qG, th, False, False)
+        )
+        return qL, qG, (P_line, a_line), (P_well, a_well)
+
+    def resid(m):
+        _, _, _, (P_well, _) = profile(m)
+        return m - (rs.IPL + rs.IPG) * max(0.0, rs.P - P_well[0] / 1e5)
+
+    lo, hi = 1e-3, (rs.IPL + rs.IPG) * rs.P
+    for _ in range(60):
+        mid = 0.5 * (lo + hi)
+        if resid(mid) > 0:
+            hi = mid
+        else:
+            lo = mid
+    m = max(0.5 * (lo + hi), 1e-3)
+    qL, qG, (P_line, a_line), (P_well, a_well) = profile(m)
+    X = np.zeros(model.n_states)
+    for pb, P, a in ((line, P_line, a_line), (well, P_well, a_well)):
+        Y = pb.base_Y()
+        Y[:, SLOT_ALPHA] = np.clip(a, 0.02, 0.98)
+        Y[:, SLOT_P] = P / PR
+        Y[:, SLOT_QL] = qL
+        Y[:, SLOT_QG] = qG
+        if hasattr(pb.scheme, "from_primitive"):
+            Y = pb.scheme.from_primitive(Y)
+        X[pb.offset : pb.offset + pb.n_states] = Y.ravel()[pb.free]
+    return X, m
+
+
+def write_case(case, out, ic=None):
+    """Grava o caso; com `ic` ("noslip" | "blocked") calcula a estimativa inicial e grava-a nos nós do esquema
+    (`<nome>.ic.npz` ao lado, `initial_state.source = "edges"`), para que o caso seja autocontido."""
+    from mfsim.io import case_from_json, case_to_json
+    from mfsim.simulation import build_model
+
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    if ic is None:
+        out.write_text(json.dumps(case, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        return out
+    net = case_from_json(case)
+    model = build_model(net)
+    X, m = initial_state_guess(model, net, case["meta"]["mass"]["w_gas"], mode=ic)
+    model.state_to_case_ic(X, 0.0, exact=True)
+    net.initial = "edges"
+    net.meta = dict(net.meta or {}, initial_guess=dict(mode=ic, m_total=float(m)))
+    case_to_json(net, str(out), ic_file=f"{out.stem}.ic.npz")
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--out", required=True)
     ap.add_argument("--param", action="append", default=[], help="nome=valor (JSON) para substituir um parâmetro")
+    ap.add_argument("--ic", choices=["noslip", "blocked"], default=None, help="estimativa inicial gravada no caso")
     a = ap.parse_args(argv)
     kw = {}
     for item in a.param:
         k, v = item.split("=", 1)
         kw[k] = json.loads(v)
     case = offshore_case(**kw)
-    Path(a.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(a.out).write_text(json.dumps(case, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(a.out)
+    print(write_case(case, a.out, ic=a.ic))
 
 
 if __name__ == "__main__":

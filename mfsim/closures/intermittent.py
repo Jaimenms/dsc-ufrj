@@ -13,7 +13,7 @@ import numpy as np
 from ..backend import NUMPY
 from ..friction import fanning
 from ..geometry import stratified_level
-from .bubble import bubble
+from .bubble import SLIP_MAX, bubble
 from .common import ClosureInputs, ClosureTerms, G_CLOSURE
 from .stratified import stratified
 
@@ -133,7 +133,21 @@ FILM_BLEND_DEG = 10.0  # ascendentes de 0 a 10°: do filme estratificado (equil�
 BROTZ = 9.916  # velocidade terminal do filme em queda livre, u_f = -9.916 [g D sin θ (1 - α_TB^1/2)]^1/2
 R_DEGEN = 0.05  # a perda de aceleração anula-se (smoothstep) a menos de 5 % das unidades degeneradas
 SLUG_FILM_GAP = 0.1  # o pistão é pelo menos isto menos arejado do que o filme: r varia continuamente entre 1 e 0
-SLUG_SLIP_MAX = 1.0  # m/s: escorregamento máximo das bolhas no corpo do pistão na força de bolhas (mais é gás do filme)
+SLUG_SLIP_MAX = (
+    0.3  # m/s (~velocidade terminal): escorregamento máximo das bolhas no corpo do pistão na força de bolhas
+)
+EPS_ALPHA = 0.02  # largura dos máximos e mínimos suaves nas frações da unidade (quinas fazem o Newton divergir)
+EPS_R = 0.01  # idem para a fração de pistão
+V_SIGN = 0.05  # m/s: largura do sentido suave das velocidades superficiais na unidade com o filme de equilíbrio
+
+
+def _smax(a, b, eps, bk=NUMPY):
+    """max(a, b) com derivada contínua (>= max; iguala-o a menos de eps/2 no empate)."""
+    return 0.5 * (a + b + bk.xp.sqrt((a - b) ** 2 + eps**2))
+
+
+def _smin(a, b, eps, bk=NUMPY):
+    return 0.5 * (a + b - bk.xp.sqrt((a - b) ** 2 + eps**2))
 
 
 def _smoothstep(x, bk=NUMPY):
@@ -185,16 +199,18 @@ def film_unit(aG, alphas0, uLS, uGS, ut, theta, D, aG_strat, bk=NUMPY):
     # o filme de equilíbrio nunca passa de ALPHA_FILM_MAX (acima disso é anular, coberto pelos pesos dos padrões):
     # sem o limite, um bolsão quase parado (q -> 0) dá alpha_tb -> 1, R_f -> 0 e velocidades de filme ~1/R_f;
     # uma célula mais rica em gás do que o filme fica só filme, no estado da célula
-    a_model = xp.minimum((1.0 - w_up) * a_st + w_up * a_tb, ALPHA_FILM_MAX)
-    alphaf = xp.clip(xp.maximum(a_model, aG), 1e-6, 1.0 - 1e-6)
+    a_model = _smin((1.0 - w_up) * a_st + w_up * a_tb, ALPHA_FILM_MAX, EPS_ALPHA, bk)
+    alphaf = xp.clip(_smax(a_model, aG, EPS_ALPHA, bk), 1e-6, 1.0 - 1e-6)
     # o pistão não guarda mais gás do que a célula nem chega à aeração do filme: sem a folga, quando a aeração de
     # Barnea e Brauner iguala o filme de equilíbrio (ponto triplo) r salta de 0 a 1 e a célula passa de só filme a
     # só pistão com o escorregamento inteiro no fechamento de bolhas (forças de 1e5 N/m)
-    alphas = xp.maximum(xp.minimum(xp.minimum(alphas0, aG), alphaf - SLUG_FILM_GAP), 0.0)
+    alphas = _smax(_smin(_smin(alphas0, aG, EPS_ALPHA, bk), alphaf - SLUG_FILM_GAP, EPS_ALPHA, bk), 0.0, EPS_ALPHA, bk)
+    alphas = xp.clip(alphas, 1e-6, 1.0 - 1e-6)
     Rs = 1.0 - alphas
     uL = (uLS + ut * (aG - alphas)) / Rs
-    ub = (uGS - ut * (aG - alphas)) / xp.where(alphas == 0, 1e-30, alphas)
-    r = xp.clip((alphaf - aG) / xp.maximum(alphaf - alphas, 1e-9), 0.0, 1.0)
+    ub = (uGS - ut * (aG - alphas)) / alphas
+    r = _smin(_smax((alphaf - aG) / xp.maximum(alphaf - alphas, 1e-9), 0.0, EPS_R, bk), 1.0, EPS_R, bk)
+    r = xp.clip(r, 0.0, 1.0)
     Rf = 1.0 - alphaf
     uf = ut - (ut - uL) * Rs / Rf
     uG = ut - (ut - ub) * alphas / alphaf
@@ -208,7 +224,13 @@ def intermittent(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     aG = inp.alphaG
     # correlações da unidade de slug formuladas para escoamento co-corrente;
     # para refluxo usam-se os módulos (as tensões conservam o sinal via v|v|)
-    uLS, uGS = xp.abs(inp.vLS), xp.abs(inp.vGS)
+    if inp.slug_film is not None:
+        # módulos e sentidos suaves (issue 051): com |v| e sign(v) a unidade salta quando o líquido do riser
+        # oscila em torno de velocidade nula, o que faz o Newton divergir
+        uLS = xp.sqrt(inp.vLS**2 + V_SIGN**2)
+        uGS = xp.sqrt(inp.vGS**2 + V_SIGN**2)
+    else:
+        uLS, uGS = xp.abs(inp.vLS), xp.abs(inp.vGS)
     D = inp.D
     rhoL, rhoG = inp.rhoL, inp.rhoG
 
@@ -245,8 +267,12 @@ def intermittent(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     vmax = VEL_LIMIT_FACTOR * (xp.abs(ut) + uLS + uGS) + 1e-3
     uL, ub, uf, uG = (xp.clip(v, -vmax, vmax) for v in (uL, ub, uf, uG))
     # recupera o sentido do escoamento de cada fase
-    sL = xp.where(inp.vLS < 0, -1.0, 1.0)
-    sG = xp.where(inp.vGS < 0, -1.0, 1.0)
+    if inp.slug_film is not None:
+        sL = xp.tanh(inp.vLS / V_SIGN)
+        sG = xp.tanh(inp.vGS / V_SIGN)
+    else:
+        sL = xp.where(inp.vLS < 0, -1.0, 1.0)
+        sG = xp.where(inp.vGS < 0, -1.0, 1.0)
     uL, uf = sL * uL, sL * uf
     ub, uG = sG * ub, sG * uG
 
@@ -254,7 +280,7 @@ def intermittent(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     if inp.slug_film is not None:
         # no corpo do pistão as bolhas dispersas escorregam pouco; um escorregamento cinemático maior é gás da
         # bolha de Taylor, que o filme já representa: limita-o na força de bolhas (as vazões são os estados)
-        ub = uL + xp.clip(ub - uL, -SLUG_SLIP_MAX, SLUG_SLIP_MAX)
+        ub = uL + SLUG_SLIP_MAX * xp.tanh((ub - uL) / SLUG_SLIP_MAX)
     inp_s = inp.replace(
         alphaG=1.0 - Rs,
         alphaL=Rs,
@@ -286,18 +312,30 @@ def intermittent(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
         return (a * ls + b * lf) / lu
 
     GammaL = mix(Ss.GammaL, Sf.GammaL)
+    dPL, dPG = mix(Ss.dPL, Sf.dPL), mix(Ss.dPG, Sf.dPG)
+    ddPLdP, ddPGdP = mix(Ss.ddPLdP, Sf.ddPLdP), mix(Ss.ddPGdP, Sf.ddPGdP)
     if acc is not None:
         # perda de aceleração do filme apanhado pela frente do pistão, uma vez por unidade (1/l_u = w_s/v_t), contra
         # o sentido do líquido
         GammaL = GammaL + sL * Area * rhoL * acc * wS / xp.maximum(ut, 1e-3)
+        # pressão interfacial de Stuhmiller com o escorregamento REAL da célula e peso 1 (é a pressão interfacial da
+        # mistura, não a do corpo do pistão): no riser o filme estratificado tem cos θ = 0 (sem gradiente de nível)
+        # e, pesado por r e com o escorregamento limitado, o termo do pistão não bastava — o modelo ficava mal posto
+        # (famílias de ondas instáveis de 0,3–2,5 s no riser) e o BDF em passos de ms
+        slip_c = xp.clip(inp.vG - inp.vL, -SLIP_MAX, SLIP_MAX)
+        dPL_c = 0.25 * rhoL * slip_c**2
+        dPL = dPL_c + lf * Sf.dPL
+        dPG = lf * Sf.dPG
+        ddPLdP = dPL_c / rhoL * inp.CL + lf * Sf.ddPLdP
+        ddPGdP = lf * Sf.ddPGdP
 
     return ClosureTerms(
         GammaL=GammaL,
         GammaG=mix(Ss.GammaG, Sf.GammaG),
-        dPL=mix(Ss.dPL, Sf.dPL),
-        dPG=mix(Ss.dPG, Sf.dPG),
-        ddPLdP=mix(Ss.ddPLdP, Sf.ddPLdP),
-        ddPGdP=mix(Ss.ddPGdP, Sf.ddPGdP),
+        dPL=dPL,
+        dPG=dPG,
+        ddPLdP=ddPLdP,
+        ddPGdP=ddPGdP,
         ddPLdalphaG=mix(Ss.ddPLdalphaG, Sf.ddPLdalphaG),
         ddPGdalphaG=mix(Ss.ddPGdalphaG, Sf.ddPGdalphaG),
         dPI=mix(Ss.dPI, Sf.dPI),

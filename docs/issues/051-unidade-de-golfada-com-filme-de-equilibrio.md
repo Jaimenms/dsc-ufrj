@@ -55,6 +55,30 @@ Neste fechamento a frequência só entra por esta perda. O comprimento do pistã
 
 As opções `"thesis"` e `"consistent"` ficam como estavam (goldens de nível A iguais).
 
+## Robustez (noite de 16 para 17 de outubro, caso offshore)
+
+Cada item abaixo foi encontrado com o localizador de saltos (forças por célula no último estado aceite contra o
+preditor da tentativa de Newton falhada) e corrigido com teste:
+
+1. **Filme limitado a 0,95.** Bolsão quase parado no vertical: a raiz de Brotz dava α_f → 1 e velocidades ~1/R_f.
+2. **Folga pistão–filme de 0,1 e escorregamento das bolhas limitado a 1 m/s na força do pistão.** No ponto triplo
+   α_G ≈ α_s⁰ ≈ α_f^eq, r saltava de 0 a 1 e o fechamento de bolhas recebia o escorregamento inteiro da célula
+   (11 m/s, −1,7e5 N/m). Com 0,3 m/s o gás do riser fica solto (o arrasto do pistão é o que o ancora) e o
+   integrador piora: 1 m/s.
+3. **Máximos, mínimos e cortes suaves** (largura 0,02 nas frações, 0,01 em r): as quinas dos `min`/`max` davam
+   Jacobiana de um só lado (fator 2 contra diferenças finitas) e o Newton divergia ao atravessá-las.
+4. **Módulos e sentidos suaves** das velocidades superficiais (√(v² + ε²), tanh(v/ε), ε = 0,05 m/s): com |v| e
+   sign(v) a unidade saltava quando o líquido do riser oscila em torno de velocidade nula.
+5. **Pressão interfacial de Stuhmiller com o escorregamento real da célula e peso 1.** No riser o filme
+   estratificado tem cos θ = 0 e o termo do pistão, pesado por r e com o escorregamento limitado, não bastava para a
+   boa colocação. É a pressão interfacial da mistura (limitada a 3 m/s, como no fechamento de bolhas).
+6. **Bissecção do filme em queda com `fori_loop`** (grafo JAX pequeno).
+
+Estado inicial: a estimativa com frações de equilíbrio punha gás a 37 m/s na curva (forças de 5e5 N/m que relaxam
+em microssegundos e fazem o Newton divergir logo no primeiro passo); o gerador do caso offshore grava uma estimativa
+sem escorregamento ou uma partida bloqueada (`generators.offshore --ic`), nos nós do esquema, e o caso fica
+autocontido.
+
 ## Benefício
 
 - **Estado da Tabela 6 a 120 bar com o choke aberto.** É uma célula da linha horizontal com α_G = 0,78,
