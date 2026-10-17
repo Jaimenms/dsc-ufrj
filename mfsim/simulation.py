@@ -142,6 +142,13 @@ def _integrate_bdf(model, X0, t_eval, spec, progress=True, verbose=False, partia
         bdf.predict_space = spec.predict_space
     if spec.jt_refresh is not None:
         bdf.jt_refresh = spec.jt_refresh
+    for key in ("newton_damping", "jac_policy", "predictor"):  # issue 053
+        if getattr(spec, key) is not None:
+            setattr(bdf, key, str(getattr(spec, key)))
+    if spec.jac_rate is not None:
+        bdf.jac_rate = float(spec.jac_rate)
+    if spec.jac_refresh_max is not None:
+        bdf.jac_refresh_max = int(spec.jac_refresh_max)
     if spec.accumulate:
         bdf.accum = model.boundary_net_fluxes
     t_start = _time.time()

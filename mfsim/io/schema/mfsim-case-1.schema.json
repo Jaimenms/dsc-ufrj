@@ -1372,6 +1372,36 @@
         "max_cpu": {
           "$ref": "#/$defs/positive"
         },
+        "newton_damping": {
+          "enum": [
+            "legacy",
+            "armijo"
+          ],
+          "description": "busca em linha do Newton do BDF próprio: legacy (só quando o resíduo cresce, nunca na 1.ª iteração) ou armijo (sempre; issue 053)"
+        },
+        "jac_policy": {
+          "enum": [
+            "legacy",
+            "step",
+            "rate"
+          ],
+          "description": "política da Jacobiana: legacy (reusada), step (nova em cada passo) ou rate (nova dentro do Newton quando a contração é fraca; issue 053)"
+        },
+        "jac_rate": {
+          "$ref": "#/$defs/positive"
+        },
+        "jac_refresh_max": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "predictor": {
+          "enum": [
+            "extrapolate",
+            "none",
+            "euler"
+          ],
+          "description": "iterado inicial do Newton: extrapolate (preditor BDF), none (estado anterior) ou euler (issue 053)"
+        },
         "newton_tol": {
           "$ref": "#/$defs/positive"
         },

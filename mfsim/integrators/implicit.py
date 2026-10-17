@@ -80,6 +80,17 @@ class ImplicitBDF:
         self.jac_reuse = jac_reuse
         self.jac_fun = jac_fun  # opcional: jac_fun(t, x) -> Jacobiana densa/esparsa de f (ex.: JAX)
         self.cooldown_steps = 3  # passos sem crescimento do passo após uma rejeição
+        # issue 053 (opções, omissão = comportamento anterior):
+        self.newton_damping = (
+            "legacy"  # "legacy": amortece só se o resíduo cresce (nunca na 1.ª iteração); "armijo": sempre
+        )
+        self.jac_policy = "legacy"  # "legacy": J reusada jac_reuse passos; "step": J nova em cada passo; "rate": nova dentro do Newton quando a contração é fraca
+        self.predictor = (
+            "extrapolate"  # chute inicial do Newton: "extrapolate" (preditor BDF), "none" (x_n), "euler" (x_n + h f_n)
+        )
+        self.jac_rate = 0.3  # "rate": contração err/err_prev acima da qual J é reavaliada no iterado atual
+        self.jac_refresh_max = 3  # "rate": reavaliações por Newton, no máximo
+        self.n_backtracks = 0  # diagnóstico: reduções de passo de Newton pela busca em linha
         self.max_cpu = None  # s: orçamento de tempo de relógio da integração (None = sem limite); excedido -> erro com a trajetória parcial
         self.groups = color_groups(S) if S is not None else None
         self.n_rhs = 0
@@ -152,9 +163,9 @@ class ImplicitBDF:
         lo, hi = self.bounds
         return np.minimum(np.maximum(x, lo), hi)
 
-    def _newton(self, t, h, pred, c_hist, gamma_coef):
-        """Resolve X - c_hist = gamma_coef h f(t, X) a partir do preditor."""
-        x = pred.copy()
+    def _newton(self, t, h, pred, c_hist, gamma_coef, x_start=None):
+        """Resolve X - c_hist = gamma_coef h f(t, X) a partir do preditor (ou de `x_start`, issue 053)."""
+        x = pred.copy() if x_start is None else np.asarray(x_start, float).copy()
         gamma = gamma_coef * h
         if self.transform is not None and self.transform_jac is not None and self.jt_refresh in ("call", "iter"):
             # a Jacobiana (analítica, barata) do mapa conservativo é reavaliada no
@@ -201,6 +212,14 @@ class ImplicitBDF:
                 if n_grow >= 2:
                     self._fail_reason = "diverge"
                     return x, False, it + 1
+            # issue 053, "rate": contração fraca -> Jacobiana nova no iterado atual (até 3 vezes por Newton)
+            if self.jac_policy == "rate" and it >= 1 and err > self.jac_rate * err_prev and err > self.newton_tol:
+                if n_refresh < self.jac_refresh_max:
+                    self._jacobian(t, x, f)
+                    self._factor(gamma)
+                    n_refresh += 1
+                    err_prev = np.inf
+                    continue
             # convergência lenta (Jacobiana desatualizada ou forte não-linearidade):
             # recalcula a Jacobiana no iterado atual e continua (até 2 vezes);
             # depois disso desiste para que o chamador reduza o passo
@@ -221,19 +240,43 @@ class ImplicitBDF:
             res_norm = np.sqrt(np.mean((res / scale) ** 2))
             lam = 1.0
             x_try = self._project(x - dx)
-            for _bt in range(3):
-                if res_norm <= 1e-12 or (it == 0) or err < 0.5 * err_prev_bt:
-                    break
-                try:
-                    f_try = self._f(t, x_try)
-                except (FloatingPointError, np.linalg.LinAlgError, ValueError):
-                    f_try = None
-                if f_try is not None and np.all(np.isfinite(f_try)):
-                    res_try = self._T(x_try) - c_hist - gamma * f_try
-                    if np.sqrt(np.mean((res_try / scale) ** 2)) <= 2.0 * res_norm:
+            if self.newton_damping == "armijo":
+                # issue 053: busca em linha de Armijo em todas as iterações (também na primeira, a que diverge nas
+                # frentes): aceita o passo se o resíduo escalado desce; senão reduz lambda até 4 vezes
+                accepted = False
+                for _bt in range(5):
+                    if res_norm <= 1e-12:
+                        accepted = True
                         break
-                lam *= 0.5
-                x_try = self._project(x - lam * dx)
+                    try:
+                        f_try = self._f(t, x_try)
+                    except (FloatingPointError, np.linalg.LinAlgError, ValueError):
+                        f_try = None
+                    if f_try is not None and np.all(np.isfinite(f_try)):
+                        res_try = self._T(x_try) - c_hist - gamma * f_try
+                        if np.sqrt(np.mean((res_try / scale) ** 2)) <= (1.0 - 1e-4 * lam) * res_norm:
+                            accepted = True
+                            break
+                    lam *= 0.5
+                    self.n_backtracks += 1
+                    x_try = self._project(x - lam * dx)
+                if not accepted:
+                    self._fail_reason = "diverge"
+                    return x, False, it + 1
+            else:
+                for _bt in range(3):
+                    if res_norm <= 1e-12 or (it == 0) or err < 0.5 * err_prev_bt:
+                        break
+                    try:
+                        f_try = self._f(t, x_try)
+                    except (FloatingPointError, np.linalg.LinAlgError, ValueError):
+                        f_try = None
+                    if f_try is not None and np.all(np.isfinite(f_try)):
+                        res_try = self._T(x_try) - c_hist - gamma * f_try
+                        if np.sqrt(np.mean((res_try / scale) ** 2)) <= 2.0 * res_norm:
+                            break
+                    lam *= 0.5
+                    x_try = self._project(x - lam * dx)
             xp = x_try
             if np.any(xp != x - lam * dx):
                 self._clipped = True
@@ -310,12 +353,20 @@ class ImplicitBDF:
                 order = 1  # histórico do BDF2 inconsistente com estados projetados nos limites
             pred, c_hist, gcoef, r = predict(order)
             self._slow = False
-            x_new, ok, nit = self._newton(t_new, h, pred, c_hist, gcoef)
+            if self.jac_policy == "step" and self._jac_age > 0:
+                self._jacobian(t, x, f0)  # issue 053: Jacobiana nova em cada passo (no estado aceite)
+            # issue 053: iterado inicial do Newton; o preditor extrapolado continua a servir à estimativa de erro
+            x_start = None
+            if self.predictor == "none":
+                x_start = x
+            elif self.predictor == "euler":
+                x_start = self._project(x + h * f0)
+            x_new, ok, nit = self._newton(t_new, h, pred, c_hist, gcoef, x_start=x_start)
             if not ok and self._clipped and order > 1:
                 # projeção ativa: repete o passo com BDF1 (sem extrapolação do histórico)
                 order = 1
                 pred, c_hist, gcoef, r = predict(order)
-                x_new, ok, nit = self._newton(t_new, h, pred, c_hist, gcoef)
+                x_new, ok, nit = self._newton(t_new, h, pred, c_hist, gcoef, x_start=x_start)
             if not ok:
                 # tenta com Jacobiana atualizada (no preditor, se finito)
                 if self._jac_age > 0 or self._slow:
@@ -328,7 +379,7 @@ class ImplicitBDF:
                         xj, fj = x, f0
                     self._jacobian(t_new, xj, fj)
                     self._slow = False
-                    x_new, ok, nit = self._newton(t_new, h, pred, c_hist, gcoef)
+                    x_new, ok, nit = self._newton(t_new, h, pred, c_hist, gcoef, x_start=x_start)
             if not ok or not np.all(np.isfinite(x_new)):
                 h *= 0.5 if n_fail_row == 0 else 0.25
                 self.n_rejected += 1

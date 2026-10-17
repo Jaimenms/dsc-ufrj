@@ -418,6 +418,11 @@ class IntegrationSpec:
     tight_bounds: bool = False
     galerkin_band: Optional[int] = None
     max_cpu: Optional[float] = None  # s: orçamento de tempo de relógio do BDF próprio (issue 045)
+    newton_damping: Optional[str] = None  # "legacy" | "armijo" (issue 053)
+    jac_policy: Optional[str] = None  # "legacy" | "step" | "rate" (issue 053)
+    predictor: Optional[str] = None  # "extrapolate" | "none" | "euler" (issue 053)
+    jac_rate: Optional[float] = None  # "rate": contração acima da qual J é reavaliada (omissão 0,3; issue 053)
+    jac_refresh_max: Optional[int] = None  # "rate": reavaliações por Newton (omissão 3; issue 053)
     extra: tuple = ()
 
     OPTIONAL = (
@@ -434,6 +439,11 @@ class IntegrationSpec:
         "jt_refresh",
         "galerkin_band",
         "max_cpu",
+        "newton_damping",
+        "jac_policy",
+        "predictor",
+        "jac_rate",
+        "jac_refresh_max",
     )
     FLAGS = ("accumulate", "tight_bounds")
 
@@ -461,10 +471,10 @@ class IntegrationSpec:
     def from_json(cls, d):
         ms = d.get("max_step", 1.0)
         kw = {k: d.get(k) for k in cls.OPTIONAL}
-        for k in ("max_order", "max_newton", "galerkin_band"):
+        for k in ("max_order", "max_newton", "galerkin_band", "jac_refresh_max"):
             if kw[k] is not None:
                 kw[k] = int(kw[k])
-        for k in ("tol_range", "atol_P", "atol_q", "first_step", "newton_tol", "min_step", "max_cpu"):
+        for k in ("tol_range", "atol_P", "atol_q", "first_step", "newton_tol", "min_step", "max_cpu", "jac_rate"):
             if kw[k] is not None:
                 kw[k] = float(kw[k])
         if kw["slow_exit"] is not None:

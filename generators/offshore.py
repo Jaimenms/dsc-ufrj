@@ -121,6 +121,7 @@ DEFAULTS = dict(
     tol_range=0.01,
     max_step=None,
     q_ref_factor=10.0,
+    newton_damping="legacy",  # "armijo" (issue 053) nos casos novos; "legacy" enquanto os lotes de 2026-10-17 correm
 )
 
 
@@ -323,6 +324,7 @@ def offshore_case(**kw):
             "min_step": 1e-09,
             "slow_exit": False,
             "accumulate": True,
+            **({"newton_damping": p["newton_damping"]} if p["newton_damping"] != "legacy" else {}),
         },
         "initial_state": {"source": "guess"},
     }

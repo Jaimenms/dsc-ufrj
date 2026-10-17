@@ -107,6 +107,7 @@ qual estão em `notebooks_src/thesis/`.
 | [037](037-tangentes-nan.md) | bugfix | Tangentes NaN na diferenciação automática | "Factor is exactly singular" → Jacobiana finita em repouso e no corte das sigmoides |
 | [038](038-derivadas-beggs-brill.md) | feature | Derivadas do Beggs & Brill exatas (jvp) | diferenças finitas a 1e−3 → exatas; concordam a 1e−4 fora das quinas |
 | [045](045-orcamento-de-tempo.md) | feature | Orçamento de tempo de relógio da integração (`max_cpu`) | corrida que rasteja bloqueava o lote (ou passo mínimo que faz falhar a referência) → pára com a trajetória parcial; SciPy em blocos |
+| [053](053-newton-busca-em-linha-e-politica-da-jacobiana.md) | feature | Newton do BDF: busca em linha de Armijo, política da Jacobiana e iterado inicial (opções) | Newton modificado sem amortecimento na 1.ª iteração → Armijo em todas: −10 a −41 % de passos e de rejeições no ciclo offshore; políticas da Jacobiana e preditores não ajudam (Euler 3× pior) |
 
 ## Pendências abertas
 
