@@ -84,6 +84,7 @@ class TwoFluidModel(PipeModel):
             slug_frequency=None if p.slug_frequency == "thesis" else ones,
             slug_unit=None if p.slug_unit in ("thesis", "film") else ones,
             slug_film=ones if p.slug_unit == "film" else None,
+            smooth_kinks=ones if p.kinks == "smooth" else None,
         )
         return inp, P, Area
 

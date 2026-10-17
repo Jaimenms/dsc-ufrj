@@ -4,13 +4,17 @@ from __future__ import annotations
 
 from ..backend import NUMPY
 from ..friction import fanning, vabs
-from .common import ClosureInputs, ClosureTerms, G_CLOSURE
+from .common import ClosureInputs, ClosureTerms, G_CLOSURE, smooth_abs, smooth_max
 
 
-def interfacial_factor_stratified(f_G, vGS, hD, v_GT=5.5, bk=NUMPY):
-    """Andritsos & Hanratty (1987): f_I = f_G (1 + 15 max(0, |vGS|/vGT - 1) sqrt(h/D))."""
+def interfacial_factor_stratified(f_G, vGS, hD, v_GT=5.5, smooth=None, bk=NUMPY):
+    """Andritsos & Hanratty (1987): f_I = f_G (1 + 15 max(0, |vGS|/vGT - 1) sqrt(h/D)). Com `smooth` (issue 052) o
+    módulo e o máximo são suaves (largura 0,05 m/s e 0,02 em |vGS|/vGT - 1)."""
     xp = bk.xp
-    return f_G * (1.0 + xp.maximum(0.0, 15.0 * (xp.abs(vGS) / v_GT - 1.0) * bk.safe_sqrt(hD)))
+    if smooth is None:
+        return f_G * (1.0 + xp.maximum(0.0, 15.0 * (xp.abs(vGS) / v_GT - 1.0) * bk.safe_sqrt(hD)))
+    x = smooth_abs(vGS, 0.05, bk) / v_GT - 1.0
+    return f_G * (1.0 + 15.0 * smooth_max(x, 0.0, 0.02, bk) * bk.safe_sqrt(hD))
 
 
 def stratified(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
@@ -61,7 +65,7 @@ def stratified(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     f_G, Re_G = fanning(inp.vG, rhoG, inp.muG, DG, inp.eps, bk=bk)
     # atrito interfacial (Andritsos & Hanratty com v_GT; v_GT = inf -> Taitel & Dukler, f_I = f_G)
     v_gt = 5.5 if inp.fi_vgt is None else inp.fi_vgt
-    f_I = interfacial_factor_stratified(f_G, inp.vGS, hD, v_GT=v_gt, bk=bk)
+    f_I = interfacial_factor_stratified(f_G, inp.vGS, hD, v_GT=v_gt, smooth=inp.smooth_kinks, bk=bk)
     if inp.fi_mult is not None:
         f_I = f_I * inp.fi_mult
 

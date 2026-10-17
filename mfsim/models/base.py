@@ -100,6 +100,7 @@ class PipeParams:
     )
     # "consistent" (pistão encurtado e alphas <= alphaG para que alphaG lu = alphas ls + alphaf lf; issue 050) ou "film"
     # (filme de equilíbrio, fração de pistão do balanço de massa, perda de aceleração com a frequência; issue 051)
+    kinks: str = "sharp"  # "sharp" (min/max/abs/clip dos fechamentos como na tese) ou "smooth" (versões C1; issue 052)
     extra: dict = field(default_factory=dict)
 
 

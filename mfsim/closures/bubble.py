@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ..backend import NUMPY
 from ..friction import fanning, vabs
-from .common import ClosureInputs, ClosureTerms, G_CLOSURE
+from .common import ClosureInputs, ClosureTerms, G_CLOSURE, smooth_min
 
 SLIP_MAX = 3.0  # m/s
 
@@ -38,7 +38,11 @@ def bubble(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
         (0.725 + 4.15 * bk.safe_sqrt(ratio)) * (inp.sigma / rhoL) ** (3.0 / 5.0) * arg_safe ** (-2.0 / 5.0),
     )
     db = xp.sqrt(16.0 * inp.sigma / G_CLOSURE / (rhoL - rhoG))
-    db = xp.minimum(db, dbmax)
+    if inp.smooth_kinks is None:
+        db = xp.minimum(db, dbmax)
+    else:
+        # mínimo suave (largura relativa 5 %): a quina de Hinze/Calderbank dá Jacobiana de um só lado
+        db = smooth_min(db, dbmax, 0.05 * db, bk)
     # velocidade terminal: tese (modelo_bolhas.m, sem g e sigma/rhoL) ou Mendelson / Fan & Tsuchiya
     phys = xp.zeros(n) if inp.bubble_drag is None else inp.bubble_drag * xp.ones(n)
     vb_tese = xp.sqrt(0.51 * db + 2.14 / db)
@@ -51,7 +55,10 @@ def bubble(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
 
     # Drew & Passman (1999); escorregamento limitado (salvaguarda para fase gás
     # quase extinta, em que vG = qG/(rhoG alphaG A) cresce sem limite)
-    slip = xp.clip(inp.vG - inp.vL, -SLIP_MAX, SLIP_MAX)
+    if inp.smooth_kinks is None:
+        slip = xp.clip(inp.vG - inp.vL, -SLIP_MAX, SLIP_MAX)
+    else:
+        slip = SLIP_MAX * xp.tanh((inp.vG - inp.vL) / SLIP_MAX)  # corte suave do escorregamento de Stuhmiller
     dPL = 0.25 * rhoL * slip**2
     dPG = xp.zeros(n)
     ddPLdP = dPL / rhoL * inp.CL

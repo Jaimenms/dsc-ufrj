@@ -51,6 +51,7 @@ PIPE_PARAM_KEYS = (
     "bubble_drag",
     "slug_frequency",
     "slug_unit",
+    "kinks",
 )
 # chaves de Pipe.extra que vão para as definições do esquema (idem)
 SCHEME_KEYS = (
@@ -70,6 +71,7 @@ SCHEME_KEYS = (
     "flux_limit",
     "art_visc",
     "relax_target",
+    "relax_ramp",
     "closure_alpha",
     "drift_relax",
     "drift_den_min",
@@ -162,6 +164,9 @@ class ModelSpec:
     bubble_drag: str = "thesis"  # bolhas: "thesis" | "physical"
     slug_frequency: str = "thesis"  # intermitente: "thesis" (eq. 5.83 da tese) | "zabaras" (Zabaras 2000; issue 049)
     slug_unit: str = "thesis"  # intermitente: "thesis" | "consistent" (050) | "film" (filme de equilíbrio; 051)
+    kinks: str = (
+        "sharp"  # quinas dos fechamentos: "sharp" (min/max/abs/clip, a tese) | "smooth" (versões C1; issue 052)
+    )
     # opções do modelo
     alpha_min: float = 1e-3
     alpha_max: float = 1.0 - 1e-3
@@ -202,6 +207,7 @@ class ModelSpec:
             bubble_drag=BUBBLE_DRAG_NAMES[e.get("bubble_drag", "tese")],
             slug_frequency=e.get("slug_frequency", "thesis"),
             slug_unit=e.get("slug_unit", "thesis"),
+            kinks=e.get("kinks", "sharp"),
             alpha_min=float(e.get("alpha_min", 1e-3)),
             alpha_max=float(e.get("alpha_max", 1.0 - 1e-3)),
             legacy_convective=bool(e.get("legacy_convective", True)),
@@ -241,6 +247,7 @@ class ModelSpec:
             "bubble_drag": BUBBLE_DRAG_IDS[self.bubble_drag],
             "slug_frequency": self.slug_frequency,
             "slug_unit": self.slug_unit,
+            "kinks": self.kinks,
         }
         e.update(dict(self.extra))
         regime_id = 6 if r.type == "automatic" else REGIME_IDS[r.regime]
@@ -270,6 +277,8 @@ class ModelSpec:
             it["slug_frequency"] = self.slug_frequency
         if self.slug_unit != "thesis":
             it["unit"] = self.slug_unit
+        if self.kinks != "sharp":
+            d["closures"]["kinks"] = self.kinks
         if it:
             d["closures"]["intermittent"] = it
         if self.extra:
@@ -294,6 +303,7 @@ class ModelSpec:
             bubble_drag=bu.get("drag", "thesis"),
             slug_frequency=it.get("slug_frequency", "thesis"),
             slug_unit=it.get("unit", "thesis"),
+            kinks=c.get("kinks", "sharp"),
             alpha_min=float(o.get("alpha_min", 1e-3)),
             alpha_max=float(o.get("alpha_max", 1.0 - 1e-3)),
             legacy_convective=bool(o.get("legacy_convective", True)),

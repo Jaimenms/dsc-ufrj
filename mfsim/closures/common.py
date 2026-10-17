@@ -6,8 +6,23 @@ from dataclasses import dataclass, fields
 
 import numpy as np
 
+from ..backend import NUMPY
+
 G = 9.80665
 G_CLOSURE = 9.81  # valor usado nos termos de correção de pressão do código original
+
+
+def smooth_max(a, b, eps, bk=NUMPY):
+    """max(a, b) com derivada contínua: 0,5 (a + b + sqrt((a - b)² + eps²)) (>= max; a menos de eps/2 no empate)."""
+    return 0.5 * (a + b + bk.xp.sqrt((a - b) ** 2 + eps**2))
+
+
+def smooth_min(a, b, eps, bk=NUMPY):
+    return 0.5 * (a + b - bk.xp.sqrt((a - b) ** 2 + eps**2))
+
+
+def smooth_abs(x, eps, bk=NUMPY):
+    return bk.xp.sqrt(x**2 + eps**2)
 
 
 @dataclass
@@ -47,6 +62,7 @@ class ClosureInputs:
     )
     slug_film: np.ndarray = None  # 1 = unidade de golfada com o filme de equilíbrio (PipeParams.slug_unit = "film")
     aG_film_eq: np.ndarray = None  # fração de gás do estratificado de equilíbrio às vazões da célula (para o filme)
+    smooth_kinks: np.ndarray = None  # 1 = quinas dos fechamentos suavizadas (PipeParams.kinks = "smooth"); None = tese
 
     def subset(self, mask):
         return ClosureInputs(

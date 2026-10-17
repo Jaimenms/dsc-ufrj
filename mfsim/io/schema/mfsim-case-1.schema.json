@@ -611,6 +611,13 @@
             },
             "friction": {
               "type": "object"
+            },
+            "kinks": {
+              "enum": [
+                "sharp",
+                "smooth"
+              ],
+              "description": "quinas dos fechamentos: sharp = min/max/abs/clip como na tese; smooth = versões C1 (diâmetro de bolha, escorregamento de Stuhmiller, Andritsos–Hanratty, Kowalski, módulos das velocidades nos equilíbrios; issue 052)"
             }
           }
         },
@@ -754,6 +761,13 @@
                 "raw",
                 "noslip"
               ]
+            },
+            "relax_ramp": {
+              "enum": [
+                "linear",
+                "smooth"
+              ],
+              "description": "rampa da relaxação da fase que desaparece: linear (quinas em 0 e na banda) ou smooth (C1; issue 052)"
             },
             "closure_alpha": {
               "enum": [

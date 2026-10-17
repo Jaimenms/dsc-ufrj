@@ -261,8 +261,13 @@ def equilibrium_fractions(inp: ClosureInputs, smooth=False, bk=NUMPY):
     módulo da velocidade do gás com um piso de 1 mm/s."""
     xp = bk.xp
     sg = bk.stop_gradient
-    vLS_s = xp.abs(inp.vLS) if smooth else inp.vLS
-    vGS_s = xp.abs(inp.vGS) if smooth else inp.vGS
+    if smooth and inp.smooth_kinks is not None:
+        # módulos suaves (issue 052): |v| tem quina em 0, onde o líquido do riser oscila
+        vLS_s = xp.sqrt(inp.vLS**2 + 0.05**2)
+        vGS_s = xp.sqrt(inp.vGS**2 + 0.05**2)
+    else:
+        vLS_s = xp.abs(inp.vLS) if smooth else inp.vLS
+        vGS_s = xp.abs(inp.vGS) if smooth else inp.vGS
     D, th, muL, muG = inp.D, inp.theta, inp.muL, inp.muG
     rhoL, rhoG = inp.rhoL, inp.rhoG
     args_sg = (sg(vGS_s), D, -th, muL, muG, sg(rhoL), sg(rhoG))
@@ -281,7 +286,10 @@ def equilibrium_fractions(inp: ClosureInputs, smooth=False, bk=NUMPY):
     vM = inp.vLS + inp.vGS
     vG = 1.25 * vM + ub
     if smooth:
-        aG_bol = xp.clip(xp.abs(inp.vGS) / (xp.abs(vG) + 1e-3), 1e-6, 1 - 1e-6)
+        if inp.smooth_kinks is not None:
+            aG_bol = xp.clip(xp.sqrt(inp.vGS**2 + 0.05**2) / (xp.sqrt(vG**2 + 0.05**2) + 1e-3), 1e-6, 1 - 1e-6)
+        else:
+            aG_bol = xp.clip(xp.abs(inp.vGS) / (xp.abs(vG) + 1e-3), 1e-6, 1 - 1e-6)
     else:
         aG_bol = xp.clip(inp.vGS / xp.where(vG == 0, 1e-30, vG), 1e-6, 1 - 1e-6)
     return hD_est, hD_anu, aG_est, aG_anu, aG_bol

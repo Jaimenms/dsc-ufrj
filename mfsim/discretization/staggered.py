@@ -134,6 +134,7 @@ class StaggeredFVBase(PipeScheme):
         # elimina. Só no modo conservativo (o limitador de fluxo impede que a vazão
         # virtual drene massa de uma célula sem a fase); no primitivo mantém "raw".
         self.relax_target = str(self.settings.get("relax_target", "raw"))
+        self.relax_ramp = str(self.settings.get("relax_ramp", "linear"))  # "linear" | "smooth" (C1; issue 052)
         if self.relax_target not in ("raw", "noslip"):
             raise ValueError(f"relax_target: {self.relax_target}")
         if self.relax_target != "raw" and not self.conservative:
@@ -584,6 +585,10 @@ class StaggeredTwoFluidFV(StaggeredFVBase):
             # célula a montante é relaxado para o valor sem escorregamento (-> 0)
             wG = xp.clip(aG_raw / dband, 0.0, 1.0)  # 1 longe do limite
             wL = xp.clip(aL_raw / dband, 0.0, 1.0)
+            if self.relax_ramp == "smooth":
+                # rampa C1 (smoothstep; issue 052): a rampa linear tem quinas em 0 e em dband
+                wG = wG * wG * (3.0 - 2.0 * wG)
+                wL = wL * wL * (3.0 - 2.0 * wL)
             vL_f = qL / (iff.rhoL * (1.0 - aG_f) * Area)
             vG_f = qG / (iff.rhoG * aG_f * Area)
             if self.relax_target == "noslip":

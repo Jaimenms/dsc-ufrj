@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ..backend import NUMPY
 from ..friction import fanning, vabs
-from .common import ClosureInputs, ClosureTerms
+from .common import ClosureInputs, ClosureTerms, smooth_max
 from .stratified import interfacial_factor_stratified
 
 
@@ -29,12 +29,14 @@ def annular(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     f_G, Re_G = fanning(inp.vG, rhoG, inp.muG, DG, inp.eps, bk=bk)
     # Kowalski (1987) para o filme de líquido
     Re_L_safe = xp.where(Re_L == 0, 1e-30, Re_L)
+    f_lam = 24.0 / Re_L_safe
+    f_turb = 0.263 / (1.0 - aG) * xp.sqrt(DL / Re_L_safe / D)
     f_L = xp.where(
         Re_L == 0,
         0.0,
-        xp.maximum(24.0 / Re_L_safe, 0.263 / (1.0 - aG) * xp.sqrt(DL / Re_L_safe / D)),
+        xp.maximum(f_lam, f_turb) if inp.smooth_kinks is None else smooth_max(f_lam, f_turb, 0.1 * f_turb, bk),
     )
-    f_I = interfacial_factor_stratified(f_G, inp.vGS, hL / D, bk=bk)
+    f_I = interfacial_factor_stratified(f_G, inp.vGS, hL / D, smooth=inp.smooth_kinks, bk=bk)
 
     tauG = f_G * rhoG * inp.vG * vabs(inp.vG, bk) / 2.0
     tauL = f_L * rhoL * inp.vL * vabs(inp.vL, bk) / 2.0
