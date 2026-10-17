@@ -252,8 +252,10 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   Radau 1e−10. A estimativa de erro de ordem consistente (Milne, preditor quadrático) poupa 20–50 % de tentativas a
   erro igual (o simulador controla o BDF2 como se fosse de 1.ª ordem: custo ∝ rtol^(−1/2)); ordens 3–5 ficam presas
   pela estabilidade (modos acústicos a 89,8°, fora de A(α)) — argumento para o BDF2 no artigo; H211b, crescimento e
-  tolerância do Newton não mudam nada. Por implementar: `integration.error_estimate = "milne"` no `ImplicitBDF`
-  (ficheiro em edição na outra sessão), depois medir nas janelas do Newton do offshore.
+  tolerância do Newton não mudam nada. Implementado em ficheiro à parte (`mfsim/integrators/milne.py`, 12:40) e medido nas janelas do Newton: com o
+  Newton a partir do preditor linear, −45 % de passos e −55 % de Jacobianas no bloqueio, +5 % no sopro (limitado pelo
+  Newton), ~−13 % por ciclo; o tampão do passo depois de falhas do Newton não compensa. Entra na campanha quando
+  for opção JSON do `ImplicitBDF` (`implicit.py`/`options.py` em edição na outra sessão).
 - **Quando se refizer a campanha:** `newton_damping=armijo` como omissão do gerador (o estado anterior como iterado
   inicial só ganha no bloqueio, −63 %, e não soma à busca em linha: 295 contra 249 passos); a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
   Newton melhor antes de afirmar que "as faces pela média falham no sopro".

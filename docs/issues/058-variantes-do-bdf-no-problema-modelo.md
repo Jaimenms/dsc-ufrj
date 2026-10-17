@@ -4,7 +4,7 @@
 |---|---|
 | tipo | estudo |
 | área | integrador (BDF próprio) |
-| estado | feito (2026-10-17); protótipo fora do simulador (`papers/01-severe-slugging-two-fluid/toy/model_problem_bdf_variants.py`); **implementado em ficheiro à parte** (decisão do dono): `mfsim/integrators/milne.py` (`ImplicitBDFMilne`, `integrate_bdf_milne`), por dobrar numa opção `integration.error_estimate = "milne"` do `ImplicitBDF` quando `implicit.py` estiver livre |
+| estado | feito (2026-10-17); protótipo fora do simulador (`papers/01-severe-slugging-two-fluid/toy/model_problem_bdf_variants.py`); **implementado em ficheiro à parte** (decisão do dono): `mfsim/integrators/milne.py` (`ImplicitBDFMilne` com `newton_start = "linear"`, `integrate_bdf_milne`); no offshore −45 % de passos na fase bloqueada, neutro no sopro, ~−13 % por ciclo; por dobrar numa opção `integration.error_estimate = "milne"` do `ImplicitBDF` quando `implicit.py` estiver livre |
 | onde | `mfsim/integrators/milne.py`, `tests/test_milne.py`, `tools/milne_windows.py` (janelas do Newton do offshore); `toy/model_problem_bdf_variants.py` (`run` e `plot`); resultados em `runs/paper01/toy/variants/` (`summary.json`, `cost_ratio.json`, `work_precision.png`), `runs/paper01/toy/variants_R5/` e referências Radau em `runs/paper01/toy/reference/` (fora do git) |
 | dados | problema-modelo (100 estados) nos casos oscilantes do artigo, a = 0,95 (Hopf), 0,85 (ciclo maior) e 0,5 (relaxação), rtol de 1e−3 a 1e−6 (atol = rtol/100), 300 s; referência Radau (scipy) com rtol 1e−10 |
 
@@ -73,7 +73,36 @@ exato em quadráticas, caso de exemplo ao mesmo estado (64 → 63 passos: ali o 
 
 ## Medição no caso offshore (janelas do Newton, `tools/milne_windows.py`)
 
-(ver abaixo; preenchido quando a medição terminar)
+Três janelas de 150 s do ciclo com o choke aberto (estados gravados em `cases/paper01/newton/`), todas com a busca em
+linha de Armijo; passos / rejeições / Jacobianas (resultados em `runs/paper01/offshore_newton_milne/`):
+
+| janela | `ImplicitBDF` (rtol 3e−3) | Milne, Newton do quadrático | **Milne, Newton do linear** | Milne + tampão 0,8 | tese + tampão 0,8 | `ImplicitBDF` (rtol 1e−3) |
+|---|---|---|---|---|---|---|
+| bloqueio, 2500 s | 249 / 80 / 104 | 314 / 109 / 118 | **138 / 45 / 47** | 395 / 132 / 161 | 211 / 64 / 91 | 199 / 70 / 86 |
+| sopro, 4100 s | 3341 / 1147 / 1857 | 3441 / 1193 / 1984 | 3505 / 1196 / 1909 | 3412 / 1174 / 1822 | 3241 / 1083 / 1779 | 3317 / 1105 / 1884 |
+| fim do sopro, 4600 s | 965 / 300 / 487 | 923 / 282 / 477 | 905 / 276 / 487 | 1054 / 328 / 528 | 992 / 297 / 503 | 883 / 270 / 464 |
+
+As trajetórias ficam dentro da tolerância da referência (desvios RMS no fim de 3e−4 a 6e−2 nas escalas das
+tolerâncias, i.e. abaixo de 0,1 % das faixas dos estados).
+
+- **Com o Newton a partir do preditor quadrático a estimativa piora o bloqueio (+26 %)**: nas frentes e nas quinas dos
+  fechamentos a extrapolação quadrática erra por mais do que a linear e o Newton diverge dela. Com o Newton a partir
+  da extrapolação linear (o quadrático só estima o erro) o **bloqueio cai a 138 passos (−45 %) e 47 Jacobianas
+  (−55 %)**: é a fase limitada pela exatidão, onde a estimativa de 1.ª ordem obrigava a passos pequenos.
+- **No sopro nada muda (+5 %)**: o passo é limitado pela convergência do Newton a partir do preditor, não pelo erro
+  local (053/055). No fim do sopro, −6 %.
+- Pesando as fases pela sua duração num ciclo (bloqueio ~3000 s, sopro ~300 s, fim e reenchimento ~1000 s), o
+  ganho por ciclo é de **~13 % nos passos e ~11 % nas Jacobianas** — modesto, concentrado na fase barata.
+- **Tampão do passo depois de falhas do Newton** (`newton_fail_cap = 0,8`, a relaxar 1,25× por passo): −15 % no
+  bloqueio e −3 % no sopro com a estimativa da tese, mas **pior com a de Milne** (395 no bloqueio): fica desligado
+  por omissão. O sintoma que o motivou mantém-se — com a estimativa da tese, rtol 1e−3 custa *menos* do que 3e−3 no
+  bloqueio (199 contra 249), porque o controlador cresce o passo até o Newton falhar, corta, arrefece dois passos e
+  volta a falhar.
+
+**Conclusão:** `ImplicitBDFMilne` com `newton_start = "linear"` (omissão da classe) é um ganho limpo onde o passo é
+limitado pela exatidão e neutro onde é limitado pelo Newton; no ciclo offshore vale ~10–13 %, no problema-modelo
+20–50 %. Entra na campanha quando for opção do `ImplicitBDF` (`integration.error_estimate = "milne"`), para passar
+pelo JSON como tudo o resto.
 
 ## Referências
 
