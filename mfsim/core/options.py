@@ -49,6 +49,8 @@ PIPE_PARAM_KEYS = (
     "virtual_mass",
     "vm_lambda",
     "bubble_drag",
+    "slug_frequency",
+    "slug_unit",
 )
 # chaves de Pipe.extra que vão para as definições do esquema (idem)
 SCHEME_KEYS = (
@@ -158,6 +160,8 @@ class ModelSpec:
     fi_mult: float = 1.0  # estratificado: multiplicador do atrito interfacial
     fi_vgt: float = 5.5  # estratificado: v_GT de Andritsos & Hanratty (inf = Taitel & Dukler)
     bubble_drag: str = "thesis"  # bolhas: "thesis" | "physical"
+    slug_frequency: str = "thesis"  # intermitente: "thesis" (eq. 5.83 da tese) | "zabaras" (Zabaras 2000; issue 049)
+    slug_unit: str = "thesis"  # intermitente: "thesis" | "consistent" (unidade com balanço de massa; issue 050)
     # opções do modelo
     alpha_min: float = 1e-3
     alpha_max: float = 1.0 - 1e-3
@@ -196,6 +200,8 @@ class ModelSpec:
             fi_mult=float(e.get("fi_mult", 1.0)),
             fi_vgt=float(e.get("fi_vgt", 5.5)),
             bubble_drag=BUBBLE_DRAG_NAMES[e.get("bubble_drag", "tese")],
+            slug_frequency=e.get("slug_frequency", "thesis"),
+            slug_unit=e.get("slug_unit", "thesis"),
             alpha_min=float(e.get("alpha_min", 1e-3)),
             alpha_max=float(e.get("alpha_max", 1.0 - 1e-3)),
             legacy_convective=bool(e.get("legacy_convective", True)),
@@ -233,6 +239,8 @@ class ModelSpec:
             "virtual_mass": self.virtual_mass,
             "vm_lambda": self.vm_lambda,
             "bubble_drag": BUBBLE_DRAG_IDS[self.bubble_drag],
+            "slug_frequency": self.slug_frequency,
+            "slug_unit": self.slug_unit,
         }
         e.update(dict(self.extra))
         regime_id = 6 if r.type == "automatic" else REGIME_IDS[r.regime]
@@ -257,6 +265,13 @@ class ModelSpec:
                 "derivatives": self.derivatives,
             },
         }
+        it = {}
+        if self.slug_frequency != "thesis":
+            it["slug_frequency"] = self.slug_frequency
+        if self.slug_unit != "thesis":
+            it["unit"] = self.slug_unit
+        if it:
+            d["closures"]["intermittent"] = it
         if self.extra:
             d["extra"] = dict(self.extra)
         return d
@@ -266,6 +281,7 @@ class ModelSpec:
         c = d.get("closures") or {}
         st = c.get("stratified") or {}
         bu = c.get("bubble") or {}
+        it = c.get("intermittent") or {}
         o = d.get("options") or {}
         vm = o.get("virtual_mass") or {}
         if isinstance(vm, (int, float)):
@@ -276,6 +292,8 @@ class ModelSpec:
             fi_mult=float(st.get("fi_mult", 1.0)),
             fi_vgt=float(st.get("v_gt", 5.5)),
             bubble_drag=bu.get("drag", "thesis"),
+            slug_frequency=it.get("slug_frequency", "thesis"),
+            slug_unit=it.get("unit", "thesis"),
             alpha_min=float(o.get("alpha_min", 1e-3)),
             alpha_max=float(o.get("alpha_max", 1.0 - 1e-3)),
             legacy_convective=bool(o.get("legacy_convective", True)),

@@ -17,7 +17,14 @@ from .stratified import stratified
 
 
 def slug_frequency(uLS, uGS, rhoL, rhoG, muL, D, sigma, eps, bk=NUMPY):
-    """Frequência de slugs (Zabaras 2000 / Gregory-Scott generalizada)."""
+    """Frequência de golfada da tese (eq. 5.83, atribuída lá a Manolis 1995; frequenciaSlugs.m):
+
+        w_s = (u_GS/D) [0,0323/2 (u_LS/u_GS) (rhoL/Δrho)^1/2 f_L^-1/2 Eo^-0,2]^n,  n = N_f/(260 + 0,85 N_f),
+
+    com Eo = D (g Δrho/sigma)^1/2, N_f = D^1,5 (rhoL Δrho g)^1/2/muL e f_L o fator de Fanning do líquido a u_LS.
+    O texto da tese escreve n = 0,85 + 260/N_f; o código MATLAB usa o inverso, que é o que se mantém (com N_f grande
+    n tende a 1/0,85 ≈ 1,18, o expoente de Gregory e Scott). Não é a correlação de Zabaras (2000), que está em
+    `slug_frequency_zabaras` (opção `closures.intermittent.slug_frequency`, issue 049)."""
     xp = bk.xp
     fL, _ = fanning(uLS, rhoL, muL, D, eps, bk=bk)
     Eo = xp.sqrt(G_CLOSURE * D**2 * (rhoL - rhoG) / sigma)
@@ -28,6 +35,19 @@ def slug_frequency(uLS, uGS, rhoL, rhoG, muL, D, sigma, eps, bk=NUMPY):
     fL_s = xp.where(fL == 0, 1e-30, fL)
     base = 0.0323 / 2.0 * uLS_s / uGS_s * xp.sqrt(rhoL / (rhoL - rhoG)) * fL_s ** (-0.5) / Eo**0.2
     return xp.abs(uGS_s) / D * xp.abs(base) ** n
+
+
+def slug_frequency_zabaras(uLS, uGS, D, theta, bk=NUMPY):
+    """Frequência de golfada de Zabaras (2000): a de Gregory e Scott (1969) com o fator de inclinação,
+
+        f_s = 0,0226 [u_LS/(g D) (19,75/u_M + u_M)]^1,2 [0,836 + 2,75 (sin θ)^1/4]   (SI; 19,75 m²/s²),
+
+    com u_M = u_LS + u_GS. O fator foi ajustado em dutos de 0 a 11° ascendentes; em dutos descendentes usa-se o
+    horizontal (sin θ truncado a 0). u_M leva 1e-6 m/s para o duto parado."""
+    xp = bk.xp
+    uM = uLS + uGS + 1e-6
+    incl = 0.836 + 2.75 * bk.safe_pow(xp.maximum(xp.sin(theta), 0.0), 0.25)
+    return 0.0226 * bk.safe_pow(uLS / (G_CLOSURE * D) * (19.75 / uM + uM), 1.2) * incl
 
 
 def slug_liquid_fraction(D, eps, theta, sigma, rhoL, rhoG, muL, uLS, uGS, bk=NUMPY):
@@ -74,6 +94,39 @@ ALPHA_FILM_MAX = 0.95
 VEL_LIMIT_FACTOR = 5.0
 
 
+def slug_unit(aG, alphas, ls, lu, consistent=False, bk=NUMPY):
+    """Geometria da unidade de golfada: (alphas, ls, lf, lu, alphaf) a partir da fração de gás da célula, da do
+    pistão, do comprimento do pistão e do da unidade (v_t/w_s).
+
+    consistent=False (tese, modelo_intermitente.m): ls = min(ls, lu), lf = max(lu - ls, 1e-3 ls) e a fração de gás
+    do filme do balanço de massa cortada a [1e-6, ALPHA_FILM_MAX]; quando a célula tem mais gás do que a unidade
+    consegue guardar, o corte quebra o balanço (e as velocidades locais deixam de reproduzir as vazões da célula).
+
+    consistent=True (issue 050): alphaG lu = alphas ls + alphaf lf sempre, com alphas <= alphaG (o pistão não guarda
+    mais gás do que a célula) e alphaf <= ALPHA_FILM_MAX (o pistão encurta até o filme guardar o resto,
+    ls <= lu (ALPHA_FILM_MAX - alphaG)/(ALPHA_FILM_MAX - alphas)). No limite rico em líquido a unidade tem o estado
+    da célula; acima de ALPHA_FILM_MAX é só filme."""
+    xp = bk.xp
+    if not consistent:
+        ls = xp.minimum(ls, lu)
+        lf = lu - ls
+        lf = xp.maximum(lf, ls * 1e-3)
+        lu = lf + ls
+        alphaf = lu / lf * aG - ls / lf * alphas
+        # salvaguarda: fração de gás do filme limitada (no código original o limite
+        # 1-1e-6 produz velocidades de filme ~1e6 m/s e forças de atrito ~1e11 N/m
+        # quando a célula unitária é inconsistente com alphaG elevado)
+        alphaf = xp.clip(alphaf, 1e-6, ALPHA_FILM_MAX)
+        return alphas, ls, lf, lu, alphaf
+    alphas = xp.minimum(alphas, aG)
+    ls_max = lu * (ALPHA_FILM_MAX - aG) / (ALPHA_FILM_MAX - alphas)
+    ls = xp.clip(xp.minimum(ls, ls_max), 0.0, lu)
+    lf = xp.maximum(lu - ls, 1e-6 * lu)
+    lu = ls + lf
+    alphaf = xp.clip(aG + ls / lf * (aG - alphas), 1e-6, 1.0 - 1e-6)
+    return alphas, ls, lf, lu, alphaf
+
+
 def intermittent(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     xp = bk.xp
     aG = inp.alphaG
@@ -86,20 +139,16 @@ def intermittent(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     Rs = slug_liquid_fraction(D, inp.eps, inp.theta, inp.sigma, rhoL, rhoG, inp.muL, uLS, uGS, bk=bk)
     alphas = 1.0 - Rs
     ls = slug_length(D, bk=bk)
-    wS = slug_frequency(uLS, uGS, rhoL, rhoG, inp.muL, D, inp.sigma, inp.eps, bk=bk)
+    if inp.slug_frequency is None:
+        wS = slug_frequency(uLS, uGS, rhoL, rhoG, inp.muL, D, inp.sigma, inp.eps, bk=bk)
+    else:
+        wS = slug_frequency_zabaras(uLS, uGS, D, inp.theta, bk=bk)
     ut = translational_velocity(D, inp.theta, uLS, uGS, bk=bk)
 
     lu = ut / xp.where(wS == 0, 1e-30, wS)
-    ls = xp.minimum(ls, lu)
-    lf = lu - ls
-    lf = xp.maximum(lf, ls * 1e-3)
-    lu = lf + ls
-
-    alphaf = lu / lf * aG - ls / lf * alphas
-    # salvaguarda: fração de gás do filme limitada (no código original o limite
-    # 1-1e-6 produz velocidades de filme ~1e6 m/s e forças de atrito ~1e11 N/m
-    # quando a célula unitária é inconsistente com alphaG elevado)
-    alphaf = xp.clip(alphaf, 1e-6, ALPHA_FILM_MAX)
+    alphas, ls, lf, lu, alphaf = slug_unit(aG, alphas, ls, lu, consistent=inp.slug_unit is not None, bk=bk)
+    if inp.slug_unit is not None:
+        Rs = 1.0 - alphas  # na da tese Rs fica intacto (bit a bit)
     Rf = 1.0 - alphaf
 
     uL = (uLS + ut * (aG - alphas)) / Rs

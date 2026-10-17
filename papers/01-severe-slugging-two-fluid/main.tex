@@ -162,11 +162,11 @@ with $C_{vm} = 0.5$, $\lambda = 1$ and $w_B$ the weight of the bubbly pattern (S
 
 \subsection{Closure relations}\label{sec:closures}
 
-The closures follow the flow pattern. In \emph{stratified} flow the wetted perimeters and the hydrostatic pressure corrections follow from the liquid level \citep{taitel1976}, the wall friction from the Fanning factor of \citet{churchill1977} on each phase's hydraulic diameter, and the interfacial friction from \citet{andritsos1987}. In \emph{annular} flow the film friction follows \citet{kowalski1987} and the interfacial friction the same correlation on the film thickness. In \emph{bubbly} flow the bubble diameter is limited by the Hinze--Calderbank breakup diameter \citep{hinze1955}, the terminal velocity follows \citet{mendelson1967} and \citet{fan1990}, the interfacial drag balances buoyancy at the terminal velocity, and the interfacial pressure is $\Delta P_L = 0.25\rho_L (v_G - v_L)^2$ \citep{stuhmiller1977}. In \emph{intermittent} flow a slug unit made of an aerated liquid slug and a stratified film region \citep{taitel1990b} weighs the bubbly and stratified closures by the lengths of the two regions, with the slug-body holdup of \citet{barnea1985}, the translational velocity of \citet{bendiksen1984}, the slug length of \citet{nicholson1978} and the slug frequency of \citet{zabaras2000}. Appendix~\ref{app:closures} gives the expressions. Where a phase vanishes, its velocity is undefined; Section~\ref{sec:space} treats this numerically.
+The closures follow the flow pattern. In \emph{stratified} flow the wetted perimeters and the hydrostatic pressure corrections follow from the liquid level \citep{taitel1976}, the wall friction from the Fanning factor of \citet{churchill1977} on each phase's hydraulic diameter, and the interfacial friction from \citet{andritsos1987}. In \emph{annular} flow the film friction follows \citet{kowalski1987} and the interfacial friction the same correlation on the film thickness. In \emph{bubbly} flow the bubble diameter is limited by the Hinze--Calderbank breakup diameter \citep{hinze1955}, the terminal velocity follows \citet{mendelson1967} and \citet{fan1990}, the interfacial drag balances buoyancy at the terminal velocity, and the interfacial pressure is $\Delta P_L = 0.25\rho_L (v_G - v_L)^2$ \citep{stuhmiller1977}. In \emph{intermittent} flow a slug unit made of an aerated liquid slug and a stratified film region \citep{taitel1990b} weighs the bubbly and stratified closures by the lengths of the two regions, with the slug-body holdup of \citet{barnea1985}, the translational velocity of \citet{bendiksen1984}, the large-diameter slug length reported by \citet{scott1989} and the slug frequency of \citet{zabaras2000}; the unit is made consistent with the mass of the cell, the slug shortening when the cell holds more gas than the film can take. Appendix~\ref{app:closures} gives the expressions. Where a phase vanishes, its velocity is undefined; Section~\ref{sec:space} treats this numerically.
 
 \subsection{Dynamic flow-pattern identification}\label{sec:patterns}
 
-The flow pattern is identified at every cell and every time from stability criteria: the Kelvin--Helmholtz criterion for the stability of stratified flow and the liquid-film trajectory criterion for downward flow \citep{taitel1976,barnea1982}, wind-generated waves for the wavy subpattern, the film-bridging and Froude criteria for annular flow \citep{taitel1980,barnea1987}, and the dispersion and coalescence criteria that separate bubbly from intermittent flow \citep{taitel1980,barnea1987}. The criteria, listed in Appendix~\ref{app:patterns}, are combined into weights $w_S$, $w_A$, $w_B$, $w_I$ of the stratified, annular, bubbly and intermittent closures,
+The flow pattern is identified at every cell and every time from stability criteria: the Kelvin--Helmholtz criterion for the stability of stratified flow in the direction of the pipe and the liquid-film trajectory criterion for reverse flow \citep{taitel1976,barnea1982}, wind-generated waves for the wavy subpattern, the film-bridging and Froude criteria for annular flow \citep{taitel1980,barnea1987}, and the dispersion and coalescence criteria that separate bubbly from intermittent flow \citep{taitel1980,barnea1987}. The criteria, listed in Appendix~\ref{app:patterns}, are combined into weights $w_S$, $w_A$, $w_B$, $w_I$ of the stratified, annular, bubbly and intermittent closures,
 \begin{equation}\label{eq:weights}
 w_A = (1 - w_S)\,p_A, \qquad w_B = (1 - w_S)(1 - w_A)\,p_B, \qquad w_I = (1 - w_S)(1 - w_A)(1 - p_B),
 \end{equation}
@@ -448,43 +448,64 @@ The simulator used in this study is not publicly available. Appendix~\ref{app:re
 
 \section{Closure relations}\label{app:closures}
 
-Wall and interfacial shear stresses are written $\tau = f\rho v|v|/2$ with Fanning factors from \citet{churchill1977} on the hydraulic diameter of each phase, and $|v|$ regularised as $(v^2 + \epsilon^2)^{1/2}$ with $\epsilon = \SI{e-4}{\metre\per\second}$ so that the stresses are smooth at rest. The forces per unit length in Eq.~\eqref{eq:momentum} are $\Gamma_L = \tau_{wL}S_L - \tau_i S_i$ and $\Gamma_G = \tau_{wG}S_G + \tau_i S_i$.
-
-\paragraph{Stratified flow} The wetted angle $\beta$ follows from $\beta - \sin\beta = 2\pi\aL$; the perimeters are $S_L = \beta D/2$, $S_G = \pi D - S_L$ and $S_i = D\sin(\beta/2)$, and the level $h_L = D[1 - \cos(\beta/2)]/2$. The interfacial friction factor is $f_i = f_G\,[1 + 15\,(h_L/D)^{1/2}\max(0, v_{GS}/v_{GT} - 1)]$ with $v_{GT} = \SI{5.5}{\metre\per\second}$ \citep{andritsos1987}. The pressure corrections are the hydrostatic heads between the interface and the centroids of the two phase areas, $z_L$ and $z_G$ measured from the pipe bottom,
-\begin{equation}
-\Delta P_L = \aG\,\Delta P_{LG}, \quad \Delta P_G = -\aL\,\Delta P_{LG}, \quad \Delta P_{LG} = \left[(\rho_L - \rho_G)h_L - \rho_L z_L + \rho_G z_G\right] g\cos\theta,
+Wall and interfacial shear stresses are $\tau = f\rho v|v|/2$, with $|v|$ regularised as $(v^2 + \epsilon_v^2)^{1/2}$, $\epsilon_v = \SI{e-4}{\metre\per\second}$, so that they are smooth at rest, and the Fanning factor of \citet{churchill1977} on a hydraulic diameter $D_h$,
+\begin{equation}\label{eq:churchill}
+f = 2\left[\left(\frac{8}{Re}\right)^{12} + \left(c_1 + c_2\right)^{-3/2}\right]^{1/12}, \quad c_1 = \left[2.457\ln\frac{1}{(7/Re)^{0.9} + 0.27\,\varepsilon/D_h}\right]^{16}, \quad c_2 = \left(\frac{37530}{Re}\right)^{16},
 \end{equation}
+with $Re = \rho D_h|v|/\mu$ and $\varepsilon$ the wall roughness. The forces per unit length in Eq.~\eqref{eq:momentum} are $\Gamma_L = \tau_{wL}S_L - \tau_i S_i$ and $\Gamma_G = \tau_{wG}S_G + \tau_i S_i$, with the interfacial stress evaluated on the slip $v_r = v_G - v_L$. The acceleration of gravity in the closures is $g = \SI{9.81}{\metre\per\square\second}$.
+
+\paragraph{Stratified flow} The wetted angle $\beta$ follows from $\beta - \sin\beta = 2\pi\aL$ and the level from $h_L = D[1 - \cos(\beta/2)]/2$. The perimeters are $S_L = \beta D/2$, $S_G = \pi D - S_L$ and $S_i = D\sin(\beta/2)$, the hydraulic diameters $D_L = 4A_L/S_L$ and $D_G = 4A_G/(S_G + S_i)$, and the wall factors are Eq.~\eqref{eq:churchill} at $(v_k, D_k)$. The interfacial stress is $\tau_i = f_i\rho_G v_r|v_r|/2$ with $f_i = f_G\,[1 + 15\,(h_L/D)^{1/2}\max(0, |v_{GS}|/v_{GT} - 1)]$ and $v_{GT} = \SI{5.5}{\metre\per\second}$ \citep{andritsos1987}. The pressure corrections are the hydrostatic heads between the interface and the centroids of the two phase areas, measured from the pipe bottom,
+\begin{gather}
+\Delta P_L = \aG\,\Delta P_{LG}, \quad \Delta P_G = -\aL\,\Delta P_{LG}, \quad \Delta P_{LG} = \left[(\rho_L - \rho_G)h_L - \rho_L z_L + \rho_G z_G\right] g\cos\theta, \\
+z_L = D\left[\frac12 - \frac{\sin^3(\beta/2)}{3\pi\aL}\right], \qquad z_G = D\left[\frac12 + \frac{\sin^3(\beta/2)}{3\pi\aG}\right],
+\end{gather}
 whose derivative with respect to $\aG$ is the level-gradient term that keeps stratified flow hyperbolic.
 
-\paragraph{Annular flow} The film thickness is $\delta = D(1 - \aG^{1/2})/2$ and the interfacial perimeter $S_i = \pi D\aG^{1/2}$; the film friction follows \citet{kowalski1987}, $f_L = \max[24/Re_L, 0.263\,\aL^{-1}(D_L/(Re_L D))^{1/2}]$, and the interfacial friction the stratified expression with $h_L = \delta$. Both phases are at the mixture pressure.
+\paragraph{Annular flow} A liquid film of thickness $\delta = D(1 - \aG^{1/2})/2$ wets the whole wall: $S_L = \pi D$, $S_G = 0$ and $S_i = \pi D\aG^{1/2}$, with $D_L = 4A_L/S_L$ and $D_G = 4A_G/S_i$. The film factor follows \citet{kowalski1987}, $f_L = \max[24/Re_L,\ 0.263\,\aL^{-1}(D_L/(Re_L D))^{1/2}]$ with $Re_L = \rho_L D_L|v_L|/\mu_L$, and the interfacial factor is the stratified one with $h_L = \delta$. Both phases are at the mixture pressure ($\Delta P_k = 0$).
 
-\paragraph{Bubbly flow} The bubble diameter is the smaller of $d_e = (16\sigma/g\Delta\rho)^{1/2}$ and the breakup diameter $d_{max} = [0.725 + 4.15(v_{GS}/v_M)^{1/2}](\sigma/\rho_L)^{3/5}(2 f_M v_M^3/D)^{-2/5}$ \citep{hinze1955,calderbank1958}. The terminal velocity $v_b = (2.14\sigma/\rho_L d_b + 0.505 g d_b)^{1/2}$ \citep{mendelson1967,fan1990} defines the drag coefficient $C_D = 4 g d_b\Delta\rho/(3\rho_L v_b^2)$, and the interfacial force per unit length is $\tfrac34 C_D \aG\rho_L A\,|v_r|v_r/d_b$ with $v_r = v_G - v_L$, so that drag balances buoyancy at the terminal velocity. The liquid pressure correction is $\Delta P_L = 0.25\rho_L v_r^2$ \citep{stuhmiller1977}, with $|v_r|$ limited to \SI{3}{\metre\per\second}.
+\paragraph{Bubbly flow} The bubble diameter is $d_b = \min(d_e, d_{max})$, with $d_e = (16\sigma/g\Delta\rho)^{1/2}$ and the breakup diameter $d_{max} = [0.725 + 4.15|v_{GS}/v_M|^{1/2}](\sigma/\rho_L)^{3/5}(2 f_M |v_M|^3/D)^{-2/5}$ \citep{hinze1955,calderbank1958}, where $v_M = v_{LS} + v_{GS}$ and $f_M$ is Eq.~\eqref{eq:churchill} with the liquid properties at $v_M$ on $D$. The terminal velocity $v_b = (2.14\sigma/\rho_L d_b + 0.505\,g d_b)^{1/2}$ \citep{mendelson1967,fan1990} sets the drag coefficient $C_D = 4 g d_b \Delta\rho/(3\rho_L v_b^2)$. With $S_i = \pi D^2\aG/d_b$ and $\tau_i = \tfrac38 C_D\,\rho_L v_r|v_r|/2$ the interfacial force per unit length is $\tfrac34 C_D \aG\rho_L A\,v_r|v_r|/d_b$, which balances buoyancy at the terminal velocity. Only the liquid has wall friction, over $S_L = \pi D\aL$ with Eq.~\eqref{eq:churchill} at $(v_L, D)$. The liquid pressure correction is $\Delta P_L = 0.25\rho_L v_r^2$ \citep{stuhmiller1977}, with $|v_r|$ limited to \SI{3}{\metre\per\second}, and $\Delta P_G = 0$.
 
-\paragraph{Intermittent flow} A slug unit of length $l_u = v_t/\omega_s$ consists of a liquid slug of length $l_s$ and holdup $R_s$, treated with the bubbly closure, and a film region of length $l_f = l_u - l_s$ treated with the stratified closure; its terms are the length-weighted averages of the two. The translational velocity is $v_t = 1.2 v_M + (0.35\sin\theta + 0.54\cos\theta)(gD)^{1/2}$ \citep{bendiksen1984}, the slug holdup follows \citet{barnea1985}, the slug length \citet{nicholson1978} and the slug frequency $\omega_s$ \citet{zabaras2000}; the film holdup and the local velocities follow from the mass balances of the unit.
+\paragraph{Intermittent flow} A slug unit of length $l_u$ consists of an aerated liquid slug of length $l_s$ and gas fraction $\alpha_s$, treated with the bubbly closure, and a film region of length $l_f$ and gas fraction $\alpha_f$, treated with the stratified closure \citep{taitel1990b}; each closure term is the length-weighted average $(l_s X_s + l_f X_f)/l_u$. The correlations are written for co-current flow and use $u_{LS} = |v_{LS}|$, $u_{GS} = |v_{GS}|$ and $u_M = u_{LS} + u_{GS}$; the local velocities take back the sign of the superficial velocity of their phase. The slug gas fraction follows \citet{barnea1985},
+\begin{equation}
+\alpha_s^0 = 0.058\left[2\left(\frac{0.4\,\sigma}{g\Delta\rho}\right)^{1/2}\left(\frac{2 f_S u_M^3}{D}\right)^{2/5}\left(\frac{\rho_L}{\sigma}\right)^{3/5} - 0.725\right]^2, \qquad 0 \le \alpha_s^0 \le 0.52,
+\end{equation}
+with $f_S$ from Eq.~\eqref{eq:churchill} for the liquid at $u_M$ on $D$; the translational velocity is $v_t = 1.2\,u_M + (0.35\sin\theta + 0.54\cos\theta)(gD)^{1/2}$ \citep{bendiksen1984}; the slug frequency is the correlation of \citet{gregory1969} with the inclination factor of \citet{zabaras2000},
+\begin{equation}\label{eq:zabaras}
+\omega_s = 0.0226\left[\frac{u_{LS}}{gD}\left(\frac{19.75}{u_M} + u_M\right)\right]^{1.2}\left[0.836 + 2.75\,\max(\sin\theta, 0)^{1/4}\right] \quad\text{(SI units)},
+\end{equation}
+applied with the horizontal factor in downward pipes; and the slug length is $l_s^0 = \exp\{-3.287 + 4.589[\ln(D/0.0254)]^{1/2}\}$, in metres, for $D > \SI{38}{\milli\metre}$, the large-diameter correlation of Norris reported by \citet{scott1989}, and $18.1D$ below, which joins it at \SI{38}{\milli\metre}. The unit length is $l_u = v_t/\omega_s$. The unit is made consistent with the mass of the cell, $\aG l_u = \alpha_s l_s + \alpha_f l_f$: the slug cannot hold more gas than the cell, $\alpha_s = \min(\alpha_s^0, \aG)$, and it shortens until the film, with at most $\alpha_{f,max} = 0.95$, holds the rest,
+\begin{equation}
+l_s = \min\left[l_s^0,\ l_u\,\frac{\alpha_{f,max} - \aG}{\alpha_{f,max} - \alpha_s}\right] \in [0, l_u], \qquad l_f = l_u - l_s, \qquad \alpha_f = \aG + \frac{l_s}{l_f}(\aG - \alpha_s),
+\end{equation}
+so that the unit reduces to the state of the cell when $\aG \le \alpha_s$ and to a film region alone when $\aG > \alpha_{f,max}$. The local velocities follow from the mass balances of the unit: in the slug $u_L = [u_{LS} + v_t(\aG - \alpha_s)]/(1 - \alpha_s)$ and $u_b = [u_{GS} - v_t(\aG - \alpha_s)]/\alpha_s$, in the film region $u_f = v_t - (v_t - u_L)(1 - \alpha_s)/(1 - \alpha_f)$ and $u_G = v_t - (v_t - u_b)\,\alpha_s/\alpha_f$, all limited to $\pm[5(|v_t| + u_{LS} + u_{GS}) + 10^{-3}]$~\si{\metre\per\second}.
 
 \section{Flow-pattern criteria}\label{app:patterns}
+\setcounter{equation}{0}\setcounter{table}{0}\setcounter{figure}{0}
 
-Table~\ref{tab:criteria} lists the criteria behind the weights of Eq.~\eqref{eq:weights}. Each comparison $X > X_c$ is the logistic function $\sigma_k(X, X_c) = [1 + \exp(-k(X - X_c)/|X_c|)]^{-1}$ with $k = 20$; in the local evaluation the equilibrium level and void fraction are replaced by the cell values, and the bubbly criterion uses the larger of the drift-flux estimate and the cell void fraction.
-
-\begin{table}[htbp]
-\caption{Flow-pattern criteria \citep{taitel1976,taitel1980,barnea1982,barnea1987}.}\label{tab:criteria}
-\footnotesize
-\begin{tabular}{@{}lll@{}}
-\toprule
-transition & criterion & where \\
-\midrule
-stratified $\to$ non-stratified, upward or horizontal & Kelvin--Helmholtz: $F_G/\sqrt{\cos\theta} > F_{G,c}(h_L/D, \aG)$ & $\sin\theta \geq 0$ \\
-stratified $\to$ non-stratified, downward & film trajectory: $N_L > N_{L,c}$ & $\sin\theta < 0$ \\
-smooth $\to$ wavy & wind waves $K > K_c$, or gravity waves $F_L > F_{L,c}$ & stratified \\
-annular & film bridging $\aL < 0.35$ and, in vertical pipes, $F_G > F_{G,c}$ & non-stratified \\
-dispersed bubbles & $d_{crit} > d_{max}$ for deformation and migration & non-stratified \\
-bubbly $\to$ intermittent & bubble packing $\aG > 0.52$ (bubbly below $0.25$) & non-horizontal \\
-bubbly, horizontal & turbulent dispersion $T > T_c$ & horizontal \\
-\bottomrule
-\end{tabular}
-\end{table}
+The criteria are evaluated at every cell with the local state: the level $\tilde h = h_L/D$ and the angle $\beta$ of the cell's void fraction, and $\aG$, $\aL$ of the cell. The Froude numbers are $F_L = [\rho_L/(\Delta\rho\,g D)]^{1/2}|v_{LS}|$ and $F_G = [\rho_G/(\Delta\rho\,g D)]^{1/2}|v_{GS}|$, with $g = \SI{9.8}{\metre\per\square\second}$ (\SI{9.81}{\metre\per\square\second} elsewhere), and $f_S$ and $f_L$ are Eq.~\eqref{eq:churchill} for the liquid at $v_{LS}$ and at $v_{LS}/\aL$ on $D$. Each comparison $X > X_c$ is the logistic function
+\begin{equation}
+\sigma(X, X_c) = \left[1 + \exp\left(-k\,\frac{X - X_c}{|X_c|}\right)\right]^{-1}, \qquad k = 20,
+\end{equation}
+and the direction of the mixture is $s = \tfrac12[1 + \tanh(v_M/v_s)]$ with $v_s = \SI{0.02}{\metre\per\second}$. A pipe is horizontal within \ang{10} of the horizontal and vertical within \ang{10} of the vertical. The criteria are
+\begin{align}
+&\text{Kelvin--Helmholtz, } s = 1: && \frac{F_G}{\cos^{1/2}\theta} > \left[\frac{\pi(1 - \tilde h)^2\aG^3}{4\sin(\beta/2)}\right]^{1/2}, \label{eq:kh}\\
+&\text{film trajectory, } s = 0: && \left(\frac{f_S F_L^2}{\cos\theta}\right)^{1/2} > \frac{(1 - \tilde h)^{1/2}\aL}{(f_L/f_S)^{1/2}},\\
+&\text{wind waves, } s = 1: && F_G\left(\frac{Re_{SL}}{\cos\theta}\right)^{1/2} > 20\,\aL^{1/2}\aG, \qquad\text{gravity waves, } s = 0:\ F_L > 1.5\,\tilde h^{1/2}\aL,\\
+&\text{film bridging:} && \aL^{film} < 0.35, \qquad \aL^{film} = \max(\aL^{eq}, \aL),\\
+&\text{annular Froude, vertical:} && F_G > \left\{\frac{75}{Eo_D^2}\left[\left(1 + \frac{(Eo_D/75)^2}{0.0065}\right)^{1/2} - 1\right]\right\}^{1/2}, \quad Eo_D = D\left(\frac{\Delta\rho\,g}{\sigma}\right)^{1/2},\\
+&\text{bubble packing:} && \alpha_b < 0.25 \text{ (bubbly)}, \quad \alpha_b > 0.52 \text{ (intermittent)},\\
+&\text{dispersed bubbles:} && d_{max} < d_{def} = 2\left(\frac{0.4\,\sigma}{\Delta\rho\,g}\right)^{1/2}, \quad d_{max} < d_{migr} = \frac38\frac{\rho_L}{\Delta\rho}\frac{f_M v_M^2}{g\cos\theta},\\
+&\text{turbulent dispersion, horizontal:} && \left(\frac{2 f_S F_L^2}{\cos\theta}\right)^{1/2} > \left[\frac{2\pi\aL^2\aG}{\sin(\beta/2)\,(f_L/f_S)}\right]^{1/2},
+\end{align}
+where $Re_{SL} = \rho_L D|v_{LS}|/\mu_L$, $\aL^{eq}$ is the film fraction of the annular equilibrium of the superficial velocities \citep{taitel1980,barnea1987}, $\alpha_b$ is the smooth maximum of the drift-flux estimate $|v_{GS}|/(|1.25\,v_M + u_b| + 10^{-3})$, $u_b = 1.53(\sigma g\Delta\rho/\rho_L^2)^{1/4}\sin\theta$, and the cell's $\aG$, $\max_\varepsilon(a, b) = [a + b + ((a - b)^2 + \varepsilon^2)^{1/2}]/2$ with $\varepsilon = 0.02$, and $d_{max}$ is the breakup diameter of the bubbly closure with $f_M$ evaluated at the density of the drift-flux mixture. With $\sigma_{KH}$, $\sigma_{tr}$, \dots\ the logistic values of the criteria, the weights of Eq.~\eqref{eq:weights} are
+\begin{gather}
+w_S = \left\{(1 - \sigma_{KH})\,s + \left[1 - \sigma_{tr}(1 - s)\right](1 - s)\right\}(1 - \chi_V), \qquad p_A = 1 - (1 - p_A^0)(1 - \sigma(\aG, 0.9)), \\
+p_A^0 = (1 - \sigma_{br})\left[(1 - \chi_V) + \sigma_{Fr}\,\chi_V\right], \qquad p_B = \left[\sigma_{<0.25} + \sigma_{disp}(1 - \sigma_{>0.52})^2(1 - \sigma_{<0.25})^2\right](1 - \chi_H) + \sigma_T\,\chi_H,
+\end{gather}
+with $\chi_H$ and $\chi_V$ the horizontal and vertical indicators, $\sigma_{br} = \sigma(\aL^{film}, 0.35)$ and $\sigma_{disp}$ the product of the two dispersed-bubble criteria; the wavy part of stratified flow has the weight $w_S[\sigma_K s + \sigma_{F_L}(1 - s)]$. Below $\aG = 0.02$ the weights blend into the bubbly ones with $w = u^2(3 - 2u)$, $u = \min[1, \max(0, (2\alpha_* - \aG)/\alpha_*)]$ and $\alpha_* = 0.01$ (low-void rule).
 
 \section{Data for reproduction}\label{app:reproduction}
+\setcounter{equation}{0}\setcounter{table}{0}\setcounter{figure}{0}
 
 The tables of this appendix were generated from the input files and the code of the simulator, so that they describe exactly what was run, and they are meant to allow the results to be reproduced with an independent implementation. Table~\ref{tab:geometry} gives the geometry and the mesh, Table~\ref{tab:parameters} every parameter of the model, the boundary conditions, the scheme and the integrator, Table~\ref{tab:runs} the runs behind each section, Table~\ref{tab:ablationchanges} the changes of each variant of the ablation, and Table~\ref{tab:analysis} the definitions of the quantities derived from the runs. The results were obtained with \input{tables/generated/software}
 

@@ -589,7 +589,24 @@
               "type": "object"
             },
             "intermittent": {
-              "type": "object"
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "slug_frequency": {
+                  "enum": [
+                    "thesis",
+                    "zabaras"
+                  ],
+                  "description": "frequência de golfada da unidade de golfada: thesis = eq. 5.83 da tese (expoente do código MATLAB); zabaras = Zabaras (2000), Gregory e Scott com fator de inclinação (issue 049)"
+                },
+                "unit": {
+                  "enum": [
+                    "thesis",
+                    "consistent"
+                  ],
+                  "description": "unidade de golfada: thesis = fração de gás do filme cortada a 0,95 (sem balanço de massa); consistent = pistão encurtado e alphas <= alphaG para conservar a massa da unidade (issue 050)"
+                }
+              }
             },
             "friction": {
               "type": "object"

@@ -81,6 +81,8 @@ class TwoFluidModel(PipeModel):
             fi_mult=p.fi_mult * ones,
             fi_vgt=p.fi_vgt * ones,
             bubble_drag=(1.0 if p.bubble_drag == "fisico" else 0.0) * ones,
+            slug_frequency=None if p.slug_frequency == "thesis" else ones,
+            slug_unit=None if p.slug_unit == "thesis" else ones,
         )
         return inp, P, Area
 

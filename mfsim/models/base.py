@@ -91,6 +91,14 @@ class PipeParams:
     vm_lambda: float = (
         1.0  # forma objetiva de Drew & Lahey: termos (lambda-2)(vG-vL) dvG/dx + (1-lambda)(vG-vL) dvL/dx (lambda = 2: só acelerações)
     )
+    slug_frequency: str = (
+        "thesis"  # frequência de golfada do intermitente: "thesis" (eq. 5.83 da tese, expoente do MATLAB) ou "zabaras"
+    )
+    # (Zabaras 2000: Gregory e Scott com o fator de inclinação 0,836 + 2,75 sin^1/4 θ; issue 049)
+    slug_unit: str = (
+        "thesis"  # unidade de golfada: "thesis" (fração de gás do filme cortada a 0,95, sem balanço de massa) ou
+    )
+    # "consistent" (pistão encurtado e alphas <= alphaG para que alphaG lu = alphas ls + alphaf lf; issue 050)
     extra: dict = field(default_factory=dict)
 
 

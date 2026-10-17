@@ -39,6 +39,12 @@ class ClosureInputs:
     bubble_drag: np.ndarray = (
         None  # 1 = arrasto físico de bolhas (PipeParams.bubble_drag = "fisico"); None/0 = fechamento da tese
     )
+    slug_frequency: np.ndarray = (
+        None  # 1 = frequência de golfada de Zabaras (PipeParams.slug_frequency = "zabaras"); None = a da tese
+    )
+    slug_unit: np.ndarray = (
+        None  # 1 = unidade de golfada consistente com a massa (PipeParams.slug_unit); None = a da tese
+    )
 
     def subset(self, mask):
         return ClosureInputs(
