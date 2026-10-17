@@ -98,7 +98,40 @@ aparecem nas entrelinhas, como observações gerais medidas com o código de hoj
 - **Desempenho (medida sob carga)**: lado direito 2,4 ms (numpy) contra 0,25 ms (JAX), Jacobiana 63 ms
   (diferenças coloridas) contra 3,3 ms (exata), compilação ≈ 10 s; repetir com a máquina livre.
 
-## Exemplo base
+## Mudança de exemplo base (decisão do dono, 2026-10-16, à noite)
+
+O exemplo anterior (linha de 295 m, riser de 15 m, 2 pol.) é de escala piloto. O dono decidiu:
+
+- **Um só caso base, offshore:** o sistema do caso offshore da dissertação do Gustavo (Gustavo Alves de Carvalho,
+  UERJ 2022; reproduzida em `~/code/personal/research-factory/01-multiphase-compositional-flow`):
+  - poço vertical de 1500 m (D 0,127 m) com IPR no fundo;
+  - linha de 6000 m e riser de 300 m (D 0,1524 m);
+  - um trecho final da linha a −2° perto do cotovelo do riser (comprimento a avaliar, mantendo a geometria);
+  - todas as corridas do artigo refeitas com ele.
+- **Fechamentos:**
+  - frequência de golfada de Zabaras em todos os exemplos, sem estudo de sensibilidade no artigo (issue 049);
+  - sigmoides mantidas;
+  - Apêndice A com as expressões exatas e as atribuições certas: a fórmula da tese é a eq. 5.83, atribuída a
+    Manolis 1995; o docstring dizia Zabaras.
+- **Lotes antigos parados:** o de malha e o do mapa bloqueado foram parados; as corridas parciais ficam em `runs/`.
+
+Achados ao montar o caso (gerador `generators/offshore.py`):
+
+- **Unidade de golfada da tese.** A célula com mais gás do que a unidade guarda perdia o balanço de massa (corte do
+  filme a 0,95). Opção `closures.intermittent.unit = "consistent"` (issue 050).
+- **Limitação que fica.** A alta pressão (linha toda intermitente, 100–250 bar), o filme fino tem velocidade para
+  trás não física. O atrito da mistura sai negativo e o quase-estacionário tem a pressão a subir ao longo da linha.
+  Com o reservatório depletado (20–40 bar na linha) o atrito é positivo.
+- **Fluido do §5.5 congelado.** Tabela 19, fração mássica de gás 0,29 a 20 bar e 40 °C:
+  - com o choke aberto e P_res de 70–110 bar, a linha é anular ou intermitente com o gás a ~12 m/s;
+  - os estacionários são estáveis;
+  - não se encontrou intermitência severa.
+- **Fluido do §5.7.** Tabela 6, mesma geometria, fração de gás 0,10. A estimativa de Bøe e Taitel dá φ ≈ 0,24 e um
+  recuo do líquido de ~900 m no trecho a −2°, o que justifica L_down ≈ 1000 m. Em teste.
+- **Choke.** Com o separador a 10 bar e a lei homogénea (densidades a jusante), CV 150 dá < 1 bar a 5 kg/s com o
+  choke aberto. O ponto nominal do Gustavo (10 kg/s, 91,5 bar no topo do riser) fica perto da abertura 0,19.
+
+## Exemplo base (anterior, escala piloto; substituído)
 
 Caso de referência como poço (`cases/severe_slug/well_choke.json`, issue 043) com **padrão de escoamento
 dinâmico**: linha horizontal de 20 m, descendente de 300 m a −3°, curva em arco (R = 5 m, 4 elementos),
