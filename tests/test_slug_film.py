@@ -138,3 +138,46 @@ def test_film_unit_jax_matches_numpy():
     out_j = film_unit(*[bk.xp.asarray(a) for a in args], bk=bk)
     for a, b in zip(out_j, out_n):
         np.testing.assert_allclose(np.asarray(a), b, rtol=1e-9, atol=1e-12)
+
+
+def test_film_unit_is_continuous_across_the_triple_point():
+    """Quando a aeração de Barnea e Brauner iguala o filme de equilíbrio, a célula a atravessar essa fração não pode
+    saltar de só filme a só pistão: a força varia continuamente com alpha_G e nunca é a de bolhas com o escorregamento
+    inteiro da célula (a unidade de 2026-10-17 dava 2,7 -> -1,7e5 N/m entre alpha_G = 0,522 e 0,50)."""
+    aG = np.linspace(0.40, 0.60, 401)
+    n = aG.size
+    A = np.pi * D**2 / 4
+    vLS, vGS = 1.28, 5.86
+    rhoL, rhoG, P = 646.7, 11.3, 20e5
+    hD, beta = stratified_level(aG)
+    one = np.ones(n)
+    inp = ClosureInputs(
+        alphaG=aG,
+        alphaL=1 - aG,
+        vL=vLS / (1 - aG),
+        vLS=vLS * one,
+        vG=vGS / aG,
+        vGS=vGS * one,
+        AreaL=A * (1 - aG),
+        AreaG=A * aG,
+        D=D * one,
+        eps=6e-4 * one,
+        theta=0.0 * one,
+        rhoL=rhoL * one,
+        rhoG=rhoG * one,
+        muL=3.14e-4 * one,
+        muG=1.21e-5 * one,
+        CL=rhoL / (1000 * P) * one,
+        CG=rhoG / P * one,
+        sigma=0.0163 * one,
+        beta=beta,
+        hD=hD,
+        bubble_drag=one,
+        slug_frequency=one,
+        slug_film=one,
+        aG_film_eq=0.51 * one,
+    )
+    t = intermittent(inp)
+    G = t.GammaL + t.GammaG
+    assert np.all(np.isfinite(G)) and np.abs(G).max() < 2e3
+    assert np.abs(np.diff(G)).max() < 0.05 * (np.abs(G).max() + 1.0)  # sem saltos: 401 pontos em 0,2 de alpha_G

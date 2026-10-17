@@ -132,6 +132,8 @@ def slug_unit(aG, alphas, ls, lu, consistent=False, bk=NUMPY):
 FILM_BLEND_DEG = 10.0  # ascendentes de 0 a 10°: do filme estratificado (equilíbrio) ao filme em queda (Brotz)
 BROTZ = 9.916  # velocidade terminal do filme em queda livre, u_f = -9.916 [g D sin θ (1 - α_TB^1/2)]^1/2
 R_DEGEN = 0.05  # a perda de aceleração anula-se (smoothstep) a menos de 5 % das unidades degeneradas
+SLUG_FILM_GAP = 0.1  # o pistão é pelo menos isto menos arejado do que o filme: r varia continuamente entre 1 e 0
+SLUG_SLIP_MAX = 1.0  # m/s: escorregamento máximo das bolhas no corpo do pistão na força de bolhas (mais é gás do filme)
 
 
 def _smoothstep(x, bk=NUMPY):
@@ -151,14 +153,16 @@ def falling_film_fraction(q, ut, D, theta, bk=NUMPY):
     def F(a):
         return (ut + c * bk.safe_sqrt(1.0 - xp.sqrt(a))) * (1.0 - a) - q
 
-    lo = 0.0 * q
-    hi = 0.0 * q + 1.0
-    for _ in range(48):
+    qs, uts, cs = (bk.stop_gradient(v) for v in (q, ut, c))
+
+    def body(_, lohi):
+        lo, hi = lohi
         mid = 0.5 * (lo + hi)
-        pos = bk.stop_gradient(F(mid)) > 0.0
-        lo = xp.where(pos, mid, lo)
-        hi = xp.where(pos, hi, mid)
-    a = bk.stop_gradient(xp.clip(0.5 * (lo + hi), 1e-6, 1.0 - 1e-6))
+        pos = (uts + cs * bk.safe_sqrt(1.0 - xp.sqrt(mid))) * (1.0 - mid) - qs > 0.0
+        return xp.where(pos, mid, lo), xp.where(pos, hi, mid)
+
+    lo, hi = bk.fori_loop(0, 48, body, (0.0 * qs, 0.0 * qs + 1.0))
+    a = xp.clip(0.5 * (lo + hi), 1e-6, 1.0 - 1e-6)
     s = xp.sqrt(1.0 - xp.sqrt(a))
     dF = -c * (1.0 - a) / (4.0 * s * xp.sqrt(a)) - (ut + c * s)
     return xp.clip(a - F(a) / dF, 1e-6, 1.0 - 1e-6)
@@ -174,15 +178,22 @@ def film_unit(aG, alphas0, uLS, uGS, ut, theta, D, aG_strat, bk=NUMPY):
     da perda de aceleração do filme na frente do pistão (Taitel e Barnea 1990: Δp = ρ_L a por unidade), anulado
     suavemente quando a unidade degenera (r a menos de R_DEGEN de 0 ou de 1)."""
     xp = bk.xp
-    alphas = xp.minimum(alphas0, aG)
-    Rs = 1.0 - alphas
-    uL = (uLS + ut * (aG - alphas)) / Rs
-    ub = (uGS - ut * (aG - alphas)) / xp.where(alphas == 0, 1e-30, alphas)
     a_tb = falling_film_fraction(ut * (1.0 - aG) - uLS, ut, D, theta, bk=bk)
     ok = xp.isfinite(aG_strat)
     a_st = xp.where(ok, xp.where(ok, aG_strat, 0.5), aG)
     w_up = _smoothstep(theta / np.deg2rad(FILM_BLEND_DEG), bk)
-    alphaf = xp.clip(xp.maximum((1.0 - w_up) * a_st + w_up * a_tb, aG), 1e-6, 1.0 - 1e-6)
+    # o filme de equilíbrio nunca passa de ALPHA_FILM_MAX (acima disso é anular, coberto pelos pesos dos padrões):
+    # sem o limite, um bolsão quase parado (q -> 0) dá alpha_tb -> 1, R_f -> 0 e velocidades de filme ~1/R_f;
+    # uma célula mais rica em gás do que o filme fica só filme, no estado da célula
+    a_model = xp.minimum((1.0 - w_up) * a_st + w_up * a_tb, ALPHA_FILM_MAX)
+    alphaf = xp.clip(xp.maximum(a_model, aG), 1e-6, 1.0 - 1e-6)
+    # o pistão não guarda mais gás do que a célula nem chega à aeração do filme: sem a folga, quando a aeração de
+    # Barnea e Brauner iguala o filme de equilíbrio (ponto triplo) r salta de 0 a 1 e a célula passa de só filme a
+    # só pistão com o escorregamento inteiro no fechamento de bolhas (forças de 1e5 N/m)
+    alphas = xp.maximum(xp.minimum(xp.minimum(alphas0, aG), alphaf - SLUG_FILM_GAP), 0.0)
+    Rs = 1.0 - alphas
+    uL = (uLS + ut * (aG - alphas)) / Rs
+    ub = (uGS - ut * (aG - alphas)) / xp.where(alphas == 0, 1e-30, alphas)
     r = xp.clip((alphaf - aG) / xp.maximum(alphaf - alphas, 1e-9), 0.0, 1.0)
     Rf = 1.0 - alphaf
     uf = ut - (ut - uL) * Rs / Rf
@@ -240,6 +251,10 @@ def intermittent(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     ub, uG = sG * ub, sG * uG
 
     Area = xp.pi * D**2 / 4.0
+    if inp.slug_film is not None:
+        # no corpo do pistão as bolhas dispersas escorregam pouco; um escorregamento cinemático maior é gás da
+        # bolha de Taylor, que o filme já representa: limita-o na força de bolhas (as vazões são os estados)
+        ub = uL + xp.clip(ub - uL, -SLUG_SLIP_MAX, SLUG_SLIP_MAX)
     inp_s = inp.replace(
         alphaG=1.0 - Rs,
         alphaL=Rs,

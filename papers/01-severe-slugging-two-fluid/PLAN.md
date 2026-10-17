@@ -131,6 +131,27 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
 - **Choke.** Com o separador a 10 bar e a lei homogénea (densidades a jusante), CV 150 dá < 1 bar a 5 kg/s com o
   choke aberto. O ponto nominal do Gustavo (10 kg/s, 91,5 bar no topo do riser) fica perto da abertura 0,19.
 
+### Noite de 16 para 17 de outubro: a unidade de golfada no caso offshore
+
+- **Decisões do dono (noite de 16/10):** fechamento intermitente com o filme de equilíbrio (051), fluido da Tabela 6,
+  poço em variáveis de mercado (IPR em Sm³/d/bar, RGO em Sm³/Sm³) com a RGO como variável a varrer; nenhum padrão
+  fixado por troço (a identificação dinâmica tem de dar estratificado nos troços horizontais e descendentes por si).
+- **Pergunta do dono: «como é possível atrito negativo?»** Não é atrito com a parede negativo: é a soma Γ_L + Γ_G
+  (parede + interface) da unidade da tese, em que o filme a −25 m/s (cinemática da unidade com α_f cortado a 0,95)
+  arrasta a mistura para trás. Era um artefacto da unidade, resolvido pela 051.
+- **Três patologias encontradas e corrigidas na 051 (todas com teste):**
+  1. bolsão quase parado no vertical: a raiz de Brotz dá α_f → 1 e velocidades ~1/R_f (1e12 N/m) → o filme nunca passa
+     de 0,95 (acima é anular, pelos pesos); célula mais rica fica só filme no estado da célula;
+  2. arranque violento: a estimativa inicial com frações de equilíbrio punha gás a 37 m/s na curva → a estimativa é sem
+     escorregamento (forças interfaciais nulas) e o transitório rearranja o holdup;
+  3. ponto triplo α_G ≈ α_s⁰ ≈ α_f^eq (linha horizontal a 0,5 de gás): r saltava de 0 a 1 e a célula passava de só filme
+     (2,7 N/m) a só pistão com o escorregamento inteiro (11 m/s) no fechamento de bolhas (−1,7e5 N/m) → o pistão fica
+     pelo menos 0,1 menos arejado do que o filme (r contínuo) e o escorregamento no corpo do pistão fica limitado a
+     1 m/s na força de bolhas. Medido num estado de 120 bar com o choke aberto: 60 s passaram de 1272 passos/442
+     rejeições para 34/6.
+- **Em curso:** procura do ponto base (120/160/200 bar com o choke aberto; RGO 70–200 a seguir) e classificação das
+  séries temporais (os passos pequenos que restam são sopros reais ou outra patologia?).
+
 ## Exemplo base (anterior, escala piloto; substituído)
 
 Caso de referência como poço (`cases/severe_slug/well_choke.json`, issue 043) com **padrão de escoamento
