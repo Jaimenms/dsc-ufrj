@@ -308,6 +308,12 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   tolerância; o primeiro passo do Newton produz um estado que o integrador não arranca. Decisão do dono: **varrimento
   denso em abertura** (lote `paper01_offshore_sweep`, 12 corridas de 16 000 s) e a figura `cycle_branch` (§8.6) com o
   ramo de ciclos observado; os ciclos instáveis ficam para o artigo 03 (colocação da órbita ou mapa suavizado).
+- **17:40 — ramo de ciclos (§8.6, figura `cycle_branch`, 17 aberturas):** estável até 0,18; Hopf do par de troca
+  **supercrítico** em 0,19 (ciclo de pressão de 0,7 → 2 bar, 710–760 s, em 0,20–0,25); de 0,30 a 0,60 os pulsos viram
+  surtos (10 → 32 kg/s), período 730 → 1240 s, faixa 2,7 → 9 bar, holdup mínimo 0,64 → 0,54, tudo contínuo (sem dobra);
+  **duplicação de período entre 0,60 e 0,70** (0,7: ±15 %; 0,8: 1090/1620 s; 0,9 e 1,0: 1140/1800 s); o modo da
+  coluna (70 s, instável desde 0,13) não aparece em corrida nenhuma. Produção média 3,6–4,2 kg/s em todo o ramo. Os
+  ciclos instáveis (ramo de período 1 depois da duplicação) ficam para o artigo 03. Resumo e conclusões atualizados.
 - **Quando se refizer a campanha:** `newton_damping=armijo` como omissão do gerador (o estado anterior como iterado
   inicial só ganha no bloqueio, −63 %, e não soma à busca em linha: 295 contra 249 passos); a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
   Newton melhor antes de afirmar que "as faces pela média falham no sopro".

@@ -2630,6 +2630,7 @@ def tab_runs(out):
     rows = []
     specs = [
         ("choke openings (\\ref{sec:opening})", "batches/paper01_offshore_dynamics.json", "blocked"),
+        ("opening sweep (\\ref{sec:branch})", "batches/paper01_offshore_sweep.json", "blocked"),
         ("gas--oil ratio (\\ref{sec:gor})", "batches/paper01_offshore_gor.json", "blocked"),
         ("ablation (\\ref{sec:ablation})", "batches/paper01_offshore_ablation.json", "blocked"),
         ("mesh (\\ref{sec:mesh})", "batches/paper01_offshore_mesh.json", "blocked"),
@@ -3217,7 +3218,7 @@ def cycle_branch(out, png):
         s = sig[ab]
         ax.plot([ab, ab], [s["P_min"], s["P_max"]], color=fl.COLORS[s["cls"]], lw=2.2, solid_capstyle="butt", zorder=3)
         ax.plot(ab, s["P_mean"], **mk(s))
-    ax.set_ylabel(r"$P_{in}$ (bar): range and mean")
+    ax.set_ylabel(r"$P_{in}$ (bar)")
     # (b) períodos
     ax = axes[1]
     if A is not None:
@@ -3244,7 +3245,7 @@ def cycle_branch(out, png):
         s = sig[ab]
         ax.plot(ab, s["q_peak"], **mk(s))
         ax.plot(ab, s["q_mean"], marker="_", ms=7, mec=fl.COLORS[s["cls"]], ls="none", zorder=4)
-    ax.set_ylabel(r"$q_L$ through the choke (kg s$^{-1}$): peak (dot), mean (dash)")
+    ax.set_ylabel(r"$q_L$ through the choke (kg s$^{-1}$)")
     ax.set_xlabel("choke opening $a$")
     # (d) holdup mínimo do riser
     ax = axes[3]
