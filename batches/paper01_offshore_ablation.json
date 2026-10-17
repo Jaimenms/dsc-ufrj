@@ -8,7 +8,7 @@
    "set": [
     "time.dt_out=2.0"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "primitive",
@@ -16,9 +16,11 @@
    "set": [
     "time.dt_out=2.0",
     "network.edges.1.scheme.options.conservative=false",
-    "network.edges.well.scheme.options.conservative=false"
+    "network.edges.well.scheme.options.conservative=false",
+    "network.edges.1.scheme.options.relax_target=raw",
+    "network.edges.well.scheme.options.relax_target=raw"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "no_art_visc",
@@ -28,7 +30,7 @@
     "network.edges.1.scheme.options.art_visc=0.0",
     "network.edges.well.scheme.options.art_visc=0.0"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "closure_mean",
@@ -38,7 +40,7 @@
     "network.edges.1.scheme.options.closure_alpha=mean",
     "network.edges.well.scheme.options.closure_alpha=mean"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "no_low_void",
@@ -48,7 +50,7 @@
     "network.edges.1.model.regime.low_void=null",
     "network.edges.well.model.regime.low_void=null"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "no_virtual_mass",
@@ -58,7 +60,7 @@
     "network.edges.1.model.options.virtual_mass.C_vm=0.0",
     "network.edges.well.model.options.virtual_mass.C_vm=0.0"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "bubble_drag_thesis",
@@ -68,7 +70,7 @@
     "network.edges.1.model.closures.bubble.drag=thesis",
     "network.edges.well.model.closures.bubble.drag=thesis"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "unit_consistent",
@@ -78,7 +80,7 @@
     "network.edges.1.model.closures.intermittent.unit=consistent",
     "network.edges.well.model.closures.intermittent.unit=consistent"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "unit_thesis",
@@ -88,7 +90,7 @@
     "network.edges.1.model.closures.intermittent.unit=thesis",
     "network.edges.well.model.closures.intermittent.unit=thesis"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "freq_thesis",
@@ -98,7 +100,7 @@
     "network.edges.1.model.closures.intermittent.slug_frequency=thesis",
     "network.edges.well.model.closures.intermittent.slug_frequency=thesis"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "k_switch_80",
@@ -108,7 +110,7 @@
     "network.edges.1.model.regime.k_switch=80.0",
     "network.edges.well.model.regime.k_switch=80.0"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "bdf1",
@@ -117,7 +119,7 @@
     "time.dt_out=2.0",
     "integration.max_order=1"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "uniform_atol",
@@ -127,7 +129,7 @@
     "integration.tol_range=null",
     "integration.atol=1e-6"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   }
  ]
 }

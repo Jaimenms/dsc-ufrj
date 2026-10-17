@@ -28,6 +28,8 @@ ABLATION = {
     "primitive": [
         "network.edges.1.scheme.options.conservative=false",
         "network.edges.well.scheme.options.conservative=false",
+        "network.edges.1.scheme.options.relax_target=raw",
+        "network.edges.well.scheme.options.relax_target=raw",
     ],
     "no_art_visc": ["network.edges.1.scheme.options.art_visc=0.0", "network.edges.well.scheme.options.art_visc=0.0"],
     "closure_mean": [
