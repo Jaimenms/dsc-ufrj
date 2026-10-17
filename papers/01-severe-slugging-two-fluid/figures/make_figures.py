@@ -1134,7 +1134,9 @@ def _blowdown_times(T, P, frac=0.5, min_gap=150.0):
             while j < T.size and low[j]:
                 j += 1
             k = i + int(np.argmin(P[i:j]))
-            if not out or T[k] - out[-1] > min_gap:
+            # um troço baixo que começa com a série (a linha ainda a pressurizar a partir da partida bloqueada)
+            # não é um blowdown: só os mínimos precedidos de um máximo contam
+            if i > 0 and (not out or T[k] - out[-1] > min_gap):
                 out.append(T[k])
             i = j
         else:
