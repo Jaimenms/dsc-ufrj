@@ -31,6 +31,7 @@ INFO_KEYS = (
     "n_rejected",
     "cpu",
     "cpu_total",
+    "compile",
     "n_rhs",
     "n_jac",
     "success",

@@ -68,7 +68,16 @@ ABLATION = {
     "bdf1": ["integration.max_order=1"],
     "uniform_atol": ["integration.tol_range=null", "integration.atol=1e-6"],
     "newton_legacy": ["integration.newton_damping=legacy"],
+    "newton_armijo": ["integration.newton_damping=armijo"],
     "estimate_thesis": ["integration.error_estimate=thesis"],
+    "low_void_0.01": [
+        "network.edges.1.model.regime.low_void.alpha=0.01",
+        "network.edges.well.model.regime.low_void.alpha=0.01",
+    ],
+    "interfacial_pressure_1.2": [
+        "network.edges.1.model.options.interfacial_pressure=1.2",
+        "network.edges.well.model.options.interfacial_pressure=1.2",
+    ],
 }
 
 

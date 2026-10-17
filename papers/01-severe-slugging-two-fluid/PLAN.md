@@ -288,6 +288,15 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   Jacobianas. Tempos: compilação JAX cronometrada à parte (`info["compile"]`), `tab_cost` nova. Transitório da
   partida bloqueada: 5 ciclos de período decrescente até ~8600 s; figuras desde t = 0 e último ciclo completo.
   Faltam: ablação (16, a correr), malhas, backends, §4 (hiperbolicidade com low_void 0,025), resumo e conclusões.
+- **16:15 — campanha completa e artigo sem `\tbd`:** ablação com 19 variantes (unidade de golfada da tese falha antes do
+  primeiro ciclo nas duas versões; critério de bolhas pela vazão 7,7× os passos e outro ciclo; faces pela média 7,6×
+  e outro ciclo; primitiva cria 0,5 % do líquido; Armijo em todas as iterações falha aos 2040 s; Milne +19 % de
+  passos no ciclo completo — neutro nas janelas, ganho só no problema-modelo; Bestion −16 % sem base física;
+  low_void 0,01 = 0,025 em custo; tolerância uniforme 5,8×; BDF1 14×), malhas (faixa de pressão igual, período e surto
+  ±15 % entre grossa e fina: não convergidos na malha base), backends (JAX 7× mais rápido; compilação 14–31 s fria,
+  2 s com cache). Overrides com `null` removem a chave (uniform_atol); `compile` gravado na info das corridas.
+  Rotina 410 passed. **Decisão pendente do dono:** manter `error_estimate = milne` por omissão no gerador (custa
+  +19 % no ciclo offshore; ganha 20–50 % no problema-modelo) ou voltar a `thesis`.
 - **Quando se refizer a campanha:** `newton_damping=armijo` como omissão do gerador (o estado anterior como iterado
   inicial só ganha no bloqueio, −63 %, e não soma à busca em linha: 295 contra 249 passos); a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
   Newton melhor antes de afirmar que "as faces pela média falham no sopro".

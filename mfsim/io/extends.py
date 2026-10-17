@@ -126,12 +126,17 @@ def parse_override(text: str):
 
 def apply_overrides(d: dict, overrides) -> dict:
     """Aplica overrides (`{"integration.rtol": 1e-3}` ou lista de `caminho=valor`) ao dicionário
-    do caso, no lugar; chaves inexistentes no fim do caminho são criadas."""
+    do caso, no lugar; chaves inexistentes no fim do caminho são criadas. Um valor `null` remove a
+    chave (uma opção opcional volta à omissão: `integration.tol_range=null`), em vez de deixar um
+    `null` que o schema rejeita."""
     items = overrides.items() if isinstance(overrides, dict) else [parse_override(t) for t in overrides]
     for path, value in items:
         segs = path.split(".")
         obj = d
         for seg in segs[:-1]:
             obj = obj[_step(obj, seg, create=True)]
+        if value is None and isinstance(obj, dict):
+            obj.pop(segs[-1], None)
+            continue
         obj[_step(obj, segs[-1], create=True)] = value
     return d

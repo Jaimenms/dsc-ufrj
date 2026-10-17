@@ -154,3 +154,13 @@ def test_cli_set(tmp_path):
     assert rc == 0
     run = load_run(str(out))
     assert run.case.integration.rtol == 1e-3 and run.T[-1] == 20.0 and run.case.time.tf == 20.0
+
+
+def test_null_override_removes_the_key():
+    """`caminho=null` remove uma chave opcional (ex.: `integration.tol_range=null` volta à omissão), em vez de deixar
+    um `null` que o schema rejeita; uma chave inexistente não é criada."""
+    from mfsim.io.extends import apply_overrides
+
+    d = {"integration": {"rtol": 1e-3, "tol_range": 0.01}}
+    apply_overrides(d, ["integration.tol_range=null", "integration.atol=1e-6", "integration.max_cpu=null"])
+    assert d["integration"] == {"rtol": 1e-3, "atol": 1e-6}

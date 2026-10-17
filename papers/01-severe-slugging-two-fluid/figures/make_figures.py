@@ -1201,7 +1201,7 @@ def _summary_rows(batch, labels):
         elif r["stopped_by"] == "budget":
             status = f"too slow, at {r['t_end']:.0f} s" if r["t_end"] >= 100 else f"too slow, at {r['t_end']:.3g} s"
         else:
-            status = f"fails at {r['t_end']:.3g} s"
+            status = f"fails at {r['t_end']:.0f} s"
         rows.append(
             [
                 lab,
@@ -1276,7 +1276,10 @@ ABL_LABELS = {
     "unit_consistent": "slug unit of the thesis, mass-consistent",
     "no_local_bubble": "bubble criteria on the mixture flow rates (no local void fraction)",
     "newton_legacy": "Newton without line search",
+    "newton_armijo": "line search in every Newton iteration",
     "estimate_thesis": "first-order error estimate (linear predictor)",
+    "low_void_0.01": "low-void rule below $\\alpha_G = 0.01$",
+    "interfacial_pressure_1.2": "interfacial pressure of Bestion, $\\delta = 1.2$",
     "unit_thesis": "slug unit of the thesis",
     "freq_thesis": "slug frequency of the thesis",
     "k_switch_80": "logistic switches with $k = 80$",
@@ -1453,7 +1456,7 @@ def tab_trajectory_wellposed(out):
         align="lrrrrrr",
         notes=(
             "Ill-posed fraction of the cell--time states (one state every \\SI{5}{\\second}) of the severe-slugging "
-            f"run at an opening of {TRAJ_RUN[1]:g} and \\SI{{15}}{{\\bar}}, overall, by dominant flow pattern of the "
+            f"run with the choke open (opening {TRAJ_RUN[1]:g}) at the base point, overall, by dominant flow pattern of the "
             "model and in the riser; the variants are evaluated a posteriori on the same states."
         ),
     )
@@ -1621,7 +1624,8 @@ def bend_modes(out, png):
 # ------------------------------------------------------------------------------------------------ malha, desempenho e caso
 def tab_mesh(out):
     rows = []
-    for name, run in [("base", _dense_run(1.0))] + _batch_runs("offshore_mesh"):
+    abl = dict(_batch_runs("offshore_ablation"))  # a referência da ablação: a malha base nos mesmos 8000 s
+    for name, run in [("base", abl.get("base") or _dense_run(1.0))] + _batch_runs("offshore_mesh"):
         if run is None:
             rows.append([name] + ["--"] * 7)
             continue
@@ -1646,7 +1650,11 @@ def tab_mesh(out):
         ["mesh", "cells", "cell size (m)", "steps", "CPU (s)", "interval (s)", "$P_{in}$ (bar)", "peak $q_L$ (kg/s)"],
         rows,
         align="lrlrrrlr",
-        notes="Choke open at the base point, blocked start; cells of the flowline--riser pipe; base run from the openings batch.",
+        notes=(
+            "Choke open at the base point, blocked start, \\SI{8000}{\\second}; cells of the well + flowline--riser pipes "
+            "and cell sizes of the flowline--riser pipe; interval between blowdowns, pressure range and surge over the "
+            "whole run after \\SI{300}{\\second}; wall time with up to five runs sharing the machine."
+        ),
     )
 
 
@@ -1669,7 +1677,12 @@ def tab_performance(out):
         [
             "compilation (s)",
             "--",
-            fl.fmt((t.get("jax_compile_rhs_s") or np.nan) + (t.get("jax_compile_jac_s") or np.nan), "{:.0f}"),
+            fl.fmt((t.get("jax_compile_rhs_s") or np.nan) + (t.get("jax_compile_jac_s") or np.nan), "{:.0f}")
+            + (
+                f" ({(runs['jax'].info or {}).get('compile'):.0f} with the compilation cache)"
+                if runs.get("jax") is not None and (runs["jax"].info or {}).get("compile") is not None
+                else ""
+            ),
         ],
         [
             "steps in \\SI{2000}{\\second}",
@@ -1691,8 +1704,8 @@ def tab_performance(out):
         notes=(
             f"Application case with the choke open; {t.get('n_states', '--')} states, "
             f"{t.get('n_colors', '--')} colours in the finite-difference Jacobian; parity of the two "
-            f"right-hand sides {fl.fmt(t.get('parity_rhs'), '{:.0e}')}. Apple M5 Pro"
-            + (" \\tbd{(measured with other simulations running)}." if loaded else ".")
+            f"right-hand sides {fl.fmt(t.get('parity_rhs'), '{:.0e}')}. Apple M5 Pro, "
+            + ("measured with other simulations sharing the machine." if loaded else "machine otherwise idle.")
         ),
     )
 
@@ -2680,6 +2693,9 @@ ABL_CHANGES = {
     "uniform_atol": "absolute tolerance $10^{-6}$ for every state, with the pressure in MPa and the flow rates in kg/s",
     "no_local_bubble": "the bubbly-flow criteria of the pattern identification evaluated on the void fraction implied by the phase flow rates instead of the local void fraction of the cell",
     "newton_legacy": "Newton iteration without the line search: the step is halved only when the residual grows, never in the first iteration",
+    "newton_armijo": "line search in every Newton iteration, including when the correction is already below the Newton tolerance",
+    "low_void_0.01": "bubbly closures below $\\alpha_G = 0.01$ instead of 0.025 (the stratified closure is then ill-posed in a thin layer of states)",
+    "interfacial_pressure_1.2": "interfacial pressure term of Bestion with $\\delta = 1.2$ added in every pattern",
     "estimate_thesis": "local error estimated from the linear predictor, $r/(1+2r)\\,(\\bx - \\bx^{pred})$, instead of the quadratic predictor with the Milne constant",
     "newton12": "at most 12 Newton iterations per step",
     "scipy_bdf": "variable-order BDF of SciPy on the primitive form, vanishing phase relaxed to a zero flow rate, rtol $= 3\\times10^{-3}$, atol $= 10^{-3}$ for every state, maximum step \\SI{1}{\\second}, no projection on bounds",

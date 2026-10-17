@@ -151,11 +151,40 @@
    "tf": 8000.0
   },
   {
+   "name": "newton_armijo",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "integration.newton_damping=armijo"
+   ],
+   "tf": 8000.0
+  },
+  {
    "name": "estimate_thesis",
    "case": "cases/paper01/offshore.json",
    "set": [
     "time.dt_out=2.0",
     "integration.error_estimate=thesis"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "low_void_0.01",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.1.model.regime.low_void.alpha=0.01",
+    "network.edges.well.model.regime.low_void.alpha=0.01"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "interfacial_pressure_1.2",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.1.model.options.interfacial_pressure=1.2",
+    "network.edges.well.model.options.interfacial_pressure=1.2"
    ],
    "tf": 8000.0
   }
