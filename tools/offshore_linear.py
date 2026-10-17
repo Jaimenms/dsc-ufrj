@@ -5,7 +5,7 @@ estacionário exato por Newton; continuação em abertura com bissecção do pas
 (`mfsim.analysis.linear_spectrum`, matriz de massa do modo conservativo) e os modos lentos globais
 (`slow_global_modes`), com a participação somada sobre os dois dutos. Grava `runs/paper01/offshore_linear/hopf.npz`
 (linhas [abertura, Re1, Im1, Re2, Im2, Re_outro, Im_outro, n_eff_outro, nó_outro, P_in (bar), q_L (kg/s),
-P_topo (bar, entrada do choke), fração de gás média da linha, fração de líquido média do riser]).
+P_topo (bar, entrada do choke), fração de gás média da linha, fração de líquido média do riser, tempo do Newton (s)]).
 
     uv run python tools/offshore_linear.py [--seed runs/paper01/offshore_dynamics/ab0.100.npz] [--openings ...]
 """
@@ -16,6 +16,7 @@ import argparse
 import copy
 import os
 import sys
+import time
 
 import numpy as np
 
@@ -79,21 +80,30 @@ def main(argv=None):
     ap.add_argument("--out", default=OUT)
     a = ap.parse_args(argv)
     run = load_run(a.seed)
-    src = run.case_json
+    src = copy.deepcopy(run.case_json)
+    for e in src["network"]["edges"]:
+        e.pop("ic", None)  # o estado vem da corrida; o caso gravado aponta para um npz relativo que aqui não existe
+    src["initial_state"] = {"source": "guess"}
     ab0 = float(next(e for e in src["network"]["edges"] if e.get("type") == "choke")["opening"])
+    t_c = time.time()
     model, X = solve(src, ab0, np.asarray(run.X[:, -1], float))
     if X is None:
         raise SystemExit(f"Newton não convergiu na semente (abertura {ab0}): a corrida não assentou?")
-    print(f"semente {os.path.basename(a.seed)}: estacionário em a = {ab0}", flush=True)
+    print(
+        f"semente {os.path.basename(a.seed)}: estacionário em a = {ab0} ({time.time() - t_c:.1f} s, com compilação)",
+        flush=True,
+    )
     rows = {}
     for up in (True, False):
         Xr, ar = X, ab0
         seq = sorted([o for o in a.openings if (o >= ab0 - 1e-9) == up], reverse=not up)
         for ab in seq:
+            t_c = time.time()
             if abs(ab - ar) < 1e-9:
                 Xn, m = Xr, model
             else:
                 m, Xn = path(src, ar, ab, Xr)
+            wall = time.time() - t_c  # s: Newton (com a continuação) neste ponto
             if Xn is None:
                 print(f"a = {ab:.3f}: Newton falhou", flush=True)
                 break
@@ -124,10 +134,11 @@ def main(argv=None):
                 Y[N, 1] * m.PR / 1e5,  # pressão no topo do riser (entrada do choke), para a queda no choke
                 float(np.average(aG[line], weights=h[line])),
                 1.0 - float(np.average(aG[riser], weights=h[riser])),
+                wall,
             ]
             per = 2 * np.pi / g["im1"] if g["im1"] > 0 else np.nan
             print(
-                f"a = {ab:.3f}: Re1 {g['re1']:+.3e} T {per:7.0f} s {g['cls']:6s} P_in {Y[1, 1] * m.PR / 1e5:6.2f} bar q_L {Y[N, 2]:.3f} kg/s",
+                f"a = {ab:.3f}: Re1 {g['re1']:+.3e} T {per:7.0f} s {g['cls']:6s} P_in {Y[1, 1] * m.PR / 1e5:6.2f} bar q_L {Y[N, 2]:.3f} kg/s | Newton {wall:.1f} s",
                 flush=True,
             )
     os.makedirs(a.out, exist_ok=True)

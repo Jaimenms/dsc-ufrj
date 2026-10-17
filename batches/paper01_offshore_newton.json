@@ -1,17 +1,31 @@
 {
-  "description": "Artigo 01: o Newton do BDF em três janelas de 150 s do ciclo com o choke aberto (bloqueio, sopro, fim do sopro), sem e com busca em linha de Armijo, com reavaliação da Jacobiana pela taxa e com o estado anterior como iterado inicial e a combinação busca em linha + estado anterior (issue 053).",
+  "description": "Artigo 01: o Newton do BDF em três janelas de 150 s do ciclo com o choke aberto (bloqueio, sopro, fim do sopro, 400 s cada): referência (busca em linha de Armijo até à convergência e estimativa de Milne), sem busca em linha, Armijo em todas as iterações, estimativa da tese, Jacobiana pela taxa e estado anterior como iterado inicial (issues 053, 055, 058).",
   "out_dir": "runs/paper01/offshore_newton",
   "runs": [
     {
-      "name": "blocked_legacy",
+      "name": "blocked_reference",
       "case": "cases/paper01/newton/blocked.json",
       "set": []
     },
     {
-      "name": "blocked_armijo",
+      "name": "blocked_no_line_search",
+      "case": "cases/paper01/newton/blocked.json",
+      "set": [
+        "integration.newton_damping=legacy"
+      ]
+    },
+    {
+      "name": "blocked_armijo_all",
       "case": "cases/paper01/newton/blocked.json",
       "set": [
         "integration.newton_damping=armijo"
+      ]
+    },
+    {
+      "name": "blocked_estimate_thesis",
+      "case": "cases/paper01/newton/blocked.json",
+      "set": [
+        "integration.error_estimate=thesis"
       ]
     },
     {
@@ -29,15 +43,29 @@
       ]
     },
     {
-      "name": "blowout_legacy",
+      "name": "blowout_reference",
       "case": "cases/paper01/newton/blowout.json",
       "set": []
     },
     {
-      "name": "blowout_armijo",
+      "name": "blowout_no_line_search",
+      "case": "cases/paper01/newton/blowout.json",
+      "set": [
+        "integration.newton_damping=legacy"
+      ]
+    },
+    {
+      "name": "blowout_armijo_all",
       "case": "cases/paper01/newton/blowout.json",
       "set": [
         "integration.newton_damping=armijo"
+      ]
+    },
+    {
+      "name": "blowout_estimate_thesis",
+      "case": "cases/paper01/newton/blowout.json",
+      "set": [
+        "integration.error_estimate=thesis"
       ]
     },
     {
@@ -55,15 +83,29 @@
       ]
     },
     {
-      "name": "blowout_end_legacy",
+      "name": "blowout_end_reference",
       "case": "cases/paper01/newton/blowout_end.json",
       "set": []
     },
     {
-      "name": "blowout_end_armijo",
+      "name": "blowout_end_no_line_search",
+      "case": "cases/paper01/newton/blowout_end.json",
+      "set": [
+        "integration.newton_damping=legacy"
+      ]
+    },
+    {
+      "name": "blowout_end_armijo_all",
       "case": "cases/paper01/newton/blowout_end.json",
       "set": [
         "integration.newton_damping=armijo"
+      ]
+    },
+    {
+      "name": "blowout_end_estimate_thesis",
+      "case": "cases/paper01/newton/blowout_end.json",
+      "set": [
+        "integration.error_estimate=thesis"
       ]
     },
     {
@@ -77,30 +119,6 @@
       "name": "blowout_end_pred_none",
       "case": "cases/paper01/newton/blowout_end.json",
       "set": [
-        "integration.predictor=none"
-      ]
-    },
-    {
-      "name": "blocked_armijo_none",
-      "case": "cases/paper01/newton/blocked.json",
-      "set": [
-        "integration.newton_damping=armijo",
-        "integration.predictor=none"
-      ]
-    },
-    {
-      "name": "blowout_armijo_none",
-      "case": "cases/paper01/newton/blowout.json",
-      "set": [
-        "integration.newton_damping=armijo",
-        "integration.predictor=none"
-      ]
-    },
-    {
-      "name": "blowout_end_armijo_none",
-      "case": "cases/paper01/newton/blowout_end.json",
-      "set": [
-        "integration.newton_damping=armijo",
         "integration.predictor=none"
       ]
     }

@@ -283,7 +283,11 @@ def _run_entry(entry, spec_path, out_dir, force=False, progress=True):
     )
     if progress:
         ok = "OK" if info.get("success", True) else "PARCIAL"
-        print(f"{name}: {ok} {info.get('n_steps')} passos, {info['cpu_total']:.1f} s -> {path}", flush=True)
+        print(
+            f"{name}: {ok} {info.get('n_steps')} passos, {info['cpu_total']:.1f} s "
+            f"(integração {info.get('cpu', float('nan')):.1f} s, compilação {info.get('compile', 0.0):.1f} s) -> {path}",
+            flush=True,
+        )
     return name, path, info
 
 

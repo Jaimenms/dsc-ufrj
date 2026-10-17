@@ -115,10 +115,16 @@ def _integrate_bdf(model, X0, t_eval, spec, progress=True, verbose=False, partia
     if model.conservative:
         kw.update(transform=model.transform, inverse=model.inverse_transform, transform_jac=model.transform_jacobian)
     fun, jac_fun = model.rhs, None
+    compile_s = 0.0  # s: compilação JAX (aquecimento do lado direito e da Jacobiana antes de integrar), à parte do cpu
     if spec.backend == "jax":
         from .compiled import get_jax
 
         fun, jac_fun = get_jax(model)
+        t_c = _time.time()
+        fun(float(t_eval[0]), X0)
+        if jac_fun is not None:
+            jac_fun(float(t_eval[0]), X0)
+        compile_s = _time.time() - t_c
     bdf = ImplicitBDF(
         fun,
         S=model.jac_sparsity(),
@@ -169,10 +175,11 @@ def _integrate_bdf(model, X0, t_eval, spec, progress=True, verbose=False, partia
             n_jac=bdf.n_jac,
             cpu=_time.time() - t_start,
         )
+    info["compile"] = compile_s
     if progress and info.get("success", True):
         print(
             f"[implicit BDF] steps={info['n_steps']} rejected={info['n_rejected']} rhs={info['n_rhs']} "
-            f"jac={info['n_jac']} | {info['cpu']:.1f}s"
+            f"jac={info['n_jac']} | {info['cpu']:.1f}s (+{compile_s:.1f}s de compilação)"
         )
     return T, X, info
 

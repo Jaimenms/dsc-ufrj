@@ -277,6 +277,17 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   referência / sem busca / Armijo em todas / estimativa da tese / Jacobiana pela taxa / estado anterior); §5.3 (l. 262:
   16 variantes); §8 inteiro (ciclo de período 2, aberturas, RGO, estabilidade linear, malhas); conclusões (l. 402) e
   resumo; `tab_parameters`/`tab_analysis` conferir que leem as opções novas do caso.
+- **14:25 — resultados da campanha a 2 km no texto (dinâmica, RGO, estabilidade linear, Newton):** ciclo limite de
+  período 2 com o choke aberto (sopros de 33 e 45 kg/s alternados, 14,7–31,7 bar, duplo período ~3000 s, riser a
+  esvaziar), 0,6 regular (1240 s), 0,3 e 0,2 ciclo de pressão com pulsos (730 s), 0,1 estável a 33 bar; estacionários
+  por continuação (3,5 s de Newton por abertura): par «coluna» (~70 s) cruza em a_H = 0,13, par «troca de inventário»
+  (545–965 s) em 0,19, modo real acima de 0,4 (+0,046 s⁻¹ aberto); queda no choke em a_H 3,65 bar = Jansen 3,5 bar.
+  RGO: 50/80/122 iguais (riser esvazia, 15–31 bar, 40–45 kg/s; período 1530/1540/1180 s), RGO 30 ciclo de pressão com
+  pulsos. Janelas do Newton (400 s): busca em linha até à convergência −28 a −43 % de passos; Armijo em todas as
+  iterações falha no sopro (055); Milne neutro aqui (−1 a +7 %); `jac_rate` −46 % de passos no sopro por 2,4× as
+  Jacobianas. Tempos: compilação JAX cronometrada à parte (`info["compile"]`), `tab_cost` nova. Transitório da
+  partida bloqueada: 5 ciclos de período decrescente até ~8600 s; figuras desde t = 0 e último ciclo completo.
+  Faltam: ablação (16, a correr), malhas, backends, §4 (hiperbolicidade com low_void 0,025), resumo e conclusões.
 - **Quando se refizer a campanha:** `newton_damping=armijo` como omissão do gerador (o estado anterior como iterado
   inicial só ganha no bloqueio, −63 %, e não soma à busca em linha: 295 contra 249 passos); a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
   Newton melhor antes de afirmar que "as faces pela média falham no sopro".

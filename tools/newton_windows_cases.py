@@ -65,7 +65,9 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--run", default=os.path.join(ROOT, "runs", "paper01", "offshore_dynamics", "ab1.000.npz"))
     ap.add_argument("--times", nargs=3, type=float, default=None, metavar=("BLOCKED", "BLOWOUT", "END"))
+    ap.add_argument("--window", type=float, default=WINDOW, help="duração de cada janela (s)")
     a = ap.parse_args(argv)
+    window = float(a.window)
     run = load_run(a.run)
     T = np.asarray(run.T)
     times = tuple(a.times) if a.times else pick_times(run)
@@ -81,13 +83,13 @@ def main(argv=None):
         d["name"] = f"newton_{label}"
         d["description"] = (
             f"Janela do Newton (053/058): estado da corrida {os.path.basename(a.run)} do artigo 01 aos {t0:.0f} s gravado "
-            f"nos nós do esquema; {WINDOW:.0f} s de integração com as opções do artigo."
+            f"nos nós do esquema; {window:.0f} s de integração com as opções do artigo."
         )
         net = case_from_json(d)
         model = build_model(net)
         model.state_to_case_ic(X0, t0, exact=True)
         net.initial = "edges"
-        net.set_time(t0=t0, tf=t0 + WINDOW, dt_out=2.0)
+        net.set_time(t0=t0, tf=t0 + window, dt_out=2.0)
         out = os.path.join(CASES, f"{label}.json")
         case_to_json(net, out, ic_file=f"{label}.ic.npz")
         print(f"{label}: t0 {t0:.0f} s -> {os.path.relpath(out, ROOT)}")
@@ -96,7 +98,7 @@ def main(argv=None):
     spec = {
         "description": (
             "Artigo 01: o Newton do BDF em três janelas de 150 s do ciclo com o choke aberto (bloqueio, sopro, fim do "
-            "sopro): referência (busca em linha de Armijo até à convergência e estimativa de Milne), sem busca em linha, "
+            f"sopro, {window:.0f} s cada): referência (busca em linha de Armijo até à convergência e estimativa de Milne), sem busca em linha, "
             "Armijo em todas as iterações, estimativa da tese, Jacobiana pela taxa e estado anterior como iterado inicial "
             "(issues 053, 055, 058)."
         ),

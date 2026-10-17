@@ -548,7 +548,7 @@ def spacetime(out, png):
 
 # ------------------------------------------------------------------------------------------------ anatomia do ciclo
 ANATOMY_OPENING = 1.0  # golfada severa com o choke aberto
-SPACETIME_WINDOW = 8000.0  # s: janela dos diagramas espaço–tempo (toda a corrida)
+SPACETIME_WINDOW = 16000.0  # s: janela dos diagramas espaço–tempo (toda a corrida, desde a partida bloqueada em t = 0)
 
 
 def _cycle_events(T, P_in, fr, hold=20.0):
@@ -1697,6 +1697,54 @@ def tab_performance(out):
     )
 
 
+def tab_cost(out):
+    """Custo das corridas do artigo: passos, rejeições, Jacobianas, tempo de integração e de compilação JAX (quando
+    gravado à parte) das corridas da dinâmica e da RGO, e o tempo do Newton do estacionário na continuação."""
+    rows = []
+    for batch, key_fmt, label in (("offshore_dynamics", "ab{:.3f}", "opening {:g}"), ("offshore_gor", "gor{:g}", "GOR {:g}")):
+        for name, run in _batch_runs(batch):
+            if run is None:
+                continue
+            info = run.info or {}
+            val = float(name[2:]) if batch == "offshore_dynamics" else float(name[3:])
+            if batch == "offshore_gor" and abs(val - GOR_BASE) < 1e-9:
+                continue  # a mesma corrida do choke aberto
+            comp = info.get("compile")
+            rows.append(
+                [
+                    label.format(val),
+                    f"{float(np.asarray(run.T)[-1]):.0f}",
+                    fl.fmt(info.get("n_steps"), "{:,.0f}").replace(",", "\\,"),
+                    fl.fmt(info.get("n_rejected"), "{:,.0f}").replace(",", "\\,"),
+                    fl.fmt(info.get("n_jac"), "{:,.0f}").replace(",", "\\,"),
+                    fl.fmt(info.get("cpu"), "{:.0f}"),
+                    fl.fmt(comp, "{:.1f}") if comp is not None else "incl.",
+                ]
+            )
+    A = _offshore_linear()
+    note_ss = ""
+    if A is not None and A.shape[1] > LINEAR_COLS["wall"] and np.isfinite(A[:, LINEAR_COLS["wall"]]).any():
+        w = A[:, LINEAR_COLS["wall"]]
+        note_ss = (
+            f" Steady states by Newton with continuation in the opening (Section~\\ref{{sec:linear}}): "
+            f"{fl.fmt(float(np.nanmedian(w)), '{:.1f}')} s per opening (median of {int(np.isfinite(w).sum())}, "
+            f"maximum {fl.fmt(float(np.nanmax(w)), '{:.1f}')} s), with the compiled right-hand side and the exact Jacobian."
+        )
+    fl.tex_table(
+        out,
+        "tab_cost",
+        ["run", "simulated (s)", "steps", "rejected", "Jacobians", "integration (s)", "compilation (s)"],
+        rows,
+        align="lrrrrrr",
+        notes=(
+            "Wall-clock time of the integration (JAX backend, Apple M5 Pro, five runs in parallel) and of the compilation "
+            "of the right-hand side and the Jacobian, measured separately before the integration; \\emph{incl.}: runs "
+            "made before the compilation was timed apart, where it is included in the integration time (a few seconds)."
+            + note_ss
+        ),
+    )
+
+
 def tab_case(out):
     net = _base_network()
     d = _base_case_dict()
@@ -1799,44 +1847,46 @@ def gor(out, png):
 def tab_gor(out):
     """Assinatura do ciclo por razão gás–óleo (choke aberto): fração de gás, vazão média, classe, intervalo entre
     blowdowns, faixa de pressão e pico de líquido."""
-    from mfsim.analysis import cycle_class
+    from mfsim.analysis import cycle_class, slug_fronts
 
     rows = []
     for g, name in GOR_RUNS:
         run = _gor_run(g, name)
         if run is None:
-            rows.append([f"{g:g}", "--", "--", "--", "--", "--", "--"])
+            rows.append([f"{g:g}", "--", "--", "--", "--", "--", "--", "--"])
             continue
-        r = _run_summary(run)
         w = (run.case.meta or {}).get("mass", {}).get("w_gas", np.nan) if getattr(run, "case", None) is not None else np.nan
         T = np.asarray(run.T)
         p = run.pipe(0)
         sel = T >= T[-1] - CYCLE_WINDOW
         c = cycle_class(T[sel], p["out"]["P_bar"][1][sel], p["out"]["qL"][-1][sel], smooth=SMOOTH)
+        fr = slug_fronts(run)
+        hold_min = float(np.min(np.asarray(fr["riser_holdup"])[sel]))
         rows.append(
             [
                 f"{g:g}",
                 fl.fmt(w, "{:.3f}"),
                 fl.fmt(c["q_mean"], "{:.2f}"),
                 CLASS_LABEL[c["cls"]].split(",")[0],
-                fl.fmt(r["interval"], "{:.0f}"),
-                f"{fl.fmt(r['P_min'])}--{fl.fmt(r['P_max'])}" if np.isfinite(r["P_min"]) else "--",
-                fl.fmt(r["q_peak"], "{:.1f}"),
+                fl.fmt(c["period"], "{:.0f}"),
+                f"{c['P_min']:.2f}--{c['P_max']:.2f}",
+                fl.fmt(c["q_peak"], "{:.1f}"),
+                fl.fmt(hold_min, "{:.2f}"),
             ]
         )
     fl.tex_table(
         out,
         "tab_gor",
-        ["GOR (m$^3$/m$^3$)", "$w_G$", "mean $q_L$ (kg/s)", "class", "interval (s)", "$P_{in}$ (bar)", "peak $q_L$ (kg/s)"],
+        ["GOR (m$^3$/m$^3$)", "$w_G$", "mean $q_L$ (kg/s)", "class", "period (s)", "$P_{in}$ (bar)", "peak $q_L$ (kg/s)", "min.\\ riser holdup"],
         rows,
-        align="rrrlrlr",
-        notes="Choke open at the base point, blocked start, \\SI{8000}{\\second}; signatures over the last \\SI{4000}{\\second}.",
+        align="rrrlrlrr",
+        notes="Choke open at the base point, blocked start, \\SI{16000}{\\second}; signatures over the last \\SI{8000}{\\second}.",
     )
 
 
 # ------------------------------------------------------------------------------------------------ tabela dos ciclos
 DYN_OPENINGS = (1.0, 0.6, 0.3, 0.2, 0.1)
-CYCLE_WINDOW = 4000.0  # s: janela final das assinaturas dos ciclos
+CYCLE_WINDOW = 8000.0  # s: janela final das assinaturas dos ciclos (a segunda metade das corridas de 16 000 s)
 
 
 def tab_cycle(out):
@@ -1900,7 +1950,7 @@ def tab_cycle(out):
         rows,
         align="llrlrrrrrr",
         notes=(
-            "Base point, blocked start, last \\SI{4000}{\\second} of \\SI{8000}{\\second}. "
+            "Base point, blocked start, last \\SI{8000}{\\second} of \\SI{16000}{\\second}. "
             "Seal: largest length of liquid-filled line upstream of the low point. Fall of "
             "$P_{in}$: from its maximum to its minimum in a cycle; riser refill: from the end of a blowout to a full "
             "riser (level at \\SI{98}{\\percent} of its height for at least \\SI{20}{\\second}), only in the cycles in "
@@ -2731,17 +2781,29 @@ def software_note(out):
 
 # ------------------------------------------------------------------------------------------ Newton do BDF (issue 053)
 NEWTON_WINDOWS = (
-    ("blocked", "blockage, \\SI{2500}{\\second}"),
-    ("blowout", "blowout, \\SI{4100}{\\second}"),
-    ("blowout_end", "end of blowout, \\SI{4600}{\\second}"),
+    ("blocked", "blockage"),
+    ("blowout", "blowout"),
+    ("blowout_end", "end of blowout"),
 )
 NEWTON_VARIANTS = (
-    ("legacy", "reference"),
-    ("armijo", "line search"),
+    ("reference", "reference (line search until convergence, Milne estimate)"),
+    ("no_line_search", "no line search"),
+    ("armijo_all", "line search in every iteration"),
+    ("estimate_thesis", "first-order error estimate"),
     ("jac_rate", "Jacobian refreshed by rate"),
     ("pred_none", "previous state as initial iterate"),
-    ("armijo_none", "line search + previous state"),
 )
+
+
+def _newton_window_times():
+    """Instante inicial (s) de cada janela do Newton, lido dos casos gravados."""
+    out = {}
+    for key, _ in NEWTON_WINDOWS:
+        path = fl.PROJECT / "cases" / "paper01" / "newton" / f"{key}.json"
+        if path.exists():
+            d = json.load(open(path))
+            out[key] = (float(d["time"]["t0"]), float(d["time"]["tf"]) - float(d["time"]["t0"]))
+    return out
 
 
 def tab_newton(out):
@@ -2749,8 +2811,11 @@ def tab_newton(out):
     (lote `paper01_offshore_newton`): o Newton de referência, com busca em linha de Armijo, com a Jacobiana reavaliada
     pela taxa de contração e com o estado anterior como iterado inicial (issue 053)."""
     runs = dict(_batch_runs("offshore_newton"))
+    times = _newton_window_times()
     rows = []
     for key, lab in NEWTON_WINDOWS:
+        if key in times:
+            lab = f"{lab}, \\SI{{{times[key][0]:.0f}}}{{\\second}}"
         for vk, vl in NEWTON_VARIANTS:
             run = runs.get(f"{key}_{vk}")
             if run is None:
@@ -2776,13 +2841,16 @@ def tab_newton(out):
         rows,
         align="llrrrrr",
         notes=(
-            "\\SI{150}{\\second} of integration from the state of the run with the choke open at the given time, with the "
-            "settings of the application. Reference: modified Newton with the Jacobian reused while the convergence is "
-            "fast, step halved only when the residual grows after the first iteration. Line search: backtracking on the "
-            "scaled residual in every iteration, including the first (at most four halvings). Jacobian refreshed by "
-            "rate: re-evaluated inside the iteration when the contraction per iteration is worse than 0.3, at most "
-            "three times per step. Rejected: attempted steps rejected by the error control or by a failed Newton "
-            "iteration. Wall time measured with other simulations running."
+            f"\\SI{{{next(iter(times.values()))[1] if times else 400:.0f}}}{{\\second}} of integration from the state of the "
+            "run with the choke open at the given time (the last cycle of the run), with the settings of the application. "
+            "Reference: modified Newton with the Jacobian reused while the convergence is fast, backtracking line search "
+            "on the scaled residual while the correction is above the Newton tolerance, quadratic predictor with the "
+            "Milne constant for the local error. No line search: step halved only when the residual grows after the "
+            "first iteration. Line search in every iteration: also when the correction is already converged. First-order "
+            "error estimate: linear predictor and $r/(1+2r)\\,(\\bx - \\bx^{pred})$. Jacobian refreshed by rate: "
+            "re-evaluated inside the iteration when the contraction per iteration is worse than 0.3, at most three times "
+            "per step. Rejected: attempted steps rejected by the error control or by a failed Newton iteration. "
+            "A run marked failed reached the minimum step. Wall time measured with other simulations running."
         ),
     )
 
@@ -2790,7 +2858,7 @@ def tab_newton(out):
 # ------------------------------------------------------------------------------- estabilidade linear (caso offshore)
 LINEAR_FILE = fl.RUNS / "paper01" / "offshore_linear" / "hopf.npz"  # de tools/offshore_linear.py (não integra no tempo)
 LINEAR_COLS = dict(
-    ab=0, re1=1, im1=2, re2=3, im2=4, re_o=5, im_o=6, n_eff_o=7, node_o=8, P_in=9, q_L=10, P_top=11, alpha_line=12, holdup=13
+    ab=0, re1=1, im1=2, re2=3, im2=4, re_o=5, im_o=6, n_eff_o=7, node_o=8, P_in=9, q_L=10, P_top=11, alpha_line=12, holdup=13, wall=14
 )
 LINEAR_TABLE_OPENINGS = (0.10, 0.14, 0.18, 0.22, 0.26, 0.30, 0.34, 0.38, 0.50, 0.70, 1.00)
 JANSEN_ALPHA_P = 0.6  # fração de gás da frente que entra no riser (Jansen et al., 1996: 0,5–0,75 nos ensaios)
@@ -2844,6 +2912,35 @@ def _riser_and_separator():
     return dict(head=rhoL * 9.81 * H / 1e5, L=float(np.sum(h[:k0])), H=H, rhoL=rhoL, P_sep=P_sep)
 
 
+T_COLUMN_MAX = 200.0  # s: períodos abaixo disto são a oscilação da coluna do riser contra o bolsão; acima, a troca de inventário
+
+
+def _linear_classes(A):
+    """Taxa de crescimento e período, por abertura, dos três tipos de modo global lento: par «coluna» (período
+    < T_COLUMN_MAX), par «inventário» (período maior) e modo real. Cada linha de `A` traz os dois modos lentos de
+    maior parte real; o tipo é decidido pelo período, e por classe fica o de maior parte real."""
+    c = LINEAR_COLS
+    n = A.shape[0]
+    out = {k: np.full(n, np.nan) for k in ("re_col", "T_col", "re_inv", "T_inv", "re_real")}
+    for i, r in enumerate(A):
+        for re_, im_ in ((r[c["re1"]], r[c["im1"]]), (r[c["re2"]], r[c["im2"]])):
+            if not np.isfinite(re_):
+                continue
+            if im_ > 1e-9:
+                T = 2.0 * np.pi / im_
+                key = ("re_col", "T_col") if T < T_COLUMN_MAX else ("re_inv", "T_inv")
+                if np.isnan(out[key[0]][i]) or re_ > out[key[0]][i]:
+                    out[key[0]][i], out[key[1]][i] = re_, T
+            elif np.isnan(out["re_real"][i]) or re_ > out["re_real"][i]:
+                out["re_real"][i] = re_
+    # para os cruzamentos: onde um par não está entre os dois modos de maior parte real e o estacionário é estável, a
+    # parte real do modo dominante (negativa) é um majorante do par — serve para situar o cruzamento no intervalo certo
+    re1 = A[:, c["re1"]]
+    for key in ("re_col", "re_inv"):
+        out[key + "_bound"] = np.where(np.isnan(out[key]) & (re1 < 0), re1, out[key])
+    return out
+
+
 def _branch(ax, x, y, stable, color, label=None):
     """Ramo de estacionários: cheio onde é linearmente estável, tracejado onde não."""
     ax.plot(x, y, color=color, lw=1.0, ls=(0, (3, 2)))
@@ -2878,22 +2975,29 @@ def linear_offshore(out, png):
         fl.save(fig, out, "linear_offshore", png)
         return
     c = LINEAR_COLS
-    ab, re1, im1 = A[:, c["ab"]], A[:, c["re1"]], A[:, c["im1"]]
+    ab, re1 = A[:, c["ab"]], A[:, c["re1"]]
     stable = re1 < 0
-    a_h = _crossing(ab, re1)
+    cl = _linear_classes(A)
+    a_h_col, a_h_inv = _crossing(ab, cl["re_col_bound"]), _crossing(ab, cl["re_inv_bound"])
+    a_h = a_h_col if np.isfinite(a_h_col) else a_h_inv
     dyn = _dyn_signatures()
     mk = dict(marker="o", ms=4.5, mec="white", mew=0.6, ls="none", zorder=4)
-    # (a) taxas de crescimento dos modos
+    # (a) taxas de crescimento dos modos globais lentos, por tipo
     ax = axes[0]
     ax.axhline(0.0, color=fl.GRID, lw=0.8)
-    ax.plot(ab, 1e3 * re1, color=fl.INK, lw=1.3, label="slow pair (riser--gas pocket)")
-    ax.plot(ab, 1e3 * A[:, c["re2"]], color=fl.INK2, lw=0.9, ls="--", label="second slow mode")
-    ax.plot(ab, 1e3 * A[:, c["re_o"]], color="0.62", lw=0.9, ls=":", label="fastest of the other modes")
+    ax.plot(ab, 1e3 * cl["re_col"], color=fl.COLORS["bubble"], lw=1.3, label="riser column against the gas pocket (period < 200 s)")
+    ax.plot(ab, 1e3 * cl["re_inv"], color=fl.INK, lw=1.3, label="liquid exchange flowline--riser (period > 200 s)")
+    ax.plot(ab, 1e3 * cl["re_real"], color=fl.INK2, lw=1.0, ls="--", label="real mode (static runaway)")
     ax.set_ylabel(r"growth rate ($10^{-3}$ s$^{-1}$)")
-    ax.legend(fontsize=6.5, frameon=False, loc="best")
-    # (b) período do par lento e dos ciclos simulados
+    fig.legend(*ax.get_legend_handles_labels(), fontsize=6.5, frameon=False, loc="lower center", ncol=3, bbox_to_anchor=(0.5, -0.03))
+    if np.isfinite(a_h_inv):
+        ax.axvline(a_h_inv, color=fl.INK, lw=0.8, ls=(0, (1, 2)), zorder=1)
+        ax.annotate(f"{a_h_inv:.2f}", xy=(a_h_inv, 0.0), xytext=(4, -12), textcoords="offset points", fontsize=7, color=fl.INK)
+    # (b) período dos pares e dos ciclos simulados
     ax = axes[1]
-    ax.plot(ab, np.where(im1 > 0, 2.0 * np.pi / np.where(im1 > 0, im1, 1.0), np.nan), color=fl.INK, lw=1.3)
+    near = lambda re_: re_ > -1e-3  # noqa: E731  # só os pares perto do eixo imaginário ou instáveis
+    ax.plot(ab, np.where(near(cl["re_col"]), cl["T_col"], np.nan), color=fl.COLORS["bubble"], lw=1.3)
+    ax.plot(ab, np.where(near(cl["re_inv"]), cl["T_inv"], np.nan), color=fl.INK, lw=1.3)
     for a_d, s in sorted(dyn.items()):
         if s["cls"] != "stable" and np.isfinite(s["period"]):
             ax.plot(a_d, s["period"], mfc=fl.COLORS[s["cls"]], **mk)
@@ -2973,14 +3077,15 @@ def tab_linear(out):
                     fl.fmt(r[c["holdup"]], "{:.2f}"),
                 ]
             )
-        a_h = _crossing(ab, A[:, c["re1"]])
+        cl = _linear_classes(A)
+        a_h_col, a_h_inv = _crossing(ab, cl["re_col_bound"]), _crossing(ab, cl["re_inv_bound"])
+        a_h = a_h_col if np.isfinite(a_h_col) else a_h_inv
         if np.isfinite(a_h):
             lab = np.log(ab)
 
             def at(k):
                 return float(np.interp(np.log(a_h), lab, A[:, c[k]]))
 
-            per_h = 2.0 * np.pi / at("im1") if at("im1") > 0 else np.nan
             jansen = dict(
                 alpha=at("alpha_line"),
                 alpha_p=JANSEN_ALPHA_P,
@@ -2990,9 +3095,13 @@ def tab_linear(out):
                 rhoL=geo["rhoL"],
             )
             dpc, dpc1 = jansen_choke_dp_crit(Phi=at("holdup"), **jansen), jansen_choke_dp_crit(Phi=1.0, **jansen)
+            T_col = float(np.nanmean(cl["T_col"])) if np.isfinite(cl["T_col"]).any() else np.nan
+            T_inv = float(np.interp(np.log(a_h_inv), lab, np.nan_to_num(cl["T_inv"], nan=0.0))) if np.isfinite(a_h_inv) else np.nan
             note = (
-                f" The slow pair crosses the imaginary axis at $a_H = {a_h:.3f}$ (interpolated in $\\log a$), with a "
-                f"period of \\SI{{{per_h:.0f}}}{{\\second}}; there the pressure drop across the choke is "
+                f" Two global pairs cross the imaginary axis: the oscillation of the riser column against the gas pocket "
+                f"(period about \\SI{{{T_col:.0f}}}{{\\second}}) at $a_H = {a_h_col:.3f}$ and the exchange of liquid "
+                f"between flowline and riser (period \\SI{{{T_inv:.0f}}}{{\\second}} there) at $a = {a_h_inv:.3f}$ "
+                f"(interpolated in $\\log a$). At $a_H$ the pressure drop across the choke is "
                 f"\\SI{{{at('P_top') - geo['P_sep']:.2f}}}{{\\bar}} against a liquid-filled riser head "
                 f"$\\rho_L g H = $ \\SI{{{geo['head']:.1f}}}{{\\bar}}, and the criterion of \\citet{{jansen1996}} with "
                 f"the flowline gas fraction and the riser holdup of that steady state ($\\alpha_p = {JANSEN_ALPHA_P:g}$) "
@@ -3045,6 +3154,7 @@ TABLES = {
     "tab_mesh": tab_mesh,
     "tab_performance": tab_performance,
     "tab_case": tab_case,
+    "tab_cost": tab_cost,
     "tab_cycle": tab_cycle,
     "tab_gor": tab_gor,
     "tab_hopf_mesh": tab_hopf_mesh,

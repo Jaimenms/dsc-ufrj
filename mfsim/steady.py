@@ -8,6 +8,8 @@ Estratégias:
 
 from __future__ import annotations
 
+import time
+
 import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
@@ -17,7 +19,9 @@ from .integrators.jacobian import color_groups, colored_jacobian
 
 
 def newton_steady(model, X0, t=0.0, tol=1e-9, max_iter=50, verbose=True, bounds=None, jax=False):
-    """Newton amortecido; jax=True usa o lado direito compilado e a Jacobiana exata (densa)."""
+    """Newton amortecido; jax=True usa o lado direito compilado e a Jacobiana exata (densa). `info["cpu"]` é o tempo
+    de relógio da chamada (inclui a compilação JAX se for a primeira)."""
+    t_start = time.time()
     if jax:
         from .compiled import get_jax
 
@@ -70,7 +74,7 @@ def newton_steady(model, X0, t=0.0, tol=1e-9, max_iter=50, verbose=True, bounds=
         hist.append(res)
         if verbose:
             print(f"  it {it}  |F| = {res:.3e}  (lambda={lam:g})")
-    return X, dict(residual=res, iterations=len(hist) - 1, history=hist, converged=res < tol)
+    return X, dict(residual=res, iterations=len(hist) - 1, history=hist, converged=res < tol, cpu=time.time() - t_start)
 
 
 def pseudo_transient(
