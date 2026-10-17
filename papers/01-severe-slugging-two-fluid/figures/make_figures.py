@@ -14,6 +14,7 @@ para o PDF compilar na mesma.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -28,7 +29,7 @@ PAPER = "paper01"
 RUNS = fl.RUNS / PAPER
 CACHE = RUNS / "cache"
 BASE_CASE = fl.PROJECT / "cases" / "paper01" / "offshore.json"
-DYN = "paper01/offshore_dynamics"  # lote da dinâmica (aberturas do choke no ponto base)
+DYN = os.environ.get("PAPER01_DYN", "paper01/offshore_dynamics")  # lote da dinâmica (aberturas do choke no ponto base)
 MAP_AUTO = fl.RUNS / "maps" / "well_auto"
 PATTERN_LABEL = {"stratified": "stratified", "intermittent": "intermittent", "bubble": "bubbly", "annular": "annular"}
 

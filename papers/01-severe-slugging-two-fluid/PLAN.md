@@ -160,6 +160,18 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
 - **Custo:** a fase com o topo do riser cheio de gás (fase líquida quase extinta) custa ~25 passos por segundo
   simulado; um ciclo de golfada severa numa linha de 6 km tem período da ordem de 1–2 h. Lotes com tf 8000 s e
   menos variantes (`tools/offshore_batches.py`).
+- **Célula da cabeça do poço (02:30):** com o poço a entregar gás (sopro), a primeira célula da linha esvazia de
+  líquido (α_L = 0,001) e a velocidade do líquido na face seguinte chega a −163 m/s: a relaxação da fase que
+  desaparece olha para a célula doadora *da fase* (a jusante, com líquido) e não dispara, enquanto a fração dos
+  fechamentos vem da doadora *da mistura* (a célula vazia). Força de −8900 N/m sobre 0,1 % de líquido; o Newton
+  falha nas células 0–4. Pista para o futuro: fração doadora por fase nos fechamentos das faces (variante de 044).
+  Subir alpha_min para 0,01 não mudou o número de passos: o custo vem sobretudo do riser (fase quase extinta no
+  topo). Aceite para esta noite; ~16 passos por segundo simulado.
+- **Sondas com riser de 8 células (02:45–02:55):** a 200 bar / PI 5, RGO 50 entra em fase bloqueada aos 1000 s
+  (linha toda estratificada, base do riser cheia, topo com gás, q_L,out = 0, poço a produzir 4,4 kg/s) — golfada
+  severa em formação, com o primeiro sopro previsto para ~5000 s (0,17 kg/s de gás a pressurizar 6 km); RGO 122
+  pressuriza 3× mais depressa (ciclos de ~2000 s), ao preço do riser rico em gás (0,8) e da célula da cabeça do poço.
+  Custo: ~17 passos por segundo simulado na fase bloqueada.
 - **Ponto base (01:45):** a 110 bar com RGO 50 o poço morre quando o riser bloqueia (coluna do riser, 21 bar, mais a
   do poço de 1500 m excedem a pressão do reservatório: P_wf 116 > 110 bar) — sem ciclo. Um poço produtivo a
   200 bar (PI 42,9) dá 10–20 kg/s e a linha fica intermitente. O ponto base passa a um **poço fraco a 200 bar**:
