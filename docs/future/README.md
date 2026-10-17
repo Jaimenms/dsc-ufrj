@@ -11,6 +11,7 @@ falta, por que degraus avançar, com que dados validar e onde está o risco.*
 | [compositional_mass_transfer.md](compositional_mass_transfer.md) | composição por fase e transferência de massa (pré-sal, gás-condensado, intermitência severa com flash) | massas por componente por fase e Γ por padrão | 4–6 sessões + energia |
 | [three_phase_water.md](three_phase_water.md) | água como terceira fase (óleo, gás, água) | contagem de slots por modelo; escorregamento óleo–água | 2–3 sessões (caminho B) |
 | [slug_signatures_routing.md](slug_signatures_routing.md) | catálogo de assinaturas de intermitência severa por abertura do choke; alocação de poços a separadores e faseamento das golfadas; contexto da linha de controle anti-slug e gêmeo digital | vértice separador com controle de nível e choke como entrada de controle (itens 6 e 9 do README) | 7–9 sessões |
+| [sensibilidades_jax.md](sensibilidades_jax.md) | sensibilidades dx/dp através da integração (calibração dos fechamentos, otimização de abertura/RGO/PI, ∂λ/∂p da bifurcação de Hopf); escrito em 2026-10-17 a partir da pergunta do dono | degrau 1: função implícita por passo com a LU do Newton e ∂f/∂p do JAX; degrau 2: BDF em JAX com adjunto | 2–3 sessões (degrau 1) |
 
 Ordem sugerida: o CO₂ primeiro (fluido puro, dados públicos, o Γ explícito que os outros dois
 reutilizam), depois o composicional, depois o criogénico, que precisa de tudo o que os anteriores
