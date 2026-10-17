@@ -561,6 +561,9 @@ def _cycle_events(T, P_in, fr, hold=20.0):
     P_in = moving_average(T, np.asarray(P_in, float), SMOOTH)
     late = T > T[0] + 300.0
     tb = _blowdown_times(T[late], P_in[late])
+    if tb.size == 1:
+        # um só sopro na corrida: o «ciclo» começa no início da janela (o enchimento a partir da partida bloqueada)
+        tb = np.array([T[late][0], tb[0]])
     full = np.asarray(fr["level"]) >= 0.98 * fr["H"]
     dt = float(np.median(np.diff(T)))
     n = max(1, int(np.ceil(hold / dt)))
@@ -602,11 +605,13 @@ def cycle_anatomy(out, png):
     p = run.pipe(0)
     P_in = p["out"]["P_bar"][1]
     t_full, t_peak, t_end, t_prev = _cycle_events(T, P_in, fr)
-    # janela: os dois últimos ciclos completos
+    # janela: os dois últimos ciclos completos (ou o único sopro, com o enchimento que o precede)
     if t_end.size >= 2:
         t0, t1 = t_prev[-2] - 60.0, t_end[-1] + 120.0
+    elif t_end.size == 1:
+        t0, t1 = max(T[0], t_end[-1] - 4500.0), t_end[-1] + 600.0
     else:
-        t0, t1 = max(T[0], T[-1] - 1500.0), T[-1]
+        t0, t1 = max(T[0], T[-1] - 4500.0), T[-1]
     t1 = min(t1, T[-1])
     win = (T >= t0) & (T <= t1)
     dom = W["W"].argmax(-1)
@@ -1824,6 +1829,7 @@ def tab_gor(out):
 
 # ------------------------------------------------------------------------------------------------ tabela dos ciclos
 DYN_OPENINGS = (1.0, 0.6, 0.3, 0.2, 0.1)
+CYCLE_WINDOW = 4000.0  # s: janela final das assinaturas dos ciclos
 
 
 def tab_cycle(out):
@@ -1835,18 +1841,18 @@ def tab_cycle(out):
 
     rows = []
     for ab in DYN_OPENINGS:
-        run = fl.load_run(f"paper01/dynamics/{_name(ab, P_SEL)}")
+        run = _dense_run(ab)
         if run is None:
             rows.append([f"{ab:g}"] + ["--"] * 9)
             continue
         T = np.asarray(run.T)
         p = run.pipe(0)
         P_in, q = p["out"]["P_bar"][1], p["out"]["qL"][-1]
-        sel = T >= T[-1] - 3000.0
+        sel = T >= T[-1] - CYCLE_WINDOW
         c = cycle_class(T[sel], P_in[sel], q[sel], smooth=SMOOTH)
         fr = slug_fronts(run)
         t_full, t_peak, t_end, t_prev = _cycle_events(T, P_in, fr)
-        late = t_end >= T[-1] - 3000.0
+        late = t_end >= T[-1] - CYCLE_WINDOW
         hold = np.asarray(fr["riser_holdup"])
         fall = [b - a for a, b, k in zip(t_peak, t_end, late) if k]
         refill = []
@@ -1887,8 +1893,8 @@ def tab_cycle(out):
         rows,
         align="llrlrrrrrr",
         notes=(
-            "Reservoir at \\SI{15}{\\bar}, start from the perturbed steady state, last \\SI{3000}{\\second} of "
-            "\\SI{6000}{\\second}. Seal: largest length of liquid-filled line upstream of the low point. Fall of "
+            "Base point, blocked start, last \\SI{4000}{\\second} of \\SI{8000}{\\second}. "
+            "Seal: largest length of liquid-filled line upstream of the low point. Fall of "
             "$P_{in}$: from its maximum to its minimum in a cycle; riser refill: from the end of a blowout to a full "
             "riser (level at \\SI{98}{\\percent} of its height for at least \\SI{20}{\\second}), only in the cycles in "
             "which the mean liquid holdup of the riser falls below 0.5 (medians over the cycles)."
