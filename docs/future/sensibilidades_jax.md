@@ -33,6 +33,17 @@ custo de uma corrida independentemente do número de parâmetros. Dificuldades: 
 (projeção nos limites, troca de ordem do BDF, seleção de entradas nas tabelas, hoje com `stop_gradient`) dão gradientes
 por troços.
 
+## Protótipo no problema-modelo (issue 056, 2026-10-17)
+
+`papers/01-severe-slugging-two-fluid/toy/model_problem_jaxbdf.py`: o BDF do simulador inteiro num `lax.while_loop`
+(Newton com Armijo, `jacfwd`, LU denso) reproduz a sequência de passos do `ImplicitBDF` nos quatro casos do
+problema-modelo (626 a 43 587 passos) com trajetórias a menos de 1,5e−4. Sensibilidade dG/da por `jvp` através do
+laço adaptativo: concorda com diferenças finitas a 1 % (Hopf) e 0,004 % (relaxação), 4× o custo de uma integração.
+Modo inverso por reposição em grelha congelada (`scan`): a 1 % na Hopf, mas 16 % fora na relaxação (gradiente do
+operador de reposição, não do integrador adaptativo) e com todos os intermédios em memória. O tempo (3–5× mais rápido)
+é do problema pequeno: no offshore o custo está na Jacobiana e no Newton, não no laço. Conclusão: o degrau 1 é o
+caminho para o simulador; o degrau 2 só com muitos parâmetros e *checkpointing*.
+
 ## Cuidado físico
 
 A golfada severa é um ciclo-limite com sensibilidade da trajetória ponto a ponto que cresce com o tempo. O que faz

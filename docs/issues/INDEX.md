@@ -109,6 +109,7 @@ qual estão em `notebooks_src/thesis/`.
 | [038](038-derivadas-beggs-brill.md) | feature | Derivadas do Beggs & Brill exatas (jvp) | diferenças finitas a 1e−3 → exatas; concordam a 1e−4 fora das quinas |
 | [045](045-orcamento-de-tempo.md) | feature | Orçamento de tempo de relógio da integração (`max_cpu`) | corrida que rasteja bloqueava o lote (ou passo mínimo que faz falhar a referência) → pára com a trajetória parcial; SciPy em blocos |
 | [053](053-newton-busca-em-linha-e-politica-da-jacobiana.md) | feature | Newton do BDF: busca em linha de Armijo, política da Jacobiana e iterado inicial (opções) | Newton modificado sem amortecimento na 1.ª iteração → Armijo em todas: −10 a −41 % de passos e de rejeições no ciclo offshore; políticas da Jacobiana e preditores não ajudam (Euler 3× pior) |
+| [056](056-bdf-em-jax-no-problema-modelo.md) | estudo | BDF 100 % em JAX no problema-modelo: custo e sensibilidades através da integração | laço de passos em Python, sensibilidades por diferenças finitas → protótipo em `lax.while_loop` reproduz passo a passo o `ImplicitBDF` (3–5× mais rápido só porque o problema é pequeno); `jvp` através da integração adaptativa a 1 % das diferenças finitas (4× o custo de uma corrida); `grad` por reposição em grelha congelada desvia 16 % no ciclo de relaxação; não muda o simulador |
 
 ## Pendências abertas
 

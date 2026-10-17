@@ -242,6 +242,12 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   abertura explícita nas malhas, casos regenerados. A comparação justa da sonda é com a corrida de 6 km a 0,2
   (189 mil passos, ~3,5 ciclos parciais de 2100 s ≈ 54 mil por ciclo): a 2 km ~32 mil por ciclo (−40 %), período
   1000–1250 s e topo do riser a esvaziar.
+- **BDF 100 % em JAX no problema-modelo (issue 056, 11:35, a pedido do dono):** protótipo
+  `toy/model_problem_jaxbdf.py` reproduz passo a passo o `ImplicitBDF` (626/5285/11 640/43 587 passos, |Δy| ≤ 1,5e−4),
+  3–5× mais rápido só porque o problema é pequeno (no offshore o laço em Python é < 5 % do custo); `jvp` através do
+  laço adaptativo concorda com diferenças finitas (1 % Hopf, 0,004 % relaxação) a 4× uma integração; `grad` por
+  reposição em grelha congelada desvia 16 % na relaxação. Não muda o simulador; o degrau 1 do plano de sensibilidades
+  é o caminho.
 - **Quando se refizer a campanha:** `newton_damping=armijo` como omissão do gerador (o estado anterior como iterado
   inicial só ganha no bloqueio, −63 %, e não soma à busca em linha: 295 contra 249 passos); a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
   Newton melhor antes de afirmar que "as faces pela média falham no sopro".
