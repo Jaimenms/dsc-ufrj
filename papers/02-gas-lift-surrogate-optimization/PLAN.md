@@ -98,16 +98,51 @@ Saídas do substituto, por poço:
 - pico da vazão de líquido na chegada e amplitude da pressão na chegada (para as restrições do separador);
 - período do ciclo, quando há.
 
+## O que o estacionário diz e o que não diz (caso de 2 km, 2026-10-17)
+
+Espetro com a matriz de massa (048) ao longo da abertura do choke, por continuação a partir do estacionário de
+0,10, com o modelo da campanha do artigo 01 (054, vazio baixo 0,025), comparado com as corridas dinâmicas de
+16 000 s da mesma campanha (`runs/paper01/offshore_dynamics/`):
+
+| abertura | espetro do estacionário | período linear 2π/Im λ | dinâmica: período | dinâmica: amplitude de P |
+|---|---|---|---|---|
+| 0,10–0,12 | estável | — | estável | 0 |
+| 0,20 | Hopf; par rápido (68 s) à frente, par lento quase neutro (546 s) | 68 / 546 s | ~720 s | 0,8 bar |
+| 0,30 | Hopf, par lento | 569 s | ~730 s | 2,8 bar |
+| 0,40 | Hopf, par lento quase a colidir no eixo real | 1434 s | — | — |
+| 0,60 | real (sem parte imaginária) | — | 1238 s | 8,9 bar |
+| 1,00 | real | — | período 2 (1394 / 1732 / 3012 s) | 16,9 bar |
+
+- Perto do início da instabilidade, o par lento dá o período com ~30 % de erro.
+- O modo com maior parte real nem sempre é o que se vê: a 0,20 o par rápido cresce mais depressa, mas a dinâmica
+  mostra o lento. O classificador do substituto não pode usar só o primeiro autovalor.
+- Na golfada desenvolvida (a partir de ~0,5) o par colide no eixo real: não há frequência linear, e a amplitude
+  nunca sai da análise linear.
+- Estimativas mecanicistas a partir do estacionário funcionam bem na relaxação: P_max ≈ P_sep + ρ_L g H_riser =
+  10 + 20,1 ≈ 30,1 bar (dinâmica 30,6–31,7); P_min ≈ a do riser cheio de gás (~15 bar; dinâmica 14,7); tempo de
+  encher o riser ρ_L A H_riser / q_L ≈ 3740 kg / 3,8 kg/s ≈ 980 s, que com o sopro e a queda dá a ordem de
+  1200–1500 s. O pico de vazão (32–45 kg/s) depende da dinâmica do sopro e não sai assim.
+
 ## Geração de dados (esquema híbrido)
 
-1. **Estacionário + autovalores em todos os pontos.** Sorteio de Sobol ou hipercubo latino, milhares de pontos,
-   segundos cada (a ferramenta `tools/offshore_linear.py` do artigo 01 já faz a continuação e o espetro). Dá a
-   classe linear e, na região estável, as vazões.
-2. **Dinâmica só onde o estacionário é instável**, ~300–500 corridas, a partir do estacionário perturbado (040),
-   com tf de 16 000 s ou a paragem adaptativa (041) e o orçamento de tempo (045). A 2 km, 8000 s não chegam ao
-   ciclo limite: o caso base só assenta depois de ~8000 s (ciclo de período 2, ~1150/1800 s).
-3. **Amostragem adaptativa junto da fronteira de estabilidade**, onde as saídas mudam bruscamente (Hopf) e onde um
+Cada peça com o seu papel:
+
+1. **Estacionário + autovalores em todos os pontos** (Sobol ou hipercubo latino, milhares de pontos, segundos
+   cada; `tools/offshore_linear.py` do artigo 01 já faz a continuação e o espetro): a classe (estável, Hopf,
+   real), a fronteira de estabilidade, as vazões na região estável e, perto da fronteira, uma primeira estimativa
+   do período.
+2. **Estimativas mecanicistas** (P_max, P_min, tempo de enchimento do riser, período de relaxação) calculadas do
+   estacionário, como **entradas físicas do substituto**: com elas a rede só aprende a correção, e são precisas
+   menos dinâmicas.
+3. **Dinâmica só onde o estacionário é instável**, ~300–500 corridas, a partir do estacionário perturbado (040),
+   com tf de 16 000 s ou a paragem adaptativa (041) e o orçamento de tempo (045): ensina a correção às estimativas
+   e, sobretudo, o pico de vazão de líquido. A 2 km, 8000 s não chegam ao ciclo limite.
+4. **Amostragem adaptativa junto da fronteira de estabilidade**, onde as saídas mudam bruscamente e onde um
    substituto treinado com poucos pontos alisa justamente o que interessa.
+
+O cálculo direto das órbitas periódicas (*shooting* com derivação automática) fica para o artigo 03. Se estiver
+pronto a tempo, dá ao artigo 02 os gradientes exatos das grandezas do ciclo em relação às decisões, para validar
+o substituto e o ótimo junto da fronteira. Não serve para gerar as centenas de pontos: cada órbita custa ~1–3 h.
 
 Custo, em ordem de grandeza: uma dinâmica de 24 000 s do caso base custa ~16 min numa thread; com a rede de gas lift
 estimam-se +30–50 %. 300 dinâmicas ≈ 100–125 CPU-h, ~10 h com 12 processos.

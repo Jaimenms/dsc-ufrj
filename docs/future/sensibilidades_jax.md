@@ -44,6 +44,12 @@ operador de reposição, não do integrador adaptativo) e com todos os interméd
 é do problema pequeno: no offshore o custo está na Jacobiana e no Newton, não no laço. Conclusão: o degrau 1 é o
 caminho para o simulador; o degrau 2 só com muitos parâmetros e *checkpointing*.
 
+## Onde vai ser usado
+
+O degrau 1 com a sensibilidade em relação ao **estado inicial** dá os produtos M·v da matriz de monodromia, que é o que o
+*shooting* de órbitas periódicas do artigo 03 precisa (`papers/03-severe-slugging-bifurcations/PLAN.md`); os gradientes
+das grandezas do ciclo servem também ao artigo 02.
+
 ## Cuidado físico
 
 A golfada severa é um ciclo-limite com sensibilidade da trajetória ponto a ponto que cresce com o tempo. O que faz

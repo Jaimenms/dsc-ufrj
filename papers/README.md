@@ -15,6 +15,7 @@ classes do mapa, partidas, esquemas) e a revista alvo e o seu guia estão em
 | `_template/` | esqueleto de artigo novo (`tools/new_paper.py` copia-o) |
 | `01-severe-slugging-two-fluid/` | **artigo 1**: intermitência severa com o modelo a dois fluidos e identificação dinâmica do padrão — boa colocação do modelo, discretizações, integrador, backends, perfis e mapa de estabilidade com choke |
 | `02-gas-lift-surrogate-optimization/` | **artigo 2** (em planeamento): gas lift desde a pressão na plataforma sobre o modelo do artigo 1, substituto treinado com estacionários + autovalores e dinâmicas, alocação do gás entre vários poços com a mesma geometria ao longo da vida, com a estabilidade (golfada severa, *heading*) como restrição; água fora (limitação declarada). Ver o `PLAN.md` |
+| `03-severe-slugging-bifurcations/` | **artigo 3** (em planeamento): ciclos limite do modelo do artigo 1 calculados diretamente (*shooting* com Newton–Krylov e a sensibilidade ao estado inicial propagada no BDF) e seguidos por continuação: natureza do Hopf, transição para a relaxação, duplicação de período, histerese e sensibilidades do ciclo. Ver o `PLAN.md` |
 
 Dentro de cada artigo:
 
