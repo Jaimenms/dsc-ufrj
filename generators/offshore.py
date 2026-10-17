@@ -1,23 +1,27 @@
 """Sistema de produção offshore do artigo 01: poço vertical, linha no fundo do mar com um trecho final descendente até
 à base do riser, curva, riser vertical até à superfície e choke no topo, a descarregar num separador.
 
-A geometria e o fluido são os do caso offshore da dissertação de mestrado de Gustavo Alves de Carvalho (UERJ, 2022,
-§5.5): poço vertical de 1500 m (D 0,127 m, rugosidade 0,2 mm), linha de 6000 m e riser de 300 m (D 0,1524 m,
-rugosidade 0,6 mm), fluido de 9 componentes com C7+ (Tabela 19), 170 bar e 10 kg/s no fundo do poço. Diferenças:
+Geometria do caso offshore da dissertação de mestrado de Gustavo Alves de Carvalho (UERJ, 2022, §5.5 e §5.7): poço
+vertical de 1500 m (D 0,127 m, rugosidade 0,2 mm), linha de 6000 m e riser de 300 m (D 0,1524 m, rugosidade 0,6 mm).
+Fluido da Tabela 6 (§5.7, o do sistema do modelo substituto: 165 bar e 13,5 kg/s no fundo do poço). Diferenças:
 
 - a linha termina num trecho a −2° (`L_down`, medido ao longo do duto, dentro dos 6000 m) até à curva da base do riser
   (arco de raio 5 m), e o riser sobe até ao nível do mar (300 m + o desnível desse trecho), com um troço horizontal
   curto no topo até ao choke;
+- o poço é descrito com as variáveis de mercado: IPR linear com índice de produtividade `PI` em Sm³/d/bar de óleo de
+  tanque, pressão do reservatório `P_res_bar` e razão gás–óleo `GOR` em Sm³/Sm³ (condições padrão da ANP, 1 atm e
+  20 °C). O PI de omissão faz a IPR passar pelo ponto nominal do Gustavo com P_res = 200 bar;
 - o mfsim não tem transferência de massa nem equação de energia: o fluido é um par politrópico ajustado ao flash de
-  Peng–Robinson do fluido do Gustavo (cmfsim) a 40 °C — densidades e viscosidades a 20 bar, expoente do gás ajustado
-  entre 10 e 100 bar — e a fração mássica de gás fica congelada na das condições da linha e do riser (0,29 a 20 bar;
-  0,24 a 100 bar, 0,25 no fundo do poço);
-- o fundo do poço recebe uma IPR linear que passa pelo ponto nominal (170 bar, 10 kg/s) com a pressão do reservatório
-  `P_res_nominal_bar`; a pressão do reservatório do caso (`P_res_bar`) é a variável do mapa (depleção) e o índice de
-  produtividade fica fixo.
+  Peng–Robinson (cmfsim) a 40 °C — densidades e viscosidades a 20 bar, gás ideal entre 10 e 60 bar — e a divisão de
+  massa entre as fases fica congelada na das condições da linha (`P_REF`, `T_REF`): óleo saturado com o gás dissolvido
+  R_s(P_REF) e o resto do gás livre. A fração mássica de gás livre é
+  w_G = ρ_gf,std (RGO − R_s)/[ρ_o,std + ρ_gd,std R_s + ρ_gf,std (RGO − R_s)], e o índice de produtividade mássico
+  PI [ρ_o,std + ρ_gd,std R_s + ρ_gf,std (RGO − R_s)]/86400 kg/s/bar divide-se nas duas fases com w_G. Com a RGO do
+  próprio fluido (122 Sm³/Sm³) w_G = 0,099, a do flash. Mais ou menos gás vindo do poço é mais ou menos RGO com o
+  mesmo óleo e o mesmo gás livre.
 
 O poço e a linha são dois dutos (diâmetros diferentes) ligados por um conector na cabeça do poço; a linha com o riser é
-o primeiro duto da rede (`model.pipes[0]`, como no exemplo anterior), o poço o segundo.
+o primeiro duto da rede (`model.pipes[0]`), o poço o segundo.
 
     uv run python -m generators.offshore --out cases/paper01/offshore.json
 """
@@ -33,22 +37,16 @@ import numpy as np
 G = 9.80665
 PR = 1e6
 
-# fluido do §5.5 congelado (flash de Peng–Robinson do cmfsim a 40 °C; ver docstring)
-FLUID = dict(
-    type="polytropic",
-    rhoL0=696.0,
-    rhoG0=17.08,
-    muL=1.25e-3,
-    muG=1.18e-5,
-    gammaL=1000.0,
-    gammaG=0.95,
-    P0=20e5,
-    sigma=0.0218,
+# PVT do fluido da Tabela 6 (flash de Peng–Robinson do cmfsim; condições padrão 1,01325 bar e 20 °C)
+P_REF, T_REF = 20e5, 313.15  # condições da linha em que a divisão entre as fases fica congelada
+PVT = dict(
+    GOR=122.13,  # Sm³/Sm³ (separação em dois estágios: P_REF, T_REF e condições padrão)
+    Rs=23.24,  # Sm³/Sm³ dissolvidos no óleo a P_REF, T_REF
+    rho_o_std=673.25,  # kg/m³, óleo de tanque
+    rho_gd_std=1.1547,  # kg/m³, gás dissolvido
+    rho_gf_std=0.7763,  # kg/m³, gás livre a P_REF
 )
-W_GAS = 0.29  # fração mássica de gás congelada (condições da linha, 20 bar e 40 °C)
-# fluido da Tabela 6 (§5.7, o do modelo substituto, no mesmo sistema; 165 bar e 13,5 kg/s no fundo do poço), congelado
-# da mesma maneira: flash a 40 °C, densidades e viscosidades a 20 bar, gás ideal entre 10 e 60 bar
-FLUID_T6 = dict(
+FLUID = dict(
     type="polytropic",
     rhoL0=646.7,
     rhoG0=15.0,
@@ -56,10 +54,30 @@ FLUID_T6 = dict(
     muG=1.21e-5,
     gammaL=1000.0,
     gammaG=1.0,
-    P0=20e5,
+    P0=P_REF,
     sigma=0.0163,
 )
-W_GAS_T6 = 0.099
+# o fluido do §5.5 (Tabela 19, congelado da mesma maneira; fração de gás 0,29 a 20 bar) não mostrou golfada severa
+FLUID_55 = dict(
+    type="polytropic",
+    rhoL0=696.0,
+    rhoG0=17.08,
+    muL=1.25e-3,
+    muG=1.18e-5,
+    gammaL=1000.0,
+    gammaG=0.95,
+    P0=P_REF,
+    sigma=0.0218,
+)
+
+
+def market_to_mass(PI, GOR, pvt=PVT):
+    """(PI mássico total em kg/s/bar, fração mássica de gás livre a P_REF, kg de fluido por Sm³ de óleo) a partir do
+    índice de produtividade em Sm³/d/bar de óleo de tanque e da RGO em Sm³/Sm³."""
+    free = max(GOR - pvt["Rs"], 0.0)
+    m_oil = pvt["rho_o_std"] + pvt["rho_gd_std"] * min(GOR, pvt["Rs"]) + pvt["rho_gf_std"] * free
+    return PI * m_oil / 86400.0, pvt["rho_gf_std"] * free / m_oil, m_oil
+
 
 DEFAULTS = dict(
     # poço (dissertação: 1500 m vertical, D 0,127 m, rugosidade 0,2 mm)
@@ -84,19 +102,18 @@ DEFAULTS = dict(
     grading_riser=1.0,
     L_h2=10.0,
     n_h2=2,
-    # fluido e condições de contorno
+    # fluido e poço (variáveis de mercado; PI de omissão: ponto nominal do Gustavo, 13,5 kg/s a 165 bar, com
+    # P_res = 200 bar)
     fluid=None,
-    w_gas=W_GAS,
-    m_nominal=10.0,
-    P_wf_nominal_bar=170.0,
-    P_res_nominal_bar=200.0,
+    GOR=PVT["GOR"],
+    PI=round(13.5 / market_to_mass(1.0, PVT["GOR"])[0] / (200.0 - 165.0), 2),
     P_res_bar=200.0,
     P_sep_bar=10.0,
     choke_cv=150.0,
     choke_opening=0.2,
     # modelo e integração
     slug_frequency="zabaras",
-    slug_unit="consistent",
+    slug_unit="film",
     k_switch=20.0,
     tf=20000.0,
     dt_out=5.0,
@@ -192,11 +209,10 @@ def offshore_case(**kw):
     unknown = set(kw) - set(DEFAULTS)
     if unknown:
         raise ValueError(f"parâmetros desconhecidos: {sorted(unknown)}")
-    PI = p["m_nominal"] / (p["P_res_nominal_bar"] - p["P_wf_nominal_bar"])  # kg/s/bar (total)
-    IPL, IPG = PI * (1.0 - p["w_gas"]), PI * p["w_gas"]
-    qL0 = IPL * (p["P_res_bar"] - p["P_wf_nominal_bar"])  # estimativa inicial das vazões
-    qG0 = IPG * (p["P_res_bar"] - p["P_wf_nominal_bar"])
-    qL0, qG0 = max(qL0, 0.1 * IPL * p["P_res_bar"]), max(qG0, 0.1 * IPG * p["P_res_bar"])
+    PI_mass, w_gas, m_oil = market_to_mass(p["PI"], p["GOR"])
+    IPL, IPG = PI_mass * (1.0 - w_gas), PI_mass * w_gas
+    # estimativa inicial das vazões: um quarto da vazão aberta (só a estimativa; o caso fixa a IPR)
+    qL0, qG0 = 0.25 * IPL * p["P_res_bar"], max(0.25 * IPG * p["P_res_bar"], 1e-6)
     points, segments, info = line_geometry(p)
     z0 = info["z_wellhead"]
     well_points = [{"xyz": [0.0, 0.0, z0 - p["L_well"]]}, {"xyz": [0.0, 0.0, z0]}]
@@ -215,18 +231,21 @@ def offshore_case(**kw):
         "schema": "mfsim-case/1",
         "name": "offshore",
         "description": (
-            "Sistema offshore do artigo 01 (geometria e fluido do caso §5.5 da dissertação de Gustavo Alves de "
-            "Carvalho, UERJ 2022): poço vertical de 1500 m com IPR linear no fundo, linha de 6000 m com trecho final a "
-            f"{p['slope_down_deg']:g}° ({p['L_down']:g} m), curva de raio {p['elbow_radius']:g} m, riser até à "
-            f"superfície, choke CV {p['choke_cv']:g} no topo e separador a {p['P_sep_bar']:g} bar; fluido do Gustavo "
-            "congelado num par politrópico, padrão de escoamento dinâmico, frequência de golfada de Zabaras (049). "
-            "Gerado por generators/offshore.py."
+            "Sistema offshore do artigo 01 (geometria do caso offshore da dissertação de Gustavo Alves de Carvalho, "
+            "UERJ 2022, com o fluido da Tabela 6): poço vertical de 1500 m com IPR linear no fundo "
+            f"(PI {p['PI']:g} Sm³/d/bar, P_res {p['P_res_bar']:g} bar, RGO {p['GOR']:g} Sm³/Sm³), linha de 6000 m com "
+            f"trecho final a {p['slope_down_deg']:g}° ({p['L_down']:g} m), curva de raio {p['elbow_radius']:g} m, "
+            f"riser até à superfície, choke CV {p['choke_cv']:g} no topo e separador a {p['P_sep_bar']:g} bar; fluido "
+            "congelado num par politrópico, padrão de escoamento dinâmico, unidade de golfada com o filme de "
+            "equilíbrio (051) e frequência de Zabaras (049). Gerado por generators/offshore.py."
         ),
         "meta": {
             "generator": "generators.offshore",
             "generator_params": {k: v for k, v in p.items()},
             "geometry": info,
-            "PI_total": PI,
+            "market": {"PI_Sm3_d_bar": p["PI"], "GOR_Sm3_Sm3": p["GOR"], "P_res_bar": p["P_res_bar"]},
+            "mass": {"PI_kg_s_bar": PI_mass, "w_gas": w_gas, "kg_per_Sm3_oil": m_oil},
+            "pvt": dict(PVT, P_ref_bar=P_REF / 1e5, T_ref_C=T_REF - 273.15, std="1,01325 bar e 20 °C"),
             "paper": "01-severe-slugging-two-fluid",
             "map_base": True,
             "run": None,

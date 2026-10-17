@@ -602,9 +602,10 @@
                 "unit": {
                   "enum": [
                     "thesis",
-                    "consistent"
+                    "consistent",
+                    "film"
                   ],
-                  "description": "unidade de golfada: thesis = fração de gás do filme cortada a 0,95 (sem balanço de massa); consistent = pistão encurtado e alphas <= alphaG para conservar a massa da unidade (issue 050)"
+                  "description": "unidade de golfada: thesis = fração de gás do filme cortada a 0,95 (sem balanço de massa); consistent = pistão encurtado e alphas <= alphaG para conservar a massa da unidade (issue 050); film = filme de equilíbrio (estratificado ou em queda), fração de pistão do balanço de massa e perda de aceleração na frente do pistão (issue 051)"
                 }
               }
             },

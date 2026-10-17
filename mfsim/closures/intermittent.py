@@ -8,6 +8,8 @@ pelos comprimentos.
 
 from __future__ import annotations
 
+import numpy as np
+
 from ..backend import NUMPY
 from ..friction import fanning
 from ..geometry import stratified_level
@@ -127,6 +129,69 @@ def slug_unit(aG, alphas, ls, lu, consistent=False, bk=NUMPY):
     return alphas, ls, lf, lu, alphaf
 
 
+FILM_BLEND_DEG = 10.0  # ascendentes de 0 a 10°: do filme estratificado (equilíbrio) ao filme em queda (Brotz)
+BROTZ = 9.916  # velocidade terminal do filme em queda livre, u_f = -9.916 [g D sin θ (1 - α_TB^1/2)]^1/2
+R_DEGEN = 0.05  # a perda de aceleração anula-se (smoothstep) a menos de 5 % das unidades degeneradas
+
+
+def _smoothstep(x, bk=NUMPY):
+    u = bk.xp.clip(x, 0.0, 1.0)
+    return u * u * (3.0 - 2.0 * u)
+
+
+def falling_film_fraction(q, ut, D, theta, bk=NUMPY):
+    """Fração de gás da bolha de Taylor num duto ascendente (Taitel, Barnea e Dukler 1980): a cinemática da unidade,
+    (v_t - u_f)(1 - α) = q com q = (v_t - u_L)(1 - α_s) = v_t (1 - α_G) - u_LS, e o filme em queda livre de Brotz com a
+    gravidade ao longo do duto, u_f = -9,916 [g D sin θ (1 - α^1/2)]^1/2. F(α) é decrescente em (0, 1): bissecção sem
+    gradiente e um passo de Newton no fim, que dá a derivada exata pelo teorema da função implícita."""
+    xp = bk.xp
+    c = BROTZ * xp.sqrt(G_CLOSURE * D * xp.maximum(xp.sin(theta), 0.0))
+    q = xp.maximum(q, 1e-9)
+
+    def F(a):
+        return (ut + c * bk.safe_sqrt(1.0 - xp.sqrt(a))) * (1.0 - a) - q
+
+    lo = 0.0 * q
+    hi = 0.0 * q + 1.0
+    for _ in range(48):
+        mid = 0.5 * (lo + hi)
+        pos = bk.stop_gradient(F(mid)) > 0.0
+        lo = xp.where(pos, mid, lo)
+        hi = xp.where(pos, hi, mid)
+    a = bk.stop_gradient(xp.clip(0.5 * (lo + hi), 1e-6, 1.0 - 1e-6))
+    s = xp.sqrt(1.0 - xp.sqrt(a))
+    dF = -c * (1.0 - a) / (4.0 * s * xp.sqrt(a)) - (ut + c * s)
+    return xp.clip(a - F(a) / dF, 1e-6, 1.0 - 1e-6)
+
+
+def film_unit(aG, alphas0, uLS, uGS, ut, theta, D, aG_strat, bk=NUMPY):
+    """Unidade de golfada com o filme de equilíbrio (issue 051). O gás do pistão é o de Barnea e Brauner limitado ao da
+    célula; o do filme vem da física do filme: equilíbrio estratificado de Taitel e Dukler nos troços horizontais e
+    descendentes, bolha de Taylor com filme em queda (`falling_film_fraction`) nos ascendentes, com transição suave
+    entre 0 e 10°, e nunca menos do que o da célula. A fração de pistão r = l_s/l_u sai do balanço de massa,
+    α_G = r α_s + (1 - r) α_f, e as velocidades locais das relações de massa da unidade, que devolvem as vazões da
+    célula. Devolve (α_s, α_f, r, u_L, u_b, u_f, u_G, a), com a = (1 - α_s)(α_f - α_s)(v_t - u_L)²/(1 - α_f) o fator
+    da perda de aceleração do filme na frente do pistão (Taitel e Barnea 1990: Δp = ρ_L a por unidade), anulado
+    suavemente quando a unidade degenera (r a menos de R_DEGEN de 0 ou de 1)."""
+    xp = bk.xp
+    alphas = xp.minimum(alphas0, aG)
+    Rs = 1.0 - alphas
+    uL = (uLS + ut * (aG - alphas)) / Rs
+    ub = (uGS - ut * (aG - alphas)) / xp.where(alphas == 0, 1e-30, alphas)
+    a_tb = falling_film_fraction(ut * (1.0 - aG) - uLS, ut, D, theta, bk=bk)
+    ok = xp.isfinite(aG_strat)
+    a_st = xp.where(ok, xp.where(ok, aG_strat, 0.5), aG)
+    w_up = _smoothstep(theta / np.deg2rad(FILM_BLEND_DEG), bk)
+    alphaf = xp.clip(xp.maximum((1.0 - w_up) * a_st + w_up * a_tb, aG), 1e-6, 1.0 - 1e-6)
+    r = xp.clip((alphaf - aG) / xp.maximum(alphaf - alphas, 1e-9), 0.0, 1.0)
+    Rf = 1.0 - alphaf
+    uf = ut - (ut - uL) * Rs / Rf
+    uG = ut - (ut - ub) * alphas / alphaf
+    acc = Rs * (alphaf - alphas) * (ut - uL) ** 2 / Rf
+    acc = acc * _smoothstep(r / R_DEGEN, bk) * _smoothstep((1.0 - r) / R_DEGEN, bk)
+    return alphas, alphaf, r, uL, ub, uf, uG, acc
+
+
 def intermittent(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     xp = bk.xp
     aG = inp.alphaG
@@ -145,16 +210,26 @@ def intermittent(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
         wS = slug_frequency_zabaras(uLS, uGS, D, inp.theta, bk=bk)
     ut = translational_velocity(D, inp.theta, uLS, uGS, bk=bk)
 
-    lu = ut / xp.where(wS == 0, 1e-30, wS)
-    alphas, ls, lf, lu, alphaf = slug_unit(aG, alphas, ls, lu, consistent=inp.slug_unit is not None, bk=bk)
-    if inp.slug_unit is not None:
-        Rs = 1.0 - alphas  # na da tese Rs fica intacto (bit a bit)
-    Rf = 1.0 - alphaf
+    acc = None
+    if inp.slug_film is not None:
+        # unidade com o filme de equilíbrio (issue 051): pesos r e 1 - r; a frequência entra na perda de aceleração
+        alphas, alphaf, ls, uL, ub, uf, uG, acc = film_unit(
+            aG, alphas, uLS, uGS, ut, inp.theta, D, inp.aG_film_eq, bk=bk
+        )
+        Rs, Rf = 1.0 - alphas, 1.0 - alphaf
+        lf = 1.0 - ls
+        lu = ls + lf
+    else:
+        lu = ut / xp.where(wS == 0, 1e-30, wS)
+        alphas, ls, lf, lu, alphaf = slug_unit(aG, alphas, ls, lu, consistent=inp.slug_unit is not None, bk=bk)
+        if inp.slug_unit is not None:
+            Rs = 1.0 - alphas  # na da tese Rs fica intacto (bit a bit)
+        Rf = 1.0 - alphaf
 
-    uL = (uLS + ut * (aG - alphas)) / Rs
-    ub = (uGS - ut * (aG - alphas)) / xp.where(alphas == 0, 1e-30, alphas)
-    uf = ut - (ut - uL) * Rs / Rf
-    uG = ut - (ut - ub) * alphas / alphaf
+        uL = (uLS + ut * (aG - alphas)) / Rs
+        ub = (uGS - ut * (aG - alphas)) / xp.where(alphas == 0, 1e-30, alphas)
+        uf = ut - (ut - uL) * Rs / Rf
+        uG = ut - (ut - ub) * alphas / alphaf
     # limita velocidades locais a um múltiplo das velocidades superficiais
     vmax = VEL_LIMIT_FACTOR * (xp.abs(ut) + uLS + uGS) + 1e-3
     uL, ub, uf, uG = (xp.clip(v, -vmax, vmax) for v in (uL, ub, uf, uG))
@@ -195,8 +270,14 @@ def intermittent(inp: ClosureInputs, bk=NUMPY) -> ClosureTerms:
     def mix(a, b):
         return (a * ls + b * lf) / lu
 
+    GammaL = mix(Ss.GammaL, Sf.GammaL)
+    if acc is not None:
+        # perda de aceleração do filme apanhado pela frente do pistão, uma vez por unidade (1/l_u = w_s/v_t), contra
+        # o sentido do líquido
+        GammaL = GammaL + sL * Area * rhoL * acc * wS / xp.maximum(ut, 1e-3)
+
     return ClosureTerms(
-        GammaL=mix(Ss.GammaL, Sf.GammaL),
+        GammaL=GammaL,
         GammaG=mix(Ss.GammaG, Sf.GammaG),
         dPL=mix(Ss.dPL, Sf.dPL),
         dPG=mix(Ss.dPG, Sf.dPG),

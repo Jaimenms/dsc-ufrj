@@ -161,7 +161,7 @@ class ModelSpec:
     fi_vgt: float = 5.5  # estratificado: v_GT de Andritsos & Hanratty (inf = Taitel & Dukler)
     bubble_drag: str = "thesis"  # bolhas: "thesis" | "physical"
     slug_frequency: str = "thesis"  # intermitente: "thesis" (eq. 5.83 da tese) | "zabaras" (Zabaras 2000; issue 049)
-    slug_unit: str = "thesis"  # intermitente: "thesis" | "consistent" (unidade com balanço de massa; issue 050)
+    slug_unit: str = "thesis"  # intermitente: "thesis" | "consistent" (050) | "film" (filme de equilíbrio; 051)
     # opções do modelo
     alpha_min: float = 1e-3
     alpha_max: float = 1.0 - 1e-3

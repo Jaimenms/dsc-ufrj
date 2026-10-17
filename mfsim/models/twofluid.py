@@ -82,7 +82,8 @@ class TwoFluidModel(PipeModel):
             fi_vgt=p.fi_vgt * ones,
             bubble_drag=(1.0 if p.bubble_drag == "fisico" else 0.0) * ones,
             slug_frequency=None if p.slug_frequency == "thesis" else ones,
-            slug_unit=None if p.slug_unit == "thesis" else ones,
+            slug_unit=None if p.slug_unit in ("thesis", "film") else ones,
+            slug_film=ones if p.slug_unit == "film" else None,
         )
         return inp, P, Area
 
@@ -157,6 +158,10 @@ class TwoFluidModel(PipeModel):
                 flags = self._mix_flags(flags, fixed_regime(p.high_void_regime, n, bk=bk), wh)
             if want_eq:
                 eq = equilibrium_fractions(inp, bk=bk)
+        if p.slug_unit == "film":
+            # filme da unidade de golfada: estratificado de equilíbrio às vazões da célula (issue 051)
+            eq_f = eq if eq is not None else equilibrium_fractions(inp, smooth=p.ipe_smooth, bk=bk)
+            inp = inp.replace(aG_film_eq=eq_f[2])
         S = blend_closures(inp, flags, threshold=self.blend_threshold, used=self.used_closures, bk=bk)
         if p.interfacial_pressure > 0:
             S = self._add_interfacial_pressure(inp, S)

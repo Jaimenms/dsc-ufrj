@@ -98,7 +98,8 @@ class PipeParams:
     slug_unit: str = (
         "thesis"  # unidade de golfada: "thesis" (fração de gás do filme cortada a 0,95, sem balanço de massa) ou
     )
-    # "consistent" (pistão encurtado e alphas <= alphaG para que alphaG lu = alphas ls + alphaf lf; issue 050)
+    # "consistent" (pistão encurtado e alphas <= alphaG para que alphaG lu = alphas ls + alphaf lf; issue 050) ou "film"
+    # (filme de equilíbrio, fração de pistão do balanço de massa, perda de aceleração com a frequência; issue 051)
     extra: dict = field(default_factory=dict)
 
 

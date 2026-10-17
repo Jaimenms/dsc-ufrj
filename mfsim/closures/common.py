@@ -45,6 +45,8 @@ class ClosureInputs:
     slug_unit: np.ndarray = (
         None  # 1 = unidade de golfada consistente com a massa (PipeParams.slug_unit); None = a da tese
     )
+    slug_film: np.ndarray = None  # 1 = unidade de golfada com o filme de equilíbrio (PipeParams.slug_unit = "film")
+    aG_film_eq: np.ndarray = None  # fração de gás do estratificado de equilíbrio às vazões da célula (para o filme)
 
     def subset(self, mask):
         return ClosureInputs(
