@@ -124,7 +124,7 @@ HYP_ALPHA = np.logspace(-3, np.log10(0.995), 70)
 HYP_SLIP = np.linspace(-1.0, 6.0, 71)
 HYP_PANELS = (
     # (padrão, regime fixo, ângulo, regularização (dict de PipeParams), rótulo da regularização)
-    ("stratified", 4, -3.0, dict(low_void_regime=2, virtual_mass=0.5), "low-void rule + virtual mass"),
+    ("stratified", 4, -2.0, dict(low_void_regime=2, virtual_mass=0.5), "low-void rule + virtual mass"),
     ("intermittent", 3, 90.0, dict(interfacial_pressure=1.2), r"interfacial pressure, $\delta = 1.2$"),
     ("bubble", 2, 90.0, dict(virtual_mass=0.5), r"virtual mass, $C_{vm} = 0.5$"),
     ("annular", 1, 90.0, dict(interfacial_pressure=1.2), r"interfacial pressure, $\delta = 1.2$"),
