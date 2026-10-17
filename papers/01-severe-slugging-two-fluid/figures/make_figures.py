@@ -78,8 +78,10 @@ def geometry(out, png):
                 arrowprops=dict(arrowstyle="-", lw=0.5, color=fl.INK2))
     ax.annotate("choke, separator 10 bar", xy=(yl[-1], zl[-1]), xytext=(yl[-1] - 2600, zl[-1] - 120), fontsize=7,
                 arrowprops=dict(arrowstyle="-", lw=0.5, color=fl.INK2))
-    ax.text(2500, zl[0] + 60, "flowline, 6000 m", fontsize=7, color=fl.INK2, ha="center")
-    ax.text(yl[-1] - 900, zl.min() + 30, "descent, 2°", fontsize=7, color=fl.INK2)
+    pts_l = np.asarray(line.points, float)
+    L_flow = float(pts_l[1, 1] + np.hypot(pts_l[2, 1] - pts_l[1, 1], pts_l[2, 2] - pts_l[1, 2]))  # horizontal + descida
+    ax.text(0.5 * pts_l[1, 1], zl[0] + 60, f"flowline, {L_flow:.0f} m", fontsize=7, color=fl.INK2, ha="center")
+    ax.text(pts_l[1, 1] + 0.3 * (yl[-1] - pts_l[1, 1]), zl.min() + 30, "descent, 2°", fontsize=7, color=fl.INK2)
     ax.text(yl[-1] + 60, 0.5 * (zl.min() + zl.max()), "riser", fontsize=7, rotation=90, va="center")
     ax.text(yw[0] + 60, 0.5 * (zw[0] + zw[-1]), "well", fontsize=7, rotation=90, va="center")
     ax.axhline(0.0, color="0.7", lw=0.5, ls="--")
@@ -1613,25 +1615,18 @@ def bend_modes(out, png):
 
 
 # ------------------------------------------------------------------------------------------------ malha, desempenho e caso
-MESH_LABELS = {
-    "base": "base (15 + 57 cells)",
-    "coarse": "coarse (8 + 32 cells)",
-    "fine": "fine (30 + 112 cells)",
-}
-
-
 def tab_mesh(out):
     rows = []
     for name, run in [("base", _dense_run(1.0))] + _batch_runs("offshore_mesh"):
-        lab = MESH_LABELS.get(name, name)
         if run is None:
-            rows.append([lab] + ["--"] * 7)
+            rows.append([name] + ["--"] * 7)
             continue
         r = _run_summary(run)
         h = np.asarray(run.model.pipes[0].mesh["h"])
+        n_well = run.model.pipes[1].scheme.N  # o segundo duto do caso é o poço
         rows.append(
             [
-                lab,
+                f"{name} ({n_well} + {run.model.pipes[0].scheme.N} cells)",
                 str(run.model.pipes[0].scheme.N),
                 f"{h.min():.1f}--{h.max():.1f}",
                 fl.fmt(r["n_steps"], "{:,.0f}").replace(",", "\\,"),

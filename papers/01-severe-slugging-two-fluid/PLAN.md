@@ -215,6 +215,14 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   fração baixa/sem massa virtual, malha grossa, JAX. Faltam no texto: abertura 0,1, RGO 122, resto da ablação, malha
   fina, tempo de relógio dos backends, secção da estabilidade linear, resumo e conclusões — a refazer com o modelo
   final, já com o Newton melhor (ver abaixo). O lote do Newton (leve) continuou.
+- **Linha encurtada para 2 km (decisão do dono, 17/10 ~07:50):** o período da golfada severa é proporcional ao volume
+  de gás da linha (bloqueio ≈ 3000 s dos ~4300 s com 6 km); com 1500 m horizontais + 500 m a −2° esperam-se ciclos de
+  ~1400–1600 s, ainda bem dentro do critério de Bøe (limiar U_SL ≥ 0,12 m/s contra 0,34 m/s), 288 → 208 estados e
+  ~2× menos passos por ciclo resolvido; o retrato offshore (poço com IPR, tie-back de 2 km em 300 m de lâmina de água,
+  riser de 317 m, choke e separador) mantém-se. Gerador: `L_line=2000, L_down=500, n_h1=8, n_down=5`,
+  `newton_damping="armijo"` por omissão; malhas grossa (4+3) e fina (16+10) reescaladas. Sonda de confirmação:
+  scratch `probe_L2000` (4000 s, Armijo). Os casos do Newton (`cases/paper01/newton/`) são da geometria de 6 km e
+  refazem-se a partir da nova `ab1.000`.
 - **Quando se refizer a campanha:** `newton_damping=armijo` como omissão do gerador (o estado anterior como iterado
   inicial só ganha no bloqueio, −63 %, e não soma à busca em linha: 295 contra 249 passos); a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
   Newton melhor antes de afirmar que "as faces pela média falham no sopro".

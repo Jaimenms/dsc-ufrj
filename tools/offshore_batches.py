@@ -144,7 +144,7 @@ def main(argv=None):
                     "name": "coarse",
                     "case": os.path.relpath(
                         write_case(
-                            offshore_case(P_res_bar=a.P_res, GOR=a.GOR, n_h1=13, n_down=5, n_riser=8, n_well=8, **PI),
+                            offshore_case(P_res_bar=a.P_res, GOR=a.GOR, n_h1=4, n_down=3, n_riser=8, n_well=8, **PI),
                             os.path.join(CASES, "offshore_coarse.json"),
                             ic="blocked",
                         ),
@@ -156,7 +156,7 @@ def main(argv=None):
                     "case": os.path.relpath(
                         write_case(
                             offshore_case(
-                                P_res_bar=a.P_res, GOR=a.GOR, n_h1=50, n_down=20, n_elbow=8, n_riser=32, n_well=30, **PI
+                                P_res_bar=a.P_res, GOR=a.GOR, n_h1=16, n_down=10, n_elbow=8, n_riser=32, n_well=30, **PI
                             ),
                             os.path.join(CASES, "offshore_fine.json"),
                             ic="blocked",

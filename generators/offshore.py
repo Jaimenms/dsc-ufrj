@@ -2,10 +2,11 @@
 à base do riser, curva, riser vertical até à superfície e choke no topo, a descarregar num separador.
 
 Geometria do caso offshore da dissertação de mestrado de Gustavo Alves de Carvalho (UERJ, 2022, §5.5 e §5.7): poço
-vertical de 1500 m (D 0,127 m, rugosidade 0,2 mm), linha de 6000 m e riser de 300 m (D 0,1524 m, rugosidade 0,6 mm).
+vertical de 1500 m (D 0,127 m, rugosidade 0,2 mm), linha de 6000 m — aqui encurtada para 2000 m, para ciclos 3× mais
+curtos (decisão do dono, 2026-10-17) — e riser de 300 m (D 0,1524 m, rugosidade 0,6 mm).
 Fluido da Tabela 6 (§5.7, o do sistema do modelo substituto: 165 bar e 13,5 kg/s no fundo do poço). Diferenças:
 
-- a linha termina num trecho a −2° (`L_down`, medido ao longo do duto, dentro dos 6000 m) até à curva da base do riser
+- a linha termina num trecho a −2° (`L_down`, medido ao longo do duto, dentro de `L_line`) até à curva da base do riser
   (arco de raio 5 m), e o riser sobe até ao nível do mar (300 m + o desnível desse trecho), com um troço horizontal
   curto no topo até ao choke;
 - o poço é descrito com as variáveis de mercado: IPR linear com índice de produtividade `PI` em Sm³/d/bar de óleo de
@@ -85,14 +86,16 @@ DEFAULTS = dict(
     D_well=0.127,
     eps_well=2e-4,
     n_well=15,
-    # linha (6000 m, D 0,1524 m, rugosidade 0,6 mm) com o trecho final descendente
-    L_line=6000.0,
-    L_down=1000.0,
+    # linha (dissertação: 6000 m; aqui 2000 m, decisão do dono em 2026-10-17: o período da golfada severa é
+    # proporcional ao volume de gás da linha e os ciclos ficam 3× mais curtos sem sair da região de Bøe) com o
+    # trecho final descendente; D 0,1524 m, rugosidade 0,6 mm; células de ~190 m e 100 m
+    L_line=2000.0,
+    L_down=500.0,
     slope_down_deg=-2.0,
     D=0.1524,
     eps=6e-4,
-    n_h1=25,
-    n_down=10,
+    n_h1=8,
+    n_down=5,
     grading_down=1.0,
     # curva da base do riser e riser até ao nível do mar
     water_depth=300.0,
@@ -121,7 +124,7 @@ DEFAULTS = dict(
     tol_range=0.01,
     max_step=None,
     q_ref_factor=10.0,
-    newton_damping="legacy",  # "armijo" (issue 053) nos casos novos; "legacy" enquanto os lotes de 2026-10-17 correm
+    newton_damping="armijo",  # busca em linha no Newton (053): −10 a −41 % de passos; "legacy" = Newton da tese
 )
 
 
@@ -234,7 +237,7 @@ def offshore_case(**kw):
         "description": (
             "Sistema offshore do artigo 01 (geometria do caso offshore da dissertação de Gustavo Alves de Carvalho, "
             "UERJ 2022, com o fluido da Tabela 6): poço vertical de 1500 m com IPR linear no fundo "
-            f"(PI {p['PI']:g} Sm³/d/bar, P_res {p['P_res_bar']:g} bar, RGO {p['GOR']:g} Sm³/Sm³), linha de 6000 m com "
+            f"(PI {p['PI']:g} Sm³/d/bar, P_res {p['P_res_bar']:g} bar, RGO {p['GOR']:g} Sm³/Sm³), linha de {p['L_line']:g} m com "
             f"trecho final a {p['slope_down_deg']:g}° ({p['L_down']:g} m), curva de raio {p['elbow_radius']:g} m, "
             f"riser até à superfície, choke CV {p['choke_cv']:g} no topo e separador a {p['P_sep_bar']:g} bar; fluido "
             "congelado num par politrópico, padrão de escoamento dinâmico, unidade de golfada com o filme de "
