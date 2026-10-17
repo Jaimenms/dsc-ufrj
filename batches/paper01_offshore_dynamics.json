@@ -1,0 +1,51 @@
+{
+ "description": "Artigo 01, sistema offshore: aberturas do choke no ponto base (P_res 110 bar, RGO 50 Sm³/Sm³), partida bloqueada gravada no caso, saída a 2 s.",
+ "out_dir": "runs/paper01/offshore_dynamics",
+ "runs": [
+  {
+   "name": "ab1.000",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=1.0"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "ab0.600",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.6"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "ab0.300",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.3"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "ab0.200",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.2"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "ab0.100",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.choke_2.opening=0.1"
+   ],
+   "tf": 8000.0
+  }
+ ]
+}

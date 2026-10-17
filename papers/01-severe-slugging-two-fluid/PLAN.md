@@ -149,8 +149,17 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
      pelo menos 0,1 menos arejado do que o filme (r contínuo) e o escorregamento no corpo do pistão fica limitado a
      1 m/s na força de bolhas. Medido num estado de 120 bar com o choke aberto: 60 s passaram de 1272 passos/442
      rejeições para 34/6.
-- **Em curso:** procura do ponto base (120/160/200 bar com o choke aberto; RGO 70–200 a seguir) e classificação das
-  séries temporais (os passos pequenos que restam são sopros reais ou outra patologia?).
+- **Mais três patologias corrigidas (01:00–01:30):** quinas dos `min`/`max` (Jacobiana de um só lado), sinal
+  discreto das velocidades na unidade (riser com o líquido a oscilar em torno de zero) e, a decisiva, a perda da
+  pressão interfacial de Stuhmiller no riser (má-posição: 18 ondas instáveis de 0,3–2,5 s). Com tudo isto, 100 s a
+  partir de um estado de baixa vazão passaram de 3255 para 97 passos.
+- **Procura do ponto base:** com o choke aberto e P_res 120–200 bar a linha é intermitente e o riser anular/churn,
+  sem golfada severa (vazões de 10–20 kg/s). A golfada severa pede linha estratificada: P_res 100–110 bar com RGO
+  50 (1,7–3,7 kg/s); a partida bloqueada (gerador `--ic blocked`) poupa o enchimento da linha de 6 km. Em curso:
+  (110, RGO 50) e (110, RGO 122) com o choke aberto, (110, RGO 50) com 0,1 e 0,2.
+- **Custo:** a fase com o topo do riser cheio de gás (fase líquida quase extinta) custa ~25 passos por segundo
+  simulado; um ciclo de golfada severa numa linha de 6 km tem período da ordem de 1–2 h. Lotes com tf 8000 s e
+  menos variantes (`tools/offshore_batches.py`).
 
 ## Exemplo base (anterior, escala piloto; substituído)
 

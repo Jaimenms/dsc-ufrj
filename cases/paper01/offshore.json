@@ -25,12 +25,12 @@
    "L_h2": 10.0,
    "n_h2": 2,
    "fluid": null,
-   "GOR": 50,
+   "GOR": 50.0,
    "PI": 42.9,
-   "P_res_bar": 110,
+   "P_res_bar": 110.0,
    "P_sep_bar": 10.0,
    "choke_cv": 150.0,
-   "choke_opening": 0.2,
+   "choke_opening": 1.0,
    "slug_frequency": "zabaras",
    "slug_unit": "film",
    "k_switch": 20.0,
@@ -52,8 +52,8 @@
   },
   "market": {
    "PI_Sm3_d_bar": 42.9,
-   "GOR_Sm3_Sm3": 50,
-   "P_res_bar": 110
+   "GOR_Sm3_Sm3": 50.0,
+   "P_res_bar": 110.0
   },
   "mass": {
    "PI_kg_s_bar": 0.3579265253055555,
@@ -75,7 +75,7 @@
   "run": null,
   "initial_guess": {
    "mode": "blocked",
-   "m_total": 3.2888901339893515
+   "m_total": 3.749228508473305
   }
  },
  "fluid": {
@@ -453,7 +453,7 @@
     "to": "2",
     "CV": 150.0,
     "law": "homogeneous",
-    "opening": 0.2
+    "opening": 1.0
    }
   ]
  },

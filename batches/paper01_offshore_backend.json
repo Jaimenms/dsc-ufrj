@@ -1,0 +1,23 @@
+{
+ "description": "Artigo 01, sistema offshore: numpy contra JAX no ponto base com o choke aberto (2000 s).",
+ "out_dir": "runs/paper01/offshore_backend",
+ "runs": [
+  {
+   "name": "jax",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0"
+   ],
+   "tf": 2000.0
+  },
+  {
+   "name": "numpy",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "integration.backend=numpy"
+   ],
+   "tf": 2000.0
+  }
+ ]
+}

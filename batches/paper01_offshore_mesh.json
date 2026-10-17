@@ -1,0 +1,22 @@
+{
+ "description": "Artigo 01, sistema offshore: malha grossa e fina no ponto base com o choke aberto.",
+ "out_dir": "runs/paper01/offshore_mesh",
+ "runs": [
+  {
+   "name": "coarse",
+   "case": "cases/paper01/offshore_coarse.json",
+   "set": [
+    "time.dt_out=2.0"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "fine",
+   "case": "cases/paper01/offshore_fine.json",
+   "set": [
+    "time.dt_out=2.0"
+   ],
+   "tf": 8000.0
+  }
+ ]
+}

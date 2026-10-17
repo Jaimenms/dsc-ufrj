@@ -1,0 +1,133 @@
+{
+ "description": "Artigo 01, sistema offshore: o ponto base com o choke aberto menos um ingrediente de cada vez.",
+ "out_dir": "runs/paper01/offshore_ablation",
+ "runs": [
+  {
+   "name": "base",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "primitive",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.1.scheme.options.conservative=false",
+    "network.edges.well.scheme.options.conservative=false"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "no_art_visc",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.1.scheme.options.art_visc=0.0",
+    "network.edges.well.scheme.options.art_visc=0.0"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "closure_mean",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.1.scheme.options.closure_alpha=mean",
+    "network.edges.well.scheme.options.closure_alpha=mean"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "no_low_void",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.1.model.regime.low_void=null",
+    "network.edges.well.model.regime.low_void=null"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "no_virtual_mass",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.1.model.options.virtual_mass.C_vm=0.0",
+    "network.edges.well.model.options.virtual_mass.C_vm=0.0"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "bubble_drag_thesis",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.1.model.closures.bubble.drag=thesis",
+    "network.edges.well.model.closures.bubble.drag=thesis"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "unit_consistent",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.1.model.closures.intermittent.unit=consistent",
+    "network.edges.well.model.closures.intermittent.unit=consistent"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "unit_thesis",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.1.model.closures.intermittent.unit=thesis",
+    "network.edges.well.model.closures.intermittent.unit=thesis"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "freq_thesis",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.1.model.closures.intermittent.slug_frequency=thesis",
+    "network.edges.well.model.closures.intermittent.slug_frequency=thesis"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "k_switch_80",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "network.edges.1.model.regime.k_switch=80.0",
+    "network.edges.well.model.regime.k_switch=80.0"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "bdf1",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "integration.max_order=1"
+   ],
+   "tf": 8000.0
+  },
+  {
+   "name": "uniform_atol",
+   "case": "cases/paper01/offshore.json",
+   "set": [
+    "time.dt_out=2.0",
+    "integration.tol_range=null",
+    "integration.atol=1e-6"
+   ],
+   "tf": 8000.0
+  }
+ ]
+}
