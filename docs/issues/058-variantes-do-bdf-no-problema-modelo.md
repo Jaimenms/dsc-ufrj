@@ -4,8 +4,8 @@
 |---|---|
 | tipo | estudo |
 | área | integrador (BDF próprio) |
-| estado | feito (2026-10-17); protótipo fora do simulador (`papers/01-severe-slugging-two-fluid/toy/model_problem_bdf_variants.py`); recomendação: opção `error_estimate = "milne"` no `ImplicitBDF` (por implementar quando `implicit.py` estiver livre) |
-| onde | `toy/model_problem_bdf_variants.py` (`run` e `plot`); resultados em `runs/paper01/toy/variants/` (`summary.json`, `cost_ratio.json`, `work_precision.png`), `runs/paper01/toy/variants_R5/` e referências Radau em `runs/paper01/toy/reference/` (fora do git) |
+| estado | feito (2026-10-17); protótipo fora do simulador (`papers/01-severe-slugging-two-fluid/toy/model_problem_bdf_variants.py`); **implementado em ficheiro à parte** (decisão do dono): `mfsim/integrators/milne.py` (`ImplicitBDFMilne`, `integrate_bdf_milne`), por dobrar numa opção `integration.error_estimate = "milne"` do `ImplicitBDF` quando `implicit.py` estiver livre |
+| onde | `mfsim/integrators/milne.py`, `tests/test_milne.py`, `tools/milne_windows.py` (janelas do Newton do offshore); `toy/model_problem_bdf_variants.py` (`run` e `plot`); resultados em `runs/paper01/toy/variants/` (`summary.json`, `cost_ratio.json`, `work_precision.png`), `runs/paper01/toy/variants_R5/` e referências Radau em `runs/paper01/toy/reference/` (fora do git) |
 | dados | problema-modelo (100 estados) nos casos oscilantes do artigo, a = 0,95 (Hopf), 0,85 (ciclo maior) e 0,5 (relaxação), rtol de 1e−3 a 1e−6 (atol = rtol/100), 300 s; referência Radau (scipy) com rtol 1e−10 |
 
 ## Pergunta
@@ -60,14 +60,20 @@ trabalho–precisão; «fora» = a variante não chega a essa exatidão no inter
   hiperbólico com ondas de pressão pouco amortecidas, como o modelo a dois fluidos.
 - O controlador H211b vale ±5 %; o limite de crescimento e a tolerância do Newton não mudam nada neste problema.
 
-## Recomendação
+## Implementação (ficheiro à parte)
 
-Implementar no `ImplicitBDF` a opção `integration.error_estimate = "thesis" | "milne"` (omissão intacta): na ordem
-2, preditor quadrático pelos três estados do histórico que o integrador já guarda e constante de Milne calculada
-das posições dos nós; na ordem 1 e depois de uma projeção (histórico inconsistente) nada muda. Medir nas janelas do
-Newton do caso offshore: o ganho esperado é na fase bloqueada (passo limitado pela exatidão), não nas frentes
-(passo limitado pelo Newton, domínio da 053 e da 055). Não implementado nesta issue porque `implicit.py` estava em
-edição noutra sessão (055).
+`mfsim/integrators/milne.py`: `ImplicitBDFMilne(ImplicitBDF)` — na ordem 2, com três estados no histórico, o
+preditor é o polinómio quadrático por esses estados (nas primitivas ou nas conservadas, conforme `predict_space`) e
+o erro local é C·(x − pred) com C de `milne_order2` (posições dos nós; 2/11 no passo constante); na ordem 1, nos dois
+primeiros passos e depois de uma projeção (o integrador recua à ordem 1) nada muda. O laço `integrate` é uma cópia do
+da classe-mãe com as duas alterações marcadas; `integrate_bdf_milne` replica a construção de
+`mfsim.simulation._integrate_bdf`. Ambas as cópias desaparecem quando a opção `integration.error_estimate`
+entrar no `ImplicitBDF` (ficheiro em edição noutra sessão, 055). `tests/test_milne.py`: constante 2/11, preditor
+exato em quadráticas, caso de exemplo ao mesmo estado (64 → 63 passos: ali o passo é limitado por outra coisa).
+
+## Medição no caso offshore (janelas do Newton, `tools/milne_windows.py`)
+
+(ver abaixo; preenchido quando a medição terminar)
 
 ## Referências
 
