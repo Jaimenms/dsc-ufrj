@@ -172,6 +172,10 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   severa em formação, com o primeiro sopro previsto para ~5000 s (0,17 kg/s de gás a pressurizar 6 km); RGO 122
   pressuriza 3× mais depressa (ciclos de ~2000 s), ao preço do riser rico em gás (0,8) e da célula da cabeça do poço.
   Custo: ~17 passos por segundo simulado na fase bloqueada.
+- **Ponto base definitivo (03:10): 200 bar, PI 5, RGO 50.** A RGO 122 (riser rico em gás a 0,8 e célula da
+  cabeça do poço patológica) custa 90 passos por segundo simulado e o lote não acabaria de manhã; a RGO 50 entra em
+  golfada severa (bloqueio aos 1000 s, pressão da linha de 18 → 32 bar, sopro a partir dos ~4000 s) com a fase
+  bloqueada barata (~1 passo/s). Lotes relançados com `--GOR 50`; o lote de RGO cobre 30, 80 e 122.
 - **Ponto base (01:45):** a 110 bar com RGO 50 o poço morre quando o riser bloqueia (coluna do riser, 21 bar, mais a
   do poço de 1500 m excedem a pressão do reservatório: P_wf 116 > 110 bar) — sem ciclo. Um poço produtivo a
   200 bar (PI 42,9) dá 10–20 kg/s e a linha fica intermitente. O ponto base passa a um **poço fraco a 200 bar**:

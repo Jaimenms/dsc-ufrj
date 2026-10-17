@@ -12,7 +12,7 @@
   },
   {
    "name": "gor50",
-   "case": "cases/paper01/offshore_gor50.json",
+   "case": "cases/paper01/offshore.json",
    "set": [
     "time.dt_out=2.0"
    ],
@@ -28,7 +28,7 @@
   },
   {
    "name": "gor122.13",
-   "case": "cases/paper01/offshore.json",
+   "case": "cases/paper01/offshore_gor122.13.json",
    "set": [
     "time.dt_out=2.0"
    ],
