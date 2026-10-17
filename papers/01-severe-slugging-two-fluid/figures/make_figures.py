@@ -3156,10 +3156,34 @@ def tab_linear(out):
 SWEEP_BATCHES = ("offshore_dynamics", "offshore_sweep")
 
 
+BRANCH_KEYS = ("period", "P_min", "P_max", "P_mean", "q_mean", "q_peak", "holdup_min", "level_min", "period_mean")
+CLS_CODES = ("stable", "cycling", "slugging")
+
+
 def _branch_signatures():
     """Assinatura (últimos CYCLE_WINDOW s) de todas as corridas com o choke em cada abertura (lotes da dinâmica e do
-    varrimento): {abertura: dict(cls, period, P_min, P_max, P_mean, q_mean, q_peak, holdup_min, p2, intervals)}, com
-    `p2` quando os intervalos entre fins de sopro alternam (razão entre consecutivos acima de 1,25)."""
+    varrimento): {abertura: dict(cls, period, P_min, P_max, P_mean, q_mean, q_peak, holdup_min, level_min, p2,
+    intervals)}, com `p2` quando os intervalos entre fins de sopro alternam (razão entre consecutivos acima de 1,25).
+    Em cache (`runs/paper01/cache/branch_signatures.npz`): a análise das frentes é lenta; apagar a cache quando as
+    corridas mudarem."""
+    d = _cached("branch_signatures", _branch_signatures_compute)
+    if "missing" in d:
+        return {}
+    out = {}
+    for k, row in enumerate(d["rows"]):
+        iv = d["intervals"][k]
+        iv = iv[np.isfinite(iv)]
+        out[float(row[0])] = dict(
+            cls=CLS_CODES[int(row[1])],
+            p2=bool(row[2]),
+            intervals=iv,
+            **{key: float(v) for key, v in zip(BRANCH_KEYS, row[3:])},
+        )
+    return out
+
+
+def _branch_signatures_compute():
+    """Linhas [abertura, classe, p2, *BRANCH_KEYS] e intervalos (preenchidos com NaN) por corrida."""
     from mfsim.analysis import cycle_class, moving_average, slug_fronts
 
     out = {}
@@ -3184,15 +3208,37 @@ def _branch_signatures():
             iv = np.diff(T[mins]) if len(mins) >= 2 else np.array([])
             ratios = iv[1:] / iv[:-1] if iv.size >= 2 else np.array([])
             p2 = bool(ratios.size >= 2 and np.max(np.maximum(ratios, 1 / ratios)) > 1.25 and c["cls"] != "stable")
-            out[ab] = dict(c, holdup_min=float(hold[sel].min()), p2=p2, intervals=iv, period_mean=float(iv.mean()) if iv.size else c["period"])
-    return out
+            level = np.asarray(fr["level"]) / fr["H"]  # topo da coluna de líquido no riser, fração da altura
+            out[ab] = dict(
+                c,
+                holdup_min=float(hold[sel].min()),
+                level_min=float(level[sel].min()),
+                p2=p2,
+                intervals=iv,
+                period_mean=float(iv.mean()) if iv.size else c["period"],
+            )
+    if not out:
+        return {"missing": np.array(1)}
+    abs_ = sorted(out)
+    rows = np.array(
+        [[ab, CLS_CODES.index(out[ab]["cls"]), float(out[ab]["p2"])] + [out[ab][k] for k in BRANCH_KEYS] for ab in abs_],
+        float,
+    )
+    n_iv = max(1, max(out[ab]["intervals"].size for ab in abs_))
+    intervals = np.full((len(abs_), n_iv), np.nan)
+    for k, ab in enumerate(abs_):
+        iv = out[ab]["intervals"]
+        intervals[k, : iv.size] = iv
+    return {"rows": rows, "intervals": intervals}
 
 
 def cycle_branch(out, png):
     """Ramo de ciclos observado contra a abertura do choke (lotes da dinâmica e do varrimento, partida bloqueada,
-    últimos 8000 s de 16 000 s): (a) faixa e média de P_in com o estacionário; (b) intervalo médio entre sopros (e os
-    dois quando alternam) com os períodos dos pares lineares; (c) pico e média de q_L; (d) fração de líquido mínima do
-    riser. Cor: classe; quadrado: período 2."""
+    últimos 8000 s de 16 000 s): (a) faixa e média de P_in com o estacionário (cheio onde estável); (b) intervalo
+    médio entre sopros (e os dois quando alternam) com os períodos dos pares lineares; (c) pico e média de q_L (eixo
+    logarítmico); (d) posição mais baixa do topo da coluna de líquido no riser durante o ciclo (fração da altura: 1 =
+    a coluna chega sempre ao topo, 0 = o riser esvazia). Cor: classe; quadrado: período 2."""
+    from matplotlib import ticker
     from matplotlib.lines import Line2D
 
     sig = _branch_signatures()
@@ -3225,8 +3271,8 @@ def cycle_branch(out, png):
         cl = _linear_classes(A)
         near = lambda re_: re_ > -1e-3  # noqa: E731
         lin = dict(lw=1.0, marker=".", ms=3.5, zorder=2)  # marcas nas aberturas da continuação (sem simulação)
-        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_col"]), cl["T_col"], np.nan), color=fl.COLORS["bubble"], label="linear mode: riser column on the gas pocket (~70 s)", **lin)
-        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_inv"]), cl["T_inv"], np.nan), color="0.5", label="linear mode: liquid exchange flowline--riser", **lin)
+        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_col"]), cl["T_col"], np.nan), color=fl.COLORS["bubble"], label="linear: riser column on the gas pocket (~70 s)", **lin)
+        ax.plot(A[:, LINEAR_COLS["ab"]], np.where(near(cl["re_inv"]), cl["T_inv"], np.nan), color="0.5", label="linear: liquid exchange flowline--riser", **lin)
     for ab in abs_:
         s = sig[ab]
         if s["cls"] == "stable":
@@ -3239,7 +3285,7 @@ def cycle_branch(out, png):
         else:
             ax.plot(ab, s["period_mean"], **mk(s))
     ax.set_ylabel("interval between blowdowns (s)")
-    ax.legend(fontsize=6.5, frameon=False, loc="upper left")
+    ax.legend(fontsize=6, frameon=False, loc="upper left", bbox_to_anchor=(0.0, 0.92))
     # (c) produção e surto
     ax = axes[2]
     for ab in abs_:
@@ -3247,13 +3293,17 @@ def cycle_branch(out, png):
         ax.plot(ab, s["q_peak"], **mk(s))
         ax.plot(ab, s["q_mean"], marker="_", ms=7, mec=fl.COLORS[s["cls"]], ls="none", zorder=4)
     ax.set_ylabel(r"$q_L$ through the choke (kg s$^{-1}$)")
+    ax.set_yscale("log")
+    ax.set_yticks([4, 6, 10, 20, 40])
+    ax.set_yticklabels(["4", "6", "10", "20", "40"])
+    ax.yaxis.set_minor_formatter(ticker.NullFormatter())
     ax.set_xlabel("choke opening $a$")
-    # (d) holdup mínimo do riser
+    # (d) até onde o gás desce no riser: posição mais baixa do topo da coluna de líquido no ciclo
     ax = axes[3]
     for ab in abs_:
         s = sig[ab]
-        ax.plot(ab, s["holdup_min"], **mk(s))
-    ax.set_ylabel("minimum mean liquid holdup of the riser")
+        ax.plot(ab, s["level_min"], **mk(s))
+    ax.set_ylabel("lowest top of the liquid column / riser height")
     ax.set_xlabel("choke opening $a$")
     for a_ in axes[2:]:
         _opening_axis(a_)
