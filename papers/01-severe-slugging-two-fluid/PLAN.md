@@ -215,8 +215,8 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   fração baixa/sem massa virtual, malha grossa, JAX. Faltam no texto: abertura 0,1, RGO 122, resto da ablação, malha
   fina, tempo de relógio dos backends, secção da estabilidade linear, resumo e conclusões — a refazer com o modelo
   final, já com o Newton melhor (ver abaixo). O lote do Newton (leve) continuou.
-- **Quando se refizer a campanha:** `newton_damping=armijo` (e `predictor=none` se a combinação confirmar) como
-  omissão do gerador; a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
+- **Quando se refizer a campanha:** `newton_damping=armijo` como omissão do gerador (o estado anterior como iterado
+  inicial só ganha no bloqueio, −63 %, e não soma à busca em linha: 295 contra 249 passos); a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
   Newton melhor antes de afirmar que "as faces pela média falham no sopro".
 
 ## Exemplo base (anterior, escala piloto; substituído)
