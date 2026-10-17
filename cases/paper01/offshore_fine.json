@@ -40,7 +40,10 @@
    "tol_range": 0.01,
    "max_step": null,
    "q_ref_factor": 10.0,
-   "newton_damping": "armijo"
+   "newton_damping": "armijo_tol",
+   "error_estimate": "milne",
+   "low_void_alpha": 0.025,
+   "local_bubble": true
   },
   "geometry": {
    "L_h1": 1500.0,
@@ -300,9 +303,10 @@
       "smooth": true,
       "local": true,
       "local_film": true,
+      "local_bubble": true,
       "low_void": {
        "regime": "bubble",
-       "alpha": 0.01
+       "alpha": 0.025
       }
      },
      "closures": {
@@ -405,9 +409,10 @@
       "smooth": true,
       "local": true,
       "local_film": true,
+      "local_bubble": true,
       "low_void": {
        "regime": "bubble",
-       "alpha": 0.01
+       "alpha": 0.025
       }
      },
      "closures": {
@@ -512,7 +517,8 @@
   "newton_tol": 0.001,
   "min_step": 1e-09,
   "slow_exit": false,
-  "newton_damping": "armijo",
+  "newton_damping": "armijo_tol",
+  "error_estimate": "milne",
   "accumulate": true
  },
  "initial_state": {

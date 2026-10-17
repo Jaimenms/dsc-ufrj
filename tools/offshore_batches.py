@@ -61,8 +61,14 @@ ABLATION = {
         "network.edges.well.model.closures.intermittent.slug_frequency=thesis",
     ],
     "k_switch_80": ["network.edges.1.model.regime.k_switch=80.0", "network.edges.well.model.regime.k_switch=80.0"],
+    "no_local_bubble": [
+        "network.edges.1.model.regime.local_bubble=false",
+        "network.edges.well.model.regime.local_bubble=false",
+    ],
     "bdf1": ["integration.max_order=1"],
     "uniform_atol": ["integration.tol_range=null", "integration.atol=1e-6"],
+    "newton_legacy": ["integration.newton_damping=legacy"],
+    "estimate_thesis": ["integration.error_estimate=thesis"],
 }
 
 

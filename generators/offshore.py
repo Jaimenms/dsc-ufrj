@@ -124,7 +124,10 @@ DEFAULTS = dict(
     tol_range=0.01,
     max_step=None,
     q_ref_factor=10.0,
-    newton_damping="armijo",  # busca em linha no Newton (053): −10 a −41 % de passos; "legacy" = Newton da tese
+    newton_damping="armijo_tol",  # busca em linha no Newton só antes da convergência (053 + 055); "legacy" = tese
+    error_estimate="milne",  # estimativa de erro de ordem consistente na ordem 2 (058); "thesis" = a da tese
+    low_void_alpha=0.025,  # limiar da regra de fração baixa (zera o estratificado mal-posto; decisão do dono, 17/10)
+    local_bubble=True,  # critérios de bolhas com a fração de gás da célula (054)
 )
 
 
@@ -137,7 +140,8 @@ def _model(p):
             "smooth": True,
             "local": True,
             "local_film": True,
-            "low_void": {"regime": "bubble", "alpha": 0.01},
+            "local_bubble": bool(p["local_bubble"]),
+            "low_void": {"regime": "bubble", "alpha": float(p["low_void_alpha"])},
         },
         "closures": {
             "stratified": {"fi_mult": 1.0, "v_gt": 5.5},
@@ -328,6 +332,7 @@ def offshore_case(**kw):
             "slow_exit": False,
             "accumulate": True,
             **({"newton_damping": p["newton_damping"]} if p["newton_damping"] != "legacy" else {}),
+            **({"error_estimate": p["error_estimate"]} if p["error_estimate"] != "thesis" else {}),
         },
         "initial_state": {"source": "guess"},
     }

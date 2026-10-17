@@ -4,7 +4,8 @@ preditor quadrático exato para polinómios de grau 2, e o caso de exemplo integ
 
 import numpy as np
 
-from mfsim.integrators.milne import integrate_bdf_milne, milne_order2
+from mfsim.integrators.implicit import milne_order2
+from mfsim.integrators.milne import integrate_bdf_milne
 from mfsim.io import case_from_json
 from mfsim.simulation import build_model, simulate
 
@@ -28,11 +29,13 @@ def test_quadratic_predictor_is_exact_for_quadratics():
 def test_hello_world_reaches_the_same_state_with_fewer_attempts():
     net = case_from_json("cases/examples/hello_world.json")
     net.set_time(tf=60.0, dt_out=10.0)
-    res = simulate(net, progress=False, integrator="implicit", backend="numpy")  # referência: ImplicitBDF
+    res = simulate(net, progress=False, integrator="implicit", backend="numpy")  # referência: estimativa da tese
+    res_m = simulate(net, progress=False, integrator="implicit", backend="numpy", error_estimate="milne")
     model = build_model(net)
     X0 = np.asarray(res.X[:, 0], float)
     _, X, info = integrate_bdf_milne(model, X0, np.asarray(res.T, float), model.integration, progress=False)
-    assert info["success"] and res.info["success"]
+    assert info["success"] and res.info["success"] and res_m.info["success"]
     scale = model.state_scales(X0)
     assert np.max(np.abs(X[:, -1] - np.asarray(res.X[:, -1])) / scale) < 3e-2  # dentro das tolerâncias (rtol 3e-3)
+    assert np.allclose(np.asarray(res_m.X), X)  # o atalho e a opção JSON são o mesmo caminho
     assert info["n_steps"] + info["n_rejected"] <= res.info["n_steps"] + res.info["n_rejected"]

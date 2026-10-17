@@ -256,6 +256,20 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   Newton a partir do preditor linear, −45 % de passos e −55 % de Jacobianas no bloqueio, +5 % no sopro (limitado pelo
   Newton), ~−13 % por ciclo; o tampão do passo depois de falhas do Newton não compensa. Entra na campanha quando
   for opção JSON do `ImplicitBDF` (`implicit.py`/`options.py` em edição na outra sessão).
+- **Campanha a 2 km lançada às 13:30 (decisões do dono):** ponto base com 054 (`regime.local_bubble`), 055
+  (`newton_damping = armijo_tol`), limiar da regra de fração baixa 0,025 (zera o estratificado mal-posto, mesma física
+  das outras regularizações segundo a outra sessão) e a estimativa de Milne (058, dobrada no `ImplicitBDF` como
+  `integration.error_estimate`); tf 16 000 s na dinâmica e na RGO (ciclo limite de período 2, ~1150 + ~1800 s, depois
+  de ~8000 s de transitório), 8000 s na ablação (16 variantes: + `no_local_bubble`, `newton_legacy`,
+  `estimate_thesis`) e nas malhas, 2000 s nos backends. Cadeia `/tmp/campaign_L2000.sh`: dinâmica (5 processos) →
+  RGO (3; gor50 copiado de ab1.000) → ablação (5) → malhas (2) → backends (1); logs em `runs/paper01/offshore_*.log`,
+  `offshore_campaign.log` no fim. Depois: `tools/newton_windows_cases.py` (janelas do último ciclo da nova ab1.000) +
+  lote do Newton, `tools/offshore_linear.py` a partir de ab0.100, figuras, texto, PDF.
+- **Pendência de validação (outra sessão, 13:30):** o caso de laboratório de Fabre 2 com o padrão automático não
+  chega ao primeiro ciclo — sem a 054 pára no passo mínimo aos 91 s, com a 054 rasteja até 96,5 s em 2 h (1,39 M
+  passos); ambos emperram perto do primeiro sopro do riser a 1 atm. A 054 entra no ponto base do artigo por decisão
+  do dono, mas **ainda não está validada com laboratório**; `batches/paper01_lab.json` fica fora da campanha até ao
+  diagnóstico (registado na 057 e nas pendências do INDEX).
 - **Quando se refizer a campanha:** `newton_damping=armijo` como omissão do gerador (o estado anterior como iterado
   inicial só ganha no bloqueio, −63 %, e não soma à busca em linha: 295 contra 249 passos); a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
   Newton melhor antes de afirmar que "as faces pela média falham no sopro".

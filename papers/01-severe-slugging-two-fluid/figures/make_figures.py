@@ -144,7 +144,8 @@ def _hyperbolicity_compute():
     out = {"alpha": HYP_ALPHA, "slip": HYP_SLIP}
     for name, regime, theta, reg, _ in HYP_PANELS:
         for tag, kw in (("raw", {}), ("reg", reg)):
-            params = PipeParams(D=D, eps=1e-5, PR=1e6, regime=regime, bubble_drag="fisico", low_void_alpha=0.01, **kw)
+            lv = json.load(open(BASE_CASE))["network"]["edges"][0]["model"]["regime"]["low_void"]["alpha"]
+            params = PipeParams(D=D, eps=1e-5, PR=1e6, regime=regime, bubble_drag="fisico", low_void_alpha=lv, **kw)
             m = TwoFluidModel(fluid, params)
             Z = np.zeros((HYP_ALPHA.size, HYP_SLIP.size))
             for i, a in enumerate(HYP_ALPHA):
@@ -1273,6 +1274,9 @@ ABL_LABELS = {
     "sharp_bend": "sharp bend (no arc)",
     "base": "reference (Section~\\ref{sec:application})",
     "unit_consistent": "slug unit of the thesis, mass-consistent",
+    "no_local_bubble": "bubble criteria on the mixture flow rates (no local void fraction)",
+    "newton_legacy": "Newton without line search",
+    "estimate_thesis": "first-order error estimate (linear predictor)",
     "unit_thesis": "slug unit of the thesis",
     "freq_thesis": "slug frequency of the thesis",
     "k_switch_80": "logistic switches with $k = 80$",
@@ -2624,6 +2628,9 @@ ABL_CHANGES = {
     "k_switch_80": "logistic switches with $k = 80$ instead of 20",
     "bdf1": "BDF of order 1 only",
     "uniform_atol": "absolute tolerance $10^{-6}$ for every state, with the pressure in MPa and the flow rates in kg/s",
+    "no_local_bubble": "the bubbly-flow criteria of the pattern identification evaluated on the void fraction implied by the phase flow rates instead of the local void fraction of the cell",
+    "newton_legacy": "Newton iteration without the line search: the step is halved only when the residual grows, never in the first iteration",
+    "estimate_thesis": "local error estimated from the linear predictor, $r/(1+2r)\\,(\\bx - \\bx^{pred})$, instead of the quadratic predictor with the Milne constant",
     "newton12": "at most 12 Newton iterations per step",
     "scipy_bdf": "variable-order BDF of SciPy on the primitive form, vanishing phase relaxed to a zero flow rate, rtol $= 3\\times10^{-3}$, atol $= 10^{-3}$ for every state, maximum step \\SI{1}{\\second}, no projection on bounds",
     "gammaL1000": "$\\gamma_L = 1000$",
@@ -2642,7 +2649,10 @@ def tab_ablation_changes(out):
         ["variant", "change to the configuration of the application"],
         rows,
         align="lp{0.6\\linewidth}",
-        notes="Every variant has the choke wide open ($a = 1$) at the base point and runs for \\SI{4000}{\\second}.",
+        notes=(
+            "Every variant has the choke wide open ($a = 1$) at the base point and runs for "
+            f"\\SI{{{float(b['runs'][0]['tf']):.0f}}}{{\\second}}."
+        ),
     )
 
 

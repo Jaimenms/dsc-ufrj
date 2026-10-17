@@ -21,6 +21,40 @@ import scipy.sparse.linalg as spla
 from .jacobian import color_groups, colored_jacobian
 
 
+def _dlagrange(tau, j):
+    """Derivada em 0 do polinómio de base de Lagrange do nó j (nós `tau`, com tau[0] = 0 o novo instante)."""
+    s = 0.0
+    for m in range(tau.size):
+        if m == j:
+            continue
+        prod = 1.0
+        for kk in range(tau.size):
+            if kk in (j, m):
+                continue
+            prod *= (0.0 - tau[kk]) / (tau[j] - tau[kk])
+        s += prod / (tau[j] - tau[m])
+    return s
+
+
+def milne_order2(t_new, t_hist, vals):
+    """Preditor quadrático pelos três últimos pontos ((t_hist[-3], vals[0]) ... (t_hist[-1], vals[2])) avaliado em
+    `t_new`, e a constante C de Milne do BDF2 nestes nós: erro local ≈ C·(x − pred) (issue 058). A constante sai da
+    aplicação do corretor e do preditor a t³: o resíduo do corretor R = Σ α_j τ_j³ (α_j = derivadas das bases de
+    Lagrange nos nós do corretor) dá erro −R/α_0; o do preditor, o produto das distâncias aos seus nós; C é a razão
+    entre o primeiro e a diferença dos dois. No passo constante, C = 2/11."""
+    t2, t1, t0 = t_hist[-3], t_hist[-2], t_hist[-1]
+    v2, v1, v0 = vals
+    w0 = (t_new - t1) * (t_new - t2) / ((t0 - t1) * (t0 - t2))
+    w1 = (t_new - t0) * (t_new - t2) / ((t1 - t0) * (t1 - t2))
+    w2 = (t_new - t0) * (t_new - t1) / ((t2 - t0) * (t2 - t1))
+    pred = w0 * v0 + w1 * v1 + w2 * v2
+    tau = np.array([0.0, t0 - t_new, t1 - t_new])
+    alpha = np.array([_dlagrange(tau, j) for j in range(3)])
+    lte = -(alpha[1] * tau[1] ** 3 + alpha[2] * tau[2] ** 3) / alpha[0]
+    prod = (t_new - t0) * (t_new - t1) * (t_new - t2)
+    return pred, lte / (lte + prod)
+
+
 class ImplicitBDF:
     def __init__(
         self,
@@ -86,6 +120,12 @@ class ImplicitBDF:
         self.predictor = (
             "extrapolate"  # chute inicial do Newton: "extrapolate" (preditor BDF), "none" (x_n), "euler" (x_n + h f_n)
         )
+        # issue 058: estimativa do erro local na ordem 2 — "thesis": preditor linear e r/(1 + 2r)·(x − pred), que é
+        # O(h²) e controla o BDF2 como um método de 1.ª ordem; "milne": preditor quadrático pelos três estados do
+        # histórico e constante de Milne das posições dos nós (só para a estimativa: o Newton parte do linear)
+        self.error_estimate = "thesis"
+        self._err_coef = 0.5
+        self._pred_lin = None
         self.jac_rate = 0.3  # "rate": contração err/err_prev acima da qual J é reavaliada no iterado atual
         self.jac_refresh_max = 3  # "rate": reavaliações por Newton, no máximo
         self.n_backtracks = 0  # diagnóstico: reduções de passo de Newton pela busca em linha
@@ -336,6 +376,7 @@ class ImplicitBDF:
                 if ordr == 1 or len(hist) < 2:
                     pred_ = self._Tinv(Tx + h * f0) if in_T else x + h * f0
                     self._hist_w = (1.0, 0.0)
+                    self._err_coef, self._pred_lin = 0.5, pred_
                     return pred_, Tx, 1.0, 1.0
                 h_old = t_hist[-1] - t_hist[-2]
                 rr = h / h_old
@@ -347,6 +388,13 @@ class ImplicitBDF:
                     pred_ = x + rr * (x - xm1)
                 w1, w2 = (1 + rr) ** 2 / (1 + 2 * rr), -(rr**2) / (1 + 2 * rr)
                 self._hist_w = (w1, w2)
+                self._err_coef, self._pred_lin = rr / (1 + 2 * rr), pred_
+                if self.error_estimate == "milne" and len(hist) >= 3:
+                    # issue 058: o preditor quadrático só serve à estimativa do erro; o Newton parte do linear
+                    vals = (self._T(hist[-3]), Txm1, Tx) if in_T else (hist[-3], xm1, x)
+                    pred_, self._err_coef = milne_order2(t_new, t_hist, vals)
+                    if in_T:
+                        pred_ = self._Tinv(pred_)
                 return pred_, w1 * Tx + w2 * Txm1, (1 + rr) / (1 + 2 * rr), rr
 
             if at_bound:
@@ -361,11 +409,15 @@ class ImplicitBDF:
                 x_start = x
             elif self.predictor == "euler":
                 x_start = self._project(x + h * f0)
+            elif self.error_estimate == "milne":
+                x_start = self._pred_lin  # issue 058: do quadrático o Newton diverge nas frentes
             x_new, ok, nit = self._newton(t_new, h, pred, c_hist, gcoef, x_start=x_start)
             if not ok and self._clipped and order > 1:
                 # projeção ativa: repete o passo com BDF1 (sem extrapolação do histórico)
                 order = 1
                 pred, c_hist, gcoef, r = predict(order)
+                if self.predictor == "extrapolate" and self.error_estimate == "milne":
+                    x_start = self._pred_lin
                 x_new, ok, nit = self._newton(t_new, h, pred, c_hist, gcoef, x_start=x_start)
             if not ok:
                 # tenta com Jacobiana atualizada (no preditor, se finito)
@@ -402,7 +454,8 @@ class ImplicitBDF:
             if order == 1:
                 err_est = 0.5 * (xe - pe)
             else:
-                err_est = (r / (1 + 2 * r)) * (xe - pe) if len(hist) >= 2 else 0.5 * (xe - pe)
+                # r/(1 + 2r) com o preditor linear (tese) ou a constante de Milne com o quadrático (058)
+                err_est = self._err_coef * (xe - pe) if len(hist) >= 2 else 0.5 * (xe - pe)
             err = np.sqrt(np.mean((err_est / scale) ** 2))
             self._last_err_vec = err_est / scale  # diagnóstico
             if self.fixed_step:

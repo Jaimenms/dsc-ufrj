@@ -428,6 +428,7 @@ class IntegrationSpec:
     newton_damping: Optional[str] = None  # "legacy" | "armijo" (issue 053) | "armijo_tol" (issue 055)
     jac_policy: Optional[str] = None  # "legacy" | "step" | "rate" (issue 053)
     predictor: Optional[str] = None  # "extrapolate" | "none" | "euler" (issue 053)
+    error_estimate: Optional[str] = None  # "thesis" | "milne" (issue 058)
     jac_rate: Optional[float] = None  # "rate": contração acima da qual J é reavaliada (omissão 0,3; issue 053)
     jac_refresh_max: Optional[int] = None  # "rate": reavaliações por Newton (omissão 3; issue 053)
     extra: tuple = ()
@@ -449,6 +450,7 @@ class IntegrationSpec:
         "newton_damping",
         "jac_policy",
         "predictor",
+        "error_estimate",
         "jac_rate",
         "jac_refresh_max",
     )

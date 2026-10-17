@@ -33,7 +33,9 @@ def reference():
         {"jac_policy": "rate"},
         {"predictor": "none"},
         {"predictor": "euler"},
+        {"error_estimate": "milne"},
         {"newton_damping": "armijo", "jac_policy": "rate", "predictor": "none"},
+        {"newton_damping": "armijo_tol", "error_estimate": "milne"},
     ],
 )
 def test_options_reach_the_same_state(reference, overrides):
@@ -46,11 +48,18 @@ def test_options_reach_the_same_state(reference, overrides):
 def test_legacy_default_is_the_default():
     spec = IntegrationSpec()
     assert spec.newton_damping is None and spec.jac_policy is None and spec.predictor is None
+    assert spec.error_estimate is None
     assert "newton_damping" not in spec.to_json()
     d = IntegrationSpec.from_json(
-        {"integrator": "implicit", "newton_damping": "armijo", "jac_policy": "rate", "predictor": "none"}
+        {
+            "integrator": "implicit",
+            "newton_damping": "armijo",
+            "jac_policy": "rate",
+            "predictor": "none",
+            "error_estimate": "milne",
+        }
     )
-    assert (d.newton_damping, d.jac_policy, d.predictor) == ("armijo", "rate", "none")
+    assert (d.newton_damping, d.jac_policy, d.predictor, d.error_estimate) == ("armijo", "rate", "none", "milne")
     assert IntegrationSpec.from_json(d.to_json()) == d
 
 
