@@ -186,6 +186,39 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   PI 5 Sm³/d/bar, RGO 122 (o do fluido), ~4–6 kg/s. Lotes relançados (`tools/offshore_batches.py --P-res 200
   --GOR 122.13 --PI 5`); sonda `e_200_pi5` em paralelo.
 
+### Manhã de 17 de outubro: integrador, estabilidade linear e o que falta
+
+- **Quinas dos fechamentos (052):** versões C1 de todas as quinas C0 restantes como opção (`closures.kinks`,
+  `scheme.options.relax_ramp`); nenhum ganho nos passos (423→425, 3987→4503, 1072→1260). O custo das fases rápidas
+  é o Newton nas frentes, não a suavidade dos fechamentos.
+- **Newton do BDF (053):** busca em linha de Armijo em todas as iterações (`integration.newton_damping=armijo`) corta
+  10–41 % dos passos e das rejeições e menos Jacobianas nas três janelas (bloqueio, sopro, fim do sopro); políticas
+  da Jacobiana (`jac_policy=step|rate`) trocam passos por Jacobianas sem ganho líquido sob carga; iterado inicial
+  (`predictor=none|euler`) sem ganho, Euler catastrófico. Omissão intacta (goldens A). Os casos do artigo ficaram em
+  `legacy` até os lotes acabarem (ablação consistente); o gerador tem o parâmetro `newton_damping` para os próximos.
+  Para o artigo: lote `batches/paper01_offshore_newton.json` (3 janelas × 4 variantes, 150 s cada, a partir dos
+  estados de `ab1.000` gravados em `cases/paper01/newton/`) → `tab_newton` e parágrafo na §5.1.
+- **Estabilidade linear do caso offshore:** `tools/offshore_linear.py` (continuação em abertura a partir do fim de
+  `ab0.100`, espetro com a matriz de massa, participação sobre os dois dutos; grava também P_topo, α_G da linha e
+  holdup do riser) → figura `linear_offshore` (crescimentos, período, P_in e q_L do estacionário contra as corridas)
+  e `tab_linear` (nota com a_H, coluna do riser e o critério de Jansen et al. 1996 avaliado no estacionário em a_H).
+  Arranca sozinha quando `ab0.100.npz` aparecer.
+- **jaxdae (arXiv 2607.23202), a pedido do dono:** não adotar como integrador (sem projeção nos limites, tolerâncias
+  por faixa, passo máximo nem paragem adaptativa; GMRES acima de n = 100; Newton de corda sem busca em linha;
+  benchmarks só até n = 50). Fica como referência para o adjunto em grelha congelada do plano
+  `docs/future/sensibilidades_jax.md`; estudo barato possível depois do artigo.
+- **Lotes parados às 07:40 por decisão do dono:** outra sessão avalia tornar o padrão estratificado 0 % mal-posto, o
+  que mudaria o modelo e obrigaria a refazer tudo; não valia a pena gastar mais ~8 h de máquina. Perderam-se (sem
+  gravação parcial: a interrupção não é `Exception`) `ab0.100` (4 h 20 de relógio), `gor122.13` (4 h 20),
+  `bubble_drag_thesis` e `unit_consistent` (~1 h 30 cada), malha fina (2 h 16) e numpy (1 h 39). Ficam gravadas:
+  aberturas 1,0/0,6/0,3/0,2, RGO 30/50/80, ablação base/primitiva/sem viscosidade acústica/faces pela média/sem regra de
+  fração baixa/sem massa virtual, malha grossa, JAX. Faltam no texto: abertura 0,1, RGO 122, resto da ablação, malha
+  fina, tempo de relógio dos backends, secção da estabilidade linear, resumo e conclusões — a refazer com o modelo
+  final, já com o Newton melhor (ver abaixo). O lote do Newton (leve) continuou.
+- **Quando se refizer a campanha:** `newton_damping=armijo` (e `predictor=none` se a combinação confirmar) como
+  omissão do gerador; a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
+  Newton melhor antes de afirmar que "as faces pela média falham no sopro".
+
 ## Exemplo base (anterior, escala piloto; substituído)
 
 Caso de referência como poço (`cases/severe_slug/well_choke.json`, issue 043) com **padrão de escoamento
@@ -199,19 +232,24 @@ BDF próprio com `tol_range` 0,01 e lado direito em JAX; fechamentos das faces p
 
 ## Casos de simulação (lotes)
 
+Todos no ponto base offshore (`cases/paper01/offshore.json`: 200 bar, PI 5 Sm³/d/bar, RGO 50, partida bloqueada),
+gerados por `tools/offshore_batches.py`; os lotes anteriores (escala piloto, 15 bar) ficaram em `runs/paper01/{dynamics,
+discretization,ablation,mesh,backend}` e já não entram no artigo.
+
 | lote | o quê | saída |
 |---|---|---|
-| mapa (`tools/slug_map.py build --base ...`) | 14 aberturas × 9 pressões × 2 partidas com padrão dinâmico | `runs/maps/well_auto/` |
-| `batches/paper01_dynamics.json` | 15 bar: aberturas estável, ciclo de pressão, golfada severa e aberta, saída a 1 s | `runs/paper01/dynamics/` |
-| `batches/paper01_discretization.json` | o mesmo caso com Galerkin, Petrov-Galerkin, diferenças centrais, regressivas, escalonado primitivo e conservativo | `runs/paper01/discretization/` |
-| `batches/paper01_ablation.json` | caso base menos um ingrediente de cada vez | `runs/paper01/ablation/` |
-| `batches/paper01_mesh.json` | malha grossa, graduada e fina | `runs/paper01/mesh/` |
-| `batches/paper01_backend.json` | numpy × JAX | `runs/paper01/backend/` |
+| `batches/paper01_offshore_dynamics.json` | aberturas 1,0, 0,6, 0,3, 0,2 e 0,1; 8000 s, saída a 2 s | `runs/paper01/offshore_dynamics/` |
+| `batches/paper01_offshore_gor.json` | RGO 30, 50, 80 e 122,13 com o choke aberto; 8000 s | `runs/paper01/offshore_gor/` |
+| `batches/paper01_offshore_ablation.json` | caso base menos um ingrediente de cada vez; 4000 s (primitiva e regra de fração baixa relançadas em mini-lotes) | `runs/paper01/offshore_ablation/` |
+| `batches/paper01_offshore_mesh.json` | malha grossa e fina; 4000 s | `runs/paper01/offshore_mesh/` |
+| `batches/paper01_offshore_backend.json` | JAX × numpy; 2000 s | `runs/paper01/offshore_backend/` |
+| `batches/paper01_offshore_newton.json` | Newton do BDF em três janelas de 150 s (053) | `runs/paper01/offshore_newton/` |
+| `tools/offshore_linear.py` | estacionários e espetro ao longo da abertura (não integra no tempo) | `runs/paper01/offshore_linear/hopf.npz` |
 | `toy/model_problem.py run` | problema-modelo (secção 2): linha de transmissão + terminação de resistência negativa, 4 valores de a | `runs/paper01/toy/` |
 
 ## Decisões em aberto para o dono
 
-- **Compressibilidade do líquido (γL).** O exemplo base usa γL = 100 (c ≈ 258 m/s, ~40× mais compressível que um
+- **Compressibilidade do líquido (γL) — resolvido pela mudança de caso:** o caso offshore usa o fluido da Tabela 6 com γL = 1000. (Histórico:) O exemplo anterior usava γL = 100 (c ≈ 258 m/s, ~40× mais compressível que um
   líquido real). A ablação com γL = 1000 dá o mesmo ciclo dentro da variabilidade (5 blowdowns, P_in 4,56–5,85 bar)
   com 45 % menos passos (145 mil contra 264 mil): o BDF amortece os acústicos mais rápidos em vez de os resolver.
   O rascunho dizia o contrário e foi corrigido. Mudar o caso base para um γL realista obriga a refazer todas as

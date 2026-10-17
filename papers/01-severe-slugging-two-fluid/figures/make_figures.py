@@ -2571,6 +2571,7 @@ def tab_runs(out):
         ("ablation (\\ref{sec:ablation})", "batches/paper01_offshore_ablation.json", "blocked", "4000", "2"),
         ("mesh (\\ref{sec:mesh})", "batches/paper01_offshore_mesh.json", "blocked", "4000", "2"),
         ("backends (\\ref{sec:backend})", "batches/paper01_offshore_backend.json", "blocked", "2000", "2"),
+        ("Newton iteration (\\ref{sec:bdf})", "batches/paper01_offshore_newton.json", "states of the open-choke run", "150", "2"),
     ]
     for lab, path, start, tf, dt in specs:
         try:
@@ -2718,6 +2719,64 @@ def software_note(out):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("% gerado pelo guião de figuras do artigo; não editar à mão\n" + txt + "\n")
     print(f"tabela: {path}")
+
+
+# ------------------------------------------------------------------------------------------ Newton do BDF (issue 053)
+NEWTON_WINDOWS = (
+    ("blocked", "blockage, \\SI{2500}{\\second}"),
+    ("blowout", "blowout, \\SI{4100}{\\second}"),
+    ("blowout_end", "end of blowout, \\SI{4600}{\\second}"),
+)
+NEWTON_VARIANTS = (
+    ("legacy", "reference"),
+    ("armijo", "line search"),
+    ("jac_rate", "Jacobian refreshed by rate"),
+    ("pred_none", "previous state as initial iterate"),
+    ("armijo_none", "line search + previous state"),
+)
+
+
+def tab_newton(out):
+    """Passos, rejeições, Jacobianas e lados direitos em 150 s de integração a partir de três estados da corrida base
+    (lote `paper01_offshore_newton`): o Newton de referência, com busca em linha de Armijo, com a Jacobiana reavaliada
+    pela taxa de contração e com o estado anterior como iterado inicial (issue 053)."""
+    runs = dict(_batch_runs("offshore_newton"))
+    rows = []
+    for key, lab in NEWTON_WINDOWS:
+        for vk, vl in NEWTON_VARIANTS:
+            run = runs.get(f"{key}_{vk}")
+            if run is None:
+                rows.append([lab, vl] + ["--"] * 5)
+                continue
+            info = run.info or {}
+            ok = bool(info.get("success", True))
+            rows.append(
+                [
+                    lab,
+                    vl,
+                    fl.fmt(info.get("n_steps"), "{:,.0f}").replace(",", "\\,") + ("" if ok else " (failed)"),
+                    fl.fmt(info.get("n_rejected"), "{:,.0f}").replace(",", "\\,"),
+                    fl.fmt(info.get("n_jac"), "{:,.0f}").replace(",", "\\,"),
+                    fl.fmt(info.get("n_rhs"), "{:,.0f}").replace(",", "\\,"),
+                    fl.fmt(info.get("cpu_total", info.get("cpu")), "{:.0f}"),
+                ]
+            )
+    fl.tex_table(
+        out,
+        "tab_newton",
+        ["window", "Newton", "steps", "rejected", "Jacobians", "right-hand sides", "wall (s)"],
+        rows,
+        align="llrrrrr",
+        notes=(
+            "\\SI{150}{\\second} of integration from the state of the run with the choke open at the given time, with the "
+            "settings of the application. Reference: modified Newton with the Jacobian reused while the convergence is "
+            "fast, step halved only when the residual grows after the first iteration. Line search: backtracking on the "
+            "scaled residual in every iteration, including the first (at most four halvings). Jacobian refreshed by "
+            "rate: re-evaluated inside the iteration when the contraction per iteration is worse than 0.3, at most "
+            "three times per step. Rejected: attempted steps rejected by the error control or by a failed Newton "
+            "iteration. Wall time measured with other simulations running."
+        ),
+    )
 
 
 # ------------------------------------------------------------------------------- estabilidade linear (caso offshore)
@@ -2982,6 +3041,7 @@ TABLES = {
     "tab_gor": tab_gor,
     "tab_hopf_mesh": tab_hopf_mesh,
     "tab_linear": tab_linear,
+    "tab_newton": tab_newton,
     "tab_geometry": tab_geometry,
     "tab_parameters": tab_parameters,
     "tab_runs": tab_runs,
