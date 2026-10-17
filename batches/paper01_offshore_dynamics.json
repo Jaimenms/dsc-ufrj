@@ -9,7 +9,7 @@
     "time.dt_out=2.0",
     "network.edges.choke_2.opening=1.0"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "ab0.600",
@@ -18,7 +18,7 @@
     "time.dt_out=2.0",
     "network.edges.choke_2.opening=0.6"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "ab0.300",
@@ -27,7 +27,7 @@
     "time.dt_out=2.0",
     "network.edges.choke_2.opening=0.3"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "ab0.200",
@@ -36,7 +36,7 @@
     "time.dt_out=2.0",
     "network.edges.choke_2.opening=0.2"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   },
   {
    "name": "ab0.100",
@@ -45,7 +45,7 @@
     "time.dt_out=2.0",
     "network.edges.choke_2.opening=0.1"
    ],
-   "tf": 8000.0
+   "tf": 4000.0
   }
  ]
 }

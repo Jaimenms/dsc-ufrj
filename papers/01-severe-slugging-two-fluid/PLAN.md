@@ -223,6 +223,18 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   `newton_damping="armijo"` por omissão; malhas grossa (4+3) e fina (16+10) reescaladas. Sonda de confirmação:
   scratch `probe_L2000` (4000 s, Armijo). Os casos do Newton (`cases/paper01/newton/`) são da geometria de 6 km e
   refazem-se a partir da nova `ab1.000`.
+- **Sonda da linha de 2 km (09:00, ponto base, Armijo, 4000 s):** golfada severa confirmada — período ~1000–1250 s
+  (sopros aos 480, 2226 e 3284 s), P_in 24,6–33 bar, surto 13–18 kg/s (5–6× a média de 2,5–3,2), topo do riser
+  esvazia (holdup mínimo 0,59), selo até 284 m; 200 estados; 95 198 passos em 1580 s de relógio (um processo, máquina
+  partilhada). **Achado de custo:** o bloqueio era barato e o sopro custa o mesmo seja qual for a linha — ~32 mil
+  passos por ciclo nas duas geometrias; a linha curta dá 3× mais ciclos por segundo simulado e 30 % menos estados,
+  não menos passos por ciclo. Campanha a 4000 s (dinâmica, RGO) e 3000 s (ablação, malhas) ≈ 1,9 M passos ≈ 3–4 h com
+  4 processos. Alavancas por tentar: rtol 3e-3 → 1e-2 (~−30 %), ordem do BDF acima de 2.
+- **Estado às 09:10:** casos e lotes regenerados a 2 km (`--tf 4000 --tf-short 3000`); resultados de 6 km arquivados
+  em `runs/paper01/L6000/` (dinâmica, RGO, ablação, malha, backend, Newton); `runs/paper01/cache` apagado para
+  recalcular. **Campanha à espera da decisão do estratificado (outra sessão), por decisão do dono.** O PDF versionado
+  ainda mostra os resultados de 6 km com o texto já a 2 km — refaz-se com a campanha. Os casos do Newton
+  (`cases/paper01/newton/`) são da geometria de 6 km: regenerar a partir da nova `ab1.000` antes de relançar o lote.
 - **Quando se refizer a campanha:** `newton_damping=armijo` como omissão do gerador (o estado anterior como iterado
   inicial só ganha no bloqueio, −63 %, e não soma à busca em linha: 295 contra 249 passos); a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
   Newton melhor antes de afirmar que "as faces pela média falham no sopro".

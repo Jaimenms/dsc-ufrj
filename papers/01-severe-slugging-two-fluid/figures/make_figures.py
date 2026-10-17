@@ -2557,23 +2557,26 @@ def tab_runs(out):
         b = json.load(open(fl.PROJECT / path))
         sets = b["runs"][0].get("set", [])  # a primeira entrada (a de referência de cada lote)
         get = lambda key: next((x.split("=", 1)[1] for x in sets if x.startswith(key + "=")), None)  # noqa: E731
-        return len(b["runs"]), get
+        tf = b["runs"][0].get("tf")
+        return len(b["runs"]), get, (f"{float(tf):.0f}" if tf else "case"), get("time.dt_out") or "case"
 
     rows = []
     specs = [
-        ("choke openings (\\ref{sec:opening})", "batches/paper01_offshore_dynamics.json", "blocked", "8000", "2"),
-        ("gas--oil ratio (\\ref{sec:gor})", "batches/paper01_offshore_gor.json", "blocked", "8000", "2"),
-        ("ablation (\\ref{sec:ablation})", "batches/paper01_offshore_ablation.json", "blocked", "4000", "2"),
-        ("mesh (\\ref{sec:mesh})", "batches/paper01_offshore_mesh.json", "blocked", "4000", "2"),
-        ("backends (\\ref{sec:backend})", "batches/paper01_offshore_backend.json", "blocked", "2000", "2"),
-        ("Newton iteration (\\ref{sec:bdf})", "batches/paper01_offshore_newton.json", "states of the open-choke run", "150", "2"),
+        ("choke openings (\\ref{sec:opening})", "batches/paper01_offshore_dynamics.json", "blocked"),
+        ("gas--oil ratio (\\ref{sec:gor})", "batches/paper01_offshore_gor.json", "blocked"),
+        ("ablation (\\ref{sec:ablation})", "batches/paper01_offshore_ablation.json", "blocked"),
+        ("mesh (\\ref{sec:mesh})", "batches/paper01_offshore_mesh.json", "blocked"),
+        ("backends (\\ref{sec:backend})", "batches/paper01_offshore_backend.json", "blocked"),
+        ("Newton iteration (\\ref{sec:bdf})", "batches/paper01_offshore_newton.json", "states of the open-choke run"),
     ]
-    for lab, path, start, tf, dt in specs:
+    for lab, path, start in specs:
         try:
-            n, get = info(path)
+            n, get, tf, dt = info(path)
         except FileNotFoundError:
-            rows.append([lab, start, tf, dt, "--", "--", "--"])
+            rows.append([lab, start, "--", "--", "--", "--", "--"])
             continue
+        if "newton" in path:
+            tf, dt = "150", "2"  # janelas de 150 s gravadas nos próprios casos
         ms = get("integration.max_step")
         bud = get("integration.max_cpu")
         rows.append([lab, start, tf, dt, ms or "none", f"{float(bud):.0f}" if bud else "none", str(n)])

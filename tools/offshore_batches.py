@@ -85,8 +85,15 @@ def main(argv=None):
     ap.add_argument(
         "--PI", type=float, default=None, help="índice de produtividade em Sm³/d/bar (omissão: o do gerador)"
     )
-    ap.add_argument("--tf", type=float, default=8000.0)
+    ap.add_argument("--tf", type=float, default=8000.0, help="tempo simulado da dinâmica e da RGO (s)")
+    ap.add_argument(
+        "--tf-short",
+        type=float,
+        default=None,
+        help="tempo simulado da ablação e das malhas (s; omissão: metade de --tf)",
+    )
     a = ap.parse_args(argv)
+    tf_short = a.tf / 2.0 if a.tf_short is None else a.tf_short
     os.makedirs(CASES, exist_ok=True)
     PI = {} if a.PI is None else {"PI": a.PI}
     base = write_case(
@@ -132,7 +139,7 @@ def main(argv=None):
             "Artigo 01, sistema offshore: o ponto base com o choke aberto menos um ingrediente de cada vez.",
             [{"name": "base", "case": base_rel}]
             + [{"name": k, "case": base_rel, "set": v} for k, v in ABLATION.items()],
-            a.tf,
+            tf_short,
         )
     )
     out.append(
@@ -165,7 +172,7 @@ def main(argv=None):
                     ),
                 },
             ],
-            a.tf,
+            tf_short,
         )
     )
     out.append(
