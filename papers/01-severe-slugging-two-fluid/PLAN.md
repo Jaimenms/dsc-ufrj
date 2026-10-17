@@ -235,6 +235,13 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
   recalcular. **Campanha à espera da decisão do estratificado (outra sessão), por decisão do dono.** O PDF versionado
   ainda mostra os resultados de 6 km com o texto já a 2 km — refaz-se com a campanha. Os casos do Newton
   (`cases/paper01/newton/`) são da geometria de 6 km: regenerar a partir da nova `ab1.000` antes de relançar o lote.
+- **Armadilha descoberta às 09:15: a omissão `choke_opening=0.2` do gerador.** A sonda de 2 km correu com o choke a
+  0,2 (não aberto), e **as malhas grossa e fina da noite também** (o `tools/offshore_batches.py` não passava a
+  abertura nas malhas): a comparação de malhas do artigo misturava abertura 0,2 na malha grossa com o choke aberto
+  na base — conclusão inválida, parágrafo passado a `\tbd`. Corrigido: omissão do gerador `choke_opening=1.0`,
+  abertura explícita nas malhas, casos regenerados. A comparação justa da sonda é com a corrida de 6 km a 0,2
+  (189 mil passos, ~3,5 ciclos parciais de 2100 s ≈ 54 mil por ciclo): a 2 km ~32 mil por ciclo (−40 %), período
+  1000–1250 s e topo do riser a esvaziar.
 - **Quando se refizer a campanha:** `newton_damping=armijo` como omissão do gerador (o estado anterior como iterado
   inicial só ganha no bloqueio, −63 %, e não soma à busca em linha: 295 contra 249 passos); a variante `closure_mean` falhou por passo mínimo aos 3774 s (31 % de rejeições) — rerodar com o
   Newton melhor antes de afirmar que "as faces pela média falham no sopro".

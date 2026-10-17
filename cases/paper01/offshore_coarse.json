@@ -30,7 +30,7 @@
    "P_res_bar": 200.0,
    "P_sep_bar": 10.0,
    "choke_cv": 150.0,
-   "choke_opening": 0.2,
+   "choke_opening": 1.0,
    "slug_frequency": "zabaras",
    "slug_unit": "film",
    "k_switch": 20.0,
@@ -76,7 +76,7 @@
   "run": null,
   "initial_guess": {
    "mode": "blocked",
-   "m_total": 4.168118491517491
+   "m_total": 4.2728599767868545
   }
  },
  "fluid": {
@@ -454,7 +454,7 @@
     "to": "2",
     "CV": 150.0,
     "law": "homogeneous",
-    "opening": 0.2
+    "opening": 1.0
    }
   ]
  },

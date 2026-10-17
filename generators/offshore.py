@@ -113,7 +113,7 @@ DEFAULTS = dict(
     P_res_bar=200.0,
     P_sep_bar=10.0,
     choke_cv=150.0,
-    choke_opening=0.2,
+    choke_opening=1.0,  # ponto base = choke aberto (a omissão 0,2 enganou a sonda e as malhas de 2026-10-17)
     # modelo e integração
     slug_frequency="zabaras",
     slug_unit="film",
