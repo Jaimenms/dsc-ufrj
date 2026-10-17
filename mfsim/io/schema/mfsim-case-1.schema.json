@@ -1379,9 +1379,10 @@
         "newton_damping": {
           "enum": [
             "legacy",
-            "armijo"
+            "armijo",
+            "armijo_tol"
           ],
-          "description": "busca em linha do Newton do BDF próprio: legacy (só quando o resíduo cresce, nunca na 1.ª iteração) ou armijo (sempre; issue 053)"
+          "description": "busca em linha do Newton do BDF próprio: legacy (só quando o resíduo cresce, nunca na 1.ª iteração), armijo (sempre; issue 053) ou armijo_tol (Armijo só enquanto a correção está acima de newton_tol: uma correção já convergida é aceite sem exigir descida do resíduo; issue 055)"
         },
         "jac_policy": {
           "enum": [

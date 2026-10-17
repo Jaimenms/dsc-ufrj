@@ -418,12 +418,13 @@ def identify_regime(
     rhoM = aL_bol * rhoL + aG_bol * rhoG
     f_M, _ = fanning(vM, rhoM, muL, D, eps, bk=bk)
     vM_s = xp.where(vM == 0, 1e-30, vM)
-    # mistura parada: dmax infinito sem formar o produto (tangente 0 * inf = NaN em AD)
+    # mistura parada: dmax "infinito" sem formar o produto (tangente 0 * inf = NaN em AD); 1e30 e não inf: a
+    # sigmoide relativa divide por |dmax| e (x - inf)/inf = NaN no duto parado (issue 057); a absoluta dá 0 nos dois
     arg = xp.abs(2.0 * f_M * vM**3 / D)
     small = arg == 0
     dmax = xp.where(
         small,
-        xp.inf,
+        1e30,
         (0.725 + 4.15 * bk.safe_sqrt(xp.abs(vGS / vM_s)))
         * (sigma / rhoL) ** (3.0 / 5.0)
         * xp.where(small, 1.0, arg) ** (-2.0 / 5.0),

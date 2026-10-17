@@ -57,7 +57,8 @@ def slug_liquid_fraction(D, eps, theta, sigma, rhoL, rhoG, muL, uLS, uGS, bk=NUM
     xp = bk.xp
     uS = uLS + uGS
     ReS = D * xp.abs(uS) * rhoL / muL
-    ReS = xp.where(ReS == 0, 1e-30, ReS)
+    # piso 1e-12 (era 1e-30 só em ReS = 0): com 1e-30 fS = inf e fS |uS|^3 = inf * 0 = NaN no duto parado (issue 057)
+    ReS = xp.where(ReS < 1e-12, 1e-12, ReS)
     A = (2.457 * xp.log(1.0 / (0.27 * eps / D + (7.0 / ReS) ** 0.9))) ** 16
     B = (37530.0 / ReS) ** 16
     fS = 2.0 * ((8.0 / ReS) ** 12 + 1.0 / (A + B) ** 1.5) ** (1.0 / 12.0)

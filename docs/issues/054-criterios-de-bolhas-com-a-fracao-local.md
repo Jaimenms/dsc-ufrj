@@ -61,11 +61,11 @@ Caso offshore de 2 km, 8000 s:
 - A variante com massa virtual também no estratificado, que antes falhava em 2290 s, passa a correr até ao fim.
 - As variantes com o limiar de vazio baixo a 0,025 e com pressão interfacial δ = 1,2 ainda falham (2082 e
   4256 s), mas por outra razão: a busca em linha de Armijo (053) testa a descida do resíduo antes do critério
-  de convergência e recusa um Newton já convergido (correção 1e-5 contra a tolerância de 1e-3). Fica para
-  uma issue do integrador.
+  de convergência e recusa um Newton já convergido (correção 1e-5 contra a tolerância de 1e-3). Corrigido
+  na 055.
 - Validação de laboratório por fazer: o caso `cases/paper01/lab_fabre2_auto.json` não arranca nem sem esta
   opção (pesos NaN do mapa automático e NaN do fecho intermitente com o escoamento em repouso), um defeito
-  anterior registado à parte.
+  anterior corrigido na 057.
 
 ## Referências
 

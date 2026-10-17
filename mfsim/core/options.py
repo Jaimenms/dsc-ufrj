@@ -425,7 +425,7 @@ class IntegrationSpec:
     tight_bounds: bool = False
     galerkin_band: Optional[int] = None
     max_cpu: Optional[float] = None  # s: orçamento de tempo de relógio do BDF próprio (issue 045)
-    newton_damping: Optional[str] = None  # "legacy" | "armijo" (issue 053)
+    newton_damping: Optional[str] = None  # "legacy" | "armijo" (issue 053) | "armijo_tol" (issue 055)
     jac_policy: Optional[str] = None  # "legacy" | "step" | "rate" (issue 053)
     predictor: Optional[str] = None  # "extrapolate" | "none" | "euler" (issue 053)
     jac_rate: Optional[float] = None  # "rate": contração acima da qual J é reavaliada (omissão 0,3; issue 053)

@@ -28,6 +28,7 @@ def reference():
     "overrides",
     [
         {"newton_damping": "armijo"},
+        {"newton_damping": "armijo_tol"},  # issue 055
         {"jac_policy": "step"},
         {"jac_policy": "rate"},
         {"predictor": "none"},
@@ -51,3 +52,21 @@ def test_legacy_default_is_the_default():
     )
     assert (d.newton_damping, d.jac_policy, d.predictor) == ("armijo", "rate", "none")
     assert IntegrationSpec.from_json(d.to_json()) == d
+
+
+def test_armijo_tol_accepts_a_converged_correction():
+    """Issue 055: com o iterado inicial já convergido (correção abaixo de newton_tol) o Newton termina na 1.ª
+    iteração, sem passar pela busca em linha (cujo resíduo pode não descer nas quinas dos fechamentos)."""
+    from mfsim.integrators.implicit import ImplicitBDF
+
+    def f(t, x):
+        return -x
+
+    bdf = ImplicitBDF(f, rtol=1e-3, atol=1e-6)
+    bdf.newton_damping = "armijo_tol"
+    x0 = np.array([1.0])
+    bdf._jacobian(0.0, x0, f(0.0, x0))
+    h = 1e-3
+    x, ok, nit = bdf._newton(h, h, x0 / (1 + h), x0.copy(), 1.0)  # BDF1: o preditor é a solução exata
+    assert ok and nit == 1
+    np.testing.assert_allclose(x, x0 / (1 + h), rtol=1e-12)

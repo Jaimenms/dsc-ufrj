@@ -81,9 +81,7 @@ class ImplicitBDF:
         self.jac_fun = jac_fun  # opcional: jac_fun(t, x) -> Jacobiana densa/esparsa de f (ex.: JAX)
         self.cooldown_steps = 3  # passos sem crescimento do passo após uma rejeição
         # issue 053 (opções, omissão = comportamento anterior):
-        self.newton_damping = (
-            "legacy"  # "legacy": amortece só se o resíduo cresce (nunca na 1.ª iteração); "armijo": sempre
-        )
+        self.newton_damping = "legacy"  # "legacy": amortece só se o resíduo cresce (nunca na 1.ª iteração); "armijo": sempre;  # "armijo_tol": Armijo só enquanto a correção está acima de newton_tol (issue 055)
         self.jac_policy = "legacy"  # "legacy": J reusada jac_reuse passos; "step": J nova em cada passo; "rate": nova dentro do Newton quando a contração é fraca
         self.predictor = (
             "extrapolate"  # chute inicial do Newton: "extrapolate" (preditor BDF), "none" (x_n), "euler" (x_n + h f_n)
@@ -240,7 +238,9 @@ class ImplicitBDF:
             res_norm = np.sqrt(np.mean((res / scale) ** 2))
             lam = 1.0
             x_try = self._project(x - dx)
-            if self.newton_damping == "armijo":
+            if self.newton_damping == "armijo_tol" and err < self.newton_tol:
+                pass  # issue 055: correção já convergida, aceita sem exigir descida do resíduo (que pode não descer)
+            elif self.newton_damping in ("armijo", "armijo_tol"):
                 # issue 053: busca em linha de Armijo em todas as iterações (também na primeira, a que diverge nas
                 # frentes): aceita o passo se o resíduo escalado desce; senão reduz lambda até 4 vezes
                 accepted = False
