@@ -347,6 +347,19 @@ The gas--oil ratio of the well sets both the gas that accumulates in the flowlin
 
 \tbd{Linear analysis at the base point: Newton's method converges on the steady states of the stabilised branch (small openings); continuation in the opening and the generalised spectrum of Section~\ref{sec:steady} locate the Hopf threshold $a_H$; compare with the dynamic threshold of Table~\ref{tab:cycle}. The open-choke steady states exist but are strongly unstable (a real global mode): the blocked start is the only way to the cycle.}
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{linear_offshore}
+\caption{Steady states of the base point against the choke opening and their linear stability (generalised spectrum with the mass matrix), compared with the runs from the blocked start: (a) growth rates of the global slow modes and of the fastest of the other modes; (b) period of the slow pair and of the simulated cycles; (c) flowline inlet pressure of the steady state (solid where linearly stable, dashed where unstable) with the range and the mean of the runs; (d) liquid production of the steady state and mean of the runs. Vertical line: $a_H$.}\label{fig:linear}
+\end{figure}
+
+\begin{table}[htbp]
+\caption{Steady states of the base point against the choke opening: slow pair, pressures, pressure drop across the choke and production.}\label{tab:linear}
+\footnotesize
+\input{tables/generated/tab_linear}
+\input{tables/generated/tab_linear_note}
+\end{table}
+
 \subsection{Mesh dependence}\label{sec:mesh}
 
 Table~\ref{tab:mesh} compares the base mesh with a coarser and a finer one on the run with the choke open. The coarse mesh, with cells of \SI{385}{\metre} in the horizontal flowline and \SI{42}{\metre} in the riser, does not hold the cycle of the base mesh: the flowline inlet pressure stays between 26 and \SI{35}{\bar}, the period shortens to \SI{3300}{\second} and the liquid surge falls from 40 to \SI{15}{\kilogram\per\second}. The seal in the flowline is a few cells long on the base mesh and a fraction of a cell on the coarse one, and a front that occupies less than a cell cannot be carried by a first-order scheme: the blockage is partial and the blowout mild. \tbd{Fine mesh (run in progress): convergence of the period, the pressure range and the surge.}

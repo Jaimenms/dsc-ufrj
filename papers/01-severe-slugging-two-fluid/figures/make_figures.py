@@ -2651,10 +2651,9 @@ def tab_analysis(out):
     """Definições das grandezas derivadas das corridas, com as constantes lidas do código."""
     import inspect
 
-    from mfsim.analysis import N_EFF_GLOBAL, SLOW_MODE, cycle_class, jansen_choke_dp_crit
+    from mfsim.analysis import N_EFF_GLOBAL, SLOW_MODE, cycle_class
 
     cc = inspect.signature(cycle_class).parameters
-    jj = inspect.signature(jansen_choke_dp_crit).parameters
     rows = [
         [
             "cycle class",
@@ -2682,11 +2681,11 @@ def tab_analysis(out):
         ],
         [
             "continuation",
-            "Newton on $\\bF = 0$ (residual $10^{-10}$, at most 60 iterations) from the neighbouring point; at \\SI{15}{\\bar} steps of 0.01 in $a$ up to 0.4 and 0.05 above; map: neighbouring grid points, repeated passes; $a_H$ by linear interpolation of Re $\\lambda$ in $\\log a$",
+            "Newton on $\\bF = 0$ (residual $10^{-9}$, at most 60 iterations) from the neighbouring opening, seeded by the end state of the run at $a = 0.1$ brought to the exact steady state; openings 0.10--0.38 in steps of 0.02 and 0.40--1.0 in steps of 0.05, with geometric bisection of the step (up to five levels) when Newton fails; $a_H$ by linear interpolation of Re $\\lambda$ in $\\log a$",
         ],
         [
             "choke criterion",
-            f"$\\Delta p_c$ of \\citet{{jansen1996}} with $\\alpha = {jj['alpha'].default:g}$, $\\alpha_p = {jj['alpha_p'].default:g}$, $L = {jj['L'].default:g}$ m, $H = {jj['H'].default:g}$ m, $P_S = {jj['P_S'].default / 1e5:g}$ bar, mean of $\\Phi = 1$ and 0.87; choke $\\Delta p = q_L^2/(\\rho_L (K a)^2)$ with the production of the steady state",
+            f"$\\Delta p_c$ of \\citet{{jansen1996}} (their eq.~10) with $\\alpha$ the length-weighted gas fraction of the flowline and $\\Phi$ the liquid fraction of the riser of the steady state at $a_H$, $\\alpha_p = {JANSEN_ALPHA_P:g}$, $L$ the flowline length, $H$ the riser height and $P_S$ the separator pressure; choke $\\Delta p$ = pressure at the top of the riser minus $P_S$ in the steady state",
         ],
         [
             "well-posedness",
@@ -2721,6 +2720,241 @@ def software_note(out):
     print(f"tabela: {path}")
 
 
+# ------------------------------------------------------------------------------- estabilidade linear (caso offshore)
+LINEAR_FILE = fl.RUNS / "paper01" / "offshore_linear" / "hopf.npz"  # de tools/offshore_linear.py (não integra no tempo)
+LINEAR_COLS = dict(
+    ab=0, re1=1, im1=2, re2=3, im2=4, re_o=5, im_o=6, n_eff_o=7, node_o=8, P_in=9, q_L=10, P_top=11, alpha_line=12, holdup=13
+)
+LINEAR_TABLE_OPENINGS = (0.10, 0.14, 0.18, 0.22, 0.26, 0.30, 0.34, 0.38, 0.50, 0.70, 1.00)
+JANSEN_ALPHA_P = 0.6  # fração de gás da frente que entra no riser (Jansen et al., 1996: 0,5–0,75 nos ensaios)
+
+
+def _offshore_linear():
+    """Estacionários do ponto base ao longo da abertura e os seus modos lentos (`tools/offshore_linear.py`; colunas
+    em `LINEAR_COLS`), ordenados pela abertura, ou None."""
+    if not LINEAR_FILE.exists():
+        return None
+    with np.load(LINEAR_FILE, allow_pickle=False) as d:
+        A = np.asarray(d["rows"], float)
+    if A.shape[1] < len(LINEAR_COLS):  # ficheiro de uma versão anterior da ferramenta, sem as colunas do choke
+        A = np.hstack([A, np.full((A.shape[0], len(LINEAR_COLS) - A.shape[1]), np.nan)])
+    return A[np.argsort(A[:, 0])]
+
+
+def _dyn_signatures():
+    """Assinatura (`cycle_class`, últimos CYCLE_WINDOW s) das corridas densas por abertura: {abertura: dict}."""
+    from mfsim.analysis import cycle_class
+
+    out = {}
+    for ab in DYN_OPENINGS:
+        run = _dense_run(ab)
+        if run is None:
+            continue
+        T = np.asarray(run.T)
+        p = run.pipe(0)
+        sel = T >= T[-1] - CYCLE_WINDOW
+        out[ab] = cycle_class(T[sel], p["out"]["P_bar"][1][sel], p["out"]["qL"][-1][sel], smooth=SMOOTH)
+    return out
+
+
+def _riser_and_separator():
+    """Coluna hidrostática do riser cheio de líquido (bar, rho_L0 g H da curva ao topo), comprimento da linha (m),
+    altura do riser (m), densidade do líquido (kg/m³) e pressão do separador (bar), lidos do caso base."""
+    from mfsim.simulation import build_model
+
+    d = json.load(open(BASE_CASE))
+    net = _base_network()
+    model = build_model(net)
+    sch = model.pipes[0].scheme
+    th = np.asarray(sch.theta_nodes[1 : sch.N + 1])
+    h = np.asarray(model.pipes[0].mesh["h"])
+    k0 = int(np.flatnonzero(np.rad2deg(th) > 1.0)[0])
+    H = float(np.sum(h[k0:] * np.sin(th[k0:])))
+    rhoL = float(net.fluid.rhoL0)
+    choke = next(e for e in d["network"]["edges"] if e["type"] == "choke")
+    v = next(v for v in d["network"]["vertices"] if v["id"] == choke["to"])
+    P_sep = float(v["spec"]["PT"]) * float(d["reference"]["PR"]) / 1e5
+    return dict(head=rhoL * 9.81 * H / 1e5, L=float(np.sum(h[:k0])), H=H, rhoL=rhoL, P_sep=P_sep)
+
+
+def _branch(ax, x, y, stable, color, label=None):
+    """Ramo de estacionários: cheio onde é linearmente estável, tracejado onde não."""
+    ax.plot(x, y, color=color, lw=1.0, ls=(0, (3, 2)))
+    ax.plot(x, np.where(stable, y, np.nan), color=color, lw=1.4, label=label)
+
+
+def _opening_axis(ax):
+    from matplotlib import ticker
+
+    ax.set_xscale("log")
+    ticks = [0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0]
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([f"{t:g}" for t in ticks])
+    ax.xaxis.set_minor_formatter(ticker.NullFormatter())
+
+
+def linear_offshore(out, png):
+    """Estabilidade linear do estacionário do caso offshore ao longo da abertura do choke (espetro com a matriz de
+    massa, 048), contra as corridas da partida bloqueada: (a) taxas de crescimento dos modos lentos globais; (b)
+    período do par lento e das corridas; (c) pressão de entrada do estacionário (cheia onde estável) e a faixa das
+    corridas; (d) produção de líquido do estacionário e média das corridas."""
+    from matplotlib.lines import Line2D
+
+    A = _offshore_linear()
+    fig, axes = plt.subplots(
+        2, 2, figsize=(fl.DOUBLE, 0.66 * fl.DOUBLE), sharex=True, gridspec_kw=dict(hspace=0.16, wspace=0.26)
+    )
+    axes = axes.ravel()
+    if A is None:
+        for a in axes:
+            fl.placeholder(a, "continuation of the steady states not found")
+        fl.save(fig, out, "linear_offshore", png)
+        return
+    c = LINEAR_COLS
+    ab, re1, im1 = A[:, c["ab"]], A[:, c["re1"]], A[:, c["im1"]]
+    stable = re1 < 0
+    a_h = _crossing(ab, re1)
+    dyn = _dyn_signatures()
+    mk = dict(marker="o", ms=4.5, mec="white", mew=0.6, ls="none", zorder=4)
+    # (a) taxas de crescimento dos modos
+    ax = axes[0]
+    ax.axhline(0.0, color=fl.GRID, lw=0.8)
+    ax.plot(ab, 1e3 * re1, color=fl.INK, lw=1.3, label="slow pair (riser--gas pocket)")
+    ax.plot(ab, 1e3 * A[:, c["re2"]], color=fl.INK2, lw=0.9, ls="--", label="second slow mode")
+    ax.plot(ab, 1e3 * A[:, c["re_o"]], color="0.62", lw=0.9, ls=":", label="fastest of the other modes")
+    ax.set_ylabel(r"growth rate ($10^{-3}$ s$^{-1}$)")
+    ax.legend(fontsize=6.5, frameon=False, loc="best")
+    # (b) período do par lento e dos ciclos simulados
+    ax = axes[1]
+    ax.plot(ab, np.where(im1 > 0, 2.0 * np.pi / np.where(im1 > 0, im1, 1.0), np.nan), color=fl.INK, lw=1.3)
+    for a_d, s in sorted(dyn.items()):
+        if s["cls"] != "stable" and np.isfinite(s["period"]):
+            ax.plot(a_d, s["period"], mfc=fl.COLORS[s["cls"]], **mk)
+    ax.set_ylabel("period (s)")
+    # (c) pressão de entrada: ramo estacionário e faixa das corridas
+    ax = axes[2]
+    _branch(ax, ab, A[:, c["P_in"]], stable, fl.INK)
+    for a_d, s in sorted(dyn.items()):
+        ax.plot([a_d, a_d], [s["P_min"], s["P_max"]], color=fl.COLORS[s["cls"]], lw=2.4, solid_capstyle="butt")
+        ax.plot(a_d, s["P_mean"], mfc=fl.COLORS[s["cls"]], **mk)
+    ax.set_ylabel(r"$P_{in}$ (bar)")
+    ax.set_xlabel("choke opening $a$")
+    # (d) produção de líquido
+    ax = axes[3]
+    _branch(ax, ab, A[:, c["q_L"]], stable, fl.INK)
+    for a_d, s in sorted(dyn.items()):
+        ax.plot(a_d, s["q_mean"], mfc=fl.COLORS[s["cls"]], **mk)
+    ax.set_ylabel(r"$q_L$ (kg s$^{-1}$)")
+    ax.set_xlabel("choke opening $a$")
+    if np.isfinite(a_h):
+        for a in axes:
+            a.axvline(a_h, color=fl.COLORS["slugging"], lw=0.8, ls=(0, (4, 3)), zorder=1)
+        axes[0].annotate(
+            f"$a_H = {a_h:.2f}$",
+            xy=(a_h, 0.0),
+            xytext=(4, 4),
+            textcoords="offset points",
+            fontsize=7,
+            color=fl.COLORS["slugging"],
+        )
+    for a in axes[2:]:
+        _opening_axis(a)
+    handles = [
+        Line2D([], [], color=fl.INK, lw=1.4, label="steady state, linearly stable"),
+        Line2D([], [], color=fl.INK, lw=1.0, ls=(0, (3, 2)), label="steady state, unstable"),
+    ]
+    handles += [
+        Line2D([], [], color=fl.COLORS[k], lw=2.4, label=f"runs, {CLASS_LABEL[k].split(',')[0]} (range and mean)")
+        for k in ("stable", "cycling", "slugging")
+        if any(s["cls"] == k for s in dyn.values())
+    ]
+    axes[2].legend(handles=handles, fontsize=6.5, frameon=False, loc="best")
+    for i, a in enumerate(axes):
+        fl.panel_label(a, f"({'abcd'[i]})")
+    fl.save(fig, out, "linear_offshore", png)
+
+
+def tab_linear(out):
+    """Estacionários do ponto base ao longo da abertura: crescimento e período do par lento, pressão de entrada, queda
+    no choke, produção, fração de gás da linha e fração de líquido do riser; nota com a abertura crítica, a coluna do
+    riser e o critério de Jansen et al. (1996) avaliado nesse estacionário."""
+    from mfsim.analysis import jansen_choke_dp_crit
+
+    A = _offshore_linear()
+    geo = _riser_and_separator()
+    c = LINEAR_COLS
+    rows, note = [], ""
+    if A is None:
+        rows = [[f"{a:g}"] + ["--"] * 7 for a in LINEAR_TABLE_OPENINGS]
+    else:
+        ab = A[:, c["ab"]]
+        for a in LINEAR_TABLE_OPENINGS:
+            k = int(np.argmin(np.abs(ab - a)))
+            if abs(ab[k] - a) > 2e-3:
+                continue
+            r = A[k]
+            per = 2.0 * np.pi / r[c["im1"]] if r[c["im1"]] > 0 else np.nan
+            rows.append(
+                [
+                    f"{ab[k]:g}",
+                    f"{1e3 * r[c['re1']]:+.2f}",
+                    fl.fmt(per, "{:.0f}"),
+                    fl.fmt(r[c["P_in"]], "{:.2f}"),
+                    fl.fmt(r[c["P_top"]] - geo["P_sep"], "{:.2f}"),
+                    fl.fmt(r[c["q_L"]], "{:.2f}"),
+                    fl.fmt(r[c["alpha_line"]], "{:.2f}"),
+                    fl.fmt(r[c["holdup"]], "{:.2f}"),
+                ]
+            )
+        a_h = _crossing(ab, A[:, c["re1"]])
+        if np.isfinite(a_h):
+            lab = np.log(ab)
+
+            def at(k):
+                return float(np.interp(np.log(a_h), lab, A[:, c[k]]))
+
+            per_h = 2.0 * np.pi / at("im1") if at("im1") > 0 else np.nan
+            jansen = dict(
+                alpha=at("alpha_line"),
+                alpha_p=JANSEN_ALPHA_P,
+                L=geo["L"],
+                H=geo["H"],
+                P_S=geo["P_sep"] * 1e5,
+                rhoL=geo["rhoL"],
+            )
+            dpc, dpc1 = jansen_choke_dp_crit(Phi=at("holdup"), **jansen), jansen_choke_dp_crit(Phi=1.0, **jansen)
+            note = (
+                f" The slow pair crosses the imaginary axis at $a_H = {a_h:.3f}$ (interpolated in $\\log a$), with a "
+                f"period of \\SI{{{per_h:.0f}}}{{\\second}}; there the pressure drop across the choke is "
+                f"\\SI{{{at('P_top') - geo['P_sep']:.2f}}}{{\\bar}} against a liquid-filled riser head "
+                f"$\\rho_L g H = $ \\SI{{{geo['head']:.1f}}}{{\\bar}}, and the criterion of \\citet{{jansen1996}} with "
+                f"the flowline gas fraction and the riser holdup of that steady state ($\\alpha_p = {JANSEN_ALPHA_P:g}$) "
+                f"asks for \\SI{{{dpc:.1f}}}{{\\bar}} (\\SI{{{dpc1:.1f}}}{{\\bar}} with $\\Phi = 1$)."
+            )
+    fl.tex_table(
+        out,
+        "tab_linear",
+        [
+            "$a$",
+            "Re$\\,\\lambda$ ($10^{-3}$ s$^{-1}$)",
+            "period (s)",
+            "$P_{in}$ (bar)",
+            "$\\Delta p_{choke}$ (bar)",
+            "$q_L$ (kg/s)",
+            "$\\alpha_G$ flowline",
+            "riser holdup",
+        ],
+        rows,
+        align="lrrrrrrr",
+        notes=(
+            "Steady states of the base point against the choke opening (Newton with continuation in $a$ from the end "
+            "state of the run at $a = 0.1$); slow pair of the generalised spectrum, pressure at the flowline inlet, "
+            "pressure drop across the choke, liquid production, length-weighted gas fraction of the flowline and "
+            "liquid fraction of the riser." + note
+        ),
+    )
+
+
 FIGURES = {
     "geometry": geometry,
     "hyperbolicity": hyperbolicity,
@@ -2732,6 +2966,7 @@ FIGURES = {
     "bifurcation": bifurcation,
     "discretisation": discretisation,
     "linear_stability": linear_stability,
+    "linear_offshore": linear_offshore,
     "model_problem": model_problem,
     "gor": gor,
 }
@@ -2746,6 +2981,7 @@ TABLES = {
     "tab_cycle": tab_cycle,
     "tab_gor": tab_gor,
     "tab_hopf_mesh": tab_hopf_mesh,
+    "tab_linear": tab_linear,
     "tab_geometry": tab_geometry,
     "tab_parameters": tab_parameters,
     "tab_runs": tab_runs,

@@ -4,7 +4,8 @@ Semente: o estado final de uma corrida que assentou (por omissão a de menor abe
 estacionário exato por Newton; continuação em abertura com bissecção do passo; em cada ponto o espetro generalizado
 (`mfsim.analysis.linear_spectrum`, matriz de massa do modo conservativo) e os modos lentos globais
 (`slow_global_modes`), com a participação somada sobre os dois dutos. Grava `runs/paper01/offshore_linear/hopf.npz`
-(linhas [abertura, Re1, Im1, Re2, Im2, Re_outro, Im_outro, n_eff_outro, nó_outro, P_in (bar), q_L (kg/s)]).
+(linhas [abertura, Re1, Im1, Re2, Im2, Re_outro, Im_outro, n_eff_outro, nó_outro, P_in (bar), q_L (kg/s),
+P_topo (bar, entrada do choke), fração de gás média da linha, fração de líquido média do riser]).
 
     uv run python tools/offshore_linear.py [--seed runs/paper01/offshore_dynamics/ab0.100.npz] [--openings ...]
 """
@@ -101,6 +102,13 @@ def main(argv=None):
             g = slow_global_modes(w, n_eff, node)
             Y = m.assemble(0.0, Xn)[1][0]
             N = m.pipes[0].scheme.N
+            # fração de gás média da linha (células antes da curva) e fração de líquido média do riser, para o
+            # critério de Jansen et al. (1996) no artigo
+            th = np.degrees(np.asarray(m.pipes[0].mesh["theta"]))
+            h = np.asarray(m.pipes[0].mesh["h"])
+            line = np.arange(N) < int(np.flatnonzero(th > 1.0)[0])
+            riser = th > 89.0
+            aG = np.asarray(Y[1 : N + 1, 0])
             rows[ab] = [
                 ab,
                 g["re1"],
@@ -113,6 +121,9 @@ def main(argv=None):
                 g["node_other"],
                 Y[1, 1] * m.PR / 1e5,
                 Y[N, 2],
+                Y[N, 1] * m.PR / 1e5,  # pressão no topo do riser (entrada do choke), para a queda no choke
+                float(np.average(aG[line], weights=h[line])),
+                1.0 - float(np.average(aG[riser], weights=h[riser])),
             ]
             per = 2 * np.pi / g["im1"] if g["im1"] > 0 else np.nan
             print(
