@@ -160,6 +160,11 @@ Achados ao montar o caso (gerador `generators/offshore.py`):
 - **Custo:** a fase com o topo do riser cheio de gás (fase líquida quase extinta) custa ~25 passos por segundo
   simulado; um ciclo de golfada severa numa linha de 6 km tem período da ordem de 1–2 h. Lotes com tf 8000 s e
   menos variantes (`tools/offshore_batches.py`).
+- **Ponto base (01:45):** a 110 bar com RGO 50 o poço morre quando o riser bloqueia (coluna do riser, 21 bar, mais a
+  do poço de 1500 m excedem a pressão do reservatório: P_wf 116 > 110 bar) — sem ciclo. Um poço produtivo a
+  200 bar (PI 42,9) dá 10–20 kg/s e a linha fica intermitente. O ponto base passa a um **poço fraco a 200 bar**:
+  PI 5 Sm³/d/bar, RGO 122 (o do fluido), ~4–6 kg/s. Lotes relançados (`tools/offshore_batches.py --P-res 200
+  --GOR 122.13 --PI 5`); sonda `e_200_pi5` em paralelo.
 
 ## Exemplo base (anterior, escala piloto; substituído)
 

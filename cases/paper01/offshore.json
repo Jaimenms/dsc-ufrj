@@ -1,7 +1,7 @@
 {
  "schema": "mfsim-case/1",
  "name": "offshore",
- "description": "Sistema offshore do artigo 01 (geometria do caso offshore da dissertação de Gustavo Alves de Carvalho, UERJ 2022, com o fluido da Tabela 6): poço vertical de 1500 m com IPR linear no fundo (PI 42.9 Sm³/d/bar, P_res 110 bar, RGO 50 Sm³/Sm³), linha de 6000 m com trecho final a -2° (1000 m), curva de raio 5 m, riser até à superfície, choke CV 150 no topo e separador a 10 bar; fluido congelado num par politrópico, padrão de escoamento dinâmico, unidade de golfada com o filme de equilíbrio (051) e frequência de Zabaras (049). Gerado por generators/offshore.py.",
+ "description": "Sistema offshore do artigo 01 (geometria do caso offshore da dissertação de Gustavo Alves de Carvalho, UERJ 2022, com o fluido da Tabela 6): poço vertical de 1500 m com IPR linear no fundo (PI 5 Sm³/d/bar, P_res 200 bar, RGO 122.13 Sm³/Sm³), linha de 6000 m com trecho final a -2° (1000 m), curva de raio 5 m, riser até à superfície, choke CV 150 no topo e separador a 10 bar; fluido congelado num par politrópico, padrão de escoamento dinâmico, unidade de golfada com o filme de equilíbrio (051) e frequência de Zabaras (049). Gerado por generators/offshore.py.",
  "meta": {
   "generator": "generators.offshore",
   "generator_params": {
@@ -25,9 +25,9 @@
    "L_h2": 10.0,
    "n_h2": 2,
    "fluid": null,
-   "GOR": 50.0,
-   "PI": 42.9,
-   "P_res_bar": 110.0,
+   "GOR": 122.13,
+   "PI": 5.0,
+   "P_res_bar": 200.0,
    "P_sep_bar": 10.0,
    "choke_cv": 150.0,
    "choke_opening": 1.0,
@@ -51,14 +51,14 @@
    "t_tan": 5.177651568952847
   },
   "market": {
-   "PI_Sm3_d_bar": 42.9,
-   "GOR_Sm3_Sm3": 50.0,
-   "P_res_bar": 110.0
+   "PI_Sm3_d_bar": 5.0,
+   "GOR_Sm3_Sm3": 122.13,
+   "P_res_bar": 200.0
   },
   "mass": {
-   "PI_kg_s_bar": 0.3579265253055555,
-   "w_gas": 0.028818101097316372,
-   "kg_per_Sm3_oil": 720.859016
+   "PI_kg_s_bar": 0.04495680179398148,
+   "w_gas": 0.09881953745631085,
+   "kg_per_Sm3_oil": 776.853535
   },
   "pvt": {
    "GOR": 122.13,
@@ -75,7 +75,7 @@
   "run": null,
   "initial_guess": {
    "mode": "blocked",
-   "m_total": 3.749228508473305
+   "m_total": 5.756414353963411
   }
  },
  "fluid": {
@@ -93,8 +93,8 @@
   "PR": 1000000.0,
   "state_ref": {
    "PT": 3.536311337774275,
-   "qG": 2.836559767708333,
-   "qL": 95.59323469131942
+   "qG": 2.221305179398148,
+   "qL": 20.25709571759259
   }
  },
  "time": {
@@ -108,16 +108,16 @@
     "id": "1",
     "kind": "boundary",
     "spec": {
-     "qL": 9.559323469131943,
-     "qG": 0.2836559767708333
+     "qL": 2.025709571759259,
+     "qG": 0.2221305179398148
     }
    },
    {
     "id": "Jr1",
     "kind": "junction",
     "spec": {
-     "qL": 9.559323469131943,
-     "qG": 0.2836559767708333
+     "qL": 2.025709571759259,
+     "qG": 0.2221305179398148
     }
    },
    {
@@ -131,8 +131,8 @@
     "id": "4",
     "kind": "boundary",
     "spec": {
-     "qL": 9.559323469131943,
-     "qG": 0.2836559767708333
+     "qL": 2.025709571759259,
+     "qG": 0.2221305179398148
     }
    },
    {
@@ -297,8 +297,8 @@
       "art_visc": 0.05,
       "closure_alpha": "donor",
       "conservative": true,
-      "q_switch_G": 0.005673119535416667,
-      "q_switch_L": 0.19118646938263886,
+      "q_switch_G": 0.004442610358796296,
+      "q_switch_L": 0.040514191435185185,
       "relax_target": "noslip",
       "relax_time": 0.05,
       "switch_frac": 0.5
@@ -402,8 +402,8 @@
       "art_visc": 0.05,
       "closure_alpha": "donor",
       "conservative": true,
-      "q_switch_G": 0.005673119535416667,
-      "q_switch_L": 0.19118646938263886,
+      "q_switch_G": 0.004442610358796296,
+      "q_switch_L": 0.040514191435185185,
       "relax_target": "noslip",
       "relax_time": 0.05,
       "switch_frac": 0.5
@@ -442,9 +442,9 @@
     "type": "reservoir",
     "from": "1",
     "to": "Jr1",
-    "IPL": 0.3476117625138888,
-    "IPG": 0.010314762791666666,
-    "P_bar": 110.0
+    "IPL": 0.040514191435185185,
+    "IPG": 0.004442610358796296,
+    "P_bar": 200.0
    },
    {
     "id": "choke_2",

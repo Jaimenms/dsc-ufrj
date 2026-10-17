@@ -1,5 +1,5 @@
 {
- "description": "Artigo 01, sistema offshore: mais e menos gás do poço (RGO) com o choke aberto e a 110 bar.",
+ "description": "Artigo 01, sistema offshore: mais e menos gás do poço (RGO) com o choke aberto e a 200 bar.",
  "out_dir": "runs/paper01/offshore_gor",
  "runs": [
   {
@@ -12,7 +12,7 @@
   },
   {
    "name": "gor50",
-   "case": "cases/paper01/offshore.json",
+   "case": "cases/paper01/offshore_gor50.json",
    "set": [
     "time.dt_out=2.0"
    ],
@@ -28,7 +28,7 @@
   },
   {
    "name": "gor122.13",
-   "case": "cases/paper01/offshore_gor122.13.json",
+   "case": "cases/paper01/offshore.json",
    "set": [
     "time.dt_out=2.0"
    ],

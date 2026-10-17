@@ -27,7 +27,8 @@ import figlib as fl  # noqa: E402
 PAPER = "paper01"
 RUNS = fl.RUNS / PAPER
 CACHE = RUNS / "cache"
-BASE_CASE = fl.PROJECT / "cases" / "severe_slug" / "well_choke_auto.json"
+BASE_CASE = fl.PROJECT / "cases" / "paper01" / "offshore.json"
+DYN = "paper01/offshore_dynamics"  # lote da dinâmica (aberturas do choke no ponto base)
 MAP_AUTO = fl.RUNS / "maps" / "well_auto"
 PATTERN_LABEL = {"stratified": "stratified", "intermittent": "intermittent", "bubble": "bubbly", "annular": "annular"}
 
@@ -53,54 +54,60 @@ def _base_network():
 
 # ------------------------------------------------------------------------------------------------ geometria
 def geometry(out, png):
-    """Traçado do caso base: linha, descendente, curva em arco e riser, com a malha (centros das células) e os
-    elementos de contorno (reservatório com IPR, choke, separador); detalhe da curva à escala."""
+    """Traçado do sistema offshore: poço, linha com o trecho descendente, curva em arco e riser, com a malha (centros
+    das células) e os elementos de contorno (reservatório com IPR, choke, separador); detalhe da curva à escala."""
     from mfsim.geometry import pipe_mesh
 
     net = _base_network()
-    pipe = net.pipes[0]
-    pts = np.asarray(pipe.points, float)
-    mesh = pipe_mesh(pts[:, 0], pts[:, 1], pts[:, 2], np.asarray(pipe.n_elements, int), grading=pipe.grading)
-    y, z = mesh["xyz"][:, 1], mesh["xyz"][:, 2]
-    yc, zc = 0.5 * (y[1:] + y[:-1]), 0.5 * (z[1:] + z[:-1])
-    fig = plt.figure(figsize=(fl.DOUBLE, 0.36 * fl.DOUBLE))
-    ax = fig.add_axes([0.07, 0.17, 0.62, 0.78])
-    ax.plot(y, z, color=fl.INK, lw=1.4, solid_capstyle="round")
-    ax.plot(yc, zc, "o", ms=2.4, color=fl.COLORS["stratified"], label="cell centres")
-    ax.plot(y, z, "|", ms=5, color=fl.INK2, mew=0.6)
-    ax.annotate(
-        "reservoir\n(linear IPR)",
-        xy=(y[0], z[0]),
-        xytext=(y[0] + 8, z[0] + 9),
-        fontsize=7,
-        arrowprops=dict(arrowstyle="-", lw=0.5, color=fl.INK2),
-    )
-    ax.annotate(
-        "choke",
-        xy=(y[-1], z[-1]),
-        xytext=(y[-1] - 70, z[-1] + 4),
-        fontsize=7,
-        arrowprops=dict(arrowstyle="-", lw=0.5, color=fl.INK2),
-    )
-    ax.text(y[-1] - 70, z[-1] + 0.8, "separator 4 bar", fontsize=7, color=fl.INK2)
-    m = net.meta or {}
-    ax.text(150, -4.0, f"downward line, {m.get('slope_down_deg', -3):g}°", fontsize=7, rotation=-6, color=fl.INK2)
-    ax.text(y[-1] - 3, 0.5 * (z.min() + z.max()), "riser", fontsize=7, rotation=90, va="center", ha="right")
+    pipes = {p.id: p for p in net.pipes}
+    line, well = pipes["1"], pipes["well"]
+    fig = plt.figure(figsize=(fl.DOUBLE, 0.42 * fl.DOUBLE))
+    ax = fig.add_axes([0.08, 0.17, 0.6, 0.78])
+    meshes = {}
+    for pipe, c in ((well, fl.COLORS["bubble"]), (line, fl.COLORS["stratified"])):
+        pts = np.asarray(pipe.points, float)
+        mesh = pipe_mesh(pts[:, 0], pts[:, 1], pts[:, 2], np.asarray(pipe.n_elements, int), grading=pipe.grading)
+        meshes[pipe.id] = mesh
+        y, z = mesh["xyz"][:, 1], mesh["xyz"][:, 2]
+        ax.plot(y, z, color=fl.INK, lw=1.4, solid_capstyle="round")
+        ax.plot(0.5 * (y[1:] + y[:-1]), 0.5 * (z[1:] + z[:-1]), "o", ms=2.0, color=c)
+    yw, zw = meshes["well"]["xyz"][:, 1], meshes["well"]["xyz"][:, 2]
+    yl, zl = meshes["1"]["xyz"][:, 1], meshes["1"]["xyz"][:, 2]
+    ax.annotate("reservoir (linear IPR)", xy=(yw[0], zw[0]), xytext=(yw[0] + 250, zw[0] + 60), fontsize=7,
+                arrowprops=dict(arrowstyle="-", lw=0.5, color=fl.INK2))
+    ax.annotate("choke, separator 10 bar", xy=(yl[-1], zl[-1]), xytext=(yl[-1] - 2600, zl[-1] - 120), fontsize=7,
+                arrowprops=dict(arrowstyle="-", lw=0.5, color=fl.INK2))
+    ax.text(2500, zl[0] + 60, "flowline, 6000 m", fontsize=7, color=fl.INK2, ha="center")
+    ax.text(yl[-1] - 900, zl.min() + 30, "descent, 2°", fontsize=7, color=fl.INK2)
+    ax.text(yl[-1] + 60, 0.5 * (zl.min() + zl.max()), "riser", fontsize=7, rotation=90, va="center")
+    ax.text(yw[0] + 60, 0.5 * (zw[0] + zw[-1]), "well", fontsize=7, rotation=90, va="center")
+    ax.axhline(0.0, color="0.7", lw=0.5, ls="--")
+    ax.text(300, 25, "sea level", fontsize=6, color=fl.INK2)
     ax.set_xlabel("horizontal distance (m)")
     ax.set_ylabel("elevation (m)")
-    ax.set_xlim(-10, y[-1] + 15)
+    ax.set_xlim(-200, yl[-1] + 300)
     ax.grid(True)
-    ax.legend(loc="lower left", fontsize=7)
+    ax.legend(
+        handles=[
+            plt.Line2D([], [], marker="o", ls="", ms=3, color=fl.COLORS["bubble"], label="well cells"),
+            plt.Line2D([], [], marker="o", ls="", ms=3, color=fl.COLORS["stratified"], label="flowline–riser cells"),
+        ],
+        loc="lower right",
+        fontsize=7,
+    )
     fl.panel_label(ax, "(a)")
     # detalhe da curva à escala
     ax2 = fig.add_axes([0.76, 0.17, 0.22, 0.78])
-    sel = (y > y[-1] - 25) & (z < z.min() + 18)
+    mesh = meshes["1"]
+    y, z = mesh["xyz"][:, 1], mesh["xyz"][:, 2]
+    yc, zc = 0.5 * (y[1:] + y[:-1]), 0.5 * (z[1:] + z[:-1])
+    sel = (y > y[-1] - 30) & (z < z.min() + 25)
     ax2.plot(y[sel], z[sel], color=fl.INK, lw=1.4)
-    k = (yc > y[-1] - 25) & (zc < z.min() + 18)
+    k = (yc > y[-1] - 30) & (zc < z.min() + 25)
     ax2.plot(yc[k], zc[k], "o", ms=3, color=fl.COLORS["stratified"])
     for yi, zi, th in zip(yc[k], zc[k], np.rad2deg(mesh["theta"])[k]):
         if 1 < th < 89:
-            ax2.text(yi + 0.6, zi - 0.4, f"{th:.0f}°", fontsize=6, color=fl.INK2)
+            ax2.text(yi + 0.8, zi - 0.6, f"{th:.0f}°", fontsize=6, color=fl.INK2)
     ax2.set_aspect("equal")
     ax2.set_xlabel("horizontal distance (m)")
     ax2.set_title("bend, true scale", fontsize=7)
@@ -110,7 +117,8 @@ def geometry(out, png):
 
 
 # ------------------------------------------------------------------------------------------------ boa colocação
-HYP_PRESSURE, HYP_VL = 6e5, 0.5  # Pa e m/s: estado típico da base do riser no caso base
+HYP_PRESSURE, HYP_VL = 20e5, 0.5  # Pa e m/s: estado típico da base do riser no caso base (offshore, 20 bar)
+HYP_D = 0.1524  # m: diâmetro da linha e do riser
 HYP_ALPHA = np.logspace(-3, np.log10(0.995), 70)
 HYP_SLIP = np.linspace(-1.0, 6.0, 71)
 HYP_PANELS = (
@@ -127,7 +135,7 @@ def _hyperbolicity_compute():
     from mfsim.models.twofluid import TwoFluidModel
 
     fluid = _base_network().fluid
-    D = 0.05
+    D = HYP_D
     A = np.pi * D**2 / 4
     rhoL, rhoG, _, _ = fluid.props(HYP_PRESSURE)
     out = {"alpha": HYP_ALPHA, "slip": HYP_SLIP}
@@ -245,7 +253,7 @@ def tab_hyperbolicity(out):
         align="llrlr",
         notes=(
             f"Map of $70\\times71$ states: $10^{{-3}}\\le\\alpha_G\\le0.995$, $-1\\le v_G-v_L\\le 6$ m/s, "
-            f"$v_L={HYP_VL:g}$ m/s, $P={HYP_PRESSURE / 1e5:g}$ bar, $D=50$ mm."
+            f"$v_L={HYP_VL:g}$ m/s, $P={HYP_PRESSURE / 1e5:g}$ bar, $D={1e3 * HYP_D:g}$ mm."
         ),
     )
 
@@ -255,9 +263,9 @@ import os  # noqa: E402
 
 MAP_DIR = Path(os.environ.get("PAPER01_MAP_DIR", str(fl.RUNS / "maps" / "well_auto")))
 MAP_FIXED_DIR = fl.RUNS / "maps" / "well"  # padrão fixo (issue 043), para comparação
-P_SEL = 15.0  # bar: linha do mapa das figuras de dinâmica
+P_SEL = 200.0  # bar: pressão do reservatório do ponto base
 SMOOTH = 20.0  # média móvel (s) da pressão de entrada na classe e no período (tools/slug_map.py --smooth)
-OPENINGS_SEL = (0.13, 0.36, 1.0)  # estável, ciclo de pressão (par de Hopf), golfada severa (modo real)
+OPENINGS_SEL = (1.0, 0.3, 0.1)  # choke aberto (golfada severa), intermédio, quase fechado (estabilizado)
 CLASS_LABEL = {"stable": "stable", "cycling": "pressure cycle, smooth outflow", "slugging": "severe slugging"}
 
 
@@ -281,9 +289,8 @@ def _map_run(start, ab, P, map_dir=None):
 
 
 def _dense_run(ab, P=P_SEL):
-    """Corrida densa do lote `paper01_dynamics` (saída a 1 s) ou, na falta dela, a do mapa (5 s)."""
-    run = fl.load_run(f"paper01/dynamics/{_name(ab, P)}")
-    return run if run is not None else _map_run("steady", ab, P)
+    """Corrida do lote `paper01_offshore_dynamics` (abertura `ab` no ponto base, saída a 2 s) ou None."""
+    return fl.load_run(f"{DYN}/ab{ab:.3f}")
 
 
 def _steady_state(ab, P, map_dir=None):
@@ -423,8 +430,8 @@ def _section_axis(ax, model, side="left"):
     k_riser0 = int(z["k_riser"][0]) if z["k_riser"].size else n
     k_top0 = int(z["k_riser"][-1]) + 1 if z["k_riser"].size else n
     bounds = [
-        (-0.5, k_line - 0.5, "inlet"),
-        (k_line - 0.5, k_bend0 - 0.5, "line"),
+        (-0.5, k_line - 0.5, "line"),
+        (k_line - 0.5, k_bend0 - 0.5, "descent"),
         (k_bend0 - 0.5, k_riser0 - 0.5, "bend"),
         (k_riser0 - 0.5, k_top0 - 0.5, "riser"),
         (k_top0 - 0.5, n - 0.5, "top"),
@@ -472,7 +479,7 @@ def spacetime(out, png):
             continue
         p = run.pipe(0)
         T = np.asarray(run.T)
-        win = T >= T[-1] - 2400.0
+        win = T >= T[-1] - SPACETIME_WINDOW
         N = run.model.pipes[0].scheme.N
         hold = 1.0 - p["out"]["alphaG"][1 : N + 1][:, win]
         im = ax0.pcolormesh(
@@ -536,7 +543,8 @@ def spacetime(out, png):
 
 
 # ------------------------------------------------------------------------------------------------ anatomia do ciclo
-ANATOMY_OPENING = 1.0  # golfada severa de relaxação (modo global real instável)
+ANATOMY_OPENING = 1.0  # golfada severa com o choke aberto
+SPACETIME_WINDOW = 8000.0  # s: janela dos diagramas espaço–tempo (toda a corrida)
 
 
 def _cycle_events(T, P_in, fr, hold=20.0):
@@ -1094,7 +1102,10 @@ def _batch_runs(batch):
     lista de (nome, Run | None)."""
     from mfsim.runs import load_run
 
-    spec = json.load(open(fl.PROJECT / "batches" / f"paper01_{batch}.json"))
+    path = fl.PROJECT / "batches" / f"paper01_{batch}.json"
+    if not path.exists():
+        return []
+    spec = json.load(open(path))
     out = []
     for e in spec["runs"]:
         path = fl.RUNS / "paper01" / batch / f"{e['name']}.npz"
@@ -1250,6 +1261,11 @@ ABL_LABELS = {
     "gammaL1000": "liquid with $\\gamma_L = 1000$",
     "valve_thesis": "mass-weighted choke density",
     "sharp_bend": "sharp bend (no arc)",
+    "base": "reference (Section~\\ref{sec:application})",
+    "unit_consistent": "slug unit of the thesis, mass-consistent",
+    "unit_thesis": "slug unit of the thesis",
+    "freq_thesis": "slug frequency of the thesis",
+    "k_switch_80": "logistic switches with $k = 80$",
 }
 
 
@@ -1258,7 +1274,7 @@ def tab_discretisation(out):
         out,
         "tab_discretisation",
         SUMMARY_HEADER,
-        _summary_rows("discretization", DISC_LABELS),
+        _summary_rows("offshore_discretization", DISC_LABELS),
         align="llrrrrrrl",
         notes=SUMMARY_NOTE,
     )
@@ -1269,7 +1285,7 @@ def tab_ablation(out):
         out,
         "tab_ablation",
         SUMMARY_HEADER,
-        _summary_rows("ablation", ABL_LABELS),
+        _summary_rows("offshore_ablation", ABL_LABELS),
         align="llrrrrrrl",
         notes=SUMMARY_NOTE,
     )
@@ -1590,18 +1606,15 @@ def bend_modes(out, png):
 
 # ------------------------------------------------------------------------------------------------ malha, desempenho e caso
 MESH_LABELS = {
-    "coarse": "coarse 15 + 5 (base)",
-    "coarse_mean": "coarse, mean face fraction",
-    "graded": "coarse, graded",
-    "fine": "fine 30 + 10",
-    "fine_mean": "fine, mean face fraction",
-    "fine_graded": "fine, graded",
+    "base": "base (15 + 57 cells)",
+    "coarse": "coarse (8 + 32 cells)",
+    "fine": "fine (30 + 112 cells)",
 }
 
 
 def tab_mesh(out):
     rows = []
-    for name, run in _batch_runs("mesh"):
+    for name, run in [("base", _dense_run(1.0))] + _batch_runs("offshore_mesh"):
         lab = MESH_LABELS.get(name, name)
         if run is None:
             rows.append([lab] + ["--"] * 7)
@@ -1626,7 +1639,7 @@ def tab_mesh(out):
         ["mesh", "cells", "cell size (m)", "steps", "CPU (s)", "interval (s)", "$P_{in}$ (bar)", "peak $q_L$ (kg/s)"],
         rows,
         align="lrlrrrlr",
-        notes="Choke open, reservoir at \\SI{15}{\\bar}, start from a blocked line, \\SI{4000}{\\second}.",
+        notes="Choke open at the base point, blocked start; cells of the flowline--riser pipe; base run from the openings batch.",
     )
 
 
@@ -1636,7 +1649,7 @@ def tab_performance(out):
     if loaded:
         path = path.with_name("timings_loaded.json")
     t = json.load(open(path)) if path.exists() else {}
-    runs = dict(_batch_runs("backend"))
+    runs = dict(_batch_runs("offshore_backend"))
     cpu = {k: ((r.info or {}).get("cpu_total") if r is not None else None) for k, r in runs.items()}
     steps = {k: ((r.info or {}).get("n_steps") if r is not None else None) for k, r in runs.items()}
     rows = [
@@ -1652,12 +1665,12 @@ def tab_performance(out):
             fl.fmt((t.get("jax_compile_rhs_s") or np.nan) + (t.get("jax_compile_jac_s") or np.nan), "{:.0f}"),
         ],
         [
-            "steps in \\SI{1000}{\\second}",
+            "steps in \\SI{2000}{\\second}",
             fl.fmt(steps.get("numpy"), "{:,.0f}").replace(",", "\\,"),
             fl.fmt(steps.get("jax"), "{:,.0f}").replace(",", "\\,"),
         ],
         [
-            "wall time for \\SI{1000}{\\second} (s)",
+            "wall time for \\SI{2000}{\\second} (s)",
             fl.fmt(cpu.get("numpy"), "{:.0f}"),
             fl.fmt(cpu.get("jax"), "{:.0f}"),
         ],
@@ -1679,21 +1692,24 @@ def tab_performance(out):
 
 def tab_case(out):
     net = _base_network()
+    d = _base_case_dict()
     fl_ = net.fluid
     res = next(e for e in net.edges if type(e).__name__ == "Reservoir")
     ch = next(e for e in net.edges if type(e).__name__ == "Choke")
-    pipe = net.pipes[0]
+    pipes = {p.id: p for p in net.pipes}
     integ = net.integration
+    mk, ms = d["meta"]["market"], d["meta"]["mass"]
     rows = [
         [
             "geometry",
-            "horizontal \\SI{20}{\\metre}, line \\SI{300}{\\metre} at \\SI{-3}{\\degree}, bend of radius "
-            "\\SI{5}{\\metre}, riser \\SI{20}{\\metre}, top \\SI{5}{\\metre}; $D = \\SI{50}{\\milli\\metre}$",
+            "well \\SI{1500}{\\metre} vertical ($D = \\SI{127}{\\milli\\metre}$); flowline \\SI{5000}{\\metre} horizontal and "
+            "\\SI{1000}{\\metre} at \\SI{-2}{\\degree}, bend of radius \\SI{5}{\\metre}, riser \\SI{334.9}{\\metre}, top "
+            "\\SI{10}{\\metre} ($D = \\SI{152.4}{\\milli\\metre}$)",
         ],
-        ["mesh", f"{int(sum(pipe.n_elements))} cells (2 + 15 + 4 + 5 + 2)"],
+        ["mesh", f"{int(sum(pipes['well'].n_elements))} cells in the well, {int(sum(pipes['1'].n_elements))} in the flowline--riser (25 + 10 + 4 + 16 + 2)"],
         [
             "liquid",
-            f"$\\rho_{{L0}} = \\SI{{{fl_.rhoL0:g}}}{{\\kilogram\\per\\cubic\\metre}}$, "
+            f"$\\rho_{{L0}} = \\SI{{{fl_.rhoL0:g}}}{{\\kilogram\\per\\cubic\\metre}}$ at \\SI{{{fl_.P0 / 1e5:g}}}{{\\bar}}, "
             f"$\\mu_L = \\SI{{{1e3 * fl_.muL:g}}}{{\\milli\\pascal\\second}}$, $\\gamma_L = {fl_.gammaL:g}$",
         ],
         [
@@ -1703,15 +1719,16 @@ def tab_case(out):
             f"$\\sigma = \\SI{{{fl_.sigma:g}}}{{\\newton\\per\\metre}}$",
         ],
         [
-            "inflow",
-            f"$J_L = \\SI{{{res.IPL:g}}}{{\\kilogram\\per\\second\\per\\bar}}$, $J_G/J_L = \\num{{{res.IPG / res.IPL:.2e}}}$, "
-            "reservoir at 8 to \\SI{48}{\\bar}",
+            "well",
+            f"$J = \\SI{{{mk['PI_Sm3_d_bar']:g}}}{{\\cubic\\metre\\per\\day\\per\\bar}}$, $P_{{res}} = \\SI{{{mk['P_res_bar']:g}}}{{\\bar}}$, "
+            f"$\\mathrm{{GOR}} = \\SI{{{mk['GOR_Sm3_Sm3']:g}}}{{\\cubic\\metre\\per\\cubic\\metre}}$ ($w_G = {ms['w_gas']:.3f}$; "
+            f"$J_L = \\SI{{{res.IPL:.3f}}}{{\\kilogram\\per\\second\\per\\bar}}$, $J_G = \\SI{{{res.IPG:.4f}}}{{\\kilogram\\per\\second\\per\\bar}}$)",
         ],
-        ["choke", f"homogeneous law, $c_v = {ch.CV:g}$, opening 0.03 to 1; separator at \\SI{{4}}{{\\bar}}"],
+        ["choke", f"homogeneous law, $c_v = {ch.CV:g}$, opening 0.1 to 1; separator at \\SI{{10}}{{\\bar}}"],
         [
             "closures",
             "dynamic flow pattern (smooth, local, $k = 20$), low-void rule below \\SI{1}{\\percent}, "
-            "$C_{vm} = 0.5$ ($\\lambda = 1$), physical bubble drag",
+            "$C_{vm} = 0.5$ ($\\lambda = 1$), physical bubble drag, slug unit with the film at equilibrium",
         ],
         [
             "scheme",
@@ -1723,12 +1740,89 @@ def tab_case(out):
             f"BDF of order 1--2, rtol {integ.rtol:g}, range-scaled atol {integ.tol_range:g}, Newton budget "
             f"{integ.max_newton}, JAX",
         ],
+        ["start", "blocked: flowline stratified at equilibrium, bend and riser full of liquid"],
     ]
     fl.tex_table(out, "tab_case", ["component", "setting"], rows, align="lp{0.78\\linewidth}")
 
 
+# ------------------------------------------------------------------------------------------------ razão gás–óleo
+GOR_RUNS = ((30.0, "gor30"), (50.0, "gor50"), (80.0, "gor80"), (122.13, "gor122.13"))
+GOR_BASE = 122.13
+
+
+def _gor_run(g, name):
+    """Corrida do lote `paper01_offshore_gor` (ou a do ponto base, que é a mesma do lote da dinâmica)."""
+    run = fl.load_run(f"paper01/offshore_gor/{name}")
+    return run if run is not None else (_dense_run(1.0) if abs(g - GOR_BASE) < 1e-9 else None)
+
+
+def gor(out, png):
+    """Mais e menos gás do poço com o choke aberto: pressão de entrada da linha e vazão de líquido à saída para
+    quatro razões gás–óleo, e a fração de líquido do riser."""
+    from mfsim.analysis import slug_fronts
+
+    fig, axes = plt.subplots(3, 1, figsize=(fl.DOUBLE, 0.62 * fl.DOUBLE), sharex=True, gridspec_kw=dict(hspace=0.12))
+    shades = plt.get_cmap("viridis")(np.linspace(0.1, 0.85, len(GOR_RUNS)))
+    any_run = False
+    for (g, name), c in zip(GOR_RUNS, shades):
+        run = _gor_run(g, name)
+        if run is None:
+            continue
+        any_run = True
+        T = np.asarray(run.T)
+        p = run.pipe(0)
+        fr = slug_fronts(run)
+        lab = f"GOR = {g:g} m$^3$/m$^3$"
+        axes[0].plot(T, p["out"]["P_bar"][1], color=c, lw=0.8, label=lab)
+        axes[1].plot(T, p["out"]["qL"][-1], color=c, lw=0.8)
+        axes[2].plot(T, fr["level"] / fr["H"], color=c, lw=0.8)
+    if not any_run:
+        for a in axes:
+            fl.placeholder(a, "runs of the gas--oil ratio batch not found")
+    axes[0].set_ylabel(r"$P_{in}$ (bar)")
+    axes[1].set_ylabel(r"$q_{L,out}$ (kg s$^{-1}$)")
+    axes[2].set_ylabel("riser liquid column / height")
+    axes[2].set_xlabel("time (s)")
+    axes[0].legend(fontsize=6.5, ncol=4, loc="upper center", bbox_to_anchor=(0.5, 1.25), frameon=False)
+    for i, a in enumerate(axes):
+        fl.panel_label(a, f"({'abc'[i]})")
+    fl.save(fig, out, "gor", png)
+
+
+def tab_gor(out):
+    """Assinatura do ciclo por razão gás–óleo (choke aberto): fração de gás, vazão média, classe, intervalo entre
+    blowdowns, faixa de pressão e pico de líquido."""
+    rows = []
+    for g, name in GOR_RUNS:
+        run = _gor_run(g, name)
+        if run is None:
+            rows.append([f"{g:g}", "--", "--", "--", "--", "--", "--"])
+            continue
+        r = _run_summary(run)
+        w = (run.case.meta or {}).get("mass", {}).get("w_gas", np.nan) if getattr(run, "case", None) is not None else np.nan
+        rows.append(
+            [
+                f"{g:g}",
+                fl.fmt(w, "{:.3f}"),
+                fl.fmt(r.get("q_mean"), "{:.2f}"),
+                r.get("cls", "--") if isinstance(r.get("cls"), str) else "--",
+                fl.fmt(r["interval"], "{:.0f}"),
+                f"{fl.fmt(r['P_min'])}--{fl.fmt(r['P_max'])}" if np.isfinite(r["P_min"]) else "--",
+                fl.fmt(r["q_peak"], "{:.1f}"),
+            ]
+        )
+    fl.tex_table(
+        out,
+        "tab_gor",
+        ["GOR (m$^3$/m$^3$)", "$w_G$", "mean $q_L$ (kg/s)", "class", "interval (s)", "$P_{in}$ (bar)", "peak $q_L$ (kg/s)"],
+        rows,
+        align="rrrlrlr",
+        notes="Choke open at the base point, blocked start, \\SI{8000}{\\second}; signatures over the last \\SI{4000}{\\second}.",
+    )
+
+
 # ------------------------------------------------------------------------------------------------ tabela dos ciclos
-DYN_OPENINGS = (0.13, 0.22, 0.28, 0.36, 0.6, 1.0)
+DYN_OPENINGS = (1.0, 0.6, 0.3, 0.2, 0.1)
 
 
 def tab_cycle(out):
@@ -2261,42 +2355,39 @@ def _base_case_dict():
 
 
 def tab_geometry(out):
-    """Troços do caso base: posição ao longo do duto, comprimento, inclinação e células (a partir dos pontos do
-    JSON), mais as variantes de malha do estudo de malha."""
+    """Troços do caso base (poço e linha com riser): posição ao longo do duto, comprimento, inclinação e células, a
+    partir dos pontos do JSON, mais as variantes de malha do estudo de malha."""
     d = _base_case_dict()
-    e = next(e for e in d["network"]["edges"] if "geometry" in e)
-    pts = np.array([q["xyz"] for q in e["geometry"]["points"]], float)
-    segs = e["geometry"]["segments"]
-    names = ["inlet section", "descending line"] + [f"bend, chord {k}" for k in range(1, 5)] + ["riser", "top section"]
-    rows, s0 = [], 0.0
-    for k, sg in enumerate(segs):
-        a, b = pts[k], pts[k + 1]
-        L = float(np.hypot(b[1] - a[1], b[2] - a[2]))
-        ang = float(np.degrees(np.arctan2(b[2] - a[2], b[1] - a[1])))
-        rows.append(
-            [
-                names[k] if k < len(names) else f"segment {k + 1}",
-                f"{s0:.2f}",
-                f"{L:.2f}",
-                f"{b[1]:.2f}",
-                f"{b[2]:.2f}",
-                f"{ang:+.1f}",
-                str(sg["n"]),
-            ]
-        )
-        s0 += L
+    pipes = {e["id"]: e for e in d["network"]["edges"] if "geometry" in e}
+    names = {
+        "well": ["well"],
+        "1": ["flowline, horizontal", "flowline, descent"] + [f"bend, chord {k}" for k in range(1, 5)] + ["riser", "top section"],
+    }
+    rows = []
+    for pid, label in (("well", "well"), ("1", "flowline--riser")):
+        e = pipes[pid]
+        pts = np.array([q["xyz"] for q in e["geometry"]["points"]], float)
+        segs = e["geometry"]["segments"]
+        s0 = 0.0
+        for k, sg in enumerate(segs):
+            a, b = pts[k], pts[k + 1]
+            L = float(np.hypot(b[1] - a[1], b[2] - a[2]))
+            ang = float(np.degrees(np.arctan2(b[2] - a[2], b[1] - a[1])))
+            nm = names[pid][k] if k < len(names[pid]) else f"segment {k + 1}"
+            rows.append([f"{label}: {nm}", f"{e['D'] * 1e3:g}", f"{s0:.1f}", f"{L:.1f}", f"{b[1]:.1f}", f"{b[2]:.1f}", f"{ang:+.1f}", str(sg["n"])])
+            s0 += L
     fl.tex_table(
         out,
         "tab_geometry",
-        ["section", "start $s$ (m)", "length (m)", "end $x$ (m)", "end $z$ (m)", "inclination (deg)", "cells"],
+        ["pipe: section", "$D$ (mm)", "start $s$ (m)", "length (m)", "end $x$ (m)", "end $z$ (m)", "inclination (deg)", "cells"],
         rows,
-        align="lrrrrrr",
+        align="lrrrrrrr",
         notes=(
-            "Polyline of the base case, starting at $x = z = 0$; the bend is a circular arc of \\SI{5}{\\metre} radius "
-            "represented by four chords. Mesh variants (Section~\\ref{sec:mesh}): fine, 30 cells in the descending line "
-            "and 10 in the riser; graded, a geometric progression of the cell size in those two sections with the "
-            "ratio of the last to the first cell equal to 0.25 (line, refined towards the low point) and 3 (riser, "
-            "refined towards the bend)."
+            "Coordinates with $x$ horizontal and $z$ the elevation above sea level; the well goes from its bottom to the "
+            "wellhead at the start of the flowline. The bend is a circular arc of \\SI{5}{\\metre} radius represented by "
+            "four chords. Wall roughness: \\SI{0.2}{\\milli\\metre} in the well, \\SI{0.6}{\\milli\\metre} in the "
+            "flowline and riser. Mesh variants (Section~\\ref{sec:mesh}): coarse, 8 cells in the well and 13, 5, 4, 8, 2 "
+            "in the sections of the flowline--riser pipe; fine, 30 in the well and 50, 20, 8, 32, 2."
         ),
     )
 
@@ -2311,6 +2402,7 @@ def tab_parameters(out):
     model = build_model(net)
     sch, pr = model.pipes[0].scheme, model.pipes[0].model.params
     fd, res = d["fluid"], next(e for e in d["network"]["edges"] if e.get("type") == "reservoir")
+    mk, ms, pvt = d["meta"]["market"], d["meta"]["mass"], d["meta"]["pvt"]
     ch = next(e for e in d["network"]["edges"] if e.get("type") == "choke")
     integ, ref = d["integration"], d["reference"]
     sr = ref["state_ref"]
@@ -2330,20 +2422,31 @@ def tab_parameters(out):
         ],
         ["", "surface tension", f"$\\sigma = {fd['sigma']:g}$ N/m"],
         [
-            "boundaries",
+            "",
+            "PVT (standard conditions {pvt['std']})",
+            f"$R_s = {pvt['Rs']:g}$ and $\\mathrm{{GOR}}_{{fluid}} = {pvt['GOR']:g}$ m$^3$/m$^3$ at {pvt['P_ref_bar']:g} bar and {pvt['T_ref_C']:g} \\si{{\\celsius}}; $\\rho_o = {pvt['rho_o_std']:g}$, $\\rho_{{gd}} = {pvt['rho_gd_std']:g}$, $\\rho_{{gf}} = {pvt['rho_gf_std']:g}$ kg/m$^3$",
+        ],
+        [
+            "well",
             "inflow",
-            f"$q_k = J_k \\max(0, P_r - P_{{in}})$: $J_L = {res['IPL']:g}$, $J_G = \\num{{{res['IPG']:.4g}}}$ kg/(s\\,bar); $P_r$ = 8 to 48 bar (15 in the base case)",
+            f"$J = {mk['PI_Sm3_d_bar']:g}$ m$^3$/(d\\,bar), $\\mathrm{{GOR}} = {mk['GOR_Sm3_Sm3']:g}$ m$^3$/m$^3$, $P_{{res}} = {mk['P_res_bar']:g}$ bar; $w_G = {ms['w_gas']:.4g}$, $J_L = {res['IPL']:.4g}$, $J_G = \\num{{{res['IPG']:.4g}}}$ kg/(s\\,bar); $q_k = J_k \\max(0, P_{{res}} - P_{{wf}})$",
         ],
         [
             "",
             "choke",
             f"$\\Delta P = \\dot m Q/(K a)^2$ [bar], $K = 0.0075\\,c_v$, $c_v = {ch['CV']:g}$ ($K a$ = {1e4 * K / np.sqrt(1e5):.2f} cm$^2$ at $a = 1$); $|Q|$ regularised with $10^{{-6}}$ m$^3$/s",
         ],
-        ["", "separator", f"{d['network']['vertices'][1]['spec']['PT'] * ref['PR'] / 1e5:g} bar"],
+        ["", "separator", f"{next(v for v in d['network']['vertices'] if v['id'] == '2')['spec']['PT'] * ref['PR'] / 1e5:g} bar"],
+        ["", "wellhead", "connector: the pressure of the flowline inlet is imposed on the well outlet, the well flow rates on the flowline inlet"],
         [
             "",
             "pipe ends",
-            "inlet: flow rates from the inflow law, zero gradient of $\\alpha_G$; outlet: pressure from the choke law",
+            "well inlet: flow rates from the inflow law, zero gradient of $\\alpha_G$; riser outlet: pressure from the choke law",
+        ],
+        [
+            "",
+            "intermittent",
+            "slug unit with the film at equilibrium, Zabaras frequency and Stuhmiller interfacial pressure with the cell slip (Appendix~\\ref{app:closures})",
         ],
         [
             "closures",
@@ -2402,6 +2505,7 @@ def tab_parameters(out):
         ],
         ["", "vanishing phase", f"relaxed to the no-slip flow rate with $\\tau = {sch.relax_time:g}$ s"],
         ["", "artificial viscosity", f"$\\nu = C c h$, $C = {sch.art_visc:g}$"],
+        ["", "initial state", "blocked start of the case generator (Section~\\ref{sec:case}), stored at the nodes of the scheme"],
         ["integrator", "formula", f"BDF of order 1--{integ['max_order']}, variable step, modified Newton"],
         [
             "",
@@ -2447,24 +2551,11 @@ def tab_runs(out):
 
     rows = []
     specs = [
-        ("discretisation (\\ref{sec:demands})", "batches/paper01_discretization.json", "blocked line", "3000", "2"),
-        ("ablation (\\ref{sec:ablation})", "batches/paper01_ablation.json", "blocked line", "3000", "2"),
-        (
-            "dense runs at 15 bar (\\ref{sec:opening})",
-            "batches/paper01_dynamics.json",
-            "steady state + 0.1 \\%",
-            "6000",
-            "1",
-        ),
-        ("mesh (\\ref{sec:mesh})", "batches/paper01_mesh.json", "blocked line", "4000", "2"),
-        ("backends (\\ref{sec:backend})", "batches/paper01_backend.json", "blocked line", "1000", "2"),
-        (
-            "map (\\ref{sec:map})",
-            "runs/maps/well_auto/blocked/batch.json",
-            "blocked line",
-            "2000 to 8000 (adaptive)",
-            "5",
-        ),
+        ("choke openings (\\ref{sec:opening})", "batches/paper01_offshore_dynamics.json", "blocked", "8000", "2"),
+        ("gas--oil ratio (\\ref{sec:gor})", "batches/paper01_offshore_gor.json", "blocked", "8000", "2"),
+        ("ablation (\\ref{sec:ablation})", "batches/paper01_offshore_ablation.json", "blocked", "4000", "2"),
+        ("mesh (\\ref{sec:mesh})", "batches/paper01_offshore_mesh.json", "blocked", "4000", "2"),
+        ("backends (\\ref{sec:backend})", "batches/paper01_offshore_backend.json", "blocked", "2000", "2"),
     ]
     for lab, path, start, tf, dt in specs:
         try:
@@ -2494,11 +2585,9 @@ def tab_runs(out):
         align="lllrrrr",
         notes=(
             "Each run is the application case of Table~\\ref{tab:parameters} with the changes of its study (choke "
-            "opening, reservoir pressure, mesh, or the variants of Table~\\ref{tab:ablationchanges}). Budget: wall-clock "
-            "time after which a run is stopped with its partial trajectory. Exceptions: the SciPy variant of "
-            "the ablation bounds the step by \\SI{1}{\\second}, and the runs at an opening of 0.13 of the mesh batch, "
-            "which provide the steady states of the finer meshes, start from a blocked line with the step bounded by "
-            "\\SI{1}{\\second}. The model problem uses rtol $= 10^{-4}$ and atol $= 10^{-6}$ (dimensionless units)."
+            "opening, gas--oil ratio, mesh, or the variants of Table~\\ref{tab:ablationchanges}). Budget: wall-clock "
+            "time after which a run is stopped with its partial trajectory. The model problem uses rtol $= 10^{-4}$ "
+            "and atol $= 10^{-6}$ (dimensionless units)."
         ),
     )
 
@@ -2515,6 +2604,10 @@ ABL_CHANGES = {
     "no_low_void": "low-void threshold $10^{-12}$ (rule inactive)",
     "no_virtual_mass": "$C_{vm} = 0$",
     "bubble_drag_thesis": "bubble terminal velocity $v_b = (0.51\\,d_b + 2.14/d_b)^{1/2}$, without $g$ and $\\sigma/\\rho_L$",
+    "unit_consistent": "slug unit of the thesis with the slug shortened so that the unit conserves the mass of the cell (film cut at $\\alpha_f = 0.95$)",
+    "unit_thesis": "slug unit with the slug length of Norris and the film holdup from the mass balance, cut at $\\alpha_f = 0.95$",
+    "freq_thesis": "slug frequency $\\omega_s = (u_{GS}/D)[0.0323/2\\,(u_{LS}/u_{GS})(\\rho_L/\\Delta\\rho)^{1/2} f_L^{-1/2} Eo^{-0.2}]^{n}$, $n = N_f/(260 + 0.85 N_f)$",
+    "k_switch_80": "logistic switches with $k = 80$ instead of 20",
     "bdf1": "BDF of order 1 only",
     "uniform_atol": "absolute tolerance $10^{-6}$ for every state, with the pressure in MPa and the flow rates in kg/s",
     "newton12": "at most 12 Newton iterations per step",
@@ -2527,7 +2620,7 @@ ABL_CHANGES = {
 
 def tab_ablation_changes(out):
     """Variantes da ablação descritas em termos do modelo (o código não é público: nada de chaves de ficheiro)."""
-    b = json.load(open(fl.PROJECT / "batches" / "paper01_ablation.json"))
+    b = json.load(open(fl.PROJECT / "batches" / "paper01_offshore_ablation.json"))
     rows = [[ABL_LABELS.get(r["name"], r["name"]), ABL_CHANGES.get(r["name"], "--")] for r in b["runs"]]
     fl.tex_table(
         out,
@@ -2535,7 +2628,7 @@ def tab_ablation_changes(out):
         ["variant", "change to the configuration of the application"],
         rows,
         align="lp{0.6\\linewidth}",
-        notes="Every variant has the choke wide open ($a = 1$) and a budget of \\SI{5400}{\\second} of wall-clock time.",
+        notes="Every variant has the choke wide open ($a = 1$) at the base point and runs for \\SI{4000}{\\second}.",
     )
 
 
@@ -2625,6 +2718,7 @@ FIGURES = {
     "discretisation": discretisation,
     "linear_stability": linear_stability,
     "model_problem": model_problem,
+    "gor": gor,
 }
 TABLES = {
     "tab_hyperbolicity": tab_hyperbolicity,
@@ -2635,6 +2729,7 @@ TABLES = {
     "tab_performance": tab_performance,
     "tab_case": tab_case,
     "tab_cycle": tab_cycle,
+    "tab_gor": tab_gor,
     "tab_hopf_mesh": tab_hopf_mesh,
     "tab_geometry": tab_geometry,
     "tab_parameters": tab_parameters,

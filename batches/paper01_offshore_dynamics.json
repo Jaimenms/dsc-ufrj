@@ -1,5 +1,5 @@
 {
- "description": "Artigo 01, sistema offshore: aberturas do choke no ponto base (P_res 110 bar, RGO 50 Sm³/Sm³), partida bloqueada gravada no caso, saída a 2 s.",
+ "description": "Artigo 01, sistema offshore: aberturas do choke no ponto base (P_res 200 bar, RGO 122.13 Sm³/Sm³), partida bloqueada gravada no caso, saída a 2 s.",
  "out_dir": "runs/paper01/offshore_dynamics",
  "runs": [
   {

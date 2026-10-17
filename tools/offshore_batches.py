@@ -77,11 +77,15 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--P-res", type=float, required=True)
     ap.add_argument("--GOR", type=float, required=True)
+    ap.add_argument(
+        "--PI", type=float, default=None, help="índice de produtividade em Sm³/d/bar (omissão: o do gerador)"
+    )
     ap.add_argument("--tf", type=float, default=8000.0)
     a = ap.parse_args(argv)
     os.makedirs(CASES, exist_ok=True)
+    PI = {} if a.PI is None else {"PI": a.PI}
     base = write_case(
-        offshore_case(P_res_bar=a.P_res, GOR=a.GOR, choke_opening=1.0),
+        offshore_case(P_res_bar=a.P_res, GOR=a.GOR, choke_opening=1.0, **PI),
         os.path.join(CASES, "offshore.json"),
         ic="blocked",
     )
@@ -92,7 +96,7 @@ def main(argv=None):
             gor_cases[g] = base_rel
             continue
         p = write_case(
-            offshore_case(P_res_bar=a.P_res, GOR=g, choke_opening=1.0),
+            offshore_case(P_res_bar=a.P_res, GOR=g, choke_opening=1.0, **PI),
             os.path.join(CASES, f"offshore_gor{g:g}.json"),
             ic="blocked",
         )
@@ -135,7 +139,7 @@ def main(argv=None):
                     "name": "coarse",
                     "case": os.path.relpath(
                         write_case(
-                            offshore_case(P_res_bar=a.P_res, GOR=a.GOR, n_h1=13, n_down=5, n_riser=8, n_well=8),
+                            offshore_case(P_res_bar=a.P_res, GOR=a.GOR, n_h1=13, n_down=5, n_riser=8, n_well=8, **PI),
                             os.path.join(CASES, "offshore_coarse.json"),
                             ic="blocked",
                         ),
@@ -147,7 +151,7 @@ def main(argv=None):
                     "case": os.path.relpath(
                         write_case(
                             offshore_case(
-                                P_res_bar=a.P_res, GOR=a.GOR, n_h1=50, n_down=20, n_elbow=8, n_riser=32, n_well=30
+                                P_res_bar=a.P_res, GOR=a.GOR, n_h1=50, n_down=20, n_elbow=8, n_riser=32, n_well=30, **PI
                             ),
                             os.path.join(CASES, "offshore_fine.json"),
                             ic="blocked",
