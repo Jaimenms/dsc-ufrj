@@ -3308,7 +3308,7 @@ def cycle_branch(out, png):
     for a_ in axes[2:]:
         _opening_axis(a_)
     handles = [Line2D([], [], marker="o", ls="none", ms=5, mfc=fl.COLORS[k], mec="white", label=CLASS_LABEL[k].split(",")[0]) for k in ("stable", "cycling", "slugging")]
-    handles += [Line2D([], [], marker="s", ls="none", ms=5, mfc="0.3", mec="white", label="period doubled (alternating blowouts)"), Line2D([], [], color="0.5", lw=1.0, label="steady state (solid: stable)")]
+    handles += [Line2D([], [], marker="s", ls="none", ms=5, mfc="0.3", mec="white", label="alternating blowouts (periodic at 0.7; intervals not repeating from 0.8)"), Line2D([], [], color="0.5", lw=1.0, label="steady state (solid: stable)")]
     fig.legend(handles=handles, fontsize=6.5, frameon=False, loc="lower center", ncol=5, bbox_to_anchor=(0.5, -0.03))
     for i, a_ in enumerate(axes):
         fl.panel_label(a_, f"({'abcd'[i]})")
