@@ -27,12 +27,15 @@ def test_design_covers_ranges_and_chains():
     for c in range(4):
         idx = np.flatnonzero(chain == c)
         assert sorted(order[idx].tolist()) == list(range(idx.size))  # a ordem é uma permutação dentro da cadeia
-    chain1, order1 = ds.make_chains(X, ranges, 1, seed=3)
+    chain1, order1 = ds.make_chains(X, ranges, 1, seed=3, start="centre")
     assert chain1.max() == 0 and sorted(order1.tolist()) == list(range(40))
     U = ds.scaled(X, ranges)
     assert U.min() >= -1.0 and U.max() <= 1.0 and U.shape == X.shape
     start = int(np.flatnonzero(order1 == 0)[0])
     assert start == int(np.argmin(np.linalg.norm(U - U.mean(axis=0), axis=1)))  # parte do ponto mais perto do centro
+    _, order_r = ds.make_chains(X, ranges, 1, seed=3)  # omissão: primeiro ponto sorteado, determinista com a semente
+    _, order_r2 = ds.make_chains(X, ranges, 1, seed=3)
+    assert np.array_equal(order_r, order_r2) and sorted(order_r.tolist()) == list(range(40))
 
 
 def test_signal_markers():

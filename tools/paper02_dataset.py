@@ -7,9 +7,10 @@ bloqueada, os seguintes com arranque quente a partir do estado final do anterior
 com captura de ciclos (061): pára quando P na cabeça do poço e q_L no topo do riser assentam (estacionário ou ciclo
 repetido) e continua N_c ciclos, que são a janela de captura dos marcadores.
 
-Dentro de cada cadeia a sequência é a do dono: parte do ponto mais perto do centro da distribuição e segue o caminho
-mais curto por todos os outros (exato até 10 pontos). Ao acabar uma ronda, `run --rounds` sorteia outros tantos pontos
-(a continuação da mesma sequência de Sobol) e recomeça do centro da ronda nova com a partida bloqueada.
+Dentro de cada cadeia a sequência é a do dono: sorteia-se o primeiro ponto e segue-se o caminho mais curto por todos
+os outros (exato até 10 pontos), com as entradas reescalonadas a [−1, +1]. Ao acabar uma ronda, `run --rounds` sorteia
+outros tantos pontos (a continuação da mesma sequência de Sobol) e recomeça num ponto sorteado da ronda nova com a
+partida bloqueada.
 
 Tudo é retomável: o desenho é um ficheiro (`design.json`), cada corrida é um `.npz` (ou um `.failed.json`), e uma
 cadeia retoma do último ponto concluído; um ficheiro `STOP` na pasta pára as cadeias depois da corrida em curso
@@ -140,11 +141,11 @@ def shortest_path_from(U, start, exact_max=10):
     return path
 
 
-def make_chains(X, ranges, n_chains, seed):
-    """Agrupa os pontos em `n_chains` cadeias de vizinhos (k-means nas entradas reescalonadas a [−1, 1]) e, em cada cadeia,
-    parte do ponto mais perto do centro do grupo e segue o caminho mais curto por todos os outros
-    (`shortest_path_from`). Com uma cadeia é a estratégia do dono: centro da distribuição e menor distância
-    percorrida. Devolve (cadeia, ordem) por ponto."""
+def make_chains(X, ranges, n_chains, seed, start="random"):
+    """Agrupa os pontos em `n_chains` cadeias de vizinhos (k-means nas entradas reescalonadas a [−1, 1]) e, em cada
+    cadeia, sorteia o primeiro ponto (`start = "random"`, pedido do dono; `"centre"` = o mais perto do centro do
+    grupo) e segue o caminho mais curto por todos os outros (`shortest_path_from`). Devolve (cadeia, ordem) por
+    ponto."""
     from scipy.cluster.vq import kmeans2
 
     U = scaled(X, ranges)
@@ -161,9 +162,12 @@ def make_chains(X, ranges, n_chains, seed):
         idx = np.flatnonzero(labels == lab)
         if idx.size == 0:
             continue
-        centre = U[idx].mean(axis=0)
-        start = int(np.argmin(np.linalg.norm(U[idx] - centre, axis=1)))
-        tour = [int(idx[i]) for i in shortest_path_from(U[idx], start)]
+        if start == "centre":
+            centre = U[idx].mean(axis=0)
+            first = int(np.argmin(np.linalg.norm(U[idx] - centre, axis=1)))
+        else:  # pedido do dono: o primeiro ponto é sorteado antes de se determinar o caminho
+            first = int(rng.integers(idx.size))
+        tour = [int(idx[i]) for i in shortest_path_from(U[idx], first)]
         for k, i in enumerate(tour):
             chain[i], order[i] = c_id, k
         c_id += 1
@@ -195,7 +199,9 @@ def append_round(design, n=None, chains=1):
     if design.get("test"):
         chain, order = np.arange(n), np.zeros(n, int)
     else:
-        chain, order = make_chains(X, ranges, chains, int(design["seed"]) + int(design["n"]))
+        chain, order = make_chains(
+            X, ranges, chains, int(design["seed"]) + int(design["n"]), start=design.get("start", "random")
+        )
     c0 = 1 + max((p["chain"] for p in design["points"]), default=-1)
     rnd = 1 + max((p.get("round", 0) for p in design["points"]), default=-1)
     i0 = int(design["n"])
@@ -233,7 +239,7 @@ def cmd_design(a):
     if a.test:
         chain, order = np.arange(X.shape[0]), np.zeros(X.shape[0], int)  # teste: todos da partida bloqueada
     else:
-        chain, order = make_chains(X, ranges, a.chains, a.seed)
+        chain, order = make_chains(X, ranges, a.chains, a.seed, start=a.start)
     width = max(len(str(X.shape[0] - 1)), 3)
     points = [
         dict(
@@ -264,6 +270,7 @@ def cmd_design(a):
         n=int(X.shape[0]),
         round_size=int(X.shape[0]),
         rounds=1,
+        start=a.start,
         test=bool(a.test),
         ranges={k: list(v) for k, v in ranges.items()},
         inputs=list(INPUTS),
@@ -711,6 +718,12 @@ def main(argv=None):
     d.add_argument("--capture", type=int, default=3, help="ciclos capturados depois de assentar (N_c)")
     d.add_argument("--capture-window", type=float, default=600.0, help="janela de captura de um estacionário [s]")
     d.add_argument("--force", action="store_true")
+    d.add_argument(
+        "--start",
+        choices=["random", "centre"],
+        default="random",
+        help="primeiro ponto de cada cadeia: sorteado (omissão, pedido do dono) ou o mais perto do centro",
+    )
     d.add_argument(
         "--append",
         action="store_true",
