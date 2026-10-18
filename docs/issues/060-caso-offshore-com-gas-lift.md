@@ -90,6 +90,16 @@ Como regenerar os casos (parâmetros do artigo 01 mais a opção; P = 150 com in
   sobe para 7,5–9,9 kg/s (acima da produção: o riser a drenar) e P_in afasta-se do estacionário —, logo não é um
   remédio, é outra resposta do modelo. A decisão fica para o dono (por exemplo excluir o estratificado no troço
   horizontal curto a jusante do riser, 10 m = 66 D, com issue própria).
+- **Varrimento em P_gas (100, 110, 120, 130, 140 bar; lote `batches/paper01_gaslift.json`, secção 8.8 do artigo 01):**
+  a 100–120 bar a retenção fica sempre aberta (anular 113–136 bar contra ≤ 103 bar no tubing) e a injeção é contínua,
+  modulada pelo ciclo em ±20–25 % (0,34–0,54 a 0,64–0,79 kg/s); o ciclo encurta e regulariza (1100, 1220, 1410 s),
+  o riser deixa de encher (holdup máximo 0,73–0,79), P_in 15,6–27,9 bar, fundo 77–103 bar, produção +10, +14,
+  +17 %, picos de 26–31 kg/s; o gas lift intermitente (retenção a fechar) não aparece nesta gama. De 130 bar o ciclo
+  é suprimido: 130 bar → P_in 17,1, fundo 75, 0,89 kg/s, +29 %; 140 → 17,4, 72, 0,99, +32 %; 150 → 17,9, 69, 1,08,
+  +34 %. O critério de Bøe com o gás injetado já colocaria 100–120 bar fora da região e o ciclo sobrevive (sopros
+  parciais de um riser a três quartos). Custo: o chaveamento das duas células do topo dura toda a corrida a 150 bar
+  (51 600 passos), morre aos 4000 s a 140 bar (117 000 passos, todos nesse troço: 19 passos por 400 s a partir do
+  estado final) e aos 1500 s a 130 bar (25 600); a 100 bar 40 700 (chaveia nos sopros), 110 e 120 bar 25–46 mil.
 
 ## Referências
 

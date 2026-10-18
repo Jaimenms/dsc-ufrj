@@ -343,10 +343,29 @@ discretization,ablation,mesh,backend}` e já não entram no artigo.
 | `batches/paper01_offshore_mesh.json` | malha grossa e fina; 4000 s | `runs/paper01/offshore_mesh/` |
 | `batches/paper01_offshore_backend.json` | JAX × numpy; 2000 s | `runs/paper01/offshore_backend/` |
 | `batches/paper01_offshore_newton.json` | Newton do BDF em três janelas de 150 s (053) | `runs/paper01/offshore_newton/` |
+| `batches/paper01_gaslift.json` | gas lift (§8.8, issue 060): pressão do gás na plataforma 20 (retenção fechada = caso base), 100, 110, 120, 130, 140 e 150 bar, choke aberto; 8000 s, saída a 5 s; casos `cases/paper01/gaslift/` (gerador com `gas_lift=true`) | `runs/paper01/gaslift/` |
 | `tools/offshore_linear.py` | estacionários e espetro ao longo da abertura (não integra no tempo) | `runs/paper01/offshore_linear/hopf.npz` |
 | `toy/model_problem.py run` | problema-modelo (secção 2): linha de transmissão + terminação de resistência negativa, 4 valores de a | `runs/paper01/toy/` |
 
+## Gas lift (2026-10-18, pedido do dono: secção própria, geometria completa descrita no caso)
+
+O caso base das secções 8.2–8.7 é o sistema **sem** gas lift (o ficheiro do caso não tem o ramo); a §8.1 descreve a
+geometria completa (linha de gás de 4" pelo traçado da linha de produção, anular 9 5/8" × 5 1/2", retenção a 30 m do
+fundo, pressão do gás na plataforma como único controlo) e diz que a §8.8 acrescenta o ramo, e que com ele e 20 bar a
+retenção fica fechada e o transiente base é recuperado ao mesmo custo. Achados da §8.8 (Fig. gaslift, Tabela
+tab_gaslift): a 100–120 bar a injeção é contínua e modulada pelo ciclo (±20–25 %), o ciclo encurta e regulariza
+(1100, 1220, 1410 s), o riser deixa de encher (holdup máximo 0,73–0,79), produção +10, +14, +17 %; o critério de Bøe
+com o gás injetado já daria o ciclo extinto e ele sobrevive (sopros parciais); de 130 bar o ciclo é suprimido
+(0,9 kg/s, 7× o gás livre do poço, +29 %). Limitação registada no texto: as duas células horizontais dos 10 m do
+topo do riser chaveiam de padrão com gás rápido (custo 2,5–5×); suavizar o chaveamento muda a resposta. Rascunhos
+fora do artigo, à espera do dono: Fig. 4 alternativa em a = 0,6 (ciclo periódico) e figura de espectros + mapa de
+retorno (`spectra_return_map`, mostra o período duplo conservado a ±4,5 % de 0,8 a 1).
+
 ## Decisões em aberto para o dono
+
+- **Fechamento do troço horizontal curto a jusante do riser** (10 m = 66 D, sem comprimento de desenvolvimento): com
+  gás rápido (gas lift ≥ 100 bar) as duas células chaveiam entre estratificado, intermitente e anular a cada passo;
+  opções: excluir o estratificado nesse troço (issue própria), ou aceitar o custo. Afeta o artigo 02 (lotes).
 
 - **Compressibilidade do líquido (γL) — resolvido pela mudança de caso:** o caso offshore usa o fluido da Tabela 6 com γL = 1000. (Histórico:) O exemplo anterior usava γL = 100 (c ≈ 258 m/s, ~40× mais compressível que um
   líquido real). A ablação com γL = 1000 dá o mesmo ciclo dentro da variabilidade (5 blowdowns, P_in 4,56–5,85 bar)

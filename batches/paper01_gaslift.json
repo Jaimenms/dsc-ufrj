@@ -1,0 +1,41 @@
+{
+ "description": "Artigo 01, sistema offshore com gas lift (issue 060): pressão do gás na plataforma de 20 bar (retenção fechada, o caso base sem gas lift) a 150 bar, no ponto base (P_res 200 bar, PI 5, RGO 50, choke aberto), partida bloqueada gravada em cada caso, saída a 5 s.",
+ "out_dir": "runs/paper01/gaslift",
+ "runs": [
+  {
+   "name": "gl_P20",
+   "case": "cases/paper01/gaslift/offshore_gl_P20.json",
+   "tf": 8000.0
+  },
+  {
+   "name": "gl_P100",
+   "case": "cases/paper01/gaslift/offshore_gl_P100.json",
+   "tf": 8000.0
+  },
+  {
+   "name": "gl_P110",
+   "case": "cases/paper01/gaslift/offshore_gl_P110.json",
+   "tf": 8000.0
+  },
+  {
+   "name": "gl_P120",
+   "case": "cases/paper01/gaslift/offshore_gl_P120.json",
+   "tf": 8000.0
+  },
+  {
+   "name": "gl_P130",
+   "case": "cases/paper01/gaslift/offshore_gl_P130.json",
+   "tf": 8000.0
+  },
+  {
+   "name": "gl_P140",
+   "case": "cases/paper01/gaslift/offshore_gl_P140.json",
+   "tf": 8000.0
+  },
+  {
+   "name": "gl_P150",
+   "case": "cases/paper01/gaslift/offshore_gl_P150.json",
+   "tf": 8000.0
+  }
+ ]
+}

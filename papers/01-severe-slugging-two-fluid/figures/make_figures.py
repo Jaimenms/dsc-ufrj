@@ -53,6 +53,48 @@ def _base_network():
     return case_from_json(str(BASE_CASE))
 
 
+GL_DIR = "paper01/gaslift"  # lote `paper01_gaslift`: pressão do gás na plataforma no ponto base
+GL_PRESSURES = (20, 100, 110, 120, 130, 140, 150)  # bar; 20 = retenção fechada (o caso base sem gas lift)
+GL_CASE = fl.PROJECT / "cases" / "paper01" / "gaslift" / "offshore_gl_P150.json"
+GL_WINDOW = 4000.0  # s: janela final das assinaturas do gas lift (corridas de 8000 s)
+
+
+def _gl_case_dict():
+    return json.load(open(GL_CASE))
+
+
+def _gl_run(P):
+    """Corrida do gas lift à pressão `P` (bar) na plataforma, ou None."""
+    return fl.load_run(f"{GL_DIR}/gl_P{int(P)}")
+
+
+def _gl_series(run):
+    """Séries de uma corrida com gas lift: P_in, pressão de fundo, injeção pela retenção, líquido no choke e no
+    reservatório, fração de líquido média do riser. Sem o ramo (caso base) a injeção é zero."""
+    ids = [pb.pipe.id for pb in run.model.pipes]
+    T = np.asarray(run.T)
+    line = run.pipe(0)
+    P_in = np.asarray(line["out"]["P_bar"][1])
+    qL_out = np.asarray(line["out"]["qL"][-1])
+    th = np.degrees(np.asarray(line["theta"]))
+    aG = np.asarray(line["out"]["alfaG"][1:-1])
+    if th.size == aG.shape[0] + 2:  # ângulos com os fantasmas
+        th = th[1:-1]
+    riser = th > 89.0
+    hold = 1.0 - aG[riser].mean(axis=0)
+    well = run.pipe(ids.index("well"))
+    if "well_lower" in ids:
+        wl = run.pipe(ids.index("well_lower"))
+        P_bot = np.asarray(wl["out"]["P_bar"][1])
+        q_inj = np.asarray(well["out"]["qG"][0]) - np.asarray(wl["out"]["qG"][-2])
+        qL_res = np.asarray(wl["out"]["qL"][0])
+    else:
+        P_bot = np.asarray(well["out"]["P_bar"][1])
+        q_inj = np.zeros_like(T)
+        qL_res = np.asarray(well["out"]["qL"][0])
+    return dict(T=T, P_in=P_in, P_bot=P_bot, q_inj=q_inj, qL_out=qL_out, qL_res=qL_res, holdup=hold)
+
+
 # ------------------------------------------------------------------------------------------------ geometria
 def geometry(out, png):
     """Traçado do sistema offshore: poço, linha com o trecho descendente, curva em arco e riser, com a malha (centros
@@ -84,19 +126,49 @@ def geometry(out, png):
     ax.text(pts_l[1, 1] + 0.3 * (yl[-1] - pts_l[1, 1]), zl.min() + 30, "descent, 2°", fontsize=7, color=fl.INK2)
     ax.text(yl[-1] + 60, 0.5 * (zl.min() + zl.max()), "riser", fontsize=7, rotation=90, va="center")
     ax.text(yw[0] + 60, 0.5 * (zw[0] + zw[-1]), "well", fontsize=7, rotation=90, va="center")
+    # ramo de gas lift (Secção do gas lift): linha de gás pelo mesmo traçado (desenhada 12 m acima para se ver),
+    # anular ao lado do poço, válvula de retenção a 30 m do fundo
+    gl = _gl_case_dict()
+    gl_edges = {e["id"]: e for e in gl["network"]["edges"]}
+    if "gas_line" in gl_edges:
+        gpts = np.array([q["xyz"] for q in gl_edges["gas_line"]["geometry"]["points"]], float)
+        ax.plot(gpts[:, 1], gpts[:, 2] + 12.0, color=fl.COLORS["annular"], lw=0.9, ls=(0, (3, 1.5)))
+        apts = np.array([q["xyz"] for q in gl_edges["annulus"]["geometry"]["points"]], float)
+        ax.plot(apts[:, 1] - 45.0, apts[:, 2], color="0.55", lw=2.2, solid_capstyle="butt")
+        z_inj = float(apts[-1, 2])
+        ax.plot([0.0], [z_inj], marker="D", ms=4, color=fl.COLORS["annular"], mec="white", mew=0.5, zorder=5)
+        ax.annotate(
+            "gas-lift valve (check), 30 m above the bottom",
+            xy=(0.0, z_inj),
+            xytext=(260, z_inj + 230),
+            fontsize=6.5,
+            arrowprops=dict(arrowstyle="-", lw=0.5, color=fl.INK2),
+        )
+        ax.text(0.62 * pts_l[1, 1], zl[0] - 75, "gas-lift line, 4 in, same route (drawn 12 m above)", fontsize=6.5, color=fl.COLORS["annular"], ha="center")
+        ax.text(-120, 0.5 * (zw[0] + zw[-1]) - 80, "annulus", fontsize=6.5, rotation=90, va="center", color="0.4")
+        ax.annotate(
+            "gas supply, $P_{gas}$",
+            xy=(gpts[0, 1], gpts[0, 2] + 12.0),
+            xytext=(gpts[0, 1] - 900, 70),
+            fontsize=6.5,
+            arrowprops=dict(arrowstyle="-", lw=0.5, color=fl.INK2),
+        )
     ax.axhline(0.0, color="0.7", lw=0.5, ls="--")
     ax.text(300, 25, "sea level", fontsize=6, color=fl.INK2)
     ax.set_xlabel("horizontal distance (m)")
     ax.set_ylabel("elevation (m)")
     ax.set_xlim(-200, yl[-1] + 300)
+    ax.set_ylim(zw[0] - 60, 130)
     ax.grid(True)
     ax.legend(
         handles=[
             plt.Line2D([], [], marker="o", ls="", ms=3, color=fl.COLORS["bubble"], label="well cells"),
             plt.Line2D([], [], marker="o", ls="", ms=3, color=fl.COLORS["stratified"], label="flowline–riser cells"),
+            plt.Line2D([], [], ls=(0, (3, 1.5)), lw=0.9, color=fl.COLORS["annular"], label="gas-lift line"),
+            plt.Line2D([], [], ls="-", lw=2.2, color="0.55", label="annulus"),
         ],
         loc="lower right",
-        fontsize=7,
+        fontsize=6.5,
     )
     fl.panel_label(ax, "(a)")
     # detalhe da curva à escala
@@ -113,7 +185,7 @@ def geometry(out, png):
             ax2.text(yi + 0.8, zi - 0.6, f"{th:.0f}°", fontsize=6, color=fl.INK2)
     ax2.set_aspect("equal")
     ax2.set_xlabel("horizontal distance (m)")
-    ax2.set_title("bend, true scale", fontsize=7)
+    ax2.set_title("bend, true scale", fontsize=7, loc="right")
     ax2.grid(True)
     fl.panel_label(ax2, "(b)")
     fl.save(fig, out, "geometry", png)
@@ -1775,6 +1847,7 @@ def tab_case(out):
             "\\SI{10}{\\metre} ($D = \\SI{152.4}{\\milli\\metre}$)",
         ],
         ["mesh", f"{int(sum(pipes['well'].n_elements))} cells in the well, {int(sum(pipes['1'].n_elements))} in the flowline--riser (25 + 10 + 4 + 16 + 2)"],
+        ["gas lift", "none: the branch of Section~\\ref{sec:gaslift} is added to the case only there"],
         [
             "liquid",
             f"$\\rho_{{L0}} = \\SI{{{fl_.rhoL0:g}}}{{\\kilogram\\per\\cubic\\metre}}$ at \\SI{{{fl_.P0 / 1e5:g}}}{{\\bar}}, "
@@ -2453,6 +2526,27 @@ def tab_geometry(out):
             nm = names[pid][k] if k < len(names[pid]) else f"segment {k + 1}"
             rows.append([f"{label}: {nm}", f"{e['D'] * 1e3:g}", f"{s0:.1f}", f"{L:.1f}", f"{b[1]:.1f}", f"{b[2]:.1f}", f"{ang:+.1f}", str(sg["n"])])
             s0 += L
+    # ramo de gas lift (Secção do gas lift): linha de gás pelo traçado da linha de produção ao contrário, anular, poço
+    # partido na válvula
+    gl = {e["id"]: e for e in _gl_case_dict()["network"]["edges"] if "geometry" in e}
+    gl_names = {
+        "gas_line": ["top section", "riser"] + [f"bend, chord {k}" for k in range(1, 5)] + ["ascent", "horizontal"],
+        "annulus": ["annulus"],
+        "well_lower": ["below the valve"],
+    }
+    for pid, label in (("gas_line", "gas-lift line"), ("annulus", "annulus"), ("well_lower", "well")):
+        if pid not in gl:
+            continue
+        e = gl[pid]
+        pts = np.array([q["xyz"] for q in e["geometry"]["points"]], float)
+        s0 = 0.0
+        for k, sg in enumerate(e["geometry"]["segments"]):
+            a, b = pts[k], pts[k + 1]
+            L = float(np.hypot(b[1] - a[1], b[2] - a[2]))
+            ang = float(np.degrees(np.arcsin((b[2] - a[2]) / L)))  # inclinação no sentido do escoamento
+            nm = gl_names[pid][k] if k < len(gl_names[pid]) else f"segment {k + 1}"
+            rows.append([f"{label}: {nm}", f"{e['D'] * 1e3:g}", f"{s0:.1f}", f"{L:.1f}", f"{b[1]:.1f}", f"{b[2]:.1f}", f"{ang:+.1f}", str(sg["n"])])
+            s0 += L
     fl.tex_table(
         out,
         "tab_geometry",
@@ -2464,7 +2558,15 @@ def tab_geometry(out):
             "wellhead at the start of the flowline. The bend is a circular arc of \\SI{5}{\\metre} radius represented by "
             "four chords. Wall roughness: \\SI{0.2}{\\milli\\metre} in the well, \\SI{0.6}{\\milli\\metre} in the "
             "flowline and riser. Mesh variants (Section~\\ref{sec:mesh}): coarse, 8 cells in the well and 13, 5, 4, 8, 2 "
-            "in the sections of the flowline--riser pipe; fine, 30 in the well and 50, 20, 8, 32, 2."
+            "in the sections of the flowline--riser pipe; fine, 30 in the well and 50, 20, 8, 32, 2. Gas-lift branch "
+            "(Section~\\ref{sec:gaslift}): the gas-lift line runs from the platform along the route of the production "
+            "line to the wellhead, with half its cells per section; the annulus (9~5/8~in casing, 5~1/2~in tubing) is "
+            "represented by its equivalent-area diameter; it ends in a tank of \\SI{1}{\\cubic\\metre} that feeds "
+            "the check valve ($C_V = 1.5$ in the law of Appendix~\\ref{app:closures}, no opening pressure), which "
+            "injects into the well \\SI{30}{\\metre} above its bottom; with the branch the well of the base case is "
+            "split at the injection point. The runs of Sections~\\ref{sec:anatomy} to \\ref{sec:mesh} use the case "
+            "without the branch; with the branch and the valve closed ($P_{gas} = \\SI{20}{\\bar}$) the same "
+            "transient is obtained at the same cost (Section~\\ref{sec:gaslift})."
         ),
     )
 
@@ -2606,6 +2708,28 @@ def tab_parameters(out):
             f"{integ['backend'].upper() if integ['backend'] == 'jax' else integ['backend']}, exact Jacobian; boundary fluxes integrated with the same recurrence",
         ],
     ]
+    gl = _gl_case_dict()
+    gp = gl["meta"]["generator_params"]
+    gle = {e["id"]: e for e in gl["network"]["edges"]}
+    glv = {v["id"]: v for v in gl["network"]["vertices"]}
+    rows += [
+        [
+            "gas lift (\\ref{sec:gaslift})",
+            "gas-lift line",
+            f"$D = {gp['D_gas_line'] * 1e3:g}$ mm (4 in), roughness {gle['gas_line']['roughness'] * 1e3:g} mm, the route of the production line with half its cells; two-fluid model, initial $\\alpha_G = {gp['gas_alpha']:g}$",
+        ],
+        [
+            "",
+            "annulus",
+            f"$D = {gp['D_annulus'] * 1e3:g}$ mm (equivalent area of 9~5/8 in casing $\\times$ 5~1/2 in tubing), {gle['annulus']['geometry']['segments'][0]['n']} cells; chamber of {glv['an_bot']['volume']:g} m$^3$ at its base",
+        ],
+        [
+            "",
+            "valve",
+            f"check valve {gp['L_inj']:g} m above the bottom of the well, $C_V = {gle['check_an']['CV']:g}$, opening pressure {gle['check_an']['dP_min_bar']:g} bar; $q = 0.0075\\,C_V\\sqrt{{\\rho_G\\,\\Delta P}}$ kg/s with $\\Delta P$ in bar, regularised at the origin",
+        ],
+        ["", "control", "gas pressure at the platform end of the gas-lift line, $P_{gas}$, from 20 (valve closed) to 150 bar; the injected rate follows from the valve law"],
+    ]
     fl.tex_table(
         out,
         "tab_parameters",
@@ -2636,6 +2760,7 @@ def tab_runs(out):
         ("mesh (\\ref{sec:mesh})", "batches/paper01_offshore_mesh.json", "blocked"),
         ("backends (\\ref{sec:backend})", "batches/paper01_offshore_backend.json", "blocked"),
         ("Newton iteration (\\ref{sec:bdf})", "batches/paper01_offshore_newton.json", "states of the open-choke run"),
+        ("gas lift (\\ref{sec:gaslift})", "batches/paper01_gaslift.json", "blocked"),
     ]
     for lab, path, start in specs:
         try:
@@ -3440,12 +3565,260 @@ def tab_orbits(out):
     )
 
 
+SPECTRA_OPENINGS = (0.25, 0.4, 0.6, 0.7, 1.0)  # espectros de P_in ao longo do ramo
+RETURN_OPENINGS = (0.5, 0.6, 0.7, 0.8, 0.9, 1.0)  # mapa de retorno dos intervalos entre sopros
+RETURN_T0 = 4000.0  # s: início da janela do mapa de retorno (depois dos primeiros ciclos do transiente)
+
+
+def _branch_run(ab):
+    """Corrida da abertura `ab` em qualquer dos lotes do ramo (dinâmica ou varrimento), ou None."""
+    for batch in SWEEP_BATCHES:
+        run = fl.load_run(f"paper01/{batch}/ab{ab:.3f}")
+        if run is not None:
+            return run
+    return None
+
+
+def _blowdown_minima(T, P, sel, smooth=SMOOTH, min_gap=150.0):
+    """Instantes dos sopros na janela `sel`: mínimos locais da média móvel de P_in abaixo do percentil 30 da janela
+    (o mesmo critério das assinaturas do ramo)."""
+    from mfsim.analysis import moving_average
+
+    Ps = moving_average(T, P, smooth)
+    lo = np.percentile(Ps[sel], 30)
+    mins = []
+    for j in np.flatnonzero(sel)[1:-1]:
+        if Ps[j] < Ps[j - 1] and Ps[j] <= Ps[j + 1] and Ps[j] < lo and (not mins or T[j] - T[mins[-1]] > min_gap):
+            mins.append(j)
+    return T[mins]
+
+
+def spectra_return_map(out, png):
+    """Domínio da frequência e mapa de retorno ao longo do ramo (só corridas existentes): (a) espectro de amplitude
+    de P_in nos últimos 8000 s (janela de Hann, preenchida com zeros para o desenho; a resolução continua a ser
+    1/8000 Hz), normalizado pela maior linha e empilhado por abertura, com o intervalo médio entre sopros e o seu
+    dobro marcados; (b) mapa de retorno dos intervalos entre sopros (T_{n+1} contra T_n) a partir de 4000 s."""
+    from matplotlib.lines import Line2D
+
+    sig = _branch_signatures()
+    fig, (ax_s, ax_r) = plt.subplots(
+        1, 2, figsize=(fl.DOUBLE, 0.46 * fl.DOUBLE), gridspec_kw=dict(width_ratios=[1.45, 1.0], wspace=0.28)
+    )
+    pad = 8
+    for k, ab in enumerate(SPECTRA_OPENINGS):
+        run = _branch_run(ab)
+        if run is None:
+            continue
+        T = np.asarray(run.T)
+        P = np.asarray(run.pipe(0)["out"]["P_bar"][1])
+        sel = T >= T[-1] - CYCLE_WINDOW
+        x = P[sel] - P[sel].mean()
+        w = np.hanning(x.size)
+        X = np.fft.rfft(x * w, n=pad * x.size)
+        f = np.fft.rfftfreq(pad * x.size, T[1] - T[0])
+        A = 2.0 * np.abs(X) / w.sum()
+        ok = f > 0
+        per, A = 1.0 / f[ok], A[ok]
+        A_max = float(A[per <= CYCLE_WINDOW].max())
+        y0 = 1.15 * k
+        ax_s.plot(per, y0 + A / A_max, color=fl.INK, lw=0.8)
+        ax_s.axhline(y0, color="0.85", lw=0.5, zorder=0)
+        s_ab = sig.get(ab) if isinstance(sig, dict) else None
+        Tm = float(s_ab["period_mean"]) if s_ab and np.isfinite(s_ab.get("period_mean", np.nan)) else np.nan
+        if np.isfinite(Tm):
+            ax_s.plot([Tm], [y0 + 1.05], marker="v", ms=4, color=fl.COLORS["stratified"], ls="none", clip_on=False)
+            if ab >= 0.7:
+                ax_s.plot([2 * Tm], [y0 + 1.05], marker="v", ms=4, color=fl.COLORS["annular"], ls="none", clip_on=False)
+        ax_s.text(165.0, y0 + 0.9, f"$a$ = {ab:g}, $A_{{max}}$ = {A_max:.1f} bar", fontsize=6.5, va="top")
+    from matplotlib.ticker import FixedFormatter, FixedLocator, NullFormatter
+
+    ax_s.set_xscale("log")
+    ax_s.set_xlim(150.0, CYCLE_WINDOW)
+    ticks = [200, 300, 500, 1000, 2000, 3000, 5000, 8000]
+    ax_s.xaxis.set_major_locator(FixedLocator(ticks))
+    ax_s.xaxis.set_major_formatter(FixedFormatter([str(t) for t in ticks]))
+    ax_s.xaxis.set_minor_formatter(NullFormatter())
+    ax_s.set_ylim(-0.05, 1.15 * len(SPECTRA_OPENINGS) + 0.05)
+    ax_s.set_yticks([])
+    ax_s.set_xlabel("period (s)")
+    ax_s.set_ylabel("amplitude spectrum of $P_{in}$ (normalised, stacked)")
+    marks = [
+        Line2D([], [], marker="v", ms=4, color=fl.COLORS["stratified"], ls="none", label="mean interval between blowdowns"),
+        Line2D([], [], marker="v", ms=4, color=fl.COLORS["annular"], ls="none", label="twice the interval (subharmonic)"),
+    ]
+    ax_s.legend(handles=marks, fontsize=6.0, loc="lower right", frameon=False)
+    cmap = plt.get_cmap("viridis")
+    lo, hi = np.inf, -np.inf
+    sums = []
+    for k, ab in enumerate(RETURN_OPENINGS):
+        run = _branch_run(ab)
+        if run is None:
+            continue
+        T = np.asarray(run.T)
+        P = np.asarray(run.pipe(0)["out"]["P_bar"][1])
+        tm = _blowdown_minima(T, P, T >= RETURN_T0)
+        iv = np.diff(tm)
+        if iv.size < 2:
+            continue
+        c = cmap(k / max(1, len(RETURN_OPENINGS) - 1))
+        ax_r.plot(iv[:-1], iv[1:], color=c, lw=0.5, alpha=0.6)
+        ax_r.plot(iv[:-1], iv[1:], marker="o", ms=4, color=c, ls="none", mec="white", mew=0.4, label=f"$a$ = {ab:g}")
+        lo, hi = min(lo, iv.min()), max(hi, iv.max())
+        if ab >= 0.8:
+            sums.extend((iv[:-1] + iv[1:]).tolist())
+    span = (lo - 100.0, hi + 100.0) if np.isfinite(lo) else (500.0, 2500.0)
+    ax_r.plot(span, span, color="0.6", lw=0.6, zorder=0)
+    if sums:
+        # a soma de dois intervalos consecutivos (o período duplo) varia muito menos do que cada um
+        S_mean, S_sd = float(np.mean(sums)), float(np.std(sums))
+        ax_r.plot(
+            span,
+            [S_mean - span[0], S_mean - span[1]],
+            color="0.6",
+            lw=0.6,
+            ls="--",
+            zorder=0,
+            label=f"$T_n + T_{{n+1}}$ = {S_mean:.0f} ± {S_sd:.0f} s ($a \\geq 0.8$)",
+        )
+    ax_r.set_xlim(*span)
+    ax_r.set_ylim(*span)
+    ax_r.set_aspect("equal")
+    ax_r.set_xlabel("interval $T_n$ (s)")
+    ax_r.set_ylabel("next interval $T_{n+1}$ (s)")
+    ax_r.legend(fontsize=6.0, loc="upper left", frameon=False, ncol=2)
+    fl.panel_label(ax_s, "(a)")
+    fl.panel_label(ax_r, "(b)")
+    fl.save(fig, out, "spectra_return_map", png)
+
+
+def gaslift(out, png):
+    """Gas lift: pressão do gás na plataforma de 20 bar (retenção fechada, o caso base) a 150 bar, com o choke
+    aberto no ponto base, desde a partida bloqueada: pressão de entrada da linha, pressão de fundo do poço,
+    injeção pela retenção, líquido no choke e fração de líquido média do riser."""
+    fig, axes = plt.subplots(5, 1, figsize=(fl.DOUBLE, 0.95 * fl.DOUBLE), sharex=True, gridspec_kw=dict(hspace=0.14))
+    cmap = plt.get_cmap("viridis")
+    Ps = [P for P in GL_PRESSURES if P > 20]
+    any_run = False
+    for P in GL_PRESSURES:
+        run = _gl_run(P)
+        if run is None:
+            continue
+        any_run = True
+        sr = _gl_series(run)
+        if P == 20:
+            kw = dict(color=fl.INK, lw=0.7, ls=(0, (2, 1.2)), label="no injection (20 bar)")
+        else:
+            kw = dict(color=cmap((Ps.index(P)) / max(1, len(Ps) - 1)), lw=0.8, label=f"{P} bar")
+        axes[0].plot(sr["T"], sr["P_in"], **kw)
+        axes[1].plot(sr["T"], sr["P_bot"], **kw)
+        axes[2].plot(sr["T"], sr["q_inj"], **kw)
+        axes[3].plot(sr["T"], sr["qL_out"], **kw)
+        axes[4].plot(sr["T"], sr["holdup"], **kw)
+    if not any_run:
+        for a in axes:
+            fl.placeholder(a, "gas-lift runs not found (batches/paper01_gaslift.json)")
+        fl.save(fig, out, "gaslift", png)
+        return
+    axes[0].set_ylabel("$P_{in}$ (bar)")
+    axes[1].set_ylabel("bottom-hole $P$ (bar)")
+    axes[2].set_ylabel("injected gas (kg s$^{-1}$)")
+    axes[3].set_ylabel("$q_L$ at the choke (kg s$^{-1}$)")
+    axes[3].set_yscale("log")
+    axes[3].set_ylim(0.3, 100.0)
+    axes[4].set_ylabel("riser liquid holdup")
+    axes[4].set_xlabel("time (s)")
+    axes[4].set_xlim(0.0, 8000.0)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, fontsize=6.5, ncol=7, loc="upper center", bbox_to_anchor=(0.5, 0.995), frameon=False)
+    fig.subplots_adjust(top=0.955)
+    for i, a in enumerate(axes):
+        fl.panel_label(a, f"({'abcde'[i]})")
+    fl.save(fig, out, "gaslift", png)
+
+
+def tab_gaslift(out):
+    """Assinatura dos últimos GL_WINDOW s de cada corrida do gas lift: regime, faixa de P_in, intervalo entre
+    sopros, pressão de fundo, injeção, produção de líquido e pico no choke, custo."""
+    from mfsim.analysis import cycle_class
+
+    rows = []
+    q_ref = None
+    for P in GL_PRESSURES:
+        run = _gl_run(P)
+        if run is None:
+            rows.append([str(P), "--", "--", "--", "--", "--", "--", "--", "--", "--"])
+            continue
+        sr = _gl_series(run)
+        T = sr["T"]
+        sel = T >= T[-1] - GL_WINDOW
+        c = cycle_class(T[sel], sr["P_in"][sel], sr["qL_out"][sel], smooth=SMOOTH)
+        tm = _blowdown_minima(T, sr["P_in"], sel)
+        iv = np.diff(tm)
+        if c["cls"] == "stable":
+            regime, interval = "steady", "--"
+        else:
+            regime = "severe slugging" if c["cls"] == "slugging" else "pressure cycle"
+            interval = f"{iv.mean():.0f}" if iv.size else fl.fmt(c["period"], "{:.0f}")
+            if iv.size >= 2 and np.max(np.maximum(iv[1:] / iv[:-1], iv[:-1] / iv[1:])) > 1.1:
+                interval = f"{iv.min():.0f}--{iv.max():.0f}"
+        q_mean = float(sr["qL_res"][sel].mean())
+        if P == 20:
+            q_ref = q_mean
+        gain = f"{100.0 * (q_mean / q_ref - 1.0):+.0f}" if q_ref else "--"
+        inj = sr["q_inj"][sel]
+        inj_txt = "0" if inj.max() < 1e-3 else (f"{inj.mean():.2f}" if inj.max() - inj.min() < 0.02 else f"{inj.min():.2f}--{inj.max():.2f}")
+        rows.append(
+            [
+                str(P),
+                regime,
+                f"{sr['P_in'][sel].min():.1f}--{sr['P_in'][sel].max():.1f}" if regime != "steady" else f"{sr['P_in'][sel].mean():.1f}",
+                interval,
+                f"{sr['P_bot'][sel].min():.0f}--{sr['P_bot'][sel].max():.0f}" if regime != "steady" else f"{sr['P_bot'][sel].mean():.0f}",
+                inj_txt,
+                f"{q_mean:.2f}",
+                gain,
+                f"{sr['qL_out'][sel].max():.1f}",
+                f"{run.info.get('n_steps', 0) / 1000:.1f}",
+            ]
+        )
+    fl.tex_table(
+        out,
+        "tab_gaslift",
+        [
+            "$P_{gas}$ (bar)",
+            "regime",
+            "$P_{in}$ (bar)",
+            "interval (s)",
+            "$P_{bh}$ (bar)",
+            "injection (kg/s)",
+            "$\\bar q_L$ (kg/s)",
+            "gain (\\%)",
+            "peak $q_L$ (kg/s)",
+            "steps ($10^3$)",
+        ],
+        rows,
+        align="rlrrrrrrrr",
+        notes=(
+            "Last \\SI{4000}{\\second} of \\SI{8000}{\\second} runs from the blocked state with the choke open "
+            "at the base point. $P_{gas}$: gas pressure at the platform end of the gas-lift line; at \\SI{20}{\\bar} "
+            "the check valve stays closed and the run is the base case with the branch inert. Interval: between "
+            "blowdowns (minima of the smoothed $P_{in}$), a range where consecutive intervals differ by more than "
+            "\\SI{10}{\\percent}. $P_{bh}$: pressure in the first cell of the well. Injection: gas through the "
+            "check valve, a range where it is modulated by the cycle. $\\bar q_L$: mean liquid rate from the "
+            "reservoir; gain relative to \\SI{20}{\\bar}. Peak $q_L$: largest liquid rate through the choke. Steps: "
+            "accepted steps of the whole run."
+        ),
+    )
+
+
 FIGURES = {
     "geometry": geometry,
     "hyperbolicity": hyperbolicity,
     "steady_profiles": steady_profiles,
     "spacetime": spacetime,
     "cycle_anatomy": cycle_anatomy,
+    "spectra_return_map": spectra_return_map,
+    "gaslift": gaslift,
     "cycle_profiles": cycle_profiles,
     "stability_map": stability_map,
     "bifurcation": bifurcation,
@@ -3473,6 +3846,7 @@ TABLES = {
     "tab_orbits": tab_orbits,
     "tab_newton": tab_newton,
     "tab_geometry": tab_geometry,
+    "tab_gaslift": tab_gaslift,
     "tab_parameters": tab_parameters,
     "tab_runs": tab_runs,
     "tab_ablationchanges": tab_ablation_changes,
