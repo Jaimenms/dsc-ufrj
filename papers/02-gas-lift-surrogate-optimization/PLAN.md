@@ -41,6 +41,9 @@ longo da vida dos poços e mostrar a pressão de gas lift e a abertura do choke 
   definir) depois de o regime estar estabelecido.
 - **Sem séries temporais no conjunto de dados**: só marcadores por sinal — valor médio, mínimo, máximo, frequência
   mínima e frequência máxima.
+- **A IPR entra como duas variáveis, P_res e PI** (confirmado pelo dono depois de discutidas as alternativas de
+  fixar P_res ou usar o potencial em fluxo aberto): é P_res contra o peso das colunas que decide se o poço morre e
+  é a pressão de fundo que decide se a retenção abre.
 
 ## O que torna o artigo publicável (e o que não chega)
 
