@@ -217,9 +217,12 @@ recebe um indicador; é informação.
    browniano puro não serve para cobrir o hipercubo: é difusivo, e cobrir 5 dimensões com passos de 10 % das
    faixas pediria ~10⁵ pontos. A forma acordada junta as duas coisas:
    - o conjunto de treino é o desenho de Sobol (cobertura garantida), agrupado em 20–25 **cadeias de vizinhos**
-     (k-means nas entradas normalizadas; dentro de cada grupo, a ordem do vizinho mais próximo); cada cadeia
-     corre em sequência num processo — o primeiro ponto da partida bloqueada, os seguintes com arranque quente a
-     partir do anterior — e as cadeias correm em paralelo;
+     (k-means nas entradas normalizadas); **dentro de cada cadeia a sequência é a do dono (2026-10-18): parte-se
+     do ponto mais perto do centro da distribuição e segue-se o caminho mais curto por todos os outros** (caixeiro
+     viajante sem regresso: exato por enumeração até 10 pontos, vizinho mais próximo com 2-opt acima;
+     `shortest_path_from` da ferramenta); cada cadeia corre em sequência num processo — o primeiro ponto da
+     partida bloqueada, os seguintes com arranque quente a partir do anterior — e as cadeias correm em paralelo;
+     o ensaio desta sequência com 10 pontos sorteados numa só cadeia está em `runs/paper02/seq10/` (semente 11);
    - variante a avaliar no piloto: estado do poço (P_res, PI, RGO) do Sobol e, para cada um, um passeio curto de
      ~20 pontos nas duas decisões (P_gas, abertura) com arranque quente — um passeio em 2 dimensões cobre bem e é
      literalmente operar o poço;
@@ -237,8 +240,10 @@ recebe um indicador; é informação.
      marcadores funcionam (`dataset.csv` com 186 colunas). Dois avisos: o ponto com gás rápido no riser (155 bar,
      PI 9, choke 0,93) custou 19 970 passos em 1500 s — o fechamento do topo do riser outra vez; e uma descida
      grande de P_gas entre pontos vizinhos (155 → 36 bar) esvazia a linha de gás e o anular para a plataforma
-     (−3 kg/s em média durante a janela), um transiente físico mas caro: dentro de cada cadeia convém limitar o
-     salto em P_gas (ordenar por P_gas dentro do grupo, ou cadeias mais pequenas), a afinar no piloto.
+     (−3 kg/s em média durante a janela), um transiente físico mas caro. Medido com os mesmos três pontos da
+     partida bloqueada (1500 s): o vizinho próximo (117 → 155 bar) saiu melhor quente (583 s contra 1534 s e o
+     orçamento esgotado), o salto grande (155 → 36 bar) saiu 4,7× pior quente (32 082 contra 6808 passos): o
+     arranque quente paga quando o passo é pequeno, sobretudo em P_gas — daí a sequência de distância mínima.
 2. **Estacionário + espetro em todos os pontos** (milhares, segundos cada): classe linear, características físicas
    e a fronteira de estabilidade nas cinco dimensões.
 3. **Dinâmica em todos os pontos sorteados** (não só nos instáveis, ao contrário do plano anterior): o custo de um

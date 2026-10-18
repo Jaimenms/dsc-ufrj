@@ -84,9 +84,48 @@ def sobol_design(n, ranges, seed):
     return lo + u * (hi - lo)
 
 
+def path_length(D, path):
+    return float(sum(D[path[k], path[k + 1]] for k in range(len(path) - 1)))
+
+
+def shortest_path_from(U, start, exact_max=10):
+    """Caminho aberto mais curto que começa em `start` e visita todos os pontos (caixeiro viajante sem regresso,
+    a sequência de arranque quente proposta pelo dono): exato por enumeração até `exact_max` pontos, vizinho mais
+    próximo melhorado por 2-opt acima disso. Devolve a lista de índices."""
+    from itertools import permutations
+
+    n = U.shape[0]
+    D = np.linalg.norm(U[:, None, :] - U[None, :, :], axis=-1)
+    others = [i for i in range(n) if i != start]
+    if n <= exact_max:
+        best, best_len = None, np.inf
+        for perm in permutations(others):
+            L = D[start, perm[0]] + sum(D[perm[k], perm[k + 1]] for k in range(len(perm) - 1)) if perm else 0.0
+            if L < best_len:
+                best, best_len = perm, L
+        return [start] + list(best or ())
+    cur, left, path = start, set(others), [start]
+    while left:
+        nxt = min(left, key=lambda j: D[cur, j])
+        left.remove(nxt)
+        path.append(nxt)
+        cur = nxt
+    improved = True
+    while improved:  # 2-opt num caminho aberto (o início fica fixo)
+        improved = False
+        for i in range(1, n - 1):
+            for j in range(i + 1, n):
+                cand = path[:i] + path[i : j + 1][::-1] + path[j + 1 :]
+                if path_length(D, cand) < path_length(D, path) - 1e-12:
+                    path, improved = cand, True
+    return path
+
+
 def make_chains(X, ranges, n_chains, seed):
-    """Agrupa os pontos em `n_chains` cadeias de vizinhos (k-means nas entradas normalizadas) e ordena cada cadeia
-    pelo vizinho mais próximo a partir do ponto mais perto do centro do grupo. Devolve (cadeia, ordem) por ponto."""
+    """Agrupa os pontos em `n_chains` cadeias de vizinhos (k-means nas entradas normalizadas) e, em cada cadeia,
+    parte do ponto mais perto do centro do grupo e segue o caminho mais curto por todos os outros
+    (`shortest_path_from`). Com uma cadeia é a estratégia do dono: centro da distribuição e menor distância
+    percorrida. Devolve (cadeia, ordem) por ponto."""
     from scipy.cluster.vq import kmeans2
 
     lo = np.array([ranges[k][0] for k in INPUTS])
@@ -106,13 +145,8 @@ def make_chains(X, ranges, n_chains, seed):
         if idx.size == 0:
             continue
         centre = U[idx].mean(axis=0)
-        left = list(idx[np.argsort(np.linalg.norm(U[idx] - centre, axis=1))])
-        cur = left.pop(0)
-        tour = [cur]
-        while left:
-            d = np.linalg.norm(U[left] - U[cur], axis=1)
-            cur = left.pop(int(np.argmin(d)))
-            tour.append(cur)
+        start = int(np.argmin(np.linalg.norm(U[idx] - centre, axis=1)))
+        tour = [int(idx[i]) for i in shortest_path_from(U[idx], start)]
         for k, i in enumerate(tour):
             chain[i], order[i] = c_id, k
         c_id += 1
@@ -183,7 +217,16 @@ def cmd_design(a):
     out.mkdir(parents=True, exist_ok=True)
     save_design(out, d)
     n_chains = len(set(chain.tolist()))
-    print(f"{design_path(out)}: {X.shape[0]} pontos em {n_chains} cadeias (sementes {a.seed})")
+    print(f"{design_path(out)}: {X.shape[0]} pontos em {n_chains} cadeias (semente {a.seed})")
+    if not a.test:
+        lo = np.array([ranges[k][0] for k in INPUTS])
+        hi = np.array([ranges[k][1] for k in INPUTS])
+        U = (X - lo) / (hi - lo)
+        for c in range(n_chains):
+            idx = np.flatnonzero(chain == c)
+            tour = idx[np.argsort(order[idx])]
+            L = sum(float(np.linalg.norm(U[tour[k + 1]] - U[tour[k]])) for k in range(tour.size - 1))
+            print(f"  cadeia {c}: {' → '.join(points[i]['id'] for i in tour)} (distância normalizada {L:.2f})")
 
 
 # ------------------------------------------------------------------------------------------------ corridas

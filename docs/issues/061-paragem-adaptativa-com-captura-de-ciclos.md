@@ -27,7 +27,8 @@ período); `capture_cycles = N` continua, depois de assentar, N vezes o maior pe
 
 **Ferramenta** `tools/paper02_dataset.py` (plano do artigo 02): `design` sorteia o hipercubo das cinco entradas
 (P_res, PI, RGO, P_gas, abertura) por Sobol embaralhado e agrupa os pontos em cadeias de vizinhos (k-means nas
-entradas normalizadas, ordem do vizinho mais próximo), gravando `design.json`; `run` corre as cadeias em
+entradas normalizadas; em cada cadeia parte do ponto mais perto do centro e segue o caminho mais curto por todos os
+outros — exato até 10 pontos, 2-opt acima —, a sequência pedida pelo dono), gravando `design.json`; `run` corre as cadeias em
 processos paralelos, o primeiro ponto de cada cadeia da partida bloqueada do gerador e os seguintes com arranque
 quente a partir do estado final do anterior (`state_to_case_ic`), cada corrida com a paragem adaptativa (P na
 cabeça do poço e q_L no topo do riser, envelope, N_c = 3 ciclos de captura, 600 s num estacionário, tf máximo
@@ -49,8 +50,10 @@ corrida em curso; matar os processos perde só a corrida em curso.
   é determinista com a semente, as cadeias cobrem todos os pontos e a ordem é uma permutação; os marcadores dão
   f_min = f_max = 1/500 s numa sinusoide, 1/800 e 1/400 s em máximos alternados a 400 e 800 s, zero num sinal
   permanente.
-- Fumo de ponta a ponta (3 pontos numa cadeia, tf 1500 s): ver o registo da sessão de 2026-10-18 no plano do
-  artigo 02.
+- Fumo de ponta a ponta (3 pontos numa cadeia, tf 1500 s) e comparação com a partida bloqueada nos mesmos pontos:
+  o vizinho próximo em P_gas (117 → 155 bar) custou quente 583 s contra 1534 s bloqueado (que esgotou o orçamento);
+  o salto grande (155 → 36 bar) custou quente 32 082 passos contra 6808 bloqueado, porque a linha de gás se esvazia
+  para a plataforma. O arranque quente paga com passos pequenos: daí a sequência de distância mínima.
 
 ## Referências
 

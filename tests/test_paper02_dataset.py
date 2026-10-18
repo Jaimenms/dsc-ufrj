@@ -70,3 +70,19 @@ def test_write_dataset(tmp_path):
     assert len(rows[0]) == len(cols) and "riser_top_qL_max" in cols and "annulus_base_P_mean" in cols
     meta = json.loads((tmp_path / "dataset.json").read_text())
     assert meta["n_rows"] == 1 and meta["columns"] == cols
+
+
+def test_shortest_path_from_centre():
+    rng = np.random.default_rng(0)
+    U = rng.random((8, 2))
+    start = int(np.argmin(np.linalg.norm(U - U.mean(axis=0), axis=1)))
+    path = ds.shortest_path_from(U, start)
+    assert path[0] == start and sorted(path) == list(range(8))
+    D = np.linalg.norm(U[:, None] - U[None, :], axis=-1)
+    # exato: nenhuma troca 2-opt melhora
+    for i in range(1, 7):
+        for j in range(i + 1, 8):
+            cand = path[:i] + path[i : j + 1][::-1] + path[j + 1 :]
+            assert ds.path_length(D, cand) >= ds.path_length(D, path) - 1e-12
+    big = ds.shortest_path_from(rng.random((25, 3)), 0)
+    assert big[0] == 0 and sorted(big) == list(range(25))
