@@ -1,18 +1,24 @@
 # Artigo 02 — plano: gas lift ao longo da vida com restrição de estabilidade dinâmica
 
 *Documento de trabalho do artigo (português, como o resto da documentação; o manuscrito é em inglês).
-Escrito em 2026-10-17 a partir do pedido do dono e da discussão do escopo; atualizar à medida que as decisões e
-as corridas chegam.*
+Escrito em 2026-10-17 a partir do pedido do dono e da discussão do escopo; revisto em 2026-10-18 depois de a
+geometria com gas lift ter ficado pronta no artigo 01 (§8.8, issue 060) e com a estratégia de geração de dados
+pedida pelo dono (sorteio das entradas, marcadores em pontos característicos em vez de perfis, horizonte de
+simulação com captura de ciclos). Atualizar à medida que as decisões e as corridas chegam.*
 
 ## O pedido, em uma frase
 
-Pegar no modelo dinâmico do artigo 01, acrescentar o gas lift modelado desde a pressão de gás na plataforma, gerar
-algumas centenas de simulações dinâmicas sorteando o estado do poço (IPR, RGO), a pressão de gas lift e a abertura
-do choke, treinar com elas um modelo substituto (redes neurais), e otimizar a operação. A função objetivo junta a
-receita do óleo, o custo da compressão do gás e uma penalização da intermitência severa. Por fim, seguir o IPR e o
-RGO ao longo da vida dos poços e mostrar a pressão de gas lift e a abertura do choke ótimas em cada fase.
+Pegar no modelo dinâmico do artigo 01 com a rede de gas lift (linha de gás da plataforma, anular e válvula de
+retenção, controlada pela pressão do gás na plataforma), gerar algumas centenas de simulações dinâmicas sorteando
+o estado do poço (IPR, RGO), a pressão de gas lift e a abertura do choke, registar de cada uma só os marcadores
+(média, mínimo, máximo, frequências) dos estados em pontos característicos da rede, treinar com eles um modelo
+substituto (redes neurais), e otimizar a operação. A função objetivo junta a receita do óleo, o custo da
+compressão do gás e restrições de estabilidade com significado operacional. Por fim, seguir o IPR e o RGO ao
+longo da vida dos poços e mostrar a pressão de gas lift e a abertura do choke ótimas em cada fase.
 
-## Decisões do dono (2026-10-17)
+## Decisões do dono
+
+**2026-10-17**
 
 - **Vários poços, todos com a mesma geometria** (a do artigo 01), a partilhar o gás de lift e, portanto, o
   compressor. O acoplamento que dá sentido à otimização é a alocação de um gás limitado entre poços em fases
@@ -21,17 +27,20 @@ RGO ao longo da vida dos poços e mostrar a pressão de gas lift e a abertura do
   economia do gas lift no fim da vida, fica fora e é discutida como limitação.
 - **Gas lift modelado desde a pressão na plataforma**, no início da linha de gas lift.
 
-## Decisões do dono (2026-10-18)
+**2026-10-18**
 
-- **Caso base com gas lift construído sobre a geometria do artigo 01** (poço, linha de 2 km e riser iguais), com
-  uma linha de gás da plataforma à cabeça do poço, um anular e uma válvula de retenção na base do poço; é o caso
-  base do artigo e não substitui o do artigo 01.
-- **Especificação de pressão do gás na plataforma** como controlo; desligar o gas lift é baixar essa pressão até a
-  retenção fechar, e o caso fica igual à geometria sem gas lift (o ramo fica inerte).
-- **Modelo a dois fluidos em todos os dutos**, incluindo os só de gás (linha de gás e anular), e não os dutos
-  monofásicos de gás da tese.
-- **O RGO do reservatório é só o gás do poço**; o gás de lift soma-se-lhe no ponto de injeção.
-- **Diâmetros da prática de projeto de linhas de gas lift**, com exemplos práticos (ver abaixo).
+- **A geometria é a do artigo 01 com o ramo de gas lift** (§8.1 e §8.8 do artigo 01): poço de 1500 m, linha de
+  2 km com 500 m a −2°, riser de 317 m, mais a linha de gás de 4" pelo traçado da linha de produção, o anular
+  9 5/8" × 5 1/2" e a válvula de retenção a 30 m do fundo. Pressão do gás na plataforma como único controlo do
+  ramo (desligar = pressão baixa, retenção fechada); modelo a dois fluidos em todos os dutos; o RGO do
+  reservatório é só o gás do poço.
+- **Geração de dados por sorteio das entradas** (condições do poço e decisões), não por grelha.
+- **Saídas registadas em pontos característicos da rede, não perfis**: início do poço, topo do poço, início do
+  riser, topo do riser e as duas extremidades da linha de gas lift.
+- **Horizonte de simulação determinado por uma metodologia**, com captura de pelo menos 2 ciclos (número a
+  definir) depois de o regime estar estabelecido.
+- **Sem séries temporais no conjunto de dados**: só marcadores por sinal — valor médio, mínimo, máximo, frequência
+  mínima e frequência máxima.
 
 ## O que torna o artigo publicável (e o que não chega)
 
@@ -40,7 +49,8 @@ regime permanente (análise nodal). O que este trabalho tem de próprio:
 
 1. **O viés do ótimo estacionário.** No mesmo ponto, a produção média no tempo de um ciclo de golfada severa ou de
    *heading* difere da do estacionário (instável) que um otimizador nodal usa. Medir quanto se perde por escolher
-   um ponto instável é a mensagem principal.
+   um ponto instável é a mensagem principal. O artigo 01 já mostra o primeiro caso: a 100–120 bar de gás o ciclo
+   sobrevive onde o critério de Bøe o daria por extinto, com sopros de 26–31 kg/s e produção +10 a +17 %.
 2. **Um esquema híbrido para treinar o substituto.** O estacionário (Newton) e os seus autovalores com a matriz de
    massa (issue 048) custam segundos e dão a classe estável/instável e, na região estável, a produção; a dinâmica
    (minutos por corrida) só é necessária onde o estacionário é instável.
@@ -50,160 +60,178 @@ regime permanente (análise nodal). O que este trabalho tem de próprio:
 O que não chega sozinho: com duas decisões por poço, o ótimo de **um** poço acha-se por enumeração numa grelha
 sobre o substituto. É a partilha do gás entre poços que dá um problema de otimização a sério.
 
-## Rede e modelo
+## Rede e modelo (fixos: os do artigo 01)
 
-### Hipótese de rede (a confirmar)
+Cada poço tem a sua linha e o seu riser até à plataforma (poços satélite); os poços só se acoplam pelo coletor de
+gás de lift e pelo compressor. Consequência: **um só substituto, o de um poço**, serve para todos, e o problema
+com N poços é uma soma mais as restrições do compressor. Um coletor submarino de produção comum (acoplamento
+hidráulico e dinâmico entre poços) fica fora deste artigo.
 
-Cada poço tem a sua linha e o seu riser até à plataforma (poços satélite, todos com a geometria do artigo 01: poço
-vertical de 1500 m, linha de 2 km com 500 m a −2°, riser de 317 m). Os poços só se acoplam pelo coletor de gás de
-lift e pelo compressor na plataforma. Consequência importante: **um só substituto, o de um poço**, serve para todos
-os poços, e o problema com N poços é uma soma mais as restrições do compressor.
+O modelo e a geometria são os do artigo 01 e **não mudam**: padrão automático com 054, regra de fração baixa a
+0,025, Newton com `armijo_tol` (055), estimativa de Milne (058), e o ramo de gas lift da §8.8 (opção
+`gas_lift=true` de `generators/offshore.py`, issue 060): linha de gás de 4" (0,1016 m) com o traçado da linha de
+produção e metade das células (19), anular de diâmetro equivalente 0,171 m (10 células) com tanque de 1 m³ na
+base, retenção com CV = 1,5 e sem pressão de abertura a 30 m do fundo (poço partido em `well_lower` e `well` no
+vértice `inj`), tudo a dois fluidos com o ramo de gás a arrancar quase seco (α_G = 0,998). Casos
+`cases/paper01/gaslift/offshore_gl_P{20,100,...,150}.json`, lote `batches/paper01_gaslift.json`, corridas em
+`runs/paper01/gaslift/`; 323 estados.
 
-A alternativa, um coletor submarino de produção comum, acopla os poços hidraulicamente e em dinâmica (as golfadas
-interagem). Fica fora deste artigo.
+O que o artigo 01 já mostrou com esta geometria (choke aberto, P_res 200 bar, PI 5, RGO 50, 8000 s):
 
-### O que se acrescenta ao modelo do artigo 01 (feito em 2026-10-18)
+| P_gas (bar) | regime | intervalo entre sopros | fundo (bar) | injeção (kg/s) | produção | passos |
+|---|---|---|---|---|---|---|
+| 20 (retenção fechada) | golfada severa, sopros alternados | 1315–1625 s | 94–108 | 0 | 3,94 kg/s | 9,9 k |
+| 100 / 110 / 120 | golfada severa periódica, riser sem encher (holdup máx. 0,73–0,79), injeção contínua modulada ±20–25 % | 1100 / 1220 / 1410 s | 77–103 | 0,34–0,79 | +10 / +14 / +17 % | 25–46 k |
+| 130 / 140 / 150 | estacionário | — | 69–75 | 0,89 / 0,99 / 1,08 | +29 / +32 / +34 % | 26 / 117 / 52 k |
 
-O modelo do artigo 01 fica congelado: padrão automático com 054 (`regime.local_bubble`), regra de fração baixa a
-0,025, Newton com `armijo_tol` (055) e a estimativa de Milne (058), como o gerador do offshore já usa.
+O gas lift intermitente (retenção a fechar durante parte do ciclo) não apareceu: o anular fica sempre acima da
+pressão do tubing na injeção. Aviso de custo: as duas células horizontais dos 10 m do topo do riser chaveiam de
+padrão com gás rápido (estratificado ↔ intermitente ↔ anular) e multiplicam os passos por 2,5 a 11; suavizar o
+chaveamento muda a resposta. **Antes dos lotes do artigo 02 é preciso decidir o fechamento desse troço** (ver
+decisões em aberto); sem isso, metade das corridas custa 30 a 60 min em vez de 6.
 
-Rede de gas lift de cada poço, da plataforma para o fundo — opção `gas_lift=true` de `generators/offshore.py`,
-que mantém o poço, a linha e o riser do artigo 01 bit a bit (o caso base regenerado é idêntico) e acrescenta o
-ramo; casos `cases/paper01/gaslift/offshore_gl_P150.json` (com injeção) e `offshore_gl_P20.json` (sem injeção),
-corridas em `runs/paper01/gaslift/`; issue 060:
+Verificações pendentes do modelo: caso 10.3.2 da tese (heading com a mesma topologia) e o ensaio de Fabre 2 com o
+padrão automático (057).
 
-1. vértice de pressão na plataforma (`gl_src`): **especificação da pressão do gás** P_gas, a única variável de
-   controlo do ramo; com P_gas = 20 bar a retenção fica fechada e o caso reproduz o estado inicial do artigo 01
-   (pressão de fundo 97 bar contra 95, vazões iguais);
-2. **linha de gás de 4"** (0,1016 m) com o traçado da linha de produção ao contrário (patamar, riser, joelho em
-   arco, subida a +2° e horizontal até à cabeça do poço, com metade das células por segmento: 19), com o modelo a dois fluidos
-   (quase seca, α_G = 0,998): é o par 6" produção + 4" gas lift dos poços satélite da
-   Petrobras — a especificação técnica dos poços satélite do Atapu lista o riser de serviço/gas lift de 4"
-   flexível ao lado do de produção; a mesma pairing aparece nos sistemas de coleta do Roncador (P-52/P-54, linhas
-   de produção emparelhadas com linhas de gas lift);
-3. **anular 9 5/8" × 5 1/2"**: revestimento de produção 9 5/8" 47 lb/ft (ID 0,2205 m) e coluna de 5 1/2" (OD 0,1397
-   m, ID 0,124 m ≈ o D_well = 0,127 m do artigo 01); o anular entra como duto de diâmetro de área equivalente
-   0,171 m (área 0,0229 m², a que conta para a massa de gás armazenada e a inércia; o diâmetro hidráulico, 0,081 m,
-   só mudaria o atrito, desprezável no gás a < 1 m/s), a dois fluidos;
-4. **válvula de retenção** (`check_valve`, a lei regularizada da tese, 10.3.2) a 30 m do fundo (válvula operadora
-   logo acima do packer), alimentada por um tanque de 1 m³ na base do anular, com CV = 1,5: q = 0,0075·CV·√(ρ ΔP)
-   dá ~1 kg/s (≈ 100 000 Sm³/d, a ordem de grandeza das injeções por poço do Campos) a 60 bar de queda; **não é um
-   orifício em escoamento crítico** (a hipótese anterior deste plano): a vazão segue √ΔP, mas com ΔP ≈ 110 bar as
-   oscilações de ±10 bar do tubing mudam-na só ≈ ±5 %, o que dá o mesmo efeito prático;
-5. o poço partido em `well_lower` (30 m, 1 célula) e `well` no vértice de injeção `inj`, que recebe a produção do
-   reservatório e o gás da retenção; o RGO do reservatório continua a ser o gás do poço.
+## Entradas (o que se sorteia)
 
-Manifold de gas lift a 150 bar (o caso «com injeção»): a coluna estática de gás leva a base do anular a 170 bar,
-e a válvula injeta 1,15 kg/s com o tubing a 58 bar no estado inicial bloqueado (a pressão de fundo cai de 97 para
-58 bar e a produção de líquido sobe de 4,1 para 5,7 kg/s). Com os 5 dutos o caso tem 323 estados (200 no artigo
-01); `slow_exit = true` por causa dos eventos da retenção (033). O estado inicial (`--ic blocked`) marcha a coluna
-de gás estática desde a plataforma e itera a injeção com a lei da retenção e a IPR.
+| tipo | variável | símbolo | faixa proposta (a decidir) |
+|---|---|---|---|
+| estado do poço (vida) | pressão do reservatório | P_res | 120–220 bar |
+| estado do poço (vida) | índice de produtividade | PI | 2–10 Sm³/d/bar |
+| estado do poço (vida) | razão gás–óleo | RGO | 30–200 Sm³/Sm³ |
+| decisão por poço | pressão do gás na plataforma | P_gas | 20–160 bar |
+| decisão por poço | abertura do choke de produção | a | 0,1–1,0 |
 
-O que fica da hipótese anterior: a lei de orifício em escoamento crítico não é necessária (ponto 4); o gerador
-separado `generators/gas_lift.py` também não (a opção do gerador do offshore partilha a geometria e garante que o
-caso do artigo 01 não muda). A verificação contra o caso 10.3.2 da tese (heading com a mesma topologia) fica por
-fazer.
+Cinco dimensões: o IPR linear tem dois parâmetros. A decisão de gás é a pressão P_gas (decisão do dono de
+2026-10-18); com descarga comum do compressor, a pressão de cada poço é a de descarga menos a queda no seu choke
+de gás, e o choke de gás fica implícito.
 
-**Primeiras corridas (2026-10-18, 8000 s, JAX, issue 060).** Sem injeção (20 bar) o caso reproduz o do artigo 01
-ao mesmo custo (9919 passos, 6 min), desde que a linha de gás e o anular arranquem quase secos (α_G = 0,998; com
-2 % de líquido o escorrimento do filme custa 5×). Com injeção a 150 bar o gas lift **suprime a golfada severa**:
-depois do sopro inicial a linha fica a 17,9 bar constante, o fundo do poço a 69 bar (94–108 sem injeção), a
-injeção a 1,08 kg/s (≈ 110 000 Sm³/d) e a produção de líquido sobe de 3,94 para 5,29 kg/s. Dois avisos para o
-desenho do artigo: (i) a fronteira de estabilidade em P_gas fica entre 20 e 150 bar e é o que o mapa linear tem de
-localizar; (ii) o caso com injeção custa 5× (51 625 passos, 31 min) por chaveamento de padrão nas duas células
-horizontais dos 10 m do topo do riser (estratificado ↔ intermitente ↔ anular a α_G ≈ 0,82 com gás rápido, 75
-trocas por 1000 s, vazão no choke a oscilar entre 1,3 e 8,4 kg/s a cada 37 s), não na dinâmica do ramo de gás;
-suavizar o chaveamento (`k_switch` 5) tira o custo mas muda a solução (o topo fica estratificado e o estado sai do
-equilíbrio), logo é uma decisão de modelo a tomar antes dos lotes — por exemplo excluir o estratificado no troço
-horizontal curto a jusante do riser (10 m = 66 D, sem comprimento de desenvolvimento), com issue própria.
+Dois cuidados no sorteio:
 
-Profundidade de injeção (análise de 2026-10-17 com a corrida de referência de 24 000 s): sem injeção, a pressão
-no tubing a 1500 m vai de 92 a 110 bar ao longo do ciclo (gradiente médio 5,2–5,5 bar/100 m). Com Δp de 7 bar na
-válvula e dimensionando pela pressão máxima do ciclo, injetar a 1500 m exige ≥ 120 bar no anular à cabeça do poço;
-com 100 bar, só até 1250 m; com 80 bar, só até 850 m. Fica como decisão de projeto fixa (não é variável do
-substituto).
+- **A retenção fecha abaixo de um P_gas que depende do poço** (a base do anular, ≈ 1,13 P_gas, tem de superar a
+  pressão do tubing na injeção, 60–110 bar conforme o poço). Abaixo disso a decisão é «sem gas lift» e a saída
+  não depende de P_gas: o substituto tem uma quina. Fica no conjunto de dados (é física), mas a característica
+  «ΔP da válvula no estacionário» (abaixo) diz ao substituto onde está a quina.
+- **Pontos impossíveis**: poços que morrem (coluna de líquido do riser e do poço acima de P_res) ou que não
+  arrancam; a corrida classifica-os (classe «morto») e o substituto aprende a fronteira.
 
-## Variáveis
+## Pontos característicos e marcadores (o que se regista)
 
-| tipo | variável | faixa proposta (a decidir) |
+Em vez de perfis ao longo da rede, oito pontos (os seis pedidos pelo dono mais dois que o gas lift exige), com
+quatro variáveis em cada um: pressão P, fração de gás α_G, vazão mássica de líquido q_L e de gás q_G.
+
+| ponto | onde no caso | o que mede |
 |---|---|---|
-| estado do poço (vida) | pressão do reservatório P_res | 120–220 bar |
-| estado do poço (vida) | índice de produtividade PI | 2–10 Sm³/d/bar |
-| estado do poço (vida) | RGO | 30–200 Sm³/Sm³ |
-| decisão por poço | pressão de gas lift do poço (ou abertura do choke de gás) | 60–150 bar |
-| decisão por poço | abertura do choke de produção | 0,1–1,0 |
+| fundo do poço | 1.ª célula de `well_lower` | pressão de fundo (IPR), vazão do reservatório |
+| injeção | 1.ª célula de `well` | pressão do tubing na válvula; q_G aqui − q_G do fundo = **gás injetado** |
+| topo do poço | última célula de `well` | pressão na cabeça (entrada da linha, o P_in do artigo 01) |
+| início do riser (ponto baixo) | célula do joelho da linha | pressão no ponto baixo, tampão |
+| topo do riser | última célula do riser (antes do choke) | vazões no choke (pico de líquido, gás para o separador) |
+| linha de gás, plataforma | 1.ª célula de `gas_line` | vazão de gás que o compressor fornece (P é a entrada P_gas) |
+| linha de gás, cabeça do poço | última célula de `gas_line` | pressão à chegada ao anular |
+| base do anular | tanque `an_bot` (estados HG, PT) | pressão a montante da válvula |
 
-São cinco dimensões e não quatro, porque o IPR linear tem dois parâmetros (PI e P_res). Fica por decidir se a
-decisão de gás de cada poço é a pressão a jusante do choke de gás ou a abertura desse choke, com a pressão de
-descarga comum.
+Marcadores por sinal (32 sinais), calculados **na janela de captura** (abaixo): **média, mínimo, máximo,
+frequência mínima e frequência máxima**. As frequências vêm dos intervalos entre máximos consecutivos do sinal
+suavizado (média móvel de 20 s, como no artigo 01): f_min = 1/(maior intervalo), f_max = 1/(menor intervalo);
+num ciclo periódico as duas coincidem, num ciclo com sopros alternados diferem (é a assinatura da duplicação de
+período), num estacionário ambas são 0 (nenhum máximo acima da tolerância de amplitude). Dos marcadores derivam-se
+sem custo as grandezas do substituto: produção média (média de q_L no topo do riser), gás injetado médio, pico de
+líquido no separador (máximo de q_L no topo do riser), amplitude de pressão (máx. − mín. de P na cabeça),
+período (1/f), razão pico/média, e a classe (estável se a amplitude de P na cabeça é menor que 0,1 bar ou 1 % da
+média; golfada severa se o pico de líquido é ≥ 2 vezes a média; ciclo de pressão caso contrário — o critério de
+`mfsim.analysis.cycle_class`, já usado no artigo 01).
 
-Saídas do substituto, por poço:
+Metadados por corrida, para filtrar e pesar: horizonte alcançado, motivo da paragem (estável, ciclo capturado,
+tempo máximo, orçamento, falha), número de ciclos capturados, passos, CPU, e o estado inicial usado.
 
-- classe: estável, golfada severa, ciclo de pressão, *heading* do anular;
-- vazões médias no tempo: óleo produzido, gás produzido, gás injetado;
-- pico da vazão de líquido na chegada e amplitude da pressão na chegada (para as restrições do separador);
-- período do ciclo, quando há.
+As séries completas (`.npz`) ficam fora do conjunto de dados, em `runs/paper02/`, para diagnóstico e para refazer
+marcadores se a definição mudar; o conjunto de dados é uma tabela (Parquet, uma linha por corrida) com as 5
+entradas, os metadados, as 32 × 5 = 160 colunas de marcadores e as características físicas abaixo.
 
-## O que o estacionário diz e o que não diz (caso de 2 km, 2026-10-17)
+## Horizonte de simulação e captura de ciclos (metodologia)
 
-Espetro com a matriz de massa (048) ao longo da abertura do choke, por continuação a partir do estacionário de
-0,10, com o modelo da campanha do artigo 01 (054, vazio baixo 0,025), comparado com as corridas dinâmicas de
-16 000 s da mesma campanha (`runs/paper01/offshore_dynamics/`):
+O simulador já tem a paragem adaptativa (041, `time.settle`): integra em janelas, calcula a assinatura de cada
+janela (amplitude, média, cruzamentos, período) de um sinal e pára quando a amplitude é pequena (estável) ou
+quando duas janelas seguidas têm a mesma amplitude e o mesmo período (ciclo). Falta-lhe o que o artigo 02
+precisa, e isso é uma issue (feature com bandeira, 061):
 
-| abertura | espetro do estacionário | período linear 2π/Im λ | dinâmica: período | dinâmica: amplitude de P |
-|---|---|---|---|---|
-| 0,10–0,12 | estável | — | estável | 0 |
-| 0,20 | Hopf; par rápido (68 s) à frente, par lento quase neutro (546 s) | 68 / 546 s | ~720 s | 0,8 bar |
-| 0,30 | Hopf, par lento | 569 s | ~730 s | 2,8 bar |
-| 0,40 | Hopf, par lento quase a colidir no eixo real | 1434 s | — | — |
-| 0,60 | real (sem parte imaginária) | — | 1238 s | 8,9 bar |
-| 1,00 | real | — | período 2 (1394 / 1732 / 3012 s) | 16,9 bar |
+1. **Vários sinais no critério** (P na cabeça do poço e q_L no topo do riser no mínimo): o ciclo só conta como
+   estabelecido quando todos repetem.
+2. **Ciclos com sopros alternados** (período 2 ou intervalos que não se repetem, como o choke aberto do artigo
+   01): comparar janelas de comprimento igual a um múltiplo do período estimado, com tolerância na média, no mínimo
+   e no máximo em vez de no período; ou aceitar «estabelecido» quando a soma de intervalos consecutivos se repete
+   (o período duplo conservou-se a ±4,5 % onde os intervalos variavam 25 %).
+3. **Captura**: depois de «estabelecido», continuar por **N_c ciclos** (proposta: N_c = 3 — um para confirmar que
+   o regime se mantém, dois para medir; mínimo 2, decisão do dono) e calcular os marcadores só nessa janela; num
+   estacionário a janela de captura é uma janela fixa (600 s) depois da amplitude cair abaixo da tolerância.
+4. **Limites**: t_min = 4000 s (o transiente da partida bloqueada tem 3–5 ciclos), tf_max = 24 000 s, orçamento
+   de relógio por corrida (045, p. ex. 40 min); uma corrida que chega a tf_max sem se estabelecer entra no conjunto
+   com o motivo «tf» e os marcadores dos últimos N_c ciclos, e com peso menor no treino.
+5. **Estado inicial**: partida bloqueada do gerador (`--ic blocked`), como no artigo 01; é robusta e chega ao
+   primeiro sopro em 300 s. A partida do estacionário (040) só serve onde o Newton converge e pode demorar mais a
+   sair do equilíbrio instável. Como a Hopf é supercrítica no artigo 01, o atrator não deve depender da partida;
+   verifica-se numa amostra (mesmo ponto com as duas partidas).
 
-- Perto do início da instabilidade, o par lento dá o período com ~30 % de erro.
-- O modo com maior parte real nem sempre é o que se vê: a 0,20 o par rápido cresce mais depressa, mas a dinâmica
-  mostra o lento. O classificador do substituto não pode usar só o primeiro autovalor.
-- Na golfada desenvolvida (a partir de ~0,5) o par colide no eixo real: não há frequência linear, e a amplitude
-  nunca sai da análise linear.
-- Estimativas mecanicistas a partir do estacionário funcionam bem na relaxação: P_max ≈ P_sep + ρ_L g H_riser =
-  10 + 20,1 ≈ 30,1 bar (dinâmica 30,6–31,7); P_min ≈ a do riser cheio de gás (~15 bar; dinâmica 14,7); tempo de
-  encher o riser ρ_L A H_riser / q_L ≈ 3740 kg / 3,8 kg/s ≈ 980 s, que com o sopro e a queda dá a ordem de
-  1200–1500 s. O pico de vazão (32–45 kg/s) depende da dinâmica do sopro e não sai assim.
+O período para dimensionar as janelas vem, por ordem de preferência, do par de troca linha–riser do espetro do
+estacionário (artigo 01: 500–1000 s, a 30 % do ciclo), da estimativa mecanicista (tempo de encher o riser,
+ρ_L A H/q_L) ou, na falta de ambos, de 1000 s.
 
-## Geração de dados (esquema híbrido)
+## Características físicas (features) para o substituto
 
-Cada peça com o seu papel:
+Além das cinco entradas, características calculadas **sem integrar no tempo**, para o substituto aprender só a
+correção (esquema híbrido, contribuição 2):
 
-1. **Estacionário + autovalores em todos os pontos** (Sobol ou hipercubo latino, milhares de pontos, segundos
-   cada; `tools/offshore_linear.py` do artigo 01 já faz a continuação e o espetro): a classe (estável, Hopf,
-   real), a fronteira de estabilidade, as vazões na região estável e, perto da fronteira, uma primeira estimativa
-   do período.
-2. **Estimativas mecanicistas** (P_max, P_min, tempo de enchimento do riser, período de relaxação) calculadas do
-   estacionário, como **entradas físicas do substituto**: com elas a rede só aprende a correção, e são precisas
-   menos dinâmicas.
-3. **Dinâmica só onde o estacionário é instável**, ~300–500 corridas, a partir do estacionário perturbado (040),
-   com tf de 16 000 s ou a paragem adaptativa (041) e o orçamento de tempo (045): ensina a correção às estimativas
-   e, sobretudo, o pico de vazão de líquido. A 2 km, 8000 s não chegam ao ciclo limite.
-4. **Amostragem adaptativa junto da fronteira de estabilidade**, onde as saídas mudam bruscamente e onde um
-   substituto treinado com poucos pontos alisa justamente o que interessa.
+- do **estacionário** (Newton, `tools/offshore_linear.py` estendido ao ramo de gas lift): pressão de fundo,
+  pressão na cabeça, gás injetado, holdup do riser, produção estacionária, ΔP na válvula (positivo = aberta; a
+  quina do gas lift);
+- do **espetro com a matriz de massa** (048) no estacionário: parte real e frequência do par de troca
+  linha–riser e do par da coluna do riser, e o modo real (classe linear: estável, Hopf, instável real);
+- **estimativas mecanicistas**: P_max ≈ P_sep + ρ_L g H_riser, P_min ≈ riser cheio de gás, tempo de enchimento do
+  riser ρ_L A H/q_L, razão de Bøe U_SL/(P U_SG/(ρ_L g α_G L)) com o gás injetado contado, razão gás de lift/gás
+  livre do poço, fração mássica de gás livre w_G.
 
-O cálculo direto das órbitas periódicas (*shooting* com derivação automática) fica para o artigo 03. Se estiver
-pronto a tempo, dá ao artigo 02 os gradientes exatos das grandezas do ciclo em relação às decisões, para validar
-o substituto e o ótimo junto da fronteira. Não serve para gerar as centenas de pontos: cada órbita custa ~1–3 h.
+Onde o Newton não converge (poço morto, ponto fora da bacia) as características ficam em falta e o substituto
+recebe um indicador; é informação.
 
-Custo, em ordem de grandeza: uma dinâmica de 24 000 s do caso base custa ~16 min numa thread; com a rede de gas lift
-estimam-se +30–50 %. 300 dinâmicas ≈ 100–125 CPU-h, ~10 h com 12 processos.
+## Geração de dados (estratégia)
+
+1. **Desenho de experiências**: sequência de Sobol embaralhada (quase-aleatória: cobre o hipercubo de 5 dimensões
+   sem buracos nem aglomerados, mantendo o sorteio) sobre as faixas da tabela; conjunto de teste com uma
+   sequência independente (ou sorteio uniforme), nunca uma partição da de treino. Proposta: 400 de treino, 100 de
+   teste, mais um lote adaptativo.
+2. **Estacionário + espetro em todos os pontos** (milhares, segundos cada): classe linear, características físicas
+   e a fronteira de estabilidade nas cinco dimensões.
+3. **Dinâmica em todos os pontos sorteados** (não só nos instáveis, ao contrário do plano anterior): o custo de um
+   estacionário dinâmico é pequeno (a paragem adaptativa pára em ~3000–4000 s) e o conjunto precisa de exemplos
+   estáveis com os seus marcadores para a regressão ser contínua através da fronteira.
+4. **Amostragem adaptativa**: segundo lote onde a incerteza do substituto (conjunto de redes) é maior e junto da
+   fronteira de estabilidade, onde as saídas mudam bruscamente.
+5. **Lotes** (`batches/paper02_*.json`, `mfsim batch --jobs 12`, saída em `runs/paper02/`), com `time.settle` e
+   `max_cpu` em cada caso; os casos são gerados por `tools/paper02_sample.py` (Sobol → `generators/offshore.py`
+   com `gas_lift=true` → JSON + estado inicial gravado); os marcadores por `tools/paper02_markers.py` (lê
+   `runs/paper02/`, escreve a tabela Parquet); nada no guião das figuras simula.
+
+Custo, em ordem de grandeza: com o chaveamento do topo do riser resolvido, uma corrida de 8000–12 000 s custa
+6–10 min numa thread; 500 corridas ≈ 60–80 CPU-h, 6–8 h com 12 processos. Sem o resolver, 3 a 10× mais nos pontos
+com gás rápido no riser.
 
 ## Substituto
 
-- Rede com duas cabeças: classificação (classe do ponto) e regressão (vazões médias, pico, amplitude, período).
+- Rede com duas cabeças: classificação (classe do ponto: estável, ciclo de pressão, golfada severa, morto) e
+  regressão (marcadores escolhidos: produção média, gás injetado médio, pico de líquido, amplitude de pressão,
+  f_min e f_max, pressão de fundo média).
+- Entradas: as 5 variáveis mais as características físicas; saídas normalizadas pelas estimativas mecanicistas
+  (o substituto aprende razões, não valores).
 - Conjunto de redes, ou krigagem como referência, para ter a incerteza: serve para a amostragem adaptativa e para
   não deixar o otimizador explorar zonas onde o substituto não sabe.
-- Validação num conjunto separado de dinâmicas; métricas por saída e matriz de confusão da classe.
+- Validação no conjunto de teste; métricas por saída e matriz de confusão da classe.
 - O ótimo final confirma-se sempre com o modelo completo (uma corrida dinâmica no ponto ótimo de cada estágio).
 
 ## Otimização
 
-- N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: gás (pressão ou abertura) e choke.
+- N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.
 - Objetivo: soma da receita do óleo − custo da compressão. A potência do compressor é função da vazão total de gás
   e da razão de pressões (politrópica), com a pressão de descarga comum igual à maior pressão pedida pelos poços.
 - Restrições: capacidade do compressor (vazão total e potência), pico de vazão de líquido de cada poço abaixo da
@@ -216,8 +244,8 @@ estimam-se +30–50 %. 300 dinâmicas ≈ 100–125 CPU-h, ~10 h com 12 processo
 
 - Trajetórias exógenas de P_res(t), PI(t) e RGO(t) por poço (curvas de declínio típicas, a definir), com os poços
   desfasados no tempo.
-- Em cada estágio resolve-se a alocação; o resultado é a trajetória ótima da pressão de gas lift e da abertura do
-  choke de cada poço ao longo dos anos.
+- Em cada estágio resolve-se a alocação; o resultado é a trajetória ótima de P_gas e da abertura do choke de cada
+  poço ao longo dos anos.
 - Comparação com a mesma alocação feita por um otimizador estacionário (sem restrição de estabilidade), avaliada
   depois com a dinâmica: é a medida do viés (contribuição 1).
 
@@ -227,27 +255,38 @@ estimam-se +30–50 %. 300 dinâmicas ≈ 100–125 CPU-h, ~10 h com 12 processo
 - Trajetórias do reservatório exógenas (sem balanço material: produzir mais agora não antecipa a depleção).
 - Uma só geometria; poços sem coletor de produção comum.
 - Fluido com divisão entre fases congelada (como no artigo 01).
-- Padrão automático ainda sem validação de laboratório: o ensaio de Fabre 2 com o padrão automático não chega ao
-  primeiro ciclo (057). Convém resolver antes da submissão, porque o revisor vai perguntar.
+- Padrão automático ainda sem validação de laboratório (057); e o fechamento do troço horizontal curto a jusante do
+  riser, onde nenhum padrão está estabelecido, é uma escolha, não um resultado.
 
 ## Dependências e etapas
 
-0. Artigo 01 fechado e modelo congelado (as issues 054, 055, 057 e 058 estão feitas; falta a campanha a 2 km).
-1. Rede de gas lift sobre o caso offshore: **feito** (opção `gas_lift` do gerador, retenção em vez de orifício
-   crítico, issue 060); falta a verificação contra o caso 10.3.2 (heading) e a análise da profundidade de injeção
-   acima com as corridas. Cada alteração ao modelo leva uma issue.
-2. Mapa linear (estacionário + autovalores) nas cinco dimensões; fronteira de estabilidade com gas lift.
-3. Lote de dinâmicas (`batches/paper02_*.json`) na região instável, com a amostragem adaptativa.
-4. Substituto, validação e incerteza.
-5. Otimização de N poços, trajetórias ao longo da vida e comparação com o otimizador estacionário.
-6. Figuras (só a partir de corridas e de caches) e manuscrito.
+0. Artigo 01 fechado e modelo congelado: **feito**, incluindo a §8.8 com a geometria do gas lift.
+1. Rede de gas lift sobre o caso offshore: **feito** (issue 060). Pendentes: decisão sobre o fechamento do topo do
+   riser (issue própria se mudar o modelo); verificação contra o caso 10.3.2 (heading).
+2. Issue 061: paragem adaptativa com vários sinais, ciclos alternados e captura de N_c ciclos (opção com
+   bandeira; o comportamento atual de `time.settle` fica intacto).
+3. `tools/offshore_linear.py` estendido ao ramo (estacionário e espetro em função de P_gas e das cinco entradas).
+4. `tools/paper02_sample.py` (Sobol → casos e lotes) e `tools/paper02_markers.py` (corridas → tabela de
+   marcadores); teste nos sete casos já corridos do artigo 01 (`runs/paper01/gaslift/`), que são o primeiro
+   conjunto de dados.
+5. Lote piloto (50 pontos) para calibrar faixas, horizonte, N_c e custo; depois o lote de treino, o de teste e o
+   adaptativo.
+6. Substituto, validação e incerteza.
+7. Otimização de N poços, trajetórias ao longo da vida e comparação com o otimizador estacionário.
+8. Figuras (só a partir de corridas e de caches) e manuscrito.
 
 ## Decisões em aberto para o dono
 
-- Faixas das cinco variáveis e as trajetórias de vida (declínio de P_res e PI, subida do RGO).
-- Número de poços e capacidade do compressor.
-- Decisão de gás por poço: pressão a jusante do choke de gás, ou abertura do choke de gás com descarga comum.
-- Preço do óleo, custo da energia de compressão e capacidade do separador (para as restrições).
+- **Fechamento do troço horizontal curto a jusante do riser** (10 m = 66 D): excluir o estratificado aí (issue
+  própria) ou aceitar o custo. Condiciona o custo de metade dos lotes.
+- **N_c** (número de ciclos capturados depois de o regime estar estabelecido): proposta 3, mínimo 2.
+- **Definição das frequências**: intervalos entre máximos do sinal suavizado (proposta) ou cruzamentos da média
+  (o que `window_signature` faz hoje); e se se guarda também a frequência dominante do espectro.
+- **Faixas das cinco variáveis** e as trajetórias de vida (declínio de P_res e PI, subida do RGO).
+- **Desenho de experiências**: Sobol embaralhada (proposta) ou sorteio uniforme; tamanhos dos conjuntos (400/100
+  propostos) e do lote adaptativo.
+- Número de poços e capacidade do compressor; preço do óleo, custo da energia de compressão e capacidade do
+  separador (restrições).
 - Revista alvo e autores (no artigo 01: Jaime Neiva Miranda de Souza, Miradouro Digital, e André Luiz Hemerly
   Costa, UERJ/IQ, correspondente).
 
@@ -256,5 +295,5 @@ estimam-se +30–50 %. 300 dinâmicas ≈ 100–125 CPU-h, ~10 h com 12 processo
 Sem chaves inventadas: cada referência entra em `refs.bib` (ou em `../_common/references.bib`) só depois de o DOI
 estar verificado. Temas: revisões de otimização de gas lift (por exemplo, Rashid, Bailey e Couët, 2012, a
 verificar); alocação de gás entre poços; modelos substitutos (redes neurais, krigagem) em produção de petróleo;
-*heading* em poços com gas lift e válvulas em escoamento crítico; mitigação da golfada severa por gas lift na base do
-riser (Jansen et al., 1996, já na bibliografia comum).
+desenho de experiências quase-aleatório (Sobol, Owen) e amostragem adaptativa; *heading* em poços com gas lift;
+mitigação da golfada severa por gas lift na base do riser (Jansen et al., 1996, já na bibliografia comum).
