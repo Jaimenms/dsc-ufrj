@@ -152,11 +152,11 @@ média; golfada severa se o pico de líquido é ≥ 2 vezes a média; ciclo de p
 Metadados por corrida, para filtrar e pesar: horizonte alcançado, motivo da paragem (estável, ciclo capturado,
 tempo máximo, orçamento, falha), número de ciclos capturados, passos, CPU, e o estado inicial usado.
 
-As séries completas (`.npz`) ficam fora do conjunto de dados, em `runs/paper02/`, para diagnóstico e para refazer
-marcadores se a definição mudar; o conjunto de dados é uma tabela (Parquet, uma linha por corrida) com as 5
+As séries completas não se guardam (só com `--keep-runs`, para depuração); o conjunto de dados é uma tabela (Parquet, uma linha por corrida) com as 5
 entradas, os metadados, as 32 × 5 = 160 colunas de marcadores (mais o gás injetado) e, por junção pelo identificador do ponto, as
 características físicas abaixo. Formato: CSV com dicionário em JSON (`tools/paper02_dataset.py markers`); Parquet
-só se o treino o pedir.
+só se o treino o pedir. As trajetórias não se guardam (decisão do dono, 2026-10-18): os marcadores calculam-se no
+fim de cada corrida e ficam em `point.json`; mudar a definição de um marcador implica voltar a correr.
 
 ## Horizonte de simulação e captura de ciclos (metodologia)
 
@@ -230,11 +230,14 @@ recebe um indicador; é informação.
      tantos — os pontos seguintes da mesma sequência de Sobol, para que as rondas juntas continuem a ser um só
      desenho — e recomeça do caso base no ponto da ronda nova mais próximo dele; `--rounds -1`
      continua até aparecer o ficheiro `STOP`. **Omissão: 25 pontos por ronda; organização pedida pelo dono:**
-     `runs/paper02/cases/YYYYMMDDHH/<id>/` — uma pasta por ronda (data e hora de abertura) e, dentro, uma pasta por
-     ponto com `case.json`, `case.ic.npz` e `run.npz` (ou `failed.json`), em que o id são 6 caracteres do SHA-1 do
-     tuplo das entradas (o mesmo tuplo dá sempre o mesmo id; colisões levam mais caracteres); a raiz `rounds.json`
-     guarda a semente, as faixas, a configuração, a lista de rondas e os ids; `markers` escreve a tabela de cada
-     ronda e a de todas na raiz. O conjunto contínuo arrancou em 2026-10-18 (`runs/paper02/cases/`, semente 1); a
+     `runs/paper02/cases/YYYYMMDDXX/<id>/` — uma pasta por ronda (data de abertura e contador de dois dígitos por
+     dia) e, dentro, uma pasta por ponto com o id = 6 caracteres do SHA-1 do tuplo das entradas (o mesmo tuplo dá
+     sempre o mesmo id; colisões levam mais caracteres). **Só se guarda o que o treino usa** (pedido do dono):
+     `point.json` (entradas, cadeia, metadados da corrida e os marcadores) e `final_state.npz` (o estado final,
+     para o arranque quente do ponto seguinte, 3 kB); a trajetória, o caso e o estado inicial não se guardam —
+     regeneram-se das entradas e da configuração (`run --keep-runs` guarda-os para depuração, `compact` converte
+     pontos antigos). A raiz `rounds.json` guarda a semente, as faixas, a configuração, a lista de rondas e os
+     ids; `markers` escreve a tabela de cada ronda e a de todas na raiz a partir dos `point.json`. O conjunto contínuo arrancou em 2026-10-18 (`runs/paper02/cases/2026101801/`, semente 1); a
      pasta anterior `runs/paper02/rounds/` (organização antiga, sem corridas terminadas) ficou por apagar;
    - variante a avaliar no piloto: estado do poço (P_res, PI, RGO) do Sobol e, para cada um, um passeio curto de
      ~20 pontos nas duas decisões (P_gas, abertura) com arranque quente — um passeio em 2 dimensões cobre bem e é

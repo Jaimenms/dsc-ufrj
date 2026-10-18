@@ -21,9 +21,11 @@ P, alpha_G, q_L e q_G em oito pontos característicos, mais o gás injetado e a 
 dicionário das colunas em `dataset.json`.
 
 Organização (pedido do dono): `runs/paper02/cases/rounds.json` é a raiz (semente, faixas, configuração, lista de
-rondas); cada ronda vive em `runs/paper02/cases/YYYYMMDDHH/` (data e hora de abertura; sufixo _2, _3… na mesma hora)
+rondas); cada ronda vive em `runs/paper02/cases/YYYYMMDDXX/` (data de abertura e contador de dois dígitos por dia)
 com o seu `design.json` e a sua `dataset.csv`; cada ponto tem a sua pasta `<id>/` (id = 6 caracteres do SHA-1 do
-tuplo das entradas, o mesmo tuplo dá sempre o mesmo id) com `case.json`, `case.ic.npz`, `run.npz` (ou `failed.json`).
+tuplo das entradas, o mesmo tuplo dá sempre o mesmo id) com `point.json` (entradas, metadados e marcadores: o que o
+treino usa) e `final_state.npz` (para o arranque quente do ponto seguinte); a trajetória, o caso e o estado inicial
+não se guardam (regeneram-se das entradas; `run --keep-runs` guarda-os para depuração, `compact` remove-os).
 A raiz recebe a tabela de todas as rondas. Omissão: 25 pontos por ronda, uma cadeia por ronda. `--flat` mantém o modo
 de uma só pasta (os pontos continuam em pastas próprias).
 
@@ -295,13 +297,11 @@ def save_rounds(root, master):
 
 
 def new_round_dir(root):
-    """Pasta da ronda: data e hora (YYYYMMDDHH), com sufixo _2, _3… se já houver uma ronda nessa hora."""
-    name = time.strftime("%Y%m%d%H")
-    d, k = Path(root) / name, 1
-    while d.exists():
-        k += 1
-        d = Path(root) / f"{name}_{k}"
-    return d
+    """Pasta da ronda (pedido do dono): YYYYMMDDXX, a data de abertura e um contador de dois dígitos por dia
+    (01, 02, …), não a hora."""
+    day = time.strftime("%Y%m%d")
+    used = [int(q.name[8:10]) for q in Path(root).glob(f"{day}[0-9][0-9]") if q.is_dir()]
+    return Path(root) / f"{day}{(max(used) + 1 if used else 1):02d}"
 
 
 def create_round(root, master, n=None, chains=1):
@@ -434,7 +434,7 @@ def cmd_design(a):
         )
         return
     if design_path(out).exists():
-        n_runs = len(list(out.glob("*/run.npz")))
+        n_runs = len(list(out.glob("*/run.npz"))) + len(list(out.glob("*/point.json")))
         if n_runs or not a.force:
             raise SystemExit(
                 f"{design_path(out)} já existe com {n_runs} corridas: um desenho nunca se substitui "
@@ -487,7 +487,10 @@ def cmd_design(a):
 
 # ------------------------------------------------------------------------------------------------ corridas
 def point_dir(out, pid):
-    """Pasta do ponto: `<ronda>/<id>/` com case.json, case.ic.npz, run.npz (ou failed.json)."""
+    """Pasta do ponto: `<ronda>/<id>/` com point.json (entradas, metadados e marcadores: o que o treino usa),
+    final_state.npz (o estado final, só para o arranque quente do ponto seguinte) e, a pedido (`--keep-runs`),
+    run.npz com a trajetória; failed.json quando a corrida rebenta. Pedido do dono: não guardar o que o treino
+    não usa (nem a trajetória, nem o caso, nem o estado inicial — regeneram-se das entradas)."""
     return Path(out) / pid
 
 
@@ -495,12 +498,20 @@ def run_path(out, pid):
     return point_dir(out, pid) / "run.npz"
 
 
+def point_path(out, pid):
+    return point_dir(out, pid) / "point.json"
+
+
+def state_path(out, pid):
+    return point_dir(out, pid) / "final_state.npz"
+
+
 def fail_path(out, pid):
     return point_dir(out, pid) / "failed.json"
 
 
 def point_status(out, pid):
-    if run_path(out, pid).exists():
+    if point_path(out, pid).exists() or run_path(out, pid).exists():
         return "done"
     if fail_path(out, pid).exists():
         return "failed"
@@ -524,10 +535,11 @@ def _node_index(case, edge, node):
     return n_cells + 1 + node
 
 
-def build_case(design, point, out, start, X_prev=None, prev_id=None):
-    """Escreve o caso de um ponto (gerador do offshore com gas lift, paragem adaptativa com captura, orçamento);
-    partida bloqueada ou arranque quente a partir de `X_prev`. Devolve o caminho do JSON."""
-    from generators.offshore import offshore_case, write_case
+def build_network(design, point, start, X_prev=None, prev_id=None, keep_case=None):
+    """Caso de um ponto em memória (gerador do offshore com gas lift, paragem adaptativa com captura, orçamento),
+    com a partida bloqueada ou o arranque quente a partir de `X_prev`; devolve o `Network` pronto a simular. Com
+    `keep_case` (caminho) grava também o JSON e o estado inicial, para depuração."""
+    from generators.offshore import initial_state_guess, offshore_case
     from mfsim.io import case_from_json, case_to_json
     from mfsim.simulation import build_model
 
@@ -548,45 +560,82 @@ def build_case(design, point, out, start, X_prev=None, prev_id=None):
     case["time"]["settle"] = settle
     case["integration"]["max_cpu"] = float(design["max_cpu"])
     case["name"] = f"paper02_{point['id']}"
-    pdir = point_dir(out, point["id"])
-    pdir.mkdir(parents=True, exist_ok=True)
-    path = pdir / "case.json"
-    if start == "blocked":
-        write_case(case, path, ic="blocked")
-        return path
     net = case_from_json(case)
     model = build_model(net)
-    if np.asarray(X_prev).shape[0] != model.n_states:
-        raise ValueError(f"estado de arranque com {np.asarray(X_prev).shape[0]} estados; o caso tem {model.n_states}")
-    model.state_to_case_ic(np.asarray(X_prev, float), 0.0, exact=True)
+    if start == "blocked":
+        X0, m = initial_state_guess(model, net, case["meta"]["mass"]["w_gas"], mode="blocked")
+        net.meta = dict(net.meta or {}, initial_guess=dict(mode="blocked", m_total=float(m)))
+    else:
+        if np.asarray(X_prev).shape[0] != model.n_states:
+            raise ValueError(
+                f"estado de arranque com {np.asarray(X_prev).shape[0]} estados; o caso tem {model.n_states}"
+            )
+        X0 = np.asarray(X_prev, float)
+        net.meta = dict(net.meta or {}, initial_guess=dict(mode=start, from_point=prev_id))
+    model.state_to_case_ic(X0, 0.0, exact=True)
     net.initial = "edges"
-    net.meta = dict(net.meta or {}, initial_guess=dict(mode="warm", from_point=prev_id))
-    case_to_json(net, str(path), ic_file="case.ic.npz")
-    return path
+    if keep_case:
+        Path(keep_case).parent.mkdir(parents=True, exist_ok=True)
+        case_to_json(net, str(keep_case), ic_file="case.ic.npz")
+    return net
 
 
 def _final_state(out, pid):
+    """Estado final de um ponto feito: `final_state.npz`, ou a última coluna de `run.npz` (pontos antigos)."""
+    if state_path(out, pid).exists():
+        return np.load(state_path(out, pid))["X"]
     from mfsim.runs import load_run
 
-    run = load_run(str(run_path(out, pid)))
-    return np.asarray(run.X)[:, -1]
+    return np.asarray(load_run(str(run_path(out, pid))).X)[:, -1]
+
+
+def point_record(design, point, start, prev_id, run, tail=4000.0):
+    """O que fica de um ponto: entradas, cadeia, metadados da corrida e marcadores (`point.json`)."""
+    return dict(
+        id=point["id"],
+        x=point["x"],
+        chain=point["chain"],
+        order=point["order"],
+        round=point.get("round", 0),
+        sobol_index=point.get("sobol_index"),
+        start=start,
+        from_point=prev_id,
+        markers=run_markers(run, tail=tail),
+        written=time.strftime("%Y-%m-%d %H:%M"),
+    )
+
+
+def save_point(out, rec, X_final):
+    pdir = point_dir(out, rec["id"])
+    pdir.mkdir(parents=True, exist_ok=True)
+    tmp = pdir / "final_state.partial.npz"
+    np.savez(tmp, X=np.asarray(X_final, float))
+    os.replace(tmp, state_path(out, rec["id"]))
+    tmp = pdir / "point.partial.json"
+    tmp.write_text(json.dumps(rec, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    os.replace(tmp, point_path(out, rec["id"]))
 
 
 def run_point(design, point, out, start, X_prev=None, prev_id=None, progress=True):
-    """Corre um ponto e grava `<id>.npz` ou `<id>.failed.json`; devolve o estado."""
-    from mfsim.io import case_from_json
-    from mfsim.runs import save_run
+    """Corre um ponto e grava `point.json` + `final_state.npz` (e `run.npz` com `keep_runs`), ou `failed.json`;
+    devolve o estado."""
+    from mfsim.runs import load_run, save_run
     from mfsim.simulation import simulate
 
     pid = point["id"]
     t0 = time.time()
+    keep_runs = bool(design.get("keep_runs"))
     try:
-        path = build_case(design, point, out, start, X_prev=X_prev, prev_id=prev_id)
-        res = simulate(case_from_json(str(path)), progress=False, partial=True)
+        pdir = point_dir(out, pid)
+        pdir.mkdir(parents=True, exist_ok=True)
+        net = build_network(
+            design, point, start, X_prev=X_prev, prev_id=prev_id, keep_case=(pdir / "case.json") if keep_runs else None
+        )
+        res = simulate(net, progress=False, partial=True)
         info = dict(res.info)
         info["cpu_total"] = time.time() - t0
         info["note"] = json.dumps(dict(start=start, from_point=prev_id, chain=point["chain"], order=point["order"]))
-        tmp = point_dir(out, pid) / "run.partial.npz"  # gravação atómica: uma morte a meio nunca deixa um .npz truncado
+        tmp = pdir / "run.partial.npz"  # gravação atómica: uma morte a meio nunca deixa um .npz truncado
         save_run(
             str(tmp),
             res.T,
@@ -596,7 +645,12 @@ def run_point(design, point, out, start, X_prev=None, prev_id=None, progress=Tru
             acc=info.get("accum"),
             command=f"tools/paper02_dataset.py run --out {out} (ponto {pid})",
         )
-        os.replace(tmp, run_path(out, pid))
+        rec = point_record(design, point, start, prev_id, load_run(str(tmp)), tail=float(design.get("tail", 4000.0)))
+        save_point(out, rec, np.asarray(res.X)[:, -1])
+        if keep_runs:
+            os.replace(tmp, run_path(out, pid))
+        else:
+            tmp.unlink()  # a trajetória não se guarda (pedido do dono): fica point.json + final_state.npz
         if fail_path(out, pid).exists():
             fail_path(out, pid).unlink()
         if progress:
@@ -697,8 +751,9 @@ def cmd_run_rounds(a):
         master = load_rounds(root)
         cur = root / master["rounds"][-1]["folder"]
         design = load_design(cur)
-        if a.retry_failed and not design.get("retry_failed"):
-            design["retry_failed"] = True
+        if (a.retry_failed and not design.get("retry_failed")) or bool(a.keep_runs) != bool(design.get("keep_runs")):
+            design["retry_failed"] = bool(design.get("retry_failed") or a.retry_failed)
+            design["keep_runs"] = bool(a.keep_runs)
             save_design(cur, design)
         pending = [p for p in design["points"] if point_status(cur, p["id"]) == "pending"]
         if pending:
@@ -720,8 +775,9 @@ def cmd_run(a):
     if is_rounds_root(out):
         return cmd_run_rounds(a)
     design = load_design(out)
-    if a.retry_failed:
-        design["retry_failed"] = True
+    if a.retry_failed or bool(a.keep_runs) != bool(design.get("keep_runs")):
+        design["retry_failed"] = bool(design.get("retry_failed") or a.retry_failed)
+        design["keep_runs"] = bool(a.keep_runs)
         save_design(out, design)
     stop = out / "STOP"
     if stop.exists() and not a.keep_stop:
@@ -941,26 +997,64 @@ def write_dataset(out, rows, design):
     return out / "dataset.csv"
 
 
-def _rows_of(out, design, tail):
+def _row_from_record(rec):
+    row = dict(
+        id=rec["id"], chain=rec["chain"], order=rec["order"], start=rec.get("start"), from_point=rec.get("from_point")
+    )
+    row.update(rec["x"])
+    row.update(rec["markers"])
+    return row
+
+
+def _record_from_run(design, p, out, tail):
     from mfsim.runs import load_run
 
+    run = load_run(str(run_path(out, p["id"])))
+    note = {}
+    try:
+        note = json.loads((run.info or {}).get("note") or "{}")
+    except (TypeError, ValueError):
+        pass
+    return point_record(design, p, note.get("start"), note.get("from_point"), run, tail=float(tail)), run
+
+
+def _rows_of(out, design, tail):
+    """Linhas da tabela: de `point.json` quando existe; senão (pontos antigos) da trajetória `run.npz`."""
     rows = []
     for p in design["points"]:
         if point_status(out, p["id"]) != "done":
             continue
-        run = load_run(str(run_path(out, p["id"])))
-        note = {}
-        try:
-            note = json.loads((run.info or {}).get("note") or "{}")
-        except (TypeError, ValueError):
-            pass
-        row = dict(
-            id=p["id"], chain=p["chain"], order=p["order"], start=note.get("start"), from_point=note.get("from_point")
-        )
-        row.update(p["x"])
-        row.update(run_markers(run, tail=float(tail)))
-        rows.append(row)
+        if point_path(out, p["id"]).exists():
+            rows.append(_row_from_record(json.loads(point_path(out, p["id"]).read_text(encoding="utf-8"))))
+        else:
+            rows.append(_row_from_record(_record_from_run(design, p, out, tail)[0]))
     return rows
+
+
+def compact_dir(out, design, tail=4000.0, progress=True):
+    """Pontos antigos com trajetória: escreve point.json + final_state.npz e remove run.npz, case.json e
+    case.ic.npz (pedido do dono: só fica o que o treino usa). Devolve o número de pontos compactados."""
+    n = 0
+    for p in design["points"]:
+        if not run_path(out, p["id"]).exists():
+            continue
+        rec, run = _record_from_run(design, p, out, tail)
+        save_point(out, rec, np.asarray(run.X)[:, -1])
+        for name in ("run.npz", "case.json", "case.ic.npz"):
+            f = point_dir(out, p["id"]) / name
+            if f.exists():
+                f.unlink()
+        n += 1
+        if progress:
+            print(f"{p['id']}: compactado", flush=True)
+    return n
+
+
+def cmd_compact(a):
+    out = Path(a.out)
+    dirs = _round_dirs(out) if is_rounds_root(out) else [out]
+    n = sum(compact_dir(d, load_design(d), tail=float(a.tail)) for d in dirs)
+    print(f"{n} pontos compactados")
 
 
 def cmd_markers(a):
@@ -1039,7 +1133,14 @@ def main(argv=None):
         help="rondas no total: ao acabar os pontos, sortear outra ronda e recomeçar do centro (0 = só o que existe; -1 = até STOP)",
     )
     r.add_argument("--chains-per-round", type=int, default=1, help="cadeias de cada ronda nova")
+    r.add_argument(
+        "--keep-runs", action="store_true", help="guardar também run.npz, case.json e case.ic.npz (depuração)"
+    )
     r.set_defaults(func=cmd_run)
+    c = sub.add_parser("compact", help="pontos antigos com trajetória → point.json + final_state.npz, sem run.npz/case")
+    c.add_argument("--out", required=True)
+    c.add_argument("--tail", type=float, default=4000.0)
+    c.set_defaults(func=cmd_compact)
     m = sub.add_parser("markers", help="marcadores das corridas feitas → dataset.csv")
     m.add_argument("--out", required=True)
     m.add_argument("--tail", type=float, default=4000.0, help="janela final [s] quando não há captura")
