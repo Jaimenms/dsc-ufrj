@@ -217,8 +217,8 @@ recebe um indicador; é informação.
    browniano puro não serve para cobrir o hipercubo: é difusivo, e cobrir 5 dimensões com passos de 10 % das
    faixas pediria ~10⁵ pontos. A forma acordada junta as duas coisas:
    - o conjunto de treino é o desenho de Sobol (cobertura garantida), agrupado em 20–25 **cadeias de vizinhos**
-     (k-means nas entradas normalizadas); **dentro de cada cadeia a sequência é a do dono (2026-10-18): parte-se
-     do ponto mais perto do centro da distribuição e segue-se o caminho mais curto por todos os outros** (caixeiro
+     (k-means nas entradas normalizadas); **dentro de cada cadeia a sequência é a do dono (2026-10-18): sorteia-se
+     o primeiro ponto e segue-se o caminho mais curto por todos os outros** (caixeiro
      viajante sem regresso: exato por enumeração até 10 pontos, vizinho mais próximo com 2-opt acima;
      `shortest_path_from` da ferramenta); cada cadeia corre em sequência num processo — o primeiro ponto da
      partida bloqueada, os seguintes com arranque quente a partir do anterior — e as cadeias correm em paralelo;
@@ -226,7 +226,7 @@ recebe um indicador; é informação.
      ensaio desta sequência com 10 pontos sorteados numa só cadeia está em `runs/paper02/seq10/` (semente 11);
    - **rondas** (pedido do dono, 2026-10-18): ao acabar os pontos de uma ronda, `run --rounds` sorteia outros
      tantos — os pontos seguintes da mesma sequência de Sobol, para que as rondas juntas continuem a ser um só
-     desenho — e recomeça do ponto mais perto do centro da ronda nova com a partida bloqueada; `--rounds -1`
+     desenho — e recomeça num ponto sorteado da ronda nova com a partida bloqueada; `--rounds -1`
      continua até aparecer o ficheiro `STOP`;
    - variante a avaliar no piloto: estado do poço (P_res, PI, RGO) do Sobol e, para cada um, um passeio curto de
      ~20 pontos nas duas decisões (P_gas, abertura) com arranque quente — um passeio em 2 dimensões cobre bem e é

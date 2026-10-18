@@ -27,8 +27,9 @@ período); `capture_cycles = N` continua, depois de assentar, N vezes o maior pe
 
 **Ferramenta** `tools/paper02_dataset.py` (plano do artigo 02): `design` sorteia o hipercubo das cinco entradas
 (P_res, PI, RGO, P_gas, abertura) por Sobol embaralhado e agrupa os pontos em cadeias de vizinhos (k-means nas
-entradas normalizadas; em cada cadeia parte do ponto mais perto do centro e segue o caminho mais curto por todos os
-outros — exato até 10 pontos, 2-opt acima —, a sequência pedida pelo dono), gravando `design.json`; `run` corre as cadeias em
+entradas normalizadas; em cada cadeia sorteia o primeiro ponto e segue o caminho mais curto por todos os outros, com as
+entradas reescalonadas a [−1, 1] — exato até 10 pontos, 2-opt acima —, a sequência pedida pelo dono; rondas
+sucessivas continuam a sequência de Sobol), gravando `design.json`; `run` corre as cadeias em
 processos paralelos, o primeiro ponto de cada cadeia da partida bloqueada do gerador e os seguintes com arranque
 quente a partir do estado final do anterior (`state_to_case_ic`), cada corrida com a paragem adaptativa (P na
 cabeça do poço e q_L no topo do riser, envelope, N_c = 3 ciclos de captura, 600 s num estacionário, tf máximo
