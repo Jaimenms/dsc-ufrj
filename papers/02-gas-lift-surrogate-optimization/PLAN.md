@@ -222,7 +222,12 @@ recebe um indicador; é informação.
      viajante sem regresso: exato por enumeração até 10 pontos, vizinho mais próximo com 2-opt acima;
      `shortest_path_from` da ferramenta); cada cadeia corre em sequência num processo — o primeiro ponto da
      partida bloqueada, os seguintes com arranque quente a partir do anterior — e as cadeias correm em paralelo;
-     o ensaio desta sequência com 10 pontos sorteados numa só cadeia está em `runs/paper02/seq10/` (semente 11);
+     as distâncias, o centro e os grupos medem-se com cada entrada reescalonada a [−1, +1] (pedido do dono); o
+     ensaio desta sequência com 10 pontos sorteados numa só cadeia está em `runs/paper02/seq10/` (semente 11);
+   - **rondas** (pedido do dono, 2026-10-18): ao acabar os pontos de uma ronda, `run --rounds` sorteia outros
+     tantos — os pontos seguintes da mesma sequência de Sobol, para que as rondas juntas continuem a ser um só
+     desenho — e recomeça do ponto mais perto do centro da ronda nova com a partida bloqueada; `--rounds -1`
+     continua até aparecer o ficheiro `STOP`;
    - variante a avaliar no piloto: estado do poço (P_res, PI, RGO) do Sobol e, para cada um, um passeio curto de
      ~20 pontos nas duas decisões (P_gas, abertura) com arranque quente — um passeio em 2 dimensões cobre bem e é
      literalmente operar o poço;
