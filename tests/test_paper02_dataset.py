@@ -237,3 +237,34 @@ def test_point_record_is_what_the_table_reads(tmp_path):
     row = ds._row_from_record(json.loads(ds.point_path(tmp_path, "abc123").read_text()))
     assert row["wellhead_P_mean"] == 17.9 and row["P_res_bar"] == 200.0 and row["start"] == "base"
     assert sorted(p.name for p in (tmp_path / "abc123").iterdir()) == ["final_state.npz", "point.json"]
+
+
+def test_grid_decisions_snake_is_the_shortest_warm_start_path(tmp_path):
+    ranges = ds.DEFAULT_RANGES
+    well = {"P_res_bar": 150.0, "PI": 7.0, "GOR": 80.0}
+    x_base = {"P_res_bar": 200.0, "PI": 5.0, "GOR": 50.0, "P_gas_bar": 20.0, "choke_opening": 1.0}
+    seq = ds.grid_decisions(well, ranges, 6, 6, x_base)
+    assert len(seq) == 36 and len({(x["P_gas_bar"], x["choke_opening"]) for x in seq}) == 36
+    assert all(x["P_res_bar"] == 150.0 and x["GOR"] == 80.0 for x in seq)
+    # começa no canto mais perto do caso base: gás mínimo (20 bar), choke aberto (1,0)
+    assert seq[0]["P_gas_bar"] == 20.0 and seq[0]["choke_opening"] == 1.0
+    g = np.linspace(20.0, 160.0, 6)
+    o = np.linspace(0.1, 1.0, 6)
+    for x0, x1 in zip(seq[:-1], seq[1:]):
+        dg = abs(np.searchsorted(g, x1["P_gas_bar"]) - np.searchsorted(g, x0["P_gas_bar"]))
+        do = abs(np.searchsorted(o, x1["choke_opening"]) - np.searchsorted(o, x0["choke_opening"]))
+        assert dg + do == 1  # cada passo muda uma só decisão de um só nível
+        assert x1["P_gas_bar"] >= x0["P_gas_bar"]  # P_gas nunca desce
+    # raiz em modo malha: uma ronda por estado do poço, 36 pontos, poço seguinte na ronda seguinte
+    root = tmp_path / "grid"
+    ds.main(["design", "--start", "random", "--out", str(root), "--grid-decisions", "6x6", "--seed", "3"])
+    master = json.loads((root / "rounds.json").read_text())
+    assert master["mode"] == "grid" and master["round_size"] == 36 and master["n"] == 1
+    d0 = root / master["rounds"][0]["folder"]
+    pts = json.loads((d0 / "design.json").read_text())["points"]
+    assert len(pts) == 36 and [p["order"] for p in pts] == list(range(36)) and all(p["chain"] == 0 for p in pts)
+    ds.main(["design", "--start", "random", "--out", str(root), "--append"])
+    master = json.loads((root / "rounds.json").read_text())
+    assert master["n"] == 2 and master["rounds"][1]["well"] != master["rounds"][0]["well"]
+    W = ds.sobol_wells(2, ranges, seed=3)
+    assert np.allclose([master["rounds"][1]["well"][k] for k in ds.WELL_INPUTS], W[1])

@@ -7,11 +7,14 @@ bloqueada, os seguintes com arranque quente a partir do estado final do anterior
 com captura de ciclos (061): pára quando P na cabeça do poço e q_L no topo do riser assentam (estacionário ou ciclo
 repetido) e continua N_c ciclos, que são a janela de captura dos marcadores.
 
-Dentro de cada cadeia a sequência é a do dono: o primeiro ponto é o mais perto do caso base do artigo 01 (choke
-aberto, 200 bar, PI 5, RGO 50, retenção fechada) e a cadeia arranca a quente do estado final desse caso
-(`runs/paper01/gaslift/gl_P20.npz`); dos outros pontos segue-se o caminho mais curto (exato até 10 pontos), com as
-entradas reescalonadas a [−1, +1]. Ao acabar uma ronda, `run --rounds` sorteia outros tantos pontos (a continuação da
-mesma sequência de Sobol) e recomeça do caso base no ponto mais próximo dele.
+Dois modos de desenho. `sobol` (omissão): rondas de 25 pontos de Sobol em 5 dimensões, cada cadeia a começar no ponto
+mais perto do caso base do artigo 01 (choke aberto, 200 bar, PI 5, RGO 50, retenção fechada), arrancando a quente do
+estado final desse caso (`runs/paper01/gaslift/gl_P20.npz`), e a seguir pelo caminho mais curto (exato até 10 pontos)
+com as entradas reescalonadas a [−1, +1]. `grid` (`--grid-decisions 6x6`, pedido do dono): cada ronda é um estado do
+poço (Sobol em P_res, PI, RGO) com a malha regular das decisões (P_gas × abertura) varrida em serpentina a partir do
+canto mais perto do caso base, com P_gas monótono (a linha de gás nunca se esvazia) e a abertura de ida e volta: cada
+passo muda uma só decisão de um só nível, e o varrimento dá o mapa completo das decisões desse poço. Ao acabar uma
+ronda, `run --rounds` abre a seguinte (os pontos ou o poço seguintes da mesma sequência de Sobol).
 
 Tudo é retomável e nada se perde: o desenho é um ficheiro (`design.json`, só cresce: nunca se substitui quando há
 corridas), cada corrida é um `.npz` gravado atomicamente (ou um `.failed.json`), a ferramenta nunca apaga corridas, e
@@ -274,7 +277,55 @@ def append_round(design, n=None, chains=1):
     return new
 
 
-ROUNDS_FILE = "rounds.json"  # raiz das rondas (pedido do dono): uma pasta datada YYYYMMDD por ronda
+WELL_INPUTS = ("P_res_bar", "PI", "GOR")  # estado do poço (sorteado); as decisões (P_gas, abertura) vão em malha
+DECISIONS = ("P_gas_bar", "choke_opening")
+
+
+def sobol_wells(n, ranges, seed, skip=0):
+    """`n` estados do poço (P_res, PI, RGO) de Sobol embaralhado em 3 dimensões, a partir do ponto `skip`."""
+    import warnings
+
+    from scipy.stats import qmc
+
+    gen = qmc.Sobol(d=len(WELL_INPUTS), scramble=True, seed=seed)
+    if skip:
+        gen.fast_forward(int(skip))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        u = gen.random(int(n))
+    lo = np.array([ranges[k][0] for k in WELL_INPUTS])
+    hi = np.array([ranges[k][1] for k in WELL_INPUTS])
+    return lo + u * (hi - lo)
+
+
+def grid_decisions(well, ranges, n_gas, n_open, x_base, inner="choke_opening"):
+    """Malha regular n_gas × n_open nas decisões para um estado do poço, na **melhor sequência de arranque quente**
+    (pedido do dono): varrimento em serpentina (boustrophedon) a partir do canto da malha mais perto do caso base,
+    com o eixo exterior (por omissão P_gas) monótono — a pressão de gás nunca desce, por isso a linha de gás e o
+    anular nunca se esvaziam para a plataforma — e o eixo interior (a abertura) de ida e volta. Cada passo muda uma
+    só decisão, de um só nível; o caminho visita cada nó uma vez e é o mais curto possível numa malha. Devolve a
+    lista de entradas x na ordem."""
+    outer = "P_gas_bar" if inner == "choke_opening" else "choke_opening"
+    levels = {
+        "P_gas_bar": np.linspace(ranges["P_gas_bar"][0], ranges["P_gas_bar"][1], n_gas),
+        "choke_opening": np.linspace(ranges["choke_opening"][0], ranges["choke_opening"][1], n_open),
+    }
+    # canto mais perto do caso base, eixo a eixo (no espaço reescalonado a [−1, 1] a distância por eixo é a mesma)
+    for k in (outer, inner):
+        if x_base is not None and abs(levels[k][-1] - x_base[k]) < abs(levels[k][0] - x_base[k]):
+            levels[k] = levels[k][::-1]
+    seq = []
+    for i, v_out in enumerate(levels[outer]):
+        inner_levels = levels[inner] if i % 2 == 0 else levels[inner][::-1]
+        for v in inner_levels:
+            x = dict(well)
+            x[outer] = float(v_out)
+            x[inner] = float(v)
+            seq.append(x)
+    return seq
+
+
+ROUNDS_FILE = "rounds.json"  # raiz das rondas (pedido do dono): uma pasta datada por ronda
 
 
 def rounds_path(root):
@@ -305,16 +356,43 @@ def new_round_dir(root):
 
 
 def create_round(root, master, n=None, chains=1):
-    """Ronda nova numa pasta datada: os próximos `n` pontos da sequência de Sobol do conjunto (primeiro ponto
-    sorteado, caminho mais curto), com um `design.json` próprio; atualiza `rounds.json`. Devolve a pasta."""
+    """Ronda nova numa pasta datada, com um `design.json` próprio; atualiza `rounds.json`. Modo `sobol`: os próximos
+    `n` pontos da sequência de Sobol do conjunto, no caminho mais curto a partir do ponto mais perto do caso base.
+    Modo `grid` (pedido do dono): o próximo estado do poço da sequência de Sobol em 3 dimensões e a malha
+    n_gas × n_open das decisões em serpentina (`grid_decisions`), uma cadeia. Devolve a pasta."""
     ranges = {k: tuple(v) for k, v in master["ranges"].items()}
+    rnd = len(master["rounds"])
+    if master.get("mode") == "grid":
+        g = master["grid"]
+        skip = int(master["n"])  # estados do poço já consumidos
+        W = sobol_wells(1, ranges, int(master["seed"]), skip=skip)[0]
+        well = {k: float(W[j]) for j, k in enumerate(WELL_INPUTS)}
+        xs = grid_decisions(
+            well, ranges, int(g["n_gas"]), int(g["n_open"]), master.get("x_base"), inner=g.get("inner", "choke_opening")
+        )
+        n = len(xs)
+        ids = unique_ids(xs, taken=master.get("ids", []))
+        points = [
+            dict(id=ids[i], x=xs[i], chain=0, order=i, round=rnd, well_index=skip, grid_index=i) for i in range(n)
+        ]
+        master["ids"] = list(master.get("ids", [])) + ids
+        design = {k: v for k, v in master.items() if k not in ("rounds", "ids")}
+        design.update(n=n, round_size=n, rounds=1, round=rnd, well=well, well_index=skip, points=points)
+        d = new_round_dir(root)
+        d.mkdir(parents=True, exist_ok=False)
+        save_design(d, design)
+        master["rounds"].append(
+            dict(folder=d.name, n=n, well_index=skip, well=well, created=time.strftime("%Y-%m-%d %H:%M"))
+        )
+        master["n"] = skip + 1
+        save_rounds(root, master)
+        return d
     n = int(n or master["round_size"])
     skip = int(master["n"])
     X = sobol_design(n, ranges, int(master["seed"]), skip=skip)
     chain, order = make_chains(
         X, ranges, chains, int(master["seed"]) + skip, start=master.get("start", "base"), x_base=master.get("x_base")
     )
-    rnd = len(master["rounds"])
     xs = [{k: float(X[i, j]) for j, k in enumerate(INPUTS)} for i in range(n)]
     ids = unique_ids(xs, taken=master.get("ids", []))
     points = [
@@ -399,12 +477,18 @@ def cmd_design(a):
         if out.exists() and any(out.iterdir()):
             raise SystemExit(f"{out} existe e não está vazia: um conjunto nunca se substitui")
         ranges = parse_ranges(a.range)
+        grid = None
+        if a.grid_decisions:
+            ng, no = (int(v) for v in a.grid_decisions.lower().split("x"))
+            grid = dict(n_gas=ng, n_open=no, inner=a.inner)
         master = dict(
             schema="paper02-rounds/1",
             created=time.strftime("%Y-%m-%d %H:%M"),
             seed=int(a.seed),
             n=0,
-            round_size=int(a.n or 25),
+            mode="grid" if grid else "sobol",
+            grid=grid,
+            round_size=int(a.n or (grid["n_gas"] * grid["n_open"] if grid else 25)),
             start=a.start,
             base_run=base["run"],
             x_base=base["x"],
@@ -420,9 +504,12 @@ def cmd_design(a):
         out.mkdir(parents=True, exist_ok=True)
         save_rounds(out, master)
         d = create_round(out, master, chains=a.chains)
-        pts = load_design(d)["points"]
+        dsg = load_design(d)
+        pts = dsg["points"]
         tour = [p["id"] for p in sorted(pts, key=lambda p: p["order"])]
-        print(f"{rounds_path(out)}: ronda 0 em {d} com {len(pts)} pontos (semente {a.seed})")
+        print(f"{rounds_path(out)}: ronda 0 em {d} com {len(pts)} pontos (semente {a.seed}, modo {master['mode']})")
+        if dsg.get("well"):
+            print(f"  estado do poço: {{{', '.join(f'{k}: {v:.3g}' for k, v in dsg['well'].items())}}}")
         print(f"  sequência: {' → '.join(tour)}")
         return
     if a.append:
@@ -1114,6 +1201,18 @@ def main(argv=None):
     )
     d.add_argument(
         "--resequence", action="store_true", help="reordenar a última ronda (sem corridas feitas) com a regra atual"
+    )
+    d.add_argument(
+        "--grid-decisions",
+        default=None,
+        metavar="NxM",
+        help="modo malha: por ronda, um estado do poço (Sobol em P_res, PI, RGO) e a malha N (P_gas) × M (abertura) das decisões em serpentina",
+    )
+    d.add_argument(
+        "--inner",
+        choices=["choke_opening", "P_gas_bar"],
+        default="choke_opening",
+        help="eixo interior da serpentina (o exterior é monótono)",
     )
     d.add_argument(
         "--append",
