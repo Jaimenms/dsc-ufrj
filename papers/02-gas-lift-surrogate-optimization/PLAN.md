@@ -44,6 +44,9 @@ longo da vida dos poços e mostrar a pressão de gas lift e a abertura do choke 
 - **A IPR entra como duas variáveis, P_res e PI** (confirmado pelo dono depois de discutidas as alternativas de
   fixar P_res ou usar o potencial em fluxo aberto): é P_res contra o peso das colunas que decide se o poço morre e
   é a pressão de fundo que decide se a retenção abre.
+- **Arranque quente em cadeias** (proposta do dono: perturbações pequenas das entradas com o estado final de uma
+  corrida como estado inicial da seguinte; forma acordada: cadeias curtas sobre um desenho de Sobol, ver «Geração
+  de dados»).
 
 ## O que torna o artigo publicável (e o que não chega)
 
@@ -204,6 +207,30 @@ recebe um indicador; é informação.
    sem buracos nem aglomerados, mantendo o sorteio) sobre as faixas da tabela; conjunto de teste com uma
    sequência independente (ou sorteio uniforme), nunca uma partição da de treino. Proposta: 400 de treino, 100 de
    teste, mais um lote adaptativo.
+1a. **Cadeias com arranque quente** (ideia do dono, 2026-10-18: percorrer o espaço com perturbações pequenas e
+   o estado final de cada corrida como estado inicial da seguinte). O arranque quente poupa o transiente da
+   partida bloqueada (3 a 5 ciclos, 4000–8000 s no artigo 01): com uma perturbação pequena das entradas o sistema
+   já está perto do atrator novo e assenta em 1–2 ciclos; a malha não muda com nenhuma das cinco entradas, por isso
+   o estado transfere-se diretamente (`state_to_case_ic`); e é o que um poço faz ao longo da vida. Um passeio
+   browniano puro não serve para cobrir o hipercubo: é difusivo, e cobrir 5 dimensões com passos de 10 % das
+   faixas pediria ~10⁵ pontos. A forma acordada junta as duas coisas:
+   - o conjunto de treino é o desenho de Sobol (cobertura garantida), agrupado em 20–25 **cadeias de vizinhos**
+     (k-means nas entradas normalizadas; dentro de cada grupo, a ordem do vizinho mais próximo); cada cadeia
+     corre em sequência num processo — o primeiro ponto da partida bloqueada, os seguintes com arranque quente a
+     partir do anterior — e as cadeias correm em paralelo;
+   - variante a avaliar no piloto: estado do poço (P_res, PI, RGO) do Sobol e, para cada um, um passeio curto de
+     ~20 pontos nas duas decisões (P_gas, abertura) com arranque quente — um passeio em 2 dimensões cobre bem e é
+     literalmente operar o poço;
+   - **o conjunto de teste é sempre independente**: outra sequência de Sobol, todos os pontos da partida
+     bloqueada, para a correlação dentro das cadeias não entrar na avaliação;
+   - **histerese**: com arranque quente cada corrida segue o ramo em que está (fronteira de estabilidade, ciclos
+     alternados, poço morto, que não volta com uma perturbação pequena). Numa amostra de ~30 pontos corre-se o
+     mesmo ponto das duas partidas; onde os marcadores diferem há coexistência de atratores, que é um resultado
+     a reportar (o artigo 01 não a viu na Hopf supercrítica) e uma razão para o ponto entrar no conjunto com as
+     duas respostas e a partida como metadado;
+   - o que precisa de ferramenta: um guião que encadeia corridas (`tools/paper02_chain.py`: escreve o caso
+     seguinte com o estado final do anterior e lança-o), mais a paragem adaptativa com captura de ciclos (061);
+     poupança estimada de metade a dois terços do tempo por corrida.
 2. **Estacionário + espetro em todos os pontos** (milhares, segundos cada): classe linear, características físicas
    e a fronteira de estabilidade nas cinco dimensões.
 3. **Dinâmica em todos os pontos sorteados** (não só nos instáveis, ao contrário do plano anterior): o custo de um
@@ -269,11 +296,12 @@ com gás rápido no riser.
 2. Issue 061: paragem adaptativa com vários sinais, ciclos alternados e captura de N_c ciclos (opção com
    bandeira; o comportamento atual de `time.settle` fica intacto).
 3. `tools/offshore_linear.py` estendido ao ramo (estacionário e espetro em função de P_gas e das cinco entradas).
-4. `tools/paper02_sample.py` (Sobol → casos e lotes) e `tools/paper02_markers.py` (corridas → tabela de
-   marcadores); teste nos sete casos já corridos do artigo 01 (`runs/paper01/gaslift/`), que são o primeiro
-   conjunto de dados.
-5. Lote piloto (50 pontos) para calibrar faixas, horizonte, N_c e custo; depois o lote de treino, o de teste e o
-   adaptativo.
+4. `tools/paper02_sample.py` (Sobol → casos, cadeias e lotes), `tools/paper02_chain.py` (corre uma cadeia com
+   arranque quente) e `tools/paper02_markers.py` (corridas → tabela de marcadores); teste nos sete casos já
+   corridos do artigo 01 (`runs/paper01/gaslift/`), que são o primeiro conjunto de dados.
+5. Lote piloto (50 pontos em 2–3 cadeias, mais os mesmos pontos da partida bloqueada) para calibrar faixas,
+   horizonte, N_c, custo e a poupança do arranque quente, e para a primeira verificação de histerese; depois o
+   lote de treino em cadeias, o de teste independente e o adaptativo.
 6. Substituto, validação e incerteza.
 7. Otimização de N poços, trajetórias ao longo da vida e comparação com o otimizador estacionário.
 8. Figuras (só a partir de corridas e de caches) e manuscrito.
@@ -287,7 +315,8 @@ com gás rápido no riser.
   (o que `window_signature` faz hoje); e se se guarda também a frequência dominante do espectro.
 - **Faixas das cinco variáveis** e as trajetórias de vida (declínio de P_res e PI, subida do RGO).
 - **Desenho de experiências**: Sobol embaralhada (proposta) ou sorteio uniforme; tamanhos dos conjuntos (400/100
-  propostos) e do lote adaptativo.
+  propostos) e do lote adaptativo; cadeias de vizinhos em 5 dimensões ou passeios nas duas decisões por estado do
+  poço (a decidir com o piloto).
 - Número de poços e capacidade do compressor; preço do óleo, custo da energia de compressão e capacidade do
   separador (restrições).
 - Revista alvo e autores (no artigo 01: Jaime Neiva Miranda de Souza, Miradouro Digital, e André Luiz Hemerly
