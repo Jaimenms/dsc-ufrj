@@ -29,6 +29,10 @@ def test_design_covers_ranges_and_chains():
         assert sorted(order[idx].tolist()) == list(range(idx.size))  # a ordem é uma permutação dentro da cadeia
     chain1, order1 = ds.make_chains(X, ranges, 1, seed=3)
     assert chain1.max() == 0 and sorted(order1.tolist()) == list(range(40))
+    U = ds.scaled(X, ranges)
+    assert U.min() >= -1.0 and U.max() <= 1.0 and U.shape == X.shape
+    start = int(np.flatnonzero(order1 == 0)[0])
+    assert start == int(np.argmin(np.linalg.norm(U - U.mean(axis=0), axis=1)))  # parte do ponto mais perto do centro
 
 
 def test_signal_markers():
@@ -86,3 +90,25 @@ def test_shortest_path_from_centre():
             assert ds.path_length(D, cand) >= ds.path_length(D, path) - 1e-12
     big = ds.shortest_path_from(rng.random((25, 3)), 0)
     assert big[0] == 0 and sorted(big) == list(range(25))
+
+
+def test_rounds_continue_the_sobol_sequence(tmp_path):
+    ranges = ds.DEFAULT_RANGES
+    X20 = ds.sobol_design(20, ranges, seed=5)
+    assert np.allclose(ds.sobol_design(10, ranges, seed=5, skip=10), X20[10:])  # a 2.ª ronda continua a sequência
+    design = dict(
+        seed=5,
+        n=10,
+        round_size=10,
+        rounds=1,
+        ranges={k: list(v) for k, v in ranges.items()},
+        test=False,
+        points=[
+            dict(id=f"p{i:03d}", x={k: float(X20[i, j]) for j, k in enumerate(ds.INPUTS)}, chain=0, order=i, round=0)
+            for i in range(10)
+        ],
+    )
+    new = ds.append_round(design)
+    assert len(new) == 10 and design["n"] == 20 and design["rounds"] == 2
+    assert all(p["chain"] == 1 and p["round"] == 1 for p in new) and sorted(p["order"] for p in new) == list(range(10))
+    assert np.allclose([[p["x"][k] for k in ds.INPUTS] for p in sorted(new, key=lambda p: p["id"])], X20[10:])

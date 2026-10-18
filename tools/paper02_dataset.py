@@ -7,14 +7,18 @@ bloqueada, os seguintes com arranque quente a partir do estado final do anterior
 com captura de ciclos (061): pára quando P na cabeça do poço e q_L no topo do riser assentam (estacionário ou ciclo
 repetido) e continua N_c ciclos, que são a janela de captura dos marcadores.
 
+Dentro de cada cadeia a sequência é a do dono: parte do ponto mais perto do centro da distribuição e segue o caminho
+mais curto por todos os outros (exato até 10 pontos). Ao acabar uma ronda, `run --rounds` sorteia outros tantos pontos
+(a continuação da mesma sequência de Sobol) e recomeça do centro da ronda nova com a partida bloqueada.
+
 Tudo é retomável: o desenho é um ficheiro (`design.json`), cada corrida é um `.npz` (ou um `.failed.json`), e uma
 cadeia retoma do último ponto concluído; um ficheiro `STOP` na pasta pára as cadeias depois da corrida em curso
-(paragem quente); matar os processos perde só a corrida em curso. Os marcadores (média, mínimo, máximo, f_min, f_max de
+(paragem quente) e impede rondas novas; matar os processos perde só a corrida em curso. Os marcadores (média, mínimo, máximo, f_min, f_max de
 P, alpha_G, q_L e q_G em oito pontos característicos, mais o gás injetado e a classe) vão para `dataset.csv` com o
 dicionário das colunas em `dataset.json`.
 
     uv run python tools/paper02_dataset.py design --out runs/paper02/pilot --n 50 --chains 3 --seed 1
-    uv run python tools/paper02_dataset.py run --out runs/paper02/pilot --jobs 3
+    uv run python tools/paper02_dataset.py run --out runs/paper02/pilot --jobs 3 [--rounds -1]
     uv run python tools/paper02_dataset.py markers --out runs/paper02/pilot
     uv run python tools/paper02_dataset.py status --out runs/paper02/pilot
 """
@@ -73,12 +77,27 @@ def parse_ranges(items):
     return ranges
 
 
-def sobol_design(n, ranges, seed):
-    """`n` pontos de Sobol embaralhado nas faixas (matriz n × 5 na ordem de INPUTS)."""
+def scaled(X, ranges):
+    """Entradas reescalonadas dimensão a dimensão para [−1, +1] (pedido do dono): é neste espaço que se medem as
+    distâncias do caminho mais curto, o centro da distribuição e os grupos."""
+    lo = np.array([ranges[k][0] for k in INPUTS])
+    hi = np.array([ranges[k][1] for k in INPUTS])
+    return 2.0 * (np.asarray(X, float) - lo) / (hi - lo) - 1.0
+
+
+def sobol_design(n, ranges, seed, skip=0):
+    """`n` pontos de Sobol embaralhado nas faixas (matriz n × 5 na ordem de INPUTS), a partir do ponto `skip` da
+    sequência: rondas sucessivas da mesma semente continuam a mesma sequência e, juntas, são um só desenho."""
+    import warnings
+
     from scipy.stats import qmc
 
-    m = int(np.ceil(np.log2(max(n, 2))))
-    u = qmc.Sobol(d=len(INPUTS), scramble=True, seed=seed).random_base2(m)[:n]
+    gen = qmc.Sobol(d=len(INPUTS), scramble=True, seed=seed)
+    if skip:
+        gen.fast_forward(int(skip))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)  # n fora das potências de 2 é deliberado (rondas)
+        u = gen.random(int(n))
     lo = np.array([ranges[k][0] for k in INPUTS])
     hi = np.array([ranges[k][1] for k in INPUTS])
     return lo + u * (hi - lo)
@@ -122,15 +141,13 @@ def shortest_path_from(U, start, exact_max=10):
 
 
 def make_chains(X, ranges, n_chains, seed):
-    """Agrupa os pontos em `n_chains` cadeias de vizinhos (k-means nas entradas normalizadas) e, em cada cadeia,
+    """Agrupa os pontos em `n_chains` cadeias de vizinhos (k-means nas entradas reescalonadas a [−1, 1]) e, em cada cadeia,
     parte do ponto mais perto do centro do grupo e segue o caminho mais curto por todos os outros
     (`shortest_path_from`). Com uma cadeia é a estratégia do dono: centro da distribuição e menor distância
     percorrida. Devolve (cadeia, ordem) por ponto."""
     from scipy.cluster.vq import kmeans2
 
-    lo = np.array([ranges[k][0] for k in INPUTS])
-    hi = np.array([ranges[k][1] for k in INPUTS])
-    U = (X - lo) / (hi - lo)
+    U = scaled(X, ranges)
     n_chains = max(1, min(int(n_chains), U.shape[0]))
     rng = np.random.default_rng(seed)
     if n_chains == 1:
@@ -168,8 +185,47 @@ def save_design(out, d):
     os.replace(tmp, p)
 
 
+def append_round(design, n=None, chains=1):
+    """Acrescenta uma ronda ao desenho (ideia do dono, 2026-10-18: ao acabar os pontos, sortear outros tantos e
+    recomeçar do centro da nova ronda com a partida bloqueada): `n` pontos seguintes da mesma sequência de Sobol,
+    em `chains` cadeias novas (ordem do caminho mais curto a partir do centro). Devolve os pontos novos."""
+    ranges = {k: tuple(v) for k, v in design["ranges"].items()}
+    n = int(n or design.get("round_size") or design["n"])
+    X = sobol_design(n, ranges, int(design["seed"]), skip=int(design["n"]))
+    if design.get("test"):
+        chain, order = np.arange(n), np.zeros(n, int)
+    else:
+        chain, order = make_chains(X, ranges, chains, int(design["seed"]) + int(design["n"]))
+    c0 = 1 + max((p["chain"] for p in design["points"]), default=-1)
+    rnd = 1 + max((p.get("round", 0) for p in design["points"]), default=-1)
+    i0 = int(design["n"])
+    width = max(len(str(i0 + n - 1)), 3)
+    new = [
+        dict(
+            id=f"p{i0 + i:0{width}d}",
+            x={k: float(X[i, j]) for j, k in enumerate(INPUTS)},
+            chain=int(c0 + chain[i]),
+            order=int(order[i]),
+            round=int(rnd),
+        )
+        for i in range(n)
+    ]
+    design["points"].extend(new)
+    design["n"] = i0 + n
+    design["rounds"] = rnd + 1
+    return new
+
+
 def cmd_design(a):
     out = Path(a.out)
+    if a.append:
+        design = load_design(out)
+        new = append_round(design, n=a.n, chains=a.chains)
+        save_design(out, design)
+        print(
+            f"{design_path(out)}: ronda {design['rounds'] - 1} com {len(new)} pontos ({new[0]['id']}–{new[-1]['id']})"
+        )
+        return
     if design_path(out).exists() and not a.force:
         raise SystemExit(f"{design_path(out)} já existe (--force para substituir; as corridas feitas não se perdem)")
     ranges = parse_ranges(a.range)
@@ -178,13 +234,14 @@ def cmd_design(a):
         chain, order = np.arange(X.shape[0]), np.zeros(X.shape[0], int)  # teste: todos da partida bloqueada
     else:
         chain, order = make_chains(X, ranges, a.chains, a.seed)
-    width = len(str(X.shape[0] - 1))
+    width = max(len(str(X.shape[0] - 1)), 3)
     points = [
         dict(
             id=f"p{i:0{width}d}",
             x={k: float(X[i, j]) for j, k in enumerate(INPUTS)},
             chain=int(chain[i]),
             order=int(order[i]),
+            round=0,
         )
         for i in range(X.shape[0])
     ]
@@ -205,6 +262,8 @@ def cmd_design(a):
         created=time.strftime("%Y-%m-%d %H:%M"),
         seed=int(a.seed),
         n=int(X.shape[0]),
+        round_size=int(X.shape[0]),
+        rounds=1,
         test=bool(a.test),
         ranges={k: list(v) for k, v in ranges.items()},
         inputs=list(INPUTS),
@@ -219,14 +278,12 @@ def cmd_design(a):
     n_chains = len(set(chain.tolist()))
     print(f"{design_path(out)}: {X.shape[0]} pontos em {n_chains} cadeias (semente {a.seed})")
     if not a.test:
-        lo = np.array([ranges[k][0] for k in INPUTS])
-        hi = np.array([ranges[k][1] for k in INPUTS])
-        U = (X - lo) / (hi - lo)
+        U = scaled(X, ranges)
         for c in range(n_chains):
             idx = np.flatnonzero(chain == c)
             tour = idx[np.argsort(order[idx])]
             L = sum(float(np.linalg.norm(U[tour[k + 1]] - U[tour[k]])) for k in range(tour.size - 1))
-            print(f"  cadeia {c}: {' → '.join(points[i]['id'] for i in tour)} (distância normalizada {L:.2f})")
+            print(f"  cadeia {c}: {' → '.join(points[i]['id'] for i in tour)} (distância em [−1, 1]: {L:.2f})")
 
 
 # ------------------------------------------------------------------------------------------------ corridas
@@ -382,6 +439,26 @@ def run_chain(args):
     return chain_id, done
 
 
+def _run_pending(out, design, jobs):
+    """Corre as cadeias com pontos por fazer; devolve (feitas, falhadas)."""
+    chains = sorted({p["chain"] for p in design["points"] if point_status(out, p["id"]) == "pending"})
+    if not chains:
+        return 0, 0
+    work = [(str(out), c, True) for c in chains]
+    if jobs > 1 and len(chains) > 1:
+        from concurrent.futures import ProcessPoolExecutor
+
+        from mfsim.runs import _worker_init
+
+        with ProcessPoolExecutor(max_workers=int(jobs), initializer=_worker_init) as ex:
+            results = list(ex.map(run_chain, work))
+    else:
+        results = [run_chain(w) for w in work]
+    n_ok = sum(1 for _, d in results for _, st in d if st == "done")
+    n_bad = sum(1 for _, d in results for _, st in d if st == "failed")
+    return n_ok, n_bad
+
+
 def cmd_run(a):
     out = Path(a.out)
     design = load_design(out)
@@ -391,22 +468,27 @@ def cmd_run(a):
     stop = out / "STOP"
     if stop.exists() and not a.keep_stop:
         stop.unlink()
-    chains = sorted({p["chain"] for p in design["points"]})
-    pending = [p for p in design["points"] if point_status(out, p["id"]) == "pending"]
-    print(f"{len(pending)} pontos por correr em {len(chains)} cadeias ({a.jobs} processos)", flush=True)
-    work = [(str(out), c, True) for c in chains]
-    if a.jobs > 1 and len(chains) > 1:
-        from concurrent.futures import ProcessPoolExecutor
-
-        from mfsim.runs import _worker_init
-
-        with ProcessPoolExecutor(max_workers=int(a.jobs), initializer=_worker_init) as ex:
-            results = list(ex.map(run_chain, work))
-    else:
-        results = [run_chain(w) for w in work]
-    n_ok = sum(1 for _, d in results for _, st in d if st == "done")
-    n_bad = sum(1 for _, d in results for _, st in d if st == "failed")
-    print(f"feito: {n_ok} corridas, {n_bad} falhas; estado em `status`", flush=True)
+    tot_ok = tot_bad = 0
+    while True:
+        design = load_design(out)
+        pending = [p for p in design["points"] if point_status(out, p["id"]) == "pending"]
+        if pending:
+            chains = sorted({p["chain"] for p in pending})
+            print(f"{len(pending)} pontos por correr em {len(chains)} cadeias ({a.jobs} processos)", flush=True)
+            n_ok, n_bad = _run_pending(out, design, a.jobs)
+            tot_ok, tot_bad = tot_ok + n_ok, tot_bad + n_bad
+        if stop.exists():
+            print("STOP encontrado: sem rondas novas", flush=True)
+            break
+        # rondas seguintes (ideia do dono): sortear outros tantos pontos e recomeçar do centro da ronda nova
+        rounds_done = int(design.get("rounds", 1))
+        if a.rounds == 0 or (a.rounds > 0 and rounds_done >= a.rounds):
+            break
+        design = load_design(out)
+        new = append_round(design, chains=a.chains_per_round)
+        save_design(out, design)
+        print(f"ronda {design['rounds'] - 1}: {len(new)} pontos novos ({new[0]['id']}–{new[-1]['id']})", flush=True)
+    print(f"feito: {tot_ok} corridas, {tot_bad} falhas; estado em `status`", flush=True)
 
 
 def cmd_status(a):
@@ -418,7 +500,10 @@ def cmd_status(a):
         st = point_status(out, p["id"])
         counts[st] += 1
         by_chain.setdefault(p["chain"], {"done": 0, "failed": 0, "pending": 0})[st] += 1
-    print(f"{design['n']} pontos: {counts['done']} feitos, {counts['failed']} falhados, {counts['pending']} por fazer")
+    print(
+        f"{design['n']} pontos em {design.get('rounds', 1)} ronda(s): {counts['done']} feitos, {counts['failed']} falhados, "
+        f"{counts['pending']} por fazer"
+    )
     for c in sorted(by_chain):
         b = by_chain[c]
         print(f"  cadeia {c}: {b['done']} feitos, {b['failed']} falhados, {b['pending']} por fazer")
@@ -626,12 +711,24 @@ def main(argv=None):
     d.add_argument("--capture", type=int, default=3, help="ciclos capturados depois de assentar (N_c)")
     d.add_argument("--capture-window", type=float, default=600.0, help="janela de captura de um estacionário [s]")
     d.add_argument("--force", action="store_true")
+    d.add_argument(
+        "--append",
+        action="store_true",
+        help="acrescentar uma ronda de --n pontos (--chains cadeias) a um desenho existente",
+    )
     d.set_defaults(func=cmd_design)
     r = sub.add_parser("run", help="corre as cadeias (retomável; STOP na pasta para parar a quente)")
     r.add_argument("--out", required=True)
     r.add_argument("--jobs", type=int, default=1)
     r.add_argument("--retry-failed", action="store_true")
     r.add_argument("--keep-stop", action="store_true", help="não apagar um STOP existente ao arrancar")
+    r.add_argument(
+        "--rounds",
+        type=int,
+        default=0,
+        help="rondas no total: ao acabar os pontos, sortear outra ronda e recomeçar do centro (0 = só o que existe; -1 = até STOP)",
+    )
+    r.add_argument("--chains-per-round", type=int, default=1, help="cadeias de cada ronda nova")
     r.set_defaults(func=cmd_run)
     m = sub.add_parser("markers", help="marcadores das corridas feitas → dataset.csv")
     m.add_argument("--out", required=True)
