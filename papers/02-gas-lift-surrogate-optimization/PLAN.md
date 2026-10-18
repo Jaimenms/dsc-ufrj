@@ -217,8 +217,10 @@ recebe um indicador; é informação.
    browniano puro não serve para cobrir o hipercubo: é difusivo, e cobrir 5 dimensões com passos de 10 % das
    faixas pediria ~10⁵ pontos. A forma acordada junta as duas coisas:
    - o conjunto de treino é o desenho de Sobol (cobertura garantida), agrupado em 20–25 **cadeias de vizinhos**
-     (k-means nas entradas normalizadas); **dentro de cada cadeia a sequência é a do dono (2026-10-18): sorteia-se
-     o primeiro ponto e segue-se o caminho mais curto por todos os outros** (caixeiro
+     (k-means nas entradas normalizadas); **dentro de cada cadeia a sequência é a do dono (2026-10-18): o primeiro
+     ponto é o mais perto do caso base do artigo 01 (choke aberto, 200 bar, PI 5, RGO 50, retenção fechada) e a
+     cadeia arranca a quente do estado final desse caso (`runs/paper01/gaslift/gl_P20.npz`, 8000 s); dos outros
+     pontos segue-se o caminho mais curto** (caixeiro
      viajante sem regresso: exato por enumeração até 10 pontos, vizinho mais próximo com 2-opt acima;
      `shortest_path_from` da ferramenta); cada cadeia corre em sequência num processo — o primeiro ponto da
      partida bloqueada, os seguintes com arranque quente a partir do anterior — e as cadeias correm em paralelo;
@@ -226,11 +228,12 @@ recebe um indicador; é informação.
      ensaio desta sequência com 10 pontos sorteados numa só cadeia está em `runs/paper02/seq10/` (semente 11);
    - **rondas** (pedido do dono, 2026-10-18): ao acabar os pontos de uma ronda, `run --rounds` sorteia outros
      tantos — os pontos seguintes da mesma sequência de Sobol, para que as rondas juntas continuem a ser um só
-     desenho — e recomeça num ponto sorteado da ronda nova com a partida bloqueada; `--rounds -1`
+     desenho — e recomeça do caso base no ponto da ronda nova mais próximo dele; `--rounds -1`
      continua até aparecer o ficheiro `STOP`. **Omissão: 25 pontos por ronda, cada ronda na sua pasta datada**
      `runs/paper02/rounds/YYYYMMDD/` (sufixo `_2`, `_3` no mesmo dia), com a raiz `rounds.json` a guardar a
      semente, as faixas e a lista de rondas; `markers` escreve a tabela de cada ronda e a de todas na raiz. O
-     conjunto contínuo arrancou em 2026-10-18 (`runs/paper02/rounds/`, semente 1);
+     conjunto contínuo arrancou em 2026-10-18 (`runs/paper02/rounds/`, semente 1; a ronda 0 foi reordenada com a
+     regra do caso base antes de ter corridas feitas, `design --resequence`);
    - variante a avaliar no piloto: estado do poço (P_res, PI, RGO) do Sobol e, para cada um, um passeio curto de
      ~20 pontos nas duas decisões (P_gas, abertura) com arranque quente — um passeio em 2 dimensões cobre bem e é
      literalmente operar o poço;

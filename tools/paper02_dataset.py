@@ -7,10 +7,11 @@ bloqueada, os seguintes com arranque quente a partir do estado final do anterior
 com captura de ciclos (061): pára quando P na cabeça do poço e q_L no topo do riser assentam (estacionário ou ciclo
 repetido) e continua N_c ciclos, que são a janela de captura dos marcadores.
 
-Dentro de cada cadeia a sequência é a do dono: sorteia-se o primeiro ponto e segue-se o caminho mais curto por todos
-os outros (exato até 10 pontos), com as entradas reescalonadas a [−1, +1]. Ao acabar uma ronda, `run --rounds` sorteia
-outros tantos pontos (a continuação da mesma sequência de Sobol) e recomeça num ponto sorteado da ronda nova com a
-partida bloqueada.
+Dentro de cada cadeia a sequência é a do dono: o primeiro ponto é o mais perto do caso base do artigo 01 (choke
+aberto, 200 bar, PI 5, RGO 50, retenção fechada) e a cadeia arranca a quente do estado final desse caso
+(`runs/paper01/gaslift/gl_P20.npz`); dos outros pontos segue-se o caminho mais curto (exato até 10 pontos), com as
+entradas reescalonadas a [−1, +1]. Ao acabar uma ronda, `run --rounds` sorteia outros tantos pontos (a continuação da
+mesma sequência de Sobol) e recomeça do caso base no ponto mais próximo dele.
 
 Tudo é retomável e nada se perde: o desenho é um ficheiro (`design.json`, só cresce: nunca se substitui quando há
 corridas), cada corrida é um `.npz` gravado atomicamente (ou um `.failed.json`), a ferramenta nunca apaga corridas, e
@@ -147,10 +148,11 @@ def shortest_path_from(U, start, exact_max=10):
     return path
 
 
-def make_chains(X, ranges, n_chains, seed, start="random"):
+def make_chains(X, ranges, n_chains, seed, start="base", x_base=None):
     """Agrupa os pontos em `n_chains` cadeias de vizinhos (k-means nas entradas reescalonadas a [−1, 1]) e, em cada
-    cadeia, sorteia o primeiro ponto (`start = "random"`, pedido do dono; `"centre"` = o mais perto do centro do
-    grupo) e segue o caminho mais curto por todos os outros (`shortest_path_from`). Devolve (cadeia, ordem) por
+    cadeia, escolhe o primeiro ponto — `"base"` (pedido do dono, 2026-10-18): o mais perto do caso base do artigo
+    01, `x_base`, de onde a cadeia arranca a quente; `"random"`: sorteado; `"centre"`: o mais perto do centro do
+    grupo — e segue o caminho mais curto por todos os outros (`shortest_path_from`). Devolve (cadeia, ordem) por
     ponto."""
     from scipy.cluster.vq import kmeans2
 
@@ -168,10 +170,13 @@ def make_chains(X, ranges, n_chains, seed, start="random"):
         idx = np.flatnonzero(labels == lab)
         if idx.size == 0:
             continue
-        if start == "centre":
+        if start == "base" and x_base is not None:
+            ub = scaled(np.asarray([x_base[k] for k in INPUTS], float)[None, :], ranges)[0]
+            first = int(np.argmin(np.linalg.norm(U[idx] - ub, axis=1)))
+        elif start == "centre":
             centre = U[idx].mean(axis=0)
             first = int(np.argmin(np.linalg.norm(U[idx] - centre, axis=1)))
-        else:  # pedido do dono: o primeiro ponto é sorteado antes de se determinar o caminho
+        else:  # sorteado antes de se determinar o caminho
             first = int(rng.integers(idx.size))
         tour = [int(idx[i]) for i in shortest_path_from(U[idx], first)]
         for k, i in enumerate(tour):
@@ -221,7 +226,12 @@ def append_round(design, n=None, chains=1):
         chain, order = np.arange(n), np.zeros(n, int)
     else:
         chain, order = make_chains(
-            X, ranges, chains, int(design["seed"]) + int(design["n"]), start=design.get("start", "random")
+            X,
+            ranges,
+            chains,
+            int(design["seed"]) + int(design["n"]),
+            start=design.get("start", "base"),
+            x_base=design.get("x_base"),
         )
     c0 = 1 + max((p["chain"] for p in design["points"]), default=-1)
     rnd = 1 + max((p.get("round", 0) for p in design["points"]), default=-1)
@@ -282,7 +292,9 @@ def create_round(root, master, n=None, chains=1):
     n = int(n or master["round_size"])
     skip = int(master["n"])
     X = sobol_design(n, ranges, int(master["seed"]), skip=skip)
-    chain, order = make_chains(X, ranges, chains, int(master["seed"]) + skip, start=master.get("start", "random"))
+    chain, order = make_chains(
+        X, ranges, chains, int(master["seed"]) + skip, start=master.get("start", "base"), x_base=master.get("x_base")
+    )
     rnd = len(master["rounds"])
     width = max(len(str(skip + n - 1)), 3)
     points = [
@@ -306,14 +318,66 @@ def create_round(root, master, n=None, chains=1):
     return d
 
 
+def base_point(base_run):
+    """Caso base do artigo 01 de onde as cadeias arrancam: caminho da corrida e as suas cinco entradas (lidas dos
+    parâmetros do gerador gravados na corrida). Sem corrida (`""`), None."""
+    if not base_run:
+        return dict(run=None, x=None)
+    from mfsim.runs import load_run
+
+    path = Path(base_run)
+    if not path.is_absolute():
+        path = ROOT / path
+    run = load_run(str(path))
+    gp = run.case_json["meta"]["generator_params"]
+    return dict(
+        run=str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path), x={k: float(gp[k]) for k in INPUTS}
+    )
+
+
+def resequence_round(d, master, chains=1):
+    """Reordena os pontos de uma ronda sem corridas feitas com a regra atual do primeiro ponto (`start`, `x_base`)."""
+    design = load_design(d)
+    if any(point_status(d, p["id"]) != "pending" for p in design["points"]):
+        raise SystemExit(f"{d}: já tem corridas; uma ronda com corridas não se reordena")
+    ranges = {k: tuple(v) for k, v in master["ranges"].items()}
+    pts = sorted(design["points"], key=lambda p: p["id"])
+    X = np.array([[p["x"][k] for k in INPUTS] for p in pts], float)
+    chain, order = make_chains(
+        X,
+        ranges,
+        chains,
+        int(master["seed"]) + int(design.get("sobol_skip", 0)),
+        start=master.get("start", "base"),
+        x_base=master.get("x_base"),
+    )
+    for i, p in enumerate(pts):
+        p["chain"], p["order"] = int(chain[i]), int(order[i])
+    design.update(points=pts, start=master.get("start"), base_run=master.get("base_run"), x_base=master.get("x_base"))
+    save_design(d, design)
+
+
 def cmd_design(a):
     out = Path(a.out)
+    base = base_point(a.base_run if a.start == "base" else "")
+    if a.start == "base" and base["x"] is None:
+        raise SystemExit("--start base precisa de --base-run (corrida do caso base do artigo 01)")
     if not a.flat:
         # omissão: raiz de rondas, cada ronda na sua pasta datada
         if is_rounds_root(out):
+            master = load_rounds(out)
+            if a.resequence:
+                # reordenar a última ronda com a regra atual (só sem corridas feitas: nada se perde)
+                master.update(start=a.start, base_run=base["run"], x_base=base["x"])
+                d = out / master["rounds"][-1]["folder"]
+                resequence_round(d, master, chains=a.chains)
+                save_rounds(out, master)
+                pts = load_design(d)["points"]
+                tour = [p["id"] for p in sorted(pts, key=lambda p: p["order"])]
+                print(f"ronda {master['rounds'][-1]['folder']} reordenada ({a.start}): {' → '.join(tour)}")
+                return
             if not a.append:
                 raise SystemExit(f"{rounds_path(out)} já existe (--append para abrir uma ronda nova)")
-            master = load_rounds(out)
             d = create_round(out, master, n=a.n, chains=a.chains)
             print(f"ronda {len(master['rounds']) - 1}: {d} ({master['rounds'][-1]['n']} pontos)")
             return
@@ -327,6 +391,8 @@ def cmd_design(a):
             n=0,
             round_size=int(a.n or 25),
             start=a.start,
+            base_run=base["run"],
+            x_base=base["x"],
             test=bool(a.test),
             ranges={k: list(v) for k, v in ranges.items()},
             inputs=list(INPUTS),
@@ -364,7 +430,7 @@ def cmd_design(a):
     if a.test:
         chain, order = np.arange(X.shape[0]), np.zeros(X.shape[0], int)  # teste: todos da partida bloqueada
     else:
-        chain, order = make_chains(X, ranges, a.chains, a.seed, start=a.start)
+        chain, order = make_chains(X, ranges, a.chains, a.seed, start=a.start, x_base=base["x"])
     width = max(len(str(X.shape[0] - 1)), 3)
     points = [
         dict(
@@ -385,6 +451,8 @@ def cmd_design(a):
         round_size=int(X.shape[0]),
         rounds=1,
         start=a.start,
+        base_run=base["run"],
+        x_base=base["x"],
         test=bool(a.test),
         ranges={k: list(v) for k, v in ranges.items()},
         inputs=list(INPUTS),
@@ -427,7 +495,7 @@ def point_status(out, pid):
 def _settle_for(design, start):
     s = dict(design["settle"])
     t_min_warm = s.pop("t_min_warm", None)
-    if start == "warm" and t_min_warm is not None:
+    if start in ("warm", "base") and t_min_warm is not None:
         s["t_min"] = float(t_min_warm)
     return s
 
@@ -473,6 +541,8 @@ def build_case(design, point, out, start, X_prev=None, prev_id=None):
         return path
     net = case_from_json(case)
     model = build_model(net)
+    if np.asarray(X_prev).shape[0] != model.n_states:
+        raise ValueError(f"estado de arranque com {np.asarray(X_prev).shape[0]} estados; o caso tem {model.n_states}")
     model.state_to_case_ic(np.asarray(X_prev, float), 0.0, exact=True)
     net.initial = "edges"
     net.meta = dict(net.meta or {}, initial_guess=dict(mode="warm", from_point=prev_id))
@@ -550,7 +620,25 @@ def run_chain(args):
             if progress:
                 print(f"cadeia {chain_id}: STOP encontrado, parada antes de {p['id']}", flush=True)
             break
-        if prev_done is None or design.get("test"):
+        if (
+            prev_done is None
+            and design.get("start", "base") == "base"
+            and design.get("base_run")
+            and not design.get("test")
+        ):
+            try:
+                from mfsim.runs import load_run
+
+                X_base = np.asarray(load_run(str(ROOT / design["base_run"])).X)[:, -1]
+            except Exception as e:  # noqa: BLE001
+                X_base = None
+                if progress:
+                    print(f"cadeia {chain_id}: caso base ilegível ({e}); partida bloqueada", flush=True)
+            if X_base is not None:
+                st = run_point(design, p, out, "base", X_prev=X_base, prev_id="base", progress=progress)
+            else:
+                st = run_point(design, p, out, "blocked", progress=progress)
+        elif prev_done is None or design.get("test"):
             st = run_point(design, p, out, "blocked", progress=progress)
         else:
             st = run_point(
@@ -807,7 +895,7 @@ def write_dataset(out, rows, design):
         "id": "identificador do ponto",
         "chain": "cadeia (processo) a que o ponto pertence",
         "order": "posição na cadeia (0 = partida bloqueada)",
-        "start": "blocked (estado bloqueado do gerador) ou warm (estado final do ponto anterior)",
+        "start": "base (estado final do caso base do artigo 01), warm (estado final do ponto anterior) ou blocked (estado bloqueado do gerador)",
         "from_point": "ponto cujo estado final arrancou esta corrida",
         "t_end": "tempo simulado alcançado [s]",
         "reason": "paragem: steady, cycle, tf (tempo máximo sem assentar), failure, none",
@@ -905,9 +993,17 @@ def main(argv=None):
     d.add_argument("--flat", action="store_true", help="conjunto numa só pasta (sem rondas datadas; o modo dos testes)")
     d.add_argument(
         "--start",
-        choices=["random", "centre"],
-        default="random",
-        help="primeiro ponto de cada cadeia: sorteado (omissão, pedido do dono) ou o mais perto do centro",
+        choices=["base", "random", "centre"],
+        default="base",
+        help="primeiro ponto de cada cadeia: o mais perto do caso base do artigo 01, arrancando do seu estado final (omissão, pedido do dono); sorteado; ou o mais perto do centro",
+    )
+    d.add_argument(
+        "--base-run",
+        default="runs/paper01/gaslift/gl_P20.npz",
+        help="corrida do caso base (estado final = arranque das cadeias; as suas entradas = ponto de referência)",
+    )
+    d.add_argument(
+        "--resequence", action="store_true", help="reordenar a última ronda (sem corridas feitas) com a regra atual"
     )
     d.add_argument(
         "--append",

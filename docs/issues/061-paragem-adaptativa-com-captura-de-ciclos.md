@@ -27,11 +27,13 @@ período); `capture_cycles = N` continua, depois de assentar, N vezes o maior pe
 
 **Ferramenta** `tools/paper02_dataset.py` (plano do artigo 02): `design` sorteia o hipercubo das cinco entradas
 (P_res, PI, RGO, P_gas, abertura) por Sobol embaralhado e agrupa os pontos em cadeias de vizinhos (k-means nas
-entradas normalizadas; em cada cadeia sorteia o primeiro ponto e segue o caminho mais curto por todos os outros, com as
-entradas reescalonadas a [−1, 1] — exato até 10 pontos, 2-opt acima —, a sequência pedida pelo dono; rondas
-sucessivas continuam a sequência de Sobol), gravando `design.json`; `run` corre as cadeias em
-processos paralelos, o primeiro ponto de cada cadeia da partida bloqueada do gerador e os seguintes com arranque
-quente a partir do estado final do anterior (`state_to_case_ic`), cada corrida com a paragem adaptativa (P na
+entradas normalizadas; em cada cadeia o primeiro ponto é o mais perto do caso base do artigo 01 e a cadeia arranca a quente
+do estado final desse caso (`gl_P20.npz`; `--start random|centre` são as alternativas), e dos outros segue o
+caminho mais curto com as entradas reescalonadas a [−1, 1] — exato até 10 pontos, 2-opt acima —, a sequência
+pedida pelo dono; rondas sucessivas continuam a sequência de Sobol; `--resequence` reordena uma ronda sem corridas), gravando `design.json`; `run` corre as cadeias em
+processos paralelos, o primeiro ponto de cada cadeia a quente do estado final do caso base (ou da partida bloqueada
+do gerador, nos conjuntos de teste) e os seguintes com arranque quente a partir do estado final do anterior
+(`state_to_case_ic`), cada corrida com a paragem adaptativa (P na
 cabeça do poço e q_L no topo do riser, envelope, N_c = 3 ciclos de captura, 600 s num estacionário, tf máximo
 24 000 s, orçamento de relógio 045); `markers` extrai de cada corrida feita, na janela de captura (ou nos últimos
 4000 s sem ela), média, mínimo, máximo, f_min e f_max de P, α_G, q_L e q_G em oito pontos característicos (fundo
