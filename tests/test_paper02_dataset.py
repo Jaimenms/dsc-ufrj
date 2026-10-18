@@ -120,13 +120,36 @@ def test_rounds_continue_the_sobol_sequence(tmp_path):
 def test_design_never_overwrites_runs(tmp_path):
     import pytest
 
-    ds.main(["design", "--out", str(tmp_path), "--n", "4", "--chains", "1", "--seed", "2"])
+    ds.main(["design", "--flat", "--out", str(tmp_path), "--n", "4", "--chains", "1", "--seed", "2"])
     d0 = json.loads((tmp_path / "design.json").read_text())
     (tmp_path / "p000.npz").write_bytes(b"x")  # uma corrida feita
     with pytest.raises(SystemExit):
-        ds.main(["design", "--out", str(tmp_path), "--n", "4", "--chains", "1", "--seed", "2", "--force"])
+        ds.main(["design", "--flat", "--out", str(tmp_path), "--n", "4", "--chains", "1", "--seed", "2", "--force"])
     assert json.loads((tmp_path / "design.json").read_text()) == d0
-    ds.main(["design", "--out", str(tmp_path), "--n", "4", "--chains", "1", "--append"])
+    ds.main(["design", "--flat", "--out", str(tmp_path), "--n", "4", "--chains", "1", "--append"])
     d1 = json.loads((tmp_path / "design.json").read_text())
     assert d1["n"] == 8 and d1["rounds"] == 2 and d1["points"][:4] == d0["points"]
     assert ds.point_status(tmp_path, "p000") == "done" and ds.point_status(tmp_path, "p004") == "pending"
+
+
+def test_rounds_in_dated_folders(tmp_path):
+    import pytest
+
+    root = tmp_path / "rounds"
+    ds.main(["design", "--out", str(root), "--n", "4", "--seed", "9"])
+    master = json.loads((root / "rounds.json").read_text())
+    assert master["round_size"] == 4 and master["n"] == 4 and len(master["rounds"]) == 1
+    d0 = root / master["rounds"][0]["folder"]
+    assert d0.name[:8].isdigit() and (d0 / "design.json").exists()
+    with pytest.raises(SystemExit):
+        ds.main(["design", "--out", str(root), "--n", "4", "--seed", "9"])  # a raiz nunca se substitui
+    ds.main(["design", "--out", str(root), "--append"])
+    master = json.loads((root / "rounds.json").read_text())
+    assert len(master["rounds"]) == 2 and master["n"] == 8
+    d1 = root / master["rounds"][1]["folder"]
+    assert d1 != d0 and d1.name.startswith(d0.name[:8])
+    pts1 = json.loads((d1 / "design.json").read_text())["points"]
+    X8 = ds.sobol_design(8, ds.DEFAULT_RANGES, seed=9)
+    assert [p["id"] for p in sorted(pts1, key=lambda p: p["id"])] == ["p004", "p005", "p006", "p007"]
+    assert np.allclose([[p["x"][k] for k in ds.INPUTS] for p in sorted(pts1, key=lambda p: p["id"])], X8[4:])
+    assert sorted(p["order"] for p in pts1) == [0, 1, 2, 3] and all(p["round"] == 1 for p in pts1)

@@ -227,7 +227,10 @@ recebe um indicador; é informação.
    - **rondas** (pedido do dono, 2026-10-18): ao acabar os pontos de uma ronda, `run --rounds` sorteia outros
      tantos — os pontos seguintes da mesma sequência de Sobol, para que as rondas juntas continuem a ser um só
      desenho — e recomeça num ponto sorteado da ronda nova com a partida bloqueada; `--rounds -1`
-     continua até aparecer o ficheiro `STOP`;
+     continua até aparecer o ficheiro `STOP`. **Omissão: 25 pontos por ronda, cada ronda na sua pasta datada**
+     `runs/paper02/rounds/YYYYMMDD/` (sufixo `_2`, `_3` no mesmo dia), com a raiz `rounds.json` a guardar a
+     semente, as faixas e a lista de rondas; `markers` escreve a tabela de cada ronda e a de todas na raiz. O
+     conjunto contínuo arrancou em 2026-10-18 (`runs/paper02/rounds/`, semente 1);
    - variante a avaliar no piloto: estado do poço (P_res, PI, RGO) do Sobol e, para cada um, um passeio curto de
      ~20 pontos nas duas decisões (P_gas, abertura) com arranque quente — um passeio em 2 dimensões cobre bem e é
      literalmente operar o poço;

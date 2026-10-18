@@ -19,10 +19,15 @@ uma cadeia retoma do último ponto concluído; um ficheiro `STOP` na pasta pára
 P, alpha_G, q_L e q_G em oito pontos característicos, mais o gás injetado e a classe) vão para `dataset.csv` com o
 dicionário das colunas em `dataset.json`.
 
-    uv run python tools/paper02_dataset.py design --out runs/paper02/pilot --n 50 --chains 3 --seed 1
-    uv run python tools/paper02_dataset.py run --out runs/paper02/pilot --jobs 3 [--rounds -1]
-    uv run python tools/paper02_dataset.py markers --out runs/paper02/pilot
-    uv run python tools/paper02_dataset.py status --out runs/paper02/pilot
+Rondas em pastas datadas (pedido do dono): `runs/paper02/rounds/rounds.json` é a raiz (semente, faixas, configuração,
+lista de rondas) e cada ronda vive em `runs/paper02/rounds/YYYYMMDD/` (sufixo _2, _3… no mesmo dia) com o seu
+`design.json`, as corridas e a sua `dataset.csv`; a raiz recebe a tabela de todas as rondas. Omissão: 25 pontos por
+ronda, uma cadeia por ronda. `--flat` mantém o modo de uma só pasta.
+
+    uv run python tools/paper02_dataset.py design --out runs/paper02/rounds --seed 1        # raiz + ronda 0 (25 pontos)
+    uv run python tools/paper02_dataset.py run --out runs/paper02/rounds --rounds -1        # continuamente, até STOP
+    uv run python tools/paper02_dataset.py markers --out runs/paper02/rounds               # tabelas por ronda e total
+    uv run python tools/paper02_dataset.py status --out runs/paper02/rounds
 """
 
 from __future__ import annotations
@@ -175,6 +180,21 @@ def make_chains(X, ranges, n_chains, seed, start="random"):
     return chain, order
 
 
+def _settle_spec(a):
+    return dict(
+        window=float(a.window),
+        t_min=float(a.t_min),
+        t_min_warm=float(a.t_min_warm),
+        amp_tol=AMP_TOL["P"],
+        rel_tol=float(a.rel_tol),
+        match="envelope",
+        capture_cycles=int(a.capture),
+        capture_window=float(a.capture_window),
+        signal={"edge": "1", "node": 1, "var": "P", "amp_tol": AMP_TOL["P"]},
+        signals=[{"edge": "1", "node": -1, "var": "qL", "amp_tol": AMP_TOL["qL"]}],
+    )
+
+
 def design_path(out):
     return Path(out) / "design.json"
 
@@ -223,8 +243,107 @@ def append_round(design, n=None, chains=1):
     return new
 
 
+ROUNDS_FILE = "rounds.json"  # raiz das rondas (pedido do dono): uma pasta datada YYYYMMDD por ronda
+
+
+def rounds_path(root):
+    return Path(root) / ROUNDS_FILE
+
+
+def is_rounds_root(out):
+    return rounds_path(out).exists()
+
+
+def load_rounds(root):
+    return json.load(open(rounds_path(root), encoding="utf-8"))
+
+
+def save_rounds(root, master):
+    p = rounds_path(root)
+    tmp = p.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(master, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    os.replace(tmp, p)
+
+
+def new_round_dir(root):
+    """Pasta da ronda: a data de hoje (YYYYMMDD), com sufixo _2, _3… se já houver uma ronda de hoje."""
+    name = time.strftime("%Y%m%d")
+    d, k = Path(root) / name, 1
+    while d.exists():
+        k += 1
+        d = Path(root) / f"{name}_{k}"
+    return d
+
+
+def create_round(root, master, n=None, chains=1):
+    """Ronda nova numa pasta datada: os próximos `n` pontos da sequência de Sobol do conjunto (primeiro ponto
+    sorteado, caminho mais curto), com um `design.json` próprio; atualiza `rounds.json`. Devolve a pasta."""
+    ranges = {k: tuple(v) for k, v in master["ranges"].items()}
+    n = int(n or master["round_size"])
+    skip = int(master["n"])
+    X = sobol_design(n, ranges, int(master["seed"]), skip=skip)
+    chain, order = make_chains(X, ranges, chains, int(master["seed"]) + skip, start=master.get("start", "random"))
+    rnd = len(master["rounds"])
+    width = max(len(str(skip + n - 1)), 3)
+    points = [
+        dict(
+            id=f"p{skip + i:0{width}d}",
+            x={k: float(X[i, j]) for j, k in enumerate(INPUTS)},
+            chain=int(chain[i]),
+            order=int(order[i]),
+            round=rnd,
+        )
+        for i in range(n)
+    ]
+    design = {k: v for k, v in master.items() if k != "rounds"}
+    design.update(n=n, round_size=n, rounds=1, round=rnd, sobol_skip=skip, points=points)
+    d = new_round_dir(root)
+    d.mkdir(parents=True, exist_ok=False)
+    save_design(d, design)
+    master["rounds"].append(dict(folder=d.name, n=n, skip=skip, created=time.strftime("%Y-%m-%d %H:%M")))
+    master["n"] = skip + n
+    save_rounds(root, master)
+    return d
+
+
 def cmd_design(a):
     out = Path(a.out)
+    if not a.flat:
+        # omissão: raiz de rondas, cada ronda na sua pasta datada
+        if is_rounds_root(out):
+            if not a.append:
+                raise SystemExit(f"{rounds_path(out)} já existe (--append para abrir uma ronda nova)")
+            master = load_rounds(out)
+            d = create_round(out, master, n=a.n, chains=a.chains)
+            print(f"ronda {len(master['rounds']) - 1}: {d} ({master['rounds'][-1]['n']} pontos)")
+            return
+        if out.exists() and any(out.iterdir()):
+            raise SystemExit(f"{out} existe e não está vazia: um conjunto nunca se substitui")
+        ranges = parse_ranges(a.range)
+        master = dict(
+            schema="paper02-rounds/1",
+            created=time.strftime("%Y-%m-%d %H:%M"),
+            seed=int(a.seed),
+            n=0,
+            round_size=int(a.n or 25),
+            start=a.start,
+            test=bool(a.test),
+            ranges={k: list(v) for k, v in ranges.items()},
+            inputs=list(INPUTS),
+            tf_max=float(a.tf_max),
+            dt_out=float(a.dt_out),
+            max_cpu=float(a.max_cpu),
+            settle=_settle_spec(a),
+            rounds=[],
+        )
+        out.mkdir(parents=True, exist_ok=True)
+        save_rounds(out, master)
+        d = create_round(out, master, chains=a.chains)
+        pts = load_design(d)["points"]
+        tour = [p["id"] for p in sorted(pts, key=lambda p: p["order"])]
+        print(f"{rounds_path(out)}: ronda 0 em {d} com {len(pts)} pontos (semente {a.seed})")
+        print(f"  sequência: {' → '.join(tour)}")
+        return
     if a.append:
         design = load_design(out)
         new = append_round(design, n=a.n, chains=a.chains)
@@ -241,7 +360,7 @@ def cmd_design(a):
                 "(use --append para rondas novas, ou outra pasta)"
             )
     ranges = parse_ranges(a.range)
-    X = sobol_design(a.n, ranges, a.seed)
+    X = sobol_design(a.n or 25, ranges, a.seed)
     if a.test:
         chain, order = np.arange(X.shape[0]), np.zeros(X.shape[0], int)  # teste: todos da partida bloqueada
     else:
@@ -257,18 +376,7 @@ def cmd_design(a):
         )
         for i in range(X.shape[0])
     ]
-    settle = dict(
-        window=float(a.window),
-        t_min=float(a.t_min),
-        t_min_warm=float(a.t_min_warm),
-        amp_tol=AMP_TOL["P"],
-        rel_tol=float(a.rel_tol),
-        match="envelope",
-        capture_cycles=int(a.capture),
-        capture_window=float(a.capture_window),
-        signal={"edge": "1", "node": 1, "var": "P", "amp_tol": AMP_TOL["P"]},
-        signals=[{"edge": "1", "node": -1, "var": "qL", "amp_tol": AMP_TOL["qL"]}],
-    )
+    settle = _settle_spec(a)
     d = dict(
         schema="paper02-dataset/1",
         created=time.strftime("%Y-%m-%d %H:%M"),
@@ -438,7 +546,7 @@ def run_chain(args):
             continue
         if st == "failed" and not design.get("retry_failed", False):
             continue
-        if (Path(out) / "STOP").exists():
+        if (Path(out) / "STOP").exists() or (Path(out).parent / "STOP").exists():
             if progress:
                 print(f"cadeia {chain_id}: STOP encontrado, parada antes de {p['id']}", flush=True)
             break
@@ -474,8 +582,39 @@ def _run_pending(out, design, jobs):
     return n_ok, n_bad
 
 
+def cmd_run_rounds(a):
+    """Raiz de rondas: corre a ronda mais recente; ao acabar, abre uma ronda nova (pasta datada) até STOP."""
+    root = Path(a.out)
+    stop = root / "STOP"
+    if stop.exists() and not a.keep_stop:
+        stop.unlink()
+    tot_ok = tot_bad = 0
+    while True:
+        master = load_rounds(root)
+        cur = root / master["rounds"][-1]["folder"]
+        design = load_design(cur)
+        if a.retry_failed and not design.get("retry_failed"):
+            design["retry_failed"] = True
+            save_design(cur, design)
+        pending = [p for p in design["points"] if point_status(cur, p["id"]) == "pending"]
+        if pending:
+            print(f"ronda {design.get('round', 0)} ({cur.name}): {len(pending)} pontos por correr", flush=True)
+            n_ok, n_bad = _run_pending(cur, design, a.jobs)
+            tot_ok, tot_bad = tot_ok + n_ok, tot_bad + n_bad
+        if stop.exists():
+            print("STOP encontrado: sem rondas novas", flush=True)
+            break
+        if a.rounds == 0 or (a.rounds > 0 and len(master["rounds"]) >= a.rounds):
+            break
+        d = create_round(root, load_rounds(root), chains=a.chains_per_round)
+        print(f"ronda nova em {d}", flush=True)
+    print(f"feito: {tot_ok} corridas, {tot_bad} falhas; estado em `status`", flush=True)
+
+
 def cmd_run(a):
     out = Path(a.out)
+    if is_rounds_root(out):
+        return cmd_run_rounds(a)
     design = load_design(out)
     if a.retry_failed:
         design["retry_failed"] = True
@@ -506,8 +645,26 @@ def cmd_run(a):
     print(f"feito: {tot_ok} corridas, {tot_bad} falhas; estado em `status`", flush=True)
 
 
+def _round_dirs(root):
+    return [Path(root) / r["folder"] for r in load_rounds(root)["rounds"]]
+
+
 def cmd_status(a):
     out = Path(a.out)
+    if is_rounds_root(out):
+        master = load_rounds(out)
+        print(
+            f"{out}: {len(master['rounds'])} ronda(s), {master['n']} pontos sorteados (ronda de {master['round_size']})"
+        )
+        for d in _round_dirs(out):
+            design = load_design(d)
+            c = {"done": 0, "failed": 0, "pending": 0}
+            for p in design["points"]:
+                c[point_status(d, p["id"])] += 1
+            print(f"  {d.name}: {c['done']} feitos, {c['failed']} falhados, {c['pending']} por fazer")
+        if (out / "STOP").exists():
+            print("  STOP presente (as cadeias param depois da corrida em curso)")
+        return
     design = load_design(out)
     counts = {"done": 0, "failed": 0, "pending": 0}
     by_chain = {}
@@ -680,11 +837,9 @@ def write_dataset(out, rows, design):
     return out / "dataset.csv"
 
 
-def cmd_markers(a):
+def _rows_of(out, design, tail):
     from mfsim.runs import load_run
 
-    out = Path(a.out)
-    design = load_design(out)
     rows = []
     for p in design["points"]:
         if point_status(out, p["id"]) != "done":
@@ -699,8 +854,27 @@ def cmd_markers(a):
             id=p["id"], chain=p["chain"], order=p["order"], start=note.get("start"), from_point=note.get("from_point")
         )
         row.update(p["x"])
-        row.update(run_markers(run, tail=float(a.tail)))
+        row.update(run_markers(run, tail=float(tail)))
         rows.append(row)
+    return rows
+
+
+def cmd_markers(a):
+    out = Path(a.out)
+    if is_rounds_root(out):
+        # uma tabela por ronda e a tabela de todas as rondas na raiz
+        master = load_rounds(out)
+        all_rows = []
+        for d in _round_dirs(out):
+            design = load_design(d)
+            rows = _rows_of(d, design, a.tail)
+            write_dataset(d, rows, design)
+            all_rows.extend(rows)
+        path = write_dataset(out, all_rows, master)
+        print(f"{path}: {len(all_rows)} linhas de {len(master['rounds'])} ronda(s), {len(columns())} colunas")
+        return
+    design = load_design(out)
+    rows = _rows_of(out, design, a.tail)
     path = write_dataset(out, rows, design)
     print(f"{path}: {len(rows)} linhas, {len(columns())} colunas")
 
@@ -711,8 +885,10 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     d = sub.add_parser("design", help="desenho de Sobol em cadeias (design.json)")
     d.add_argument("--out", required=True)
-    d.add_argument("--n", type=int, default=400)
-    d.add_argument("--chains", type=int, default=20)
+    d.add_argument(
+        "--n", type=int, default=None, help="pontos por ronda (omissão: 25; em --append, os da ronda anterior)"
+    )
+    d.add_argument("--chains", type=int, default=1, help="cadeias por ronda (1 = uma sequência por ronda)")
     d.add_argument("--seed", type=int, default=1)
     d.add_argument("--range", action="append", default=[], help="nome=lo:hi (omissão: faixas do plano)")
     d.add_argument("--test", action="store_true", help="conjunto de teste: todos os pontos da partida bloqueada")
@@ -726,6 +902,7 @@ def main(argv=None):
     d.add_argument("--capture", type=int, default=3, help="ciclos capturados depois de assentar (N_c)")
     d.add_argument("--capture-window", type=float, default=600.0, help="janela de captura de um estacionário [s]")
     d.add_argument("--force", action="store_true")
+    d.add_argument("--flat", action="store_true", help="conjunto numa só pasta (sem rondas datadas; o modo dos testes)")
     d.add_argument(
         "--start",
         choices=["random", "centre"],
