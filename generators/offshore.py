@@ -128,6 +128,23 @@ DEFAULTS = dict(
     error_estimate="milne",  # estimativa de erro de ordem consistente na ordem 2 (058); "thesis" = a da tese
     low_void_alpha=0.025,  # limiar da regra de fração baixa (zera o estratificado mal-posto; decisão do dono, 17/10)
     local_bubble=True,  # critérios de bolhas com a fração de gás da célula (054)
+    # gas lift (pedido do dono, 2026-10-18): linha de gás da plataforma à cabeça do poço, anular até à válvula de
+    # retenção junto ao packer, injeção no tubing; tudo com o modelo a dois fluidos. Dimensões da prática offshore
+    # brasileira: linha de gas lift de 4" ao lado da produção de 6"; anular 9 5/8" × 5 1/2" (área equivalente);
+    # válvula de orifício dimensionada para ~1 kg/s a 60 bar de queda; manifold de gas lift a 150 bar.
+    # Desligar = pressão baixa na plataforma (20 bar): a retenção fica fechada e o ramo inerte.
+    gas_lift=False,
+    P_gas_bar=150.0,  # pressão do gás na plataforma (especificação de pressão)
+    D_gas_line=0.1016,  # 4" (linha flexível de gas lift); segue o traçado da linha de produção (com o joelho)
+    gas_mesh_factor=0.5,  # células da linha de gás = fração das da linha de produção, por segmento (mín. 1; pedido do dono)
+    D_annulus=0.171,  # diâmetro de área equivalente do anular 9 5/8" (ID 0,2205 m) × 5 1/2" (OD 0,1397 m)
+    n_annulus=10,
+    L_inj=30.0,  # m: válvula operadora acima do fundo do poço (junto ao packer)
+    n_well_lower=1,
+    CV_check=1.5,  # q = 0,0075 CV sqrt(rho dP[bar]) [kg/s]: ~1 kg/s a 60 bar
+    dP_min_check_bar=0.0,
+    V_tank=1.0,  # m³: volume do anular sob a válvula (tanque que alimenta a retenção)
+    gas_alpha=0.998,  # fração de gás inicial da linha de gás, do anular e do tanque: quase seca (o modelo admite até 1 − alpha_min); com 0,98 o líquido escorre durante horas e custa 5× os passos
 )
 
 
@@ -158,6 +175,116 @@ def _model(p):
             "derivatives": "exact",
         },
     }
+
+
+def gas_lift_geometry(p, info):
+    """Pontos da linha de gás (plataforma → base do riser → cabeça do poço) e cotas do anular e da injeção."""
+    th = np.deg2rad(p["slope_down_deg"])
+    L_h1 = p["L_line"] - p["L_down"]
+    yC = L_h1 + p["L_down"] * np.cos(th)
+    z0 = info["z_wellhead"]
+    z_bot = z0 - p["L_well"]
+    return dict(
+        y_top=yC + p["L_h2"],
+        yC=yC,
+        zC=info["z_riser_base"],
+        z0=z0,
+        z_bot=z_bot,
+        z_inj=z_bot + p["L_inj"],
+    )
+
+
+def _reversed_path(points, segments, factor=1.0):
+    """O mesmo traçado percorrido ao contrário (a linha de gás desce da plataforma pelo caminho da linha de
+    produção): pontos invertidos e, em cada segmento, a razão de graduação invertida e o número de células
+    multiplicado por `factor` (arredondado, mínimo 1: a malha da linha de gás pode ser mais aberta)."""
+    pts = list(reversed(points))
+    segs = []
+    for sg in reversed(segments):
+        g = sg.get("grading", 1.0)
+        n = max(1, int(round(sg["n"] * factor)))
+        segs.append({"n": n} if g == 1.0 else {"n": n, "grading": 1.0 / g})
+    return pts, segs
+
+
+def _gas_lift_block(p, info, PR, qL0, qG0, ports_in, ports_out, rhoL0, P_sep_bar, line_points, line_segments):
+    """Vértices e arestas do ramo de gas lift; a injeção é o vértice `inj`, onde o tubing inferior e o anular (pela
+    retenção) alimentam o tubing superior, como no caso 10.3.2 da tese. A linha de gás segue o traçado da linha
+    de produção ao contrário (plataforma → riser → joelho → descida → horizontal → cabeça do poço), com uma malha
+    mais aberta (`gas_mesh_factor`)."""
+    g = gas_lift_geometry(p, info)
+    gas_points, gas_segments = _reversed_path(line_points, line_segments, float(p["gas_mesh_factor"]))
+    fl = p["fluid"] or FLUID
+    P_gas = p["P_gas_bar"] * 1e5
+    rhoG = fl["rhoG0"] * (P_gas / fl["P0"]) ** (1.0 / fl["gammaG"])
+    qG_gl0 = 0.5  # kg/s: só a estimativa inicial das vazões do ramo (o estado inicial recalcula)
+    P_wh_gas = P_gas + rhoG * G * (0.0 - g["z0"])
+    P_inj_guess = P_sep_bar * 1e5 + 0.5 * rhoL0 * G * (info["H_riser"] + p["L_well"] - p["L_inj"])
+    vertices = [
+        {"id": "gl_src", "kind": "boundary", "spec": {"PT": P_gas / PR, "qL": 0.0}},
+        {"id": "gl_wh", "kind": "boundary", "spec": {"PT": P_wh_gas / PR}},
+        {"id": "an_top", "kind": "boundary", "spec": {"qL": 0.0, "qG": qG_gl0}},
+        {"id": "an_bot", "kind": "tank", "volume": float(p["V_tank"])},
+        {"id": "inj", "kind": "boundary", "spec": {"qL": qL0, "qG": qG0 + qG_gl0}},
+        {"id": "wl_out", "kind": "boundary", "spec": {"PT": P_inj_guess / PR}},
+    ]
+    ports_gas_in = {"alphaG": "neumann", "PT": "dirichlet", "qL": "dirichlet", "qG": "free"}
+    edges = [
+        {
+            "id": "well_lower",
+            "type": "pipe",
+            "from": "Jr1",
+            "to": "wl_out",
+            "D": p["D_well"],
+            "roughness": p["eps_well"],
+            "geometry": {
+                "points": [{"xyz": [0.0, 0.0, g["z_bot"]]}, {"xyz": [0.0, 0.0, g["z_inj"]]}],
+                "segments": [{"n": int(p["n_well_lower"])}],
+            },
+            "model": _model(p),
+            "scheme": _scheme(qL0, qG0),
+            "ports": {"in": dict(ports_in), "out": dict(ports_out)},
+        },
+        {"id": "connector_wl_inj", "type": "connector", "from": "wl_out", "to": "inj"},
+        {
+            "id": "gas_line",
+            "type": "pipe",
+            "from": "gl_src",
+            "to": "gl_wh",
+            "D": p["D_gas_line"],
+            "roughness": p["eps"],
+            "geometry": {"points": gas_points, "segments": gas_segments},
+            "model": _model(p),
+            "scheme": _scheme(1e-3, qG_gl0),
+            "ports": {"in": dict(ports_gas_in), "out": dict(ports_out)},
+        },
+        {"id": "connector_gl_an", "type": "connector", "from": "gl_wh", "to": "an_top"},
+        {
+            "id": "annulus",
+            "type": "pipe",
+            "from": "an_top",
+            "to": "an_bot",
+            "D": p["D_annulus"],
+            "roughness": p["eps_well"],
+            "geometry": {
+                "points": [{"xyz": [0.0, 0.0, g["z0"]]}, {"xyz": [0.0, 0.0, g["z_inj"]]}],
+                "segments": [{"n": int(p["n_annulus"])}],
+            },
+            "model": _model(p),
+            "scheme": _scheme(1e-3, qG_gl0),
+            "ports": {"in": dict(ports_in), "out": dict(ports_out)},
+        },
+        {
+            "id": "check_an",
+            "type": "check_valve",
+            "from": "an_bot",
+            "to": "inj",
+            "CV": float(p["CV_check"]),
+            "dP_min_bar": float(p["dP_min_check_bar"]),
+        },
+        {"id": "connector_an_inj", "type": "connector", "from": "an_bot", "to": "inj"},
+    ]
+    return vertices, edges, g
 
 
 def _scheme(qL, qG):
@@ -336,6 +463,23 @@ def offshore_case(**kw):
         },
         "initial_state": {"source": "guess"},
     }
+    if p["gas_lift"]:
+        vertices, edges, g = _gas_lift_block(
+            p, info, PR, qL0, qG0, ports_in, ports_out, rhoL0, p["P_sep_bar"], points, segments
+        )
+        well = next(e for e in case["network"]["edges"] if e["id"] == "well")
+        well["from"] = "inj"
+        well["geometry"]["points"] = [{"xyz": [0.0, 0.0, g["z_inj"]]}, {"xyz": [0.0, 0.0, g["z0"]]}]
+        case["network"]["vertices"] += vertices
+        case["network"]["edges"] += edges
+        case["name"] = "offshore_gaslift"
+        case["description"] += (
+            f" Gas lift: linha de gás de {p['D_gas_line']:g} m da plataforma a {p['P_gas_bar']:g} bar até à cabeça "
+            f"do poço, anular (D equivalente {p['D_annulus']:g} m) até {p['L_inj']:g} m do fundo, retenção CV "
+            f"{p['CV_check']:g} para o tubing; todos os dutos com o modelo a dois fluidos."
+        )
+        case["meta"]["geometry"] = dict(info, **{f"gl_{k}": v for k, v in g.items()})
+        case["integration"]["slow_exit"] = True  # eventos da retenção (issue 033)
     return case
 
 
@@ -424,65 +568,124 @@ def initial_state_guess(model, net, w_gas, mode="noslip"):
     from mfsim.network.elements import valve_upstream_pressure
     from mfsim.network.graph import Choke, Reservoir
 
+    from mfsim.network.elements import check_valve_flows
+    from mfsim.network.graph import CheckValve, TankVertex
+
     PR, fluid = model.PR, model.fluid
     ch = [e for e in net.edges if isinstance(e, Choke)][0]
     rs = [e for e in net.edges if isinstance(e, Reservoir)][0]
     P_sep = [v for v in net.vertices if v.id == ch.v_to][0].spec["PT"](0.0) * PR
     ab = float(ch.opening(0.0))
-    line, well = model.pipes[0], model.pipes[1]
+    pipes = {pb.pipe.id: pb for pb in model.pipes}
+    line, well = pipes["1"], pipes["well"]
+    gas_lift = "gas_line" in pipes
     s_top = float(np.asarray(line.scheme.x_nodes)[-1]) - float(net.meta["generator_params"]["L_h2"]) - 1.0
+    q_inj = 0.0
+    if gas_lift:
+        # coluna de gás estática da plataforma à válvula (linha de gás e anular): pressão na base do anular
+        cv = [e for e in net.edges if isinstance(e, CheckValve)][0]
+        P_gas = [v for v in net.vertices if v.id == "gl_src"][0].spec["PT"](0.0) * PR
+        P_gl, _ = _gas_column(pipes["gas_line"], fluid, P_gas)
+        P_an, _ = _gas_column(pipes["annulus"], fluid, P_gl[-1])
+        P_an_bot = P_an[-1]
+        a_gas = float(net.meta["generator_params"].get("gas_alpha", 0.98))
 
-    def profile(m):
+    def profile(m, q_inj):
         qL, qG = (1 - w_gas) * m, w_gas * m
-        ZP, _ = valve_upstream_pressure(P_sep / PR, qL, qG, ab, ch.CV, fluid, PR, law=ch.law)
+        ZP, _ = valve_upstream_pressure(P_sep / PR, qL, qG + q_inj, ab, ch.CV, fluid, PR, law=ch.law)
         xs = np.asarray(line.scheme.x_nodes, float)
         th_n = np.asarray(line.scheme.theta_nodes, float)
-        # o topo horizontal da linha identifica-se pela posição (a marcha dá o ângulo, não a posição)
-        pos = {float(t): x for x, t in zip(xs, th_n)}
+        qG_up = qG + q_inj  # acima da injeção a linha e o tubing superior levam também o gás do gas lift
         P_line, a_line = _march(
             line,
             fluid,
             float(ZP) * PR,
             qL,
-            qG,
-            lambda P, th: _node_alpha(mode, line, fluid, P, qL, qG, th, True, False),
+            qG_up,
+            lambda P, th: _node_alpha(mode, line, fluid, P, qL, qG_up, th, True, False),
         )
         if mode == "blocked":
             a_line = np.array(
                 [
-                    _node_alpha(mode, line, fluid, P_line[i], qL, qG, th_n[i], True, xs[i] > s_top)
+                    _node_alpha(mode, line, fluid, P_line[i], qL, qG_up, th_n[i], True, xs[i] > s_top)
                     for i in range(xs.size)
                 ]
             )
         P_well, a_well = _march(
-            well, fluid, P_line[0], qL, qG, lambda P, th: _node_alpha(mode, well, fluid, P, qL, qG, th, False, False)
+            well,
+            fluid,
+            P_line[0],
+            qL,
+            qG_up,
+            lambda P, th: _node_alpha(mode, well, fluid, P, qL, qG_up, th, False, False),
         )
-        return qL, qG, (P_line, a_line), (P_well, a_well)
+        out = dict(qL=qL, qG=qG, qG_up=qG_up, line=(P_line, a_line), well=(P_well, a_well), P_bottom=P_well[0])
+        if gas_lift:
+            wl = pipes["well_lower"]
+            P_wl, a_wl = _march(
+                wl, fluid, P_well[0], qL, qG, lambda P, th: _node_alpha(mode, wl, fluid, P, qL, qG, th, False, False)
+            )
+            out.update(well_lower=(P_wl, a_wl), P_bottom=P_wl[0], P_inj=P_well[0])
+        return out
 
     def resid(m):
-        _, _, _, (P_well, _) = profile(m)
-        return m - (rs.IPL + rs.IPG) * max(0.0, rs.P - P_well[0] / 1e5)
+        return m - (rs.IPL + rs.IPG) * max(0.0, rs.P - profile(m, q_inj)["P_bottom"] / 1e5)
 
-    lo, hi = 1e-3, (rs.IPL + rs.IPG) * rs.P
-    for _ in range(60):
-        mid = 0.5 * (lo + hi)
-        if resid(mid) > 0:
-            hi = mid
-        else:
-            lo = mid
-    m = max(0.5 * (lo + hi), 1e-3)
-    qL, qG, (P_line, a_line), (P_well, a_well) = profile(m)
+    def solve_m():
+        lo, hi = 1e-3, (rs.IPL + rs.IPG) * rs.P
+        for _ in range(60):
+            mid = 0.5 * (lo + hi)
+            if resid(mid) > 0:
+                hi = mid
+            else:
+                lo = mid
+        return max(0.5 * (lo + hi), 1e-3)
+
+    m = solve_m()
+    if gas_lift:
+        # injeção da lei da retenção com a pressão do tubing na injeção; uma repetição chega para a estimativa
+        for _ in range(2):
+            P_inj = profile(m, q_inj)["P_inj"]
+            _, qG_v, _ = check_valve_flows(P_an_bot / PR, P_inj / PR, a_gas, cv.CV, cv.dP_min, fluid, PR)
+            q_inj = max(float(qG_v), 0.0)
+            m = solve_m()
+    pr = profile(m, q_inj)
     X = np.zeros(model.n_states)
-    for pb, P, a in ((line, P_line, a_line), (well, P_well, a_well)):
+    blocks = [(line, pr["line"], pr["qL"], pr["qG_up"]), (well, pr["well"], pr["qL"], pr["qG_up"])]
+    if gas_lift:
+        blocks.append((pipes["well_lower"], pr["well_lower"], pr["qL"], pr["qG"]))
+        blocks.append((pipes["gas_line"], (P_gl, np.full(P_gl.size, a_gas)), 0.0, q_inj))
+        blocks.append((pipes["annulus"], (P_an, np.full(P_an.size, a_gas)), 0.0, q_inj))
+    for pb, (P, a), qL_b, qG_b in blocks:
         Y = pb.base_Y()
-        Y[:, SLOT_ALPHA] = np.clip(a, 0.02, 0.98)
+        Y[:, SLOT_ALPHA] = np.clip(a, 0.02, 0.98 if pb.pipe.id not in ("gas_line", "annulus") else a_gas)
         Y[:, SLOT_P] = P / PR
-        Y[:, SLOT_QL] = qL
-        Y[:, SLOT_QG] = qG
+        Y[:, SLOT_QL] = qL_b
+        Y[:, SLOT_QG] = qG_b
         if hasattr(pb.scheme, "from_primitive"):
             Y = pb.scheme.from_primitive(Y)
         X[pb.offset : pb.offset + pb.n_states] = Y.ravel()[pb.free]
+    if gas_lift:
+        for v in net.vertices:
+            if isinstance(v, TankVertex):
+                iH, iP = model.vertex_A_index(v.id)
+                X[iH], X[iP] = a_gas, P_an_bot / PR
     return X, m
+
+
+def _gas_column(pb, fluid, P_in):
+    """Pressão (Pa) nos nós do esquema de um duto só com gás, marchada da entrada com a coluna estática
+    (dP = rho_G g dz, sem atrito); devolve (P, z)."""
+    sch = pb.scheme
+    x = np.asarray(sch.x_nodes, float)
+    zc = np.concatenate([[0.0], np.cumsum(np.sin(pb.mesh["theta"]) * pb.mesh["h"])])
+    z = np.interp(x, pb.mesh["s"], zc)
+    P = np.zeros_like(x)
+    P[0] = P_in
+    for i in range(1, x.size):
+        _, rhoG, _, _ = fluid.props(P[i - 1])
+        P[i] = P[i - 1] - rhoG * G * (z[i] - z[i - 1])
+    return P, z
 
 
 def write_case(case, out, ic=None):

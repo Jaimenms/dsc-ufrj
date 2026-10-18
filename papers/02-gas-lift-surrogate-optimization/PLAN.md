@@ -21,6 +21,18 @@ RGO ao longo da vida dos poços e mostrar a pressão de gas lift e a abertura do
   economia do gas lift no fim da vida, fica fora e é discutida como limitação.
 - **Gas lift modelado desde a pressão na plataforma**, no início da linha de gas lift.
 
+## Decisões do dono (2026-10-18)
+
+- **Caso base com gas lift construído sobre a geometria do artigo 01** (poço, linha de 2 km e riser iguais), com
+  uma linha de gás da plataforma à cabeça do poço, um anular e uma válvula de retenção na base do poço; é o caso
+  base do artigo e não substitui o do artigo 01.
+- **Especificação de pressão do gás na plataforma** como controlo; desligar o gas lift é baixar essa pressão até a
+  retenção fechar, e o caso fica igual à geometria sem gas lift (o ramo fica inerte).
+- **Modelo a dois fluidos em todos os dutos**, incluindo os só de gás (linha de gás e anular), e não os dutos
+  monofásicos de gás da tese.
+- **O RGO do reservatório é só o gás do poço**; o gás de lift soma-se-lhe no ponto de injeção.
+- **Diâmetros da prática de projeto de linhas de gas lift**, com exemplos práticos (ver abaixo).
+
 ## O que torna o artigo publicável (e o que não chega)
 
 A otimização de gas lift com modelos substitutos tem muita literatura; quase toda usa curvas de desempenho de
@@ -50,26 +62,60 @@ os poços, e o problema com N poços é uma soma mais as restrições do compres
 A alternativa, um coletor submarino de produção comum, acopla os poços hidraulicamente e em dinâmica (as golfadas
 interagem). Fica fora deste artigo.
 
-### O que se acrescenta ao modelo do artigo 01
+### O que se acrescenta ao modelo do artigo 01 (feito em 2026-10-18)
 
 O modelo do artigo 01 fica congelado: padrão automático com 054 (`regime.local_bubble`), regra de fração baixa a
 0,025, Newton com `armijo_tol` (055) e a estimativa de Milne (058), como o gerador do offshore já usa.
 
-Rede de gas lift de cada poço, da plataforma para o fundo:
+Rede de gas lift de cada poço, da plataforma para o fundo — opção `gas_lift=true` de `generators/offshore.py`,
+que mantém o poço, a linha e o riser do artigo 01 bit a bit (o caso base regenerado é idêntico) e acrescenta o
+ramo; casos `cases/paper01/gaslift/offshore_gl_P150.json` (com injeção) e `offshore_gl_P20.json` (sem injeção),
+corridas em `runs/paper01/gaslift/`; issue 060:
 
-1. vértice de pressão na plataforma (descarga do compressor ou do coletor, a jusante do choke de gás do poço);
-2. riser de gás (300 m) e linha de gás (2 km) até à cabeça do poço, monofásicos de gás;
-3. anular do poço até à válvula operadora, monofásico de gás;
-4. válvula operadora no tubing a ~1450 m abaixo da cabeça (logo acima do packer), modelada como orifício em
-   **escoamento crítico** (razão de pressões < ~0,55): assim a vazão injetada não segue as oscilações da pressão
-   no tubing, que no caso base chegam a ±9 bar com o ciclo da golfada;
-5. o poço partido em dois dutos no ponto de injeção, com um vértice de junção que recebe o gás.
+1. vértice de pressão na plataforma (`gl_src`): **especificação da pressão do gás** P_gas, a única variável de
+   controlo do ramo; com P_gas = 20 bar a retenção fica fechada e o caso reproduz o estado inicial do artigo 01
+   (pressão de fundo 97 bar contra 95, vazões iguais);
+2. **linha de gás de 4"** (0,1016 m) com o traçado da linha de produção ao contrário (patamar, riser, joelho em
+   arco, subida a +2° e horizontal até à cabeça do poço, com metade das células por segmento: 19), com o modelo a dois fluidos
+   (quase seca, α_G = 0,998): é o par 6" produção + 4" gas lift dos poços satélite da
+   Petrobras — a especificação técnica dos poços satélite do Atapu lista o riser de serviço/gas lift de 4"
+   flexível ao lado do de produção; a mesma pairing aparece nos sistemas de coleta do Roncador (P-52/P-54, linhas
+   de produção emparelhadas com linhas de gas lift);
+3. **anular 9 5/8" × 5 1/2"**: revestimento de produção 9 5/8" 47 lb/ft (ID 0,2205 m) e coluna de 5 1/2" (OD 0,1397
+   m, ID 0,124 m ≈ o D_well = 0,127 m do artigo 01); o anular entra como duto de diâmetro de área equivalente
+   0,171 m (área 0,0229 m², a que conta para a massa de gás armazenada e a inércia; o diâmetro hidráulico, 0,081 m,
+   só mudaria o atrito, desprezável no gás a < 1 m/s), a dois fluidos;
+4. **válvula de retenção** (`check_valve`, a lei regularizada da tese, 10.3.2) a 30 m do fundo (válvula operadora
+   logo acima do packer), alimentada por um tanque de 1 m³ na base do anular, com CV = 1,5: q = 0,0075·CV·√(ρ ΔP)
+   dá ~1 kg/s (≈ 100 000 Sm³/d, a ordem de grandeza das injeções por poço do Campos) a 60 bar de queda; **não é um
+   orifício em escoamento crítico** (a hipótese anterior deste plano): a vazão segue √ΔP, mas com ΔP ≈ 110 bar as
+   oscilações de ±10 bar do tubing mudam-na só ≈ ±5 %, o que dá o mesmo efeito prático;
+5. o poço partido em `well_lower` (30 m, 1 célula) e `well` no vértice de injeção `inj`, que recebe a produção do
+   reservatório e o gás da retenção; o RGO do reservatório continua a ser o gás do poço.
 
-O que já existe no mfsim: dutos monofásicos de gás, válvula de retenção regularizada e a rede completa de gas lift
-do caso 10.3.2 da tese (linha de gás, anular, válvula, tubing), com corridas de *heading* em
-`notebooks_src/issues/nb_gas_lift_intermitencia.py`. A verificar: a lei de um orifício de gás em escoamento crítico
-(a lei de válvula homogénea da 039 com gás puro), e um gerador novo (`generators/gas_lift.py`, que compõe o caso
-offshore; o `generators/offshore.py` é do artigo 01).
+Manifold de gas lift a 150 bar (o caso «com injeção»): a coluna estática de gás leva a base do anular a 170 bar,
+e a válvula injeta 1,15 kg/s com o tubing a 58 bar no estado inicial bloqueado (a pressão de fundo cai de 97 para
+58 bar e a produção de líquido sobe de 4,1 para 5,7 kg/s). Com os 5 dutos o caso tem 323 estados (200 no artigo
+01); `slow_exit = true` por causa dos eventos da retenção (033). O estado inicial (`--ic blocked`) marcha a coluna
+de gás estática desde a plataforma e itera a injeção com a lei da retenção e a IPR.
+
+O que fica da hipótese anterior: a lei de orifício em escoamento crítico não é necessária (ponto 4); o gerador
+separado `generators/gas_lift.py` também não (a opção do gerador do offshore partilha a geometria e garante que o
+caso do artigo 01 não muda). A verificação contra o caso 10.3.2 da tese (heading com a mesma topologia) fica por
+fazer.
+
+**Primeiras corridas (2026-10-18, 8000 s, JAX, issue 060).** Sem injeção (20 bar) o caso reproduz o do artigo 01
+ao mesmo custo (9919 passos, 6 min), desde que a linha de gás e o anular arranquem quase secos (α_G = 0,998; com
+2 % de líquido o escorrimento do filme custa 5×). Com injeção a 150 bar o gas lift **suprime a golfada severa**:
+depois do sopro inicial a linha fica a 17,9 bar constante, o fundo do poço a 69 bar (94–108 sem injeção), a
+injeção a 1,08 kg/s (≈ 110 000 Sm³/d) e a produção de líquido sobe de 3,94 para 5,29 kg/s. Dois avisos para o
+desenho do artigo: (i) a fronteira de estabilidade em P_gas fica entre 20 e 150 bar e é o que o mapa linear tem de
+localizar; (ii) o caso com injeção custa 5× (51 625 passos, 31 min) por chaveamento de padrão nas duas células
+horizontais dos 10 m do topo do riser (estratificado ↔ intermitente ↔ anular a α_G ≈ 0,82 com gás rápido, 75
+trocas por 1000 s, vazão no choke a oscilar entre 1,3 e 8,4 kg/s a cada 37 s), não na dinâmica do ramo de gás;
+suavizar o chaveamento (`k_switch` 5) tira o custo mas muda a solução (o topo fica estratificado e o estado sai do
+equilíbrio), logo é uma decisão de modelo a tomar antes dos lotes — por exemplo excluir o estratificado no troço
+horizontal curto a jusante do riser (10 m = 66 D, sem comprimento de desenvolvimento), com issue própria.
 
 Profundidade de injeção (análise de 2026-10-17 com a corrida de referência de 24 000 s): sem injeção, a pressão
 no tubing a 1500 m vai de 92 a 110 bar ao longo do ciclo (gradiente médio 5,2–5,5 bar/100 m). Com Δp de 7 bar na
@@ -187,8 +233,9 @@ estimam-se +30–50 %. 300 dinâmicas ≈ 100–125 CPU-h, ~10 h com 12 processo
 ## Dependências e etapas
 
 0. Artigo 01 fechado e modelo congelado (as issues 054, 055, 057 e 058 estão feitas; falta a campanha a 2 km).
-1. Rede de gas lift sobre o caso offshore: gerador, válvula em escoamento crítico, verificação contra o caso
-   10.3.2 e contra a análise da profundidade de injeção acima. Cada alteração ao modelo leva uma issue.
+1. Rede de gas lift sobre o caso offshore: **feito** (opção `gas_lift` do gerador, retenção em vez de orifício
+   crítico, issue 060); falta a verificação contra o caso 10.3.2 (heading) e a análise da profundidade de injeção
+   acima com as corridas. Cada alteração ao modelo leva uma issue.
 2. Mapa linear (estacionário + autovalores) nas cinco dimensões; fronteira de estabilidade com gas lift.
 3. Lote de dinâmicas (`batches/paper02_*.json`) na região instável, com a amostragem adaptativa.
 4. Substituto, validação e incerteza.

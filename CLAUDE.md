@@ -15,7 +15,7 @@ dinâmico de escoamento bifásico em redes de dutos (modelo a dois fluidos a 4 e
 mistura, monofásicos; Galerkin, diferenças finitas, volumes finitos escalonados; BDF implícito
 próprio, numpy ou JAX). Reproduz o capítulo 10 da tese bit a bit contra os ficheiros MATLAB e
 resolve o que a tese não conseguiu: a intermitência severa (severe slugging), validada com dados
-de laboratório. As 59 alterações em relação à tese estão em `docs/issues/` (feature, bugfix, estudo).
+de laboratório. As 60 alterações em relação à tese estão em `docs/issues/` (feature, bugfix, estudo).
 
 ## Mapa do repositório
 
@@ -23,7 +23,7 @@ de laboratório. As 59 alterações em relação à tese estão em `docs/issues/
 |---|---|
 | `mfsim/` | o simulador, genérico: só lê casos JSON (`mfsim-case/1`). Não contém casos, geradores nem nada da tese. |
 | `thesis/` | ponte com a tese, fora do simulador: `.mf2` originais em `thesis/data`, leitor, registo legado, exportador para JSON, apoio aos notebooks fiéis. |
-| `generators/` | geradores de casos (parâmetros físicos → JSON): `severe_slug.py`, `column.py`, `offshore.py` (sistema poço–linha–riser do artigo 01, com PVT e variáveis de mercado, `--ic blocked`). |
+| `generators/` | geradores de casos (parâmetros físicos → JSON): `severe_slug.py`, `column.py`, `offshore.py` (sistema poço–linha–riser do artigo 01, com PVT e variáveis de mercado, `--ic blocked`; `--param gas_lift=true` acrescenta linha de gás de 4", anular e válvula de retenção na base do poço, controlo pela pressão do gás na plataforma `P_gas_bar`, casos `cases/paper01/gaslift/`, issue 060). |
 | `cases/` | casos JSON: `examples/hello_world`, `chapter10/` (11 da tese), `severe_slug/` (referência, variantes `$extends`, laboratório), `studies/`. |
 | `batches/` | lotes de corridas (`mfsim batch`): `thesis.json` → `runs/chapter10`, `issues.json` → `runs/issues`. |
 | `notebooks_src/` | fontes dos notebooks (`# %%`): `thesis/` reprodução fiel (um por secção), `issues/` melhorias (um por grupo de issues). Nenhum simula: leem `runs/` e `notebooks/data`. |

@@ -1,0 +1,966 @@
+{
+ "schema": "mfsim-case/1",
+ "name": "offshore_gaslift",
+ "description": "Sistema offshore do artigo 01 (geometria do caso offshore da dissertação de Gustavo Alves de Carvalho, UERJ 2022, com o fluido da Tabela 6): poço vertical de 1500 m com IPR linear no fundo (PI 5 Sm³/d/bar, P_res 200 bar, RGO 50 Sm³/Sm³), linha de 2000 m com trecho final a -2° (500 m), curva de raio 5 m, riser até à superfície, choke CV 150 no topo e separador a 10 bar; fluido congelado num par politrópico, padrão de escoamento dinâmico, unidade de golfada com o filme de equilíbrio (051) e frequência de Zabaras (049). Gerado por generators/offshore.py. Gas lift: linha de gás de 0.1016 m da plataforma a 100 bar até à cabeça do poço, anular (D equivalente 0.171 m) até 30 m do fundo, retenção CV 1.5 para o tubing; todos os dutos com o modelo a dois fluidos.",
+ "meta": {
+  "generator": "generators.offshore",
+  "generator_params": {
+   "L_well": 1500.0,
+   "D_well": 0.127,
+   "eps_well": 0.0002,
+   "n_well": 15,
+   "L_line": 2000.0,
+   "L_down": 500.0,
+   "slope_down_deg": -2.0,
+   "D": 0.1524,
+   "eps": 0.0006,
+   "n_h1": 8,
+   "n_down": 5,
+   "grading_down": 1.0,
+   "water_depth": 300.0,
+   "elbow_radius": 5.0,
+   "n_elbow": 4,
+   "n_riser": 16,
+   "grading_riser": 1.0,
+   "L_h2": 10.0,
+   "n_h2": 2,
+   "fluid": null,
+   "GOR": 50,
+   "PI": 5,
+   "P_res_bar": 200,
+   "P_sep_bar": 10.0,
+   "choke_cv": 150.0,
+   "choke_opening": 1.0,
+   "slug_frequency": "zabaras",
+   "slug_unit": "film",
+   "k_switch": 20.0,
+   "tf": 20000.0,
+   "dt_out": 5.0,
+   "rtol": 0.003,
+   "tol_range": 0.01,
+   "max_step": null,
+   "q_ref_factor": 10.0,
+   "newton_damping": "armijo_tol",
+   "error_estimate": "milne",
+   "low_void_alpha": 0.025,
+   "local_bubble": true,
+   "gas_lift": true,
+   "P_gas_bar": 100,
+   "D_gas_line": 0.1016,
+   "gas_mesh_factor": 0.5,
+   "D_annulus": 0.171,
+   "n_annulus": 10,
+   "L_inj": 30.0,
+   "n_well_lower": 1,
+   "CV_check": 1.5,
+   "dP_min_check_bar": 0.0,
+   "V_tank": 1.0,
+   "gas_alpha": 0.998
+  },
+  "geometry": {
+   "L_h1": 1500.0,
+   "z_wellhead": -300.0,
+   "z_riser_base": -317.4497483512505,
+   "drop_down": 17.449748351250484,
+   "H_riser": 317.4497483512505,
+   "s_elbow0": 1994.8223484310472,
+   "t_tan": 5.177651568952847,
+   "gl_y_top": 2009.695413509548,
+   "gl_yC": 1999.695413509548,
+   "gl_zC": -317.4497483512505,
+   "gl_z0": -300.0,
+   "gl_z_bot": -1800.0,
+   "gl_z_inj": -1770.0
+  },
+  "market": {
+   "PI_Sm3_d_bar": 5,
+   "GOR_Sm3_Sm3": 50,
+   "P_res_bar": 200
+  },
+  "mass": {
+   "PI_kg_s_bar": 0.04171637824074074,
+   "w_gas": 0.028818101097316372,
+   "kg_per_Sm3_oil": 720.859016
+  },
+  "pvt": {
+   "GOR": 122.13,
+   "Rs": 23.24,
+   "rho_o_std": 673.25,
+   "rho_gd_std": 1.1547,
+   "rho_gf_std": 0.7763,
+   "P_ref_bar": 20.0,
+   "T_ref_C": 40.0,
+   "std": "1,01325 bar e 20 °C"
+  },
+  "paper": "01-severe-slugging-two-fluid",
+  "map_base": true,
+  "run": null,
+  "initial_guess": {
+   "mode": "blocked",
+   "m_total": 5.693106573040348
+  }
+ },
+ "fluid": {
+  "type": "polytropic",
+  "rhoL0": 646.7,
+  "rhoG0": 15.0,
+  "muL": 0.000314,
+  "muG": 1.21e-05,
+  "gammaL": 1000.0,
+  "gammaG": 1.0,
+  "P0": 2000000.0,
+  "sigma": 0.0163
+ },
+ "reference": {
+  "PR": 1000000.0,
+  "state_ref": {
+   "PT": 3.4145791604621376,
+   "qG": 0.6010934027777777,
+   "qL": 20.25709571759259
+  }
+ },
+ "time": {
+  "t0": 0.0,
+  "tf": 20000.0,
+  "dt_out": 5.0
+ },
+ "network": {
+  "vertices": [
+   {
+    "id": "1",
+    "kind": "boundary",
+    "spec": {
+     "qL": 2.025709571759259,
+     "qG": 0.06010934027777777
+    }
+   },
+   {
+    "id": "Jr1",
+    "kind": "junction",
+    "spec": {
+     "qL": 2.025709571759259,
+     "qG": 0.06010934027777777
+    }
+   },
+   {
+    "id": "3",
+    "kind": "boundary",
+    "spec": {
+     "PT": 2.5066268911191534
+    }
+   },
+   {
+    "id": "4",
+    "kind": "boundary",
+    "spec": {
+     "qL": 2.025709571759259,
+     "qG": 0.06010934027777777
+    }
+   },
+   {
+    "id": "Jc2",
+    "kind": "junction",
+    "spec": {
+     "PT": 1.0
+    }
+   },
+   {
+    "id": "2",
+    "kind": "boundary",
+    "spec": {
+     "PT": 1.0
+    }
+   },
+   {
+    "id": "gl_src",
+    "kind": "boundary",
+    "spec": {
+     "PT": 10.0,
+     "qL": 0.0
+    }
+   },
+   {
+    "id": "gl_wh",
+    "kind": "boundary",
+    "spec": {
+     "PT": 10.220649625
+    }
+   },
+   {
+    "id": "an_top",
+    "kind": "boundary",
+    "spec": {
+     "qL": 0.0,
+     "qG": 0.5
+    }
+   },
+   {
+    "id": "an_bot",
+    "kind": "tank",
+    "volume": 1.0,
+    "ic": {
+     "HG": 0.998,
+     "PT": 11.38373647743669
+    }
+   },
+   {
+    "id": "inj",
+    "kind": "boundary",
+    "spec": {
+     "qL": 2.025709571759259,
+     "qG": 0.5601093402777778
+    }
+   },
+   {
+    "id": "wl_out",
+    "kind": "boundary",
+    "spec": {
+     "PT": 6.667967899044153
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "1",
+    "type": "pipe",
+    "from": "4",
+    "to": "Jc2",
+    "D": 0.1524,
+    "roughness": 0.0006,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        -300.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1500.0,
+        -300.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1994.5209160260354,
+        -317.26905091739314
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1996.4872532572745,
+        -316.9399989147837
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1998.168705361843,
+        -315.86879578399095
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1999.2979377768102,
+        -314.22575242474403
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1999.695413509548,
+        -312.2720967822977
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1999.695413509548,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        2009.695413509548,
+        0.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 8
+      },
+      {
+       "n": 5
+      },
+      {
+       "n": 1
+      },
+      {
+       "n": 1
+      },
+      {
+       "n": 1
+      },
+      {
+       "n": 1
+      },
+      {
+       "n": 16
+      },
+      {
+       "n": 2
+      }
+     ]
+    },
+    "model": {
+     "type": "two_fluid",
+     "regime": {
+      "type": "automatic",
+      "k_switch": 20.0,
+      "smooth": true,
+      "local": true,
+      "local_film": true,
+      "local_bubble": true,
+      "low_void": {
+       "regime": "bubble",
+       "alpha": 0.025
+      }
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "physical"
+      },
+      "intermittent": {
+       "slug_frequency": "zabaras",
+       "unit": "film"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.5,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fv_upwind",
+     "options": {
+      "alpha_face": "upwind",
+      "art_visc": 0.05,
+      "closure_alpha": "donor",
+      "conservative": true,
+      "q_switch_G": 0.0012021868055555555,
+      "q_switch_L": 0.040514191435185185,
+      "relax_target": "noslip",
+      "relax_time": 0.05,
+      "switch_frac": 0.5
+     }
+    },
+    "ports": {
+     "in": {
+      "alphaG": "neumann",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "1",
+      "file": "offshore_gl_P100.ic.npz"
+     },
+     "at": "scheme"
+    }
+   },
+   {
+    "id": "well",
+    "type": "pipe",
+    "from": "inj",
+    "to": "3",
+    "D": 0.127,
+    "roughness": 0.0002,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        -1770.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        -300.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 15
+      }
+     ]
+    },
+    "model": {
+     "type": "two_fluid",
+     "regime": {
+      "type": "automatic",
+      "k_switch": 20.0,
+      "smooth": true,
+      "local": true,
+      "local_film": true,
+      "local_bubble": true,
+      "low_void": {
+       "regime": "bubble",
+       "alpha": 0.025
+      }
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "physical"
+      },
+      "intermittent": {
+       "slug_frequency": "zabaras",
+       "unit": "film"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.5,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fv_upwind",
+     "options": {
+      "alpha_face": "upwind",
+      "art_visc": 0.05,
+      "closure_alpha": "donor",
+      "conservative": true,
+      "q_switch_G": 0.0012021868055555555,
+      "q_switch_L": 0.040514191435185185,
+      "relax_target": "noslip",
+      "relax_time": 0.05,
+      "switch_frac": 0.5
+     }
+    },
+    "ports": {
+     "in": {
+      "alphaG": "neumann",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "well",
+      "file": "offshore_gl_P100.ic.npz"
+     },
+     "at": "scheme"
+    }
+   },
+   {
+    "id": "connector_3_4",
+    "type": "connector",
+    "from": "3",
+    "to": "4"
+   },
+   {
+    "id": "reservoir_1",
+    "type": "reservoir",
+    "from": "1",
+    "to": "Jr1",
+    "IPL": 0.04051419143518518,
+    "IPG": 0.0012021868055555555,
+    "P_bar": 200.0
+   },
+   {
+    "id": "choke_2",
+    "type": "choke",
+    "from": "Jc2",
+    "to": "2",
+    "CV": 150.0,
+    "law": "homogeneous",
+    "opening": 1.0
+   },
+   {
+    "id": "well_lower",
+    "type": "pipe",
+    "from": "Jr1",
+    "to": "wl_out",
+    "D": 0.127,
+    "roughness": 0.0002,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        -1800.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        -1770.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 1
+      }
+     ]
+    },
+    "model": {
+     "type": "two_fluid",
+     "regime": {
+      "type": "automatic",
+      "k_switch": 20.0,
+      "smooth": true,
+      "local": true,
+      "local_film": true,
+      "local_bubble": true,
+      "low_void": {
+       "regime": "bubble",
+       "alpha": 0.025
+      }
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "physical"
+      },
+      "intermittent": {
+       "slug_frequency": "zabaras",
+       "unit": "film"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.5,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fv_upwind",
+     "options": {
+      "alpha_face": "upwind",
+      "art_visc": 0.05,
+      "closure_alpha": "donor",
+      "conservative": true,
+      "q_switch_G": 0.0012021868055555555,
+      "q_switch_L": 0.040514191435185185,
+      "relax_target": "noslip",
+      "relax_time": 0.05,
+      "switch_frac": 0.5
+     }
+    },
+    "ports": {
+     "in": {
+      "alphaG": "neumann",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "well_lower",
+      "file": "offshore_gl_P100.ic.npz"
+     },
+     "at": "scheme"
+    }
+   },
+   {
+    "id": "connector_wl_inj",
+    "type": "connector",
+    "from": "wl_out",
+    "to": "inj"
+   },
+   {
+    "id": "gas_line",
+    "type": "pipe",
+    "from": "gl_src",
+    "to": "gl_wh",
+    "D": 0.1016,
+    "roughness": 0.0006,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        2009.695413509548,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1999.695413509548,
+        0.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1999.695413509548,
+        -312.2720967822977
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1999.2979377768102,
+        -314.22575242474403
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1998.168705361843,
+        -315.86879578399095
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1996.4872532572745,
+        -316.9399989147837
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1994.5209160260354,
+        -317.26905091739314
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        1500.0,
+        -300.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        -300.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 1
+      },
+      {
+       "n": 8
+      },
+      {
+       "n": 1
+      },
+      {
+       "n": 1
+      },
+      {
+       "n": 1
+      },
+      {
+       "n": 1
+      },
+      {
+       "n": 2
+      },
+      {
+       "n": 4
+      }
+     ]
+    },
+    "model": {
+     "type": "two_fluid",
+     "regime": {
+      "type": "automatic",
+      "k_switch": 20.0,
+      "smooth": true,
+      "local": true,
+      "local_film": true,
+      "local_bubble": true,
+      "low_void": {
+       "regime": "bubble",
+       "alpha": 0.025
+      }
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "physical"
+      },
+      "intermittent": {
+       "slug_frequency": "zabaras",
+       "unit": "film"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.5,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fv_upwind",
+     "options": {
+      "alpha_face": "upwind",
+      "art_visc": 0.05,
+      "closure_alpha": "donor",
+      "conservative": true,
+      "q_switch_G": 0.01,
+      "q_switch_L": 2e-05,
+      "relax_target": "noslip",
+      "relax_time": 0.05,
+      "switch_frac": 0.5
+     }
+    },
+    "ports": {
+     "in": {
+      "alphaG": "neumann",
+      "PT": "dirichlet",
+      "qL": "dirichlet",
+      "qG": "free"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "gas_line",
+      "file": "offshore_gl_P100.ic.npz"
+     },
+     "at": "scheme"
+    }
+   },
+   {
+    "id": "connector_gl_an",
+    "type": "connector",
+    "from": "gl_wh",
+    "to": "an_top"
+   },
+   {
+    "id": "annulus",
+    "type": "pipe",
+    "from": "an_top",
+    "to": "an_bot",
+    "D": 0.171,
+    "roughness": 0.0002,
+    "geometry": {
+     "points": [
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        -300.0
+       ]
+      },
+      {
+       "xyz": [
+        0.0,
+        0.0,
+        -1770.0
+       ]
+      }
+     ],
+     "segments": [
+      {
+       "n": 10
+      }
+     ]
+    },
+    "model": {
+     "type": "two_fluid",
+     "regime": {
+      "type": "automatic",
+      "k_switch": 20.0,
+      "smooth": true,
+      "local": true,
+      "local_film": true,
+      "local_bubble": true,
+      "low_void": {
+       "regime": "bubble",
+       "alpha": 0.025
+      }
+     },
+     "closures": {
+      "stratified": {
+       "fi_mult": 1.0,
+       "v_gt": 5.5
+      },
+      "bubble": {
+       "drag": "physical"
+      },
+      "intermittent": {
+       "slug_frequency": "zabaras",
+       "unit": "film"
+      }
+     },
+     "options": {
+      "alpha_min": 0.001,
+      "alpha_max": 0.999,
+      "legacy_convective": true,
+      "interfacial_pressure": 0.0,
+      "ip_slip_max": 10.0,
+      "virtual_mass": {
+       "C_vm": 0.5,
+       "lambda": 1.0
+      },
+      "derivatives": "exact"
+     }
+    },
+    "scheme": {
+     "type": "fv_upwind",
+     "options": {
+      "alpha_face": "upwind",
+      "art_visc": 0.05,
+      "closure_alpha": "donor",
+      "conservative": true,
+      "q_switch_G": 0.01,
+      "q_switch_L": 2e-05,
+      "relax_target": "noslip",
+      "relax_time": 0.05,
+      "switch_frac": 0.5
+     }
+    },
+    "ports": {
+     "in": {
+      "alphaG": "neumann",
+      "PT": "free",
+      "qL": "dirichlet",
+      "qG": "dirichlet"
+     },
+     "out": {
+      "alphaG": "free",
+      "PT": "dirichlet",
+      "qL": "free",
+      "qG": "free"
+     }
+    },
+    "ic": {
+     "arrays": {
+      "key": "annulus",
+      "file": "offshore_gl_P100.ic.npz"
+     },
+     "at": "scheme"
+    }
+   },
+   {
+    "id": "check_an",
+    "type": "check_valve",
+    "from": "an_bot",
+    "to": "inj",
+    "CV": 1.5,
+    "dP_min_bar": 0.0
+   },
+   {
+    "id": "connector_an_inj",
+    "type": "connector",
+    "from": "an_bot",
+    "to": "inj"
+   }
+  ]
+ },
+ "integration": {
+  "integrator": "implicit",
+  "quadrature_order": 2,
+  "max_step": null,
+  "atol": 1e-06,
+  "rtol": 0.003,
+  "backend": "jax",
+  "tol_range": 0.01,
+  "first_step": 0.001,
+  "max_order": 2,
+  "max_newton": 20,
+  "newton_tol": 0.001,
+  "min_step": 1e-09,
+  "slow_exit": true,
+  "newton_damping": "armijo_tol",
+  "error_estimate": "milne",
+  "accumulate": true
+ },
+ "initial_state": {
+  "source": "edges"
+ }
+}
