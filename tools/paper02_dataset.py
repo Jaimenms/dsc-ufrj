@@ -12,9 +12,10 @@ os outros (exato até 10 pontos), com as entradas reescalonadas a [−1, +1]. Ao
 outros tantos pontos (a continuação da mesma sequência de Sobol) e recomeça num ponto sorteado da ronda nova com a
 partida bloqueada.
 
-Tudo é retomável: o desenho é um ficheiro (`design.json`), cada corrida é um `.npz` (ou um `.failed.json`), e uma
-cadeia retoma do último ponto concluído; um ficheiro `STOP` na pasta pára as cadeias depois da corrida em curso
-(paragem quente) e impede rondas novas; matar os processos perde só a corrida em curso. Os marcadores (média, mínimo, máximo, f_min, f_max de
+Tudo é retomável e nada se perde: o desenho é um ficheiro (`design.json`, só cresce: nunca se substitui quando há
+corridas), cada corrida é um `.npz` gravado atomicamente (ou um `.failed.json`), a ferramenta nunca apaga corridas, e
+uma cadeia retoma do último ponto concluído; um ficheiro `STOP` na pasta pára as cadeias depois da corrida em curso
+(paragem quente) e impede rondas novas; matar os processos perde só a corrida em curso; `markers` só lê. Os marcadores (média, mínimo, máximo, f_min, f_max de
 P, alpha_G, q_L e q_G em oito pontos característicos, mais o gás injetado e a classe) vão para `dataset.csv` com o
 dicionário das colunas em `dataset.json`.
 
@@ -232,8 +233,13 @@ def cmd_design(a):
             f"{design_path(out)}: ronda {design['rounds'] - 1} com {len(new)} pontos ({new[0]['id']}–{new[-1]['id']})"
         )
         return
-    if design_path(out).exists() and not a.force:
-        raise SystemExit(f"{design_path(out)} já existe (--force para substituir; as corridas feitas não se perdem)")
+    if design_path(out).exists():
+        n_runs = len(list(out.glob("p*.npz")))
+        if n_runs or not a.force:
+            raise SystemExit(
+                f"{design_path(out)} já existe com {n_runs} corridas: um desenho nunca se substitui "
+                "(use --append para rondas novas, ou outra pasta)"
+            )
     ranges = parse_ranges(a.range)
     X = sobol_design(a.n, ranges, a.seed)
     if a.test:
@@ -387,8 +393,9 @@ def run_point(design, point, out, start, X_prev=None, prev_id=None, progress=Tru
         info = dict(res.info)
         info["cpu_total"] = time.time() - t0
         info["note"] = json.dumps(dict(start=start, from_point=prev_id, chain=point["chain"], order=point["order"]))
+        tmp = Path(out) / f"{pid}.partial.npz"  # gravação atómica: uma morte a meio nunca deixa um .npz truncado
         save_run(
-            str(run_path(out, pid)),
+            str(tmp),
             res.T,
             res.X,
             res.model.network,
@@ -396,6 +403,7 @@ def run_point(design, point, out, start, X_prev=None, prev_id=None, progress=Tru
             acc=info.get("accum"),
             command=f"tools/paper02_dataset.py run --out {out} (ponto {pid})",
         )
+        os.replace(tmp, run_path(out, pid))
         if fail_path(out, pid).exists():
             fail_path(out, pid).unlink()
         if progress:

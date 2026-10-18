@@ -115,3 +115,18 @@ def test_rounds_continue_the_sobol_sequence(tmp_path):
     assert len(new) == 10 and design["n"] == 20 and design["rounds"] == 2
     assert all(p["chain"] == 1 and p["round"] == 1 for p in new) and sorted(p["order"] for p in new) == list(range(10))
     assert np.allclose([[p["x"][k] for k in ds.INPUTS] for p in sorted(new, key=lambda p: p["id"])], X20[10:])
+
+
+def test_design_never_overwrites_runs(tmp_path):
+    import pytest
+
+    ds.main(["design", "--out", str(tmp_path), "--n", "4", "--chains", "1", "--seed", "2"])
+    d0 = json.loads((tmp_path / "design.json").read_text())
+    (tmp_path / "p000.npz").write_bytes(b"x")  # uma corrida feita
+    with pytest.raises(SystemExit):
+        ds.main(["design", "--out", str(tmp_path), "--n", "4", "--chains", "1", "--seed", "2", "--force"])
+    assert json.loads((tmp_path / "design.json").read_text()) == d0
+    ds.main(["design", "--out", str(tmp_path), "--n", "4", "--chains", "1", "--append"])
+    d1 = json.loads((tmp_path / "design.json").read_text())
+    assert d1["n"] == 8 and d1["rounds"] == 2 and d1["points"][:4] == d0["points"]
+    assert ds.point_status(tmp_path, "p000") == "done" and ds.point_status(tmp_path, "p004") == "pending"
