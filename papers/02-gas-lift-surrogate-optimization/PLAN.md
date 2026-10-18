@@ -236,6 +236,16 @@ recebe um indicador; é informação.
      corridas por poço, 35 delas a quente. Conjunto de treino em `runs/paper02/grid/` (semente 1, arrancou em
      2026-10-18 com o poço {136 bar, PI 6,7, RGO 133}); o conjunto de Sobol em 5 dimensões (`runs/paper02/cases/`)
      continua a correr em paralelo como conjunto independente (teste);
+   - **malha das decisões em serpentina (pedido do dono, 2026-10-18, `--grid-decisions 6x6`):** as dimensões
+     separam-se pelo papel — o estado do poço (P_res, PI, RGO) vem de Sobol em 3 dimensões, um por ronda, e as
+     decisões (P_gas × abertura) formam uma malha regular 6 × 6 varrida em serpentina (boustrophedon) a partir do
+     canto mais perto do caso base (20 bar, choke aberto), com P_gas monótono (a linha de gás nunca se esvazia
+     para a plataforma) e a abertura de ida e volta: cada passo muda uma só decisão de um só nível, é o caminho de
+     arranque quente mais curto possível, e o varrimento de ida e volta mede a histerese de graça. Cada ronda é o
+     mapa completo das 36 decisões de um poço, o que a otimização ao longo da vida consome diretamente. Custo: 36
+     corridas por poço, 35 delas a quente. Conjunto de treino em `runs/paper02/grid/` (semente 1, arrancou em
+     2026-10-18 com o poço {136 bar, PI 6,7, RGO 133}); o conjunto de Sobol em 5 dimensões (`runs/paper02/cases/`)
+     continua a correr em paralelo como conjunto independente (teste);
    - **rondas** (pedido do dono, 2026-10-18): ao acabar os pontos de uma ronda, `run --rounds` sorteia outros
      tantos — os pontos seguintes da mesma sequência de Sobol, para que as rondas juntas continuem a ser um só
      desenho — e recomeça do caso base no ponto da ronda nova mais próximo dele; `--rounds -1`
