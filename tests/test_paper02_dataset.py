@@ -114,7 +114,7 @@ def test_rounds_continue_the_sobol_sequence(tmp_path):
     new = ds.append_round(design)
     assert len(new) == 10 and design["n"] == 20 and design["rounds"] == 2
     assert all(p["chain"] == 1 and p["round"] == 1 for p in new) and sorted(p["order"] for p in new) == list(range(10))
-    assert np.allclose([[p["x"][k] for k in ds.INPUTS] for p in sorted(new, key=lambda p: p["id"])], X20[10:])
+    assert np.allclose([[p["x"][k] for k in ds.INPUTS] for p in sorted(new, key=lambda p: p["sobol_index"])], X20[10:])
 
 
 def test_design_never_overwrites_runs(tmp_path):
@@ -124,7 +124,10 @@ def test_design_never_overwrites_runs(tmp_path):
         ["design", "--flat", "--start", "random", "--out", str(tmp_path), "--n", "4", "--chains", "1", "--seed", "2"]
     )
     d0 = json.loads((tmp_path / "design.json").read_text())
-    (tmp_path / "p000.npz").write_bytes(b"x")  # uma corrida feita
+    first = d0["points"][0]["id"]
+    assert len(first) == 6 and first == ds.point_id(d0["points"][0]["x"])
+    (tmp_path / first).mkdir()
+    (tmp_path / first / "run.npz").write_bytes(b"x")  # uma corrida feita
     with pytest.raises(SystemExit):
         ds.main(
             [
@@ -147,7 +150,8 @@ def test_design_never_overwrites_runs(tmp_path):
     ds.main(["design", "--flat", "--start", "random", "--out", str(tmp_path), "--n", "4", "--chains", "1", "--append"])
     d1 = json.loads((tmp_path / "design.json").read_text())
     assert d1["n"] == 8 and d1["rounds"] == 2 and d1["points"][:4] == d0["points"]
-    assert ds.point_status(tmp_path, "p000") == "done" and ds.point_status(tmp_path, "p004") == "pending"
+    assert ds.point_status(tmp_path, first) == "done" and ds.point_status(tmp_path, d1["points"][4]["id"]) == "pending"
+    assert len({p["id"] for p in d1["points"]}) == 8
 
 
 def test_rounds_in_dated_folders(tmp_path):
@@ -158,7 +162,7 @@ def test_rounds_in_dated_folders(tmp_path):
     master = json.loads((root / "rounds.json").read_text())
     assert master["round_size"] == 4 and master["n"] == 4 and len(master["rounds"]) == 1
     d0 = root / master["rounds"][0]["folder"]
-    assert d0.name[:8].isdigit() and (d0 / "design.json").exists()
+    assert d0.name[:10].isdigit() and len(d0.name) >= 10 and (d0 / "design.json").exists()
     with pytest.raises(SystemExit):
         ds.main(
             ["design", "--start", "random", "--out", str(root), "--n", "4", "--seed", "9"]
@@ -167,11 +171,12 @@ def test_rounds_in_dated_folders(tmp_path):
     master = json.loads((root / "rounds.json").read_text())
     assert len(master["rounds"]) == 2 and master["n"] == 8
     d1 = root / master["rounds"][1]["folder"]
-    assert d1 != d0 and d1.name.startswith(d0.name[:8])
+    assert d1 != d0 and d1.name.startswith(d0.name[:10])
     pts1 = json.loads((d1 / "design.json").read_text())["points"]
     X8 = ds.sobol_design(8, ds.DEFAULT_RANGES, seed=9)
-    assert [p["id"] for p in sorted(pts1, key=lambda p: p["id"])] == ["p004", "p005", "p006", "p007"]
-    assert np.allclose([[p["x"][k] for k in ds.INPUTS] for p in sorted(pts1, key=lambda p: p["id"])], X8[4:])
+    assert [p["sobol_index"] for p in sorted(pts1, key=lambda p: p["sobol_index"])] == [4, 5, 6, 7]
+    assert all(p["id"] == ds.point_id(p["x"]) for p in pts1) and len(master["ids"]) == 8 == len(set(master["ids"]))
+    assert np.allclose([[p["x"][k] for k in ds.INPUTS] for p in sorted(pts1, key=lambda p: p["sobol_index"])], X8[4:])
     assert sorted(p["order"] for p in pts1) == [0, 1, 2, 3] and all(p["round"] == 1 for p in pts1)
 
 
@@ -192,11 +197,23 @@ def test_first_point_closest_to_base_and_resequence(tmp_path):
     ds.resequence_round(d, master)
     pts = json.loads((d / "design.json").read_text())["points"]
     first = next(p for p in pts if p["order"] == 0)
-    Xr = np.array([[p["x"][k] for k in ds.INPUTS] for p in sorted(pts, key=lambda p: p["id"])])
+    Xr = np.array([[p["x"][k] for k in ds.INPUTS] for p in sorted(pts, key=lambda p: p["sobol_index"])])
     Ur = ds.scaled(Xr, ranges)
-    assert sorted(pts, key=lambda p: p["id"])[int(np.argmin(np.linalg.norm(Ur - ub, axis=1)))]["id"] == first["id"]
-    (d / f"{first['id']}.npz").write_bytes(b"x")
+    assert (
+        sorted(pts, key=lambda p: p["sobol_index"])[int(np.argmin(np.linalg.norm(Ur - ub, axis=1)))]["id"]
+        == first["id"]
+    )
+    (d / first["id"]).mkdir()
+    (d / first["id"] / "run.npz").write_bytes(b"x")
     import pytest
 
     with pytest.raises(SystemExit):
         ds.resequence_round(d, master)  # com corridas feitas não se reordena
+
+
+def test_point_id_is_a_hash_of_the_inputs():
+    x = {"P_res_bar": 200.0, "PI": 5.0, "GOR": 50.0, "P_gas_bar": 20.0, "choke_opening": 1.0}
+    assert ds.point_id(x) == ds.point_id(dict(x)) and len(ds.point_id(x)) == 6
+    assert ds.point_id(dict(x, PI=5.0001)) != ds.point_id(x)
+    ids = ds.unique_ids([x, dict(x)])  # o mesmo tuplo duas vezes: o segundo leva mais caracteres
+    assert ids[0] != ids[1] and ids[1].startswith(ids[0])

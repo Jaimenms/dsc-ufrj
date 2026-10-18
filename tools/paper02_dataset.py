@@ -20,21 +20,24 @@ uma cadeia retoma do último ponto concluído; um ficheiro `STOP` na pasta pára
 P, alpha_G, q_L e q_G em oito pontos característicos, mais o gás injetado e a classe) vão para `dataset.csv` com o
 dicionário das colunas em `dataset.json`.
 
-Rondas em pastas datadas (pedido do dono): `runs/paper02/rounds/rounds.json` é a raiz (semente, faixas, configuração,
-lista de rondas) e cada ronda vive em `runs/paper02/rounds/YYYYMMDD/` (sufixo _2, _3… no mesmo dia) com o seu
-`design.json`, as corridas e a sua `dataset.csv`; a raiz recebe a tabela de todas as rondas. Omissão: 25 pontos por
-ronda, uma cadeia por ronda. `--flat` mantém o modo de uma só pasta.
+Organização (pedido do dono): `runs/paper02/cases/rounds.json` é a raiz (semente, faixas, configuração, lista de
+rondas); cada ronda vive em `runs/paper02/cases/YYYYMMDDHH/` (data e hora de abertura; sufixo _2, _3… na mesma hora)
+com o seu `design.json` e a sua `dataset.csv`; cada ponto tem a sua pasta `<id>/` (id = 6 caracteres do SHA-1 do
+tuplo das entradas, o mesmo tuplo dá sempre o mesmo id) com `case.json`, `case.ic.npz`, `run.npz` (ou `failed.json`).
+A raiz recebe a tabela de todas as rondas. Omissão: 25 pontos por ronda, uma cadeia por ronda. `--flat` mantém o modo
+de uma só pasta (os pontos continuam em pastas próprias).
 
-    uv run python tools/paper02_dataset.py design --out runs/paper02/rounds --seed 1        # raiz + ronda 0 (25 pontos)
-    uv run python tools/paper02_dataset.py run --out runs/paper02/rounds --rounds -1        # continuamente, até STOP
-    uv run python tools/paper02_dataset.py markers --out runs/paper02/rounds               # tabelas por ronda e total
-    uv run python tools/paper02_dataset.py status --out runs/paper02/rounds
+    uv run python tools/paper02_dataset.py design --out runs/paper02/cases --seed 1         # raiz + ronda 0 (25 pontos)
+    uv run python tools/paper02_dataset.py run --out runs/paper02/cases --rounds -1         # continuamente, até STOP
+    uv run python tools/paper02_dataset.py markers --out runs/paper02/cases                # tabelas por ronda e total
+    uv run python tools/paper02_dataset.py status --out runs/paper02/cases
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import sys
@@ -200,6 +203,27 @@ def _settle_spec(a):
     )
 
 
+def point_id(x, n=6):
+    """Identificador do ponto (pedido do dono): os primeiros `n` caracteres do SHA-1 do tuplo das entradas, na
+    ordem de INPUTS e com a representação completa dos floats — o mesmo tuplo dá sempre o mesmo id."""
+    key = json.dumps([float(x[k]) for k in INPUTS], separators=(",", ":"))
+    return hashlib.sha1(key.encode()).hexdigest()[:n]
+
+
+def unique_ids(xs, taken=()):
+    """ids de 6 caracteres; em colisão (dentro do conjunto ou com `taken`) o ponto leva mais caracteres."""
+    ids, seen = [], set(taken)
+    for x in xs:
+        n = 6
+        pid = point_id(x, n)
+        while pid in seen:
+            n += 2
+            pid = point_id(x, n)
+        seen.add(pid)
+        ids.append(pid)
+    return ids
+
+
 def design_path(out):
     return Path(out) / "design.json"
 
@@ -236,15 +260,10 @@ def append_round(design, n=None, chains=1):
     c0 = 1 + max((p["chain"] for p in design["points"]), default=-1)
     rnd = 1 + max((p.get("round", 0) for p in design["points"]), default=-1)
     i0 = int(design["n"])
-    width = max(len(str(i0 + n - 1)), 3)
+    xs = [{k: float(X[i, j]) for j, k in enumerate(INPUTS)} for i in range(n)]
+    ids = unique_ids(xs, taken=[p["id"] for p in design["points"]])
     new = [
-        dict(
-            id=f"p{i0 + i:0{width}d}",
-            x={k: float(X[i, j]) for j, k in enumerate(INPUTS)},
-            chain=int(c0 + chain[i]),
-            order=int(order[i]),
-            round=int(rnd),
-        )
+        dict(id=ids[i], x=xs[i], chain=int(c0 + chain[i]), order=int(order[i]), round=int(rnd), sobol_index=i0 + i)
         for i in range(n)
     ]
     design["points"].extend(new)
@@ -276,8 +295,8 @@ def save_rounds(root, master):
 
 
 def new_round_dir(root):
-    """Pasta da ronda: a data de hoje (YYYYMMDD), com sufixo _2, _3… se já houver uma ronda de hoje."""
-    name = time.strftime("%Y%m%d")
+    """Pasta da ronda: data e hora (YYYYMMDDHH), com sufixo _2, _3… se já houver uma ronda nessa hora."""
+    name = time.strftime("%Y%m%d%H")
     d, k = Path(root) / name, 1
     while d.exists():
         k += 1
@@ -296,18 +315,14 @@ def create_round(root, master, n=None, chains=1):
         X, ranges, chains, int(master["seed"]) + skip, start=master.get("start", "base"), x_base=master.get("x_base")
     )
     rnd = len(master["rounds"])
-    width = max(len(str(skip + n - 1)), 3)
+    xs = [{k: float(X[i, j]) for j, k in enumerate(INPUTS)} for i in range(n)]
+    ids = unique_ids(xs, taken=master.get("ids", []))
     points = [
-        dict(
-            id=f"p{skip + i:0{width}d}",
-            x={k: float(X[i, j]) for j, k in enumerate(INPUTS)},
-            chain=int(chain[i]),
-            order=int(order[i]),
-            round=rnd,
-        )
+        dict(id=ids[i], x=xs[i], chain=int(chain[i]), order=int(order[i]), round=rnd, sobol_index=skip + i)
         for i in range(n)
     ]
-    design = {k: v for k, v in master.items() if k != "rounds"}
+    master["ids"] = list(master.get("ids", [])) + ids
+    design = {k: v for k, v in master.items() if k not in ("rounds", "ids")}
     design.update(n=n, round_size=n, rounds=1, round=rnd, sobol_skip=skip, points=points)
     d = new_round_dir(root)
     d.mkdir(parents=True, exist_ok=False)
@@ -341,7 +356,7 @@ def resequence_round(d, master, chains=1):
     if any(point_status(d, p["id"]) != "pending" for p in design["points"]):
         raise SystemExit(f"{d}: já tem corridas; uma ronda com corridas não se reordena")
     ranges = {k: tuple(v) for k, v in master["ranges"].items()}
-    pts = sorted(design["points"], key=lambda p: p["id"])
+    pts = sorted(design["points"], key=lambda p: p.get("sobol_index", 0))
     X = np.array([[p["x"][k] for k in INPUTS] for p in pts], float)
     chain, order = make_chains(
         X,
@@ -419,7 +434,7 @@ def cmd_design(a):
         )
         return
     if design_path(out).exists():
-        n_runs = len(list(out.glob("p*.npz")))
+        n_runs = len(list(out.glob("*/run.npz")))
         if n_runs or not a.force:
             raise SystemExit(
                 f"{design_path(out)} já existe com {n_runs} corridas: um desenho nunca se substitui "
@@ -431,15 +446,10 @@ def cmd_design(a):
         chain, order = np.arange(X.shape[0]), np.zeros(X.shape[0], int)  # teste: todos da partida bloqueada
     else:
         chain, order = make_chains(X, ranges, a.chains, a.seed, start=a.start, x_base=base["x"])
-    width = max(len(str(X.shape[0] - 1)), 3)
+    xs = [{k: float(X[i, j]) for j, k in enumerate(INPUTS)} for i in range(X.shape[0])]
+    ids = unique_ids(xs)
     points = [
-        dict(
-            id=f"p{i:0{width}d}",
-            x={k: float(X[i, j]) for j, k in enumerate(INPUTS)},
-            chain=int(chain[i]),
-            order=int(order[i]),
-            round=0,
-        )
+        dict(id=ids[i], x=xs[i], chain=int(chain[i]), order=int(order[i]), round=0, sobol_index=i)
         for i in range(X.shape[0])
     ]
     settle = _settle_spec(a)
@@ -476,12 +486,17 @@ def cmd_design(a):
 
 
 # ------------------------------------------------------------------------------------------------ corridas
+def point_dir(out, pid):
+    """Pasta do ponto: `<ronda>/<id>/` com case.json, case.ic.npz, run.npz (ou failed.json)."""
+    return Path(out) / pid
+
+
 def run_path(out, pid):
-    return Path(out) / f"{pid}.npz"
+    return point_dir(out, pid) / "run.npz"
 
 
 def fail_path(out, pid):
-    return Path(out) / f"{pid}.failed.json"
+    return point_dir(out, pid) / "failed.json"
 
 
 def point_status(out, pid):
@@ -533,9 +548,9 @@ def build_case(design, point, out, start, X_prev=None, prev_id=None):
     case["time"]["settle"] = settle
     case["integration"]["max_cpu"] = float(design["max_cpu"])
     case["name"] = f"paper02_{point['id']}"
-    cases_dir = Path(out) / "cases"
-    cases_dir.mkdir(parents=True, exist_ok=True)
-    path = cases_dir / f"{point['id']}.json"
+    pdir = point_dir(out, point["id"])
+    pdir.mkdir(parents=True, exist_ok=True)
+    path = pdir / "case.json"
     if start == "blocked":
         write_case(case, path, ic="blocked")
         return path
@@ -546,7 +561,7 @@ def build_case(design, point, out, start, X_prev=None, prev_id=None):
     model.state_to_case_ic(np.asarray(X_prev, float), 0.0, exact=True)
     net.initial = "edges"
     net.meta = dict(net.meta or {}, initial_guess=dict(mode="warm", from_point=prev_id))
-    case_to_json(net, str(path), ic_file=f"{path.stem}.ic.npz")
+    case_to_json(net, str(path), ic_file="case.ic.npz")
     return path
 
 
@@ -571,7 +586,7 @@ def run_point(design, point, out, start, X_prev=None, prev_id=None, progress=Tru
         info = dict(res.info)
         info["cpu_total"] = time.time() - t0
         info["note"] = json.dumps(dict(start=start, from_point=prev_id, chain=point["chain"], order=point["order"]))
-        tmp = Path(out) / f"{pid}.partial.npz"  # gravação atómica: uma morte a meio nunca deixa um .npz truncado
+        tmp = point_dir(out, pid) / "run.partial.npz"  # gravação atómica: uma morte a meio nunca deixa um .npz truncado
         save_run(
             str(tmp),
             res.T,
@@ -593,6 +608,7 @@ def run_point(design, point, out, start, X_prev=None, prev_id=None, progress=Tru
             )
         return "done"
     except Exception as e:  # noqa: BLE001  (um ponto que rebenta não trava a cadeia)
+        point_dir(out, pid).mkdir(parents=True, exist_ok=True)
         fail_path(out, pid).write_text(
             json.dumps(dict(error=f"{type(e).__name__}: {e}", start=start, from_point=prev_id, cpu=time.time() - t0)),
             encoding="utf-8",
@@ -892,7 +908,7 @@ def write_dataset(out, rows, design):
         for r in rows:
             w.writerow({k: ("" if r.get(k) is None else r.get(k)) for k in cols})
     desc = {
-        "id": "identificador do ponto",
+        "id": "identificador do ponto: 6 caracteres do SHA-1 do tuplo das entradas (pasta do ponto na ronda)",
         "chain": "cadeia (processo) a que o ponto pertence",
         "order": "posição na cadeia (0 = partida bloqueada)",
         "start": "base (estado final do caso base do artigo 01), warm (estado final do ponto anterior) ou blocked (estado bloqueado do gerador)",

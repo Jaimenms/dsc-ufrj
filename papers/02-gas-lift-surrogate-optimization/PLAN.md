@@ -229,11 +229,13 @@ recebe um indicador; é informação.
    - **rondas** (pedido do dono, 2026-10-18): ao acabar os pontos de uma ronda, `run --rounds` sorteia outros
      tantos — os pontos seguintes da mesma sequência de Sobol, para que as rondas juntas continuem a ser um só
      desenho — e recomeça do caso base no ponto da ronda nova mais próximo dele; `--rounds -1`
-     continua até aparecer o ficheiro `STOP`. **Omissão: 25 pontos por ronda, cada ronda na sua pasta datada**
-     `runs/paper02/rounds/YYYYMMDD/` (sufixo `_2`, `_3` no mesmo dia), com a raiz `rounds.json` a guardar a
-     semente, as faixas e a lista de rondas; `markers` escreve a tabela de cada ronda e a de todas na raiz. O
-     conjunto contínuo arrancou em 2026-10-18 (`runs/paper02/rounds/`, semente 1; a ronda 0 foi reordenada com a
-     regra do caso base antes de ter corridas feitas, `design --resequence`);
+     continua até aparecer o ficheiro `STOP`. **Omissão: 25 pontos por ronda; organização pedida pelo dono:**
+     `runs/paper02/cases/YYYYMMDDHH/<id>/` — uma pasta por ronda (data e hora de abertura) e, dentro, uma pasta por
+     ponto com `case.json`, `case.ic.npz` e `run.npz` (ou `failed.json`), em que o id são 6 caracteres do SHA-1 do
+     tuplo das entradas (o mesmo tuplo dá sempre o mesmo id; colisões levam mais caracteres); a raiz `rounds.json`
+     guarda a semente, as faixas, a configuração, a lista de rondas e os ids; `markers` escreve a tabela de cada
+     ronda e a de todas na raiz. O conjunto contínuo arrancou em 2026-10-18 (`runs/paper02/cases/`, semente 1); a
+     pasta anterior `runs/paper02/rounds/` (organização antiga, sem corridas terminadas) ficou por apagar;
    - variante a avaliar no piloto: estado do poço (P_res, PI, RGO) do Sobol e, para cada um, um passeio curto de
      ~20 pontos nas duas decisões (P_gas, abertura) com arranque quente — um passeio em 2 dimensões cobre bem e é
      literalmente operar o poço;

@@ -40,8 +40,9 @@ cabeça do poço e q_L no topo do riser, envelope, N_c = 3 ciclos de captura, 60
 do poço, injeção, cabeça, ponto baixo, topo do riser, linha de gás na plataforma e na cabeça, base do anular),
 mais o gás injetado, a classe (`cycle_class`), o período e a razão pico/média, e escreve `dataset.csv` com o
 dicionário das colunas em `dataset.json`; `status` conta. Rondas de 25 pontos em pastas datadas
-(`runs/paper02/rounds/YYYYMMDD/`, raiz `rounds.json`), abertas pela própria ferramenta ao acabar a anterior
-(`run --rounds -1`), com a tabela de cada ronda e a de todas na raiz. As frequências vêm dos intervalos entre máximos do sinal
+(`runs/paper02/cases/YYYYMMDDHH/`, raiz `rounds.json`) com uma pasta por ponto (`<id>/`, id = 6 caracteres do
+SHA-1 do tuplo das entradas: `case.json`, `case.ic.npz`, `run.npz`), abertas pela própria ferramenta ao acabar a
+anterior (`run --rounds -1`), com a tabela de cada ronda e a de todas na raiz. As frequências vêm dos intervalos entre máximos do sinal
 suavizado (20 s, proeminência de 5 % da faixa): iguais num ciclo periódico, diferentes com sopros alternados,
 nulas num sinal permanente. **Retomável**: o estado é o conjunto de ficheiros (`<id>.npz` feito, `<id>.failed.json`
 falhado), uma cadeia retoma do último ponto concluído, e um ficheiro `STOP` na pasta pára as cadeias depois da
