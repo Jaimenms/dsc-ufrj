@@ -154,7 +154,9 @@ tempo máximo, orçamento, falha), número de ciclos capturados, passos, CPU, e 
 
 As séries completas (`.npz`) ficam fora do conjunto de dados, em `runs/paper02/`, para diagnóstico e para refazer
 marcadores se a definição mudar; o conjunto de dados é uma tabela (Parquet, uma linha por corrida) com as 5
-entradas, os metadados, as 32 × 5 = 160 colunas de marcadores e as características físicas abaixo.
+entradas, os metadados, as 32 × 5 = 160 colunas de marcadores (mais o gás injetado) e, por junção pelo identificador do ponto, as
+características físicas abaixo. Formato: CSV com dicionário em JSON (`tools/paper02_dataset.py markers`); Parquet
+só se o treino o pedir.
 
 ## Horizonte de simulação e captura de ciclos (metodologia)
 
@@ -228,9 +230,15 @@ recebe um indicador; é informação.
      mesmo ponto das duas partidas; onde os marcadores diferem há coexistência de atratores, que é um resultado
      a reportar (o artigo 01 não a viu na Hopf supercrítica) e uma razão para o ponto entrar no conjunto com as
      duas respostas e a partida como metadado;
-   - o que precisa de ferramenta: um guião que encadeia corridas (`tools/paper02_chain.py`: escreve o caso
-     seguinte com o estado final do anterior e lança-o), mais a paragem adaptativa com captura de ciclos (061);
-     poupança estimada de metade a dois terços do tempo por corrida.
+   - ferramenta: `tools/paper02_dataset.py run` encadeia as corridas (escreve o caso seguinte com o estado final
+     do anterior), e a paragem adaptativa com captura de ciclos é a 061 (feita); poupança estimada de metade a
+     dois terços do tempo por corrida, a medir no piloto.
+   - fumo de ponta a ponta (2026-10-18, 3 pontos, 1500 s): o desenho, o arranque quente, a captura e os
+     marcadores funcionam (`dataset.csv` com 186 colunas). Dois avisos: o ponto com gás rápido no riser (155 bar,
+     PI 9, choke 0,93) custou 19 970 passos em 1500 s — o fechamento do topo do riser outra vez; e uma descida
+     grande de P_gas entre pontos vizinhos (155 → 36 bar) esvazia a linha de gás e o anular para a plataforma
+     (−3 kg/s em média durante a janela), um transiente físico mas caro: dentro de cada cadeia convém limitar o
+     salto em P_gas (ordenar por P_gas dentro do grupo, ou cadeias mais pequenas), a afinar no piloto.
 2. **Estacionário + espetro em todos os pontos** (milhares, segundos cada): classe linear, características físicas
    e a fronteira de estabilidade nas cinco dimensões.
 3. **Dinâmica em todos os pontos sorteados** (não só nos instáveis, ao contrário do plano anterior): o custo de um
@@ -238,10 +246,11 @@ recebe um indicador; é informação.
    estáveis com os seus marcadores para a regressão ser contínua através da fronteira.
 4. **Amostragem adaptativa**: segundo lote onde a incerteza do substituto (conjunto de redes) é maior e junto da
    fronteira de estabilidade, onde as saídas mudam bruscamente.
-5. **Lotes** (`batches/paper02_*.json`, `mfsim batch --jobs 12`, saída em `runs/paper02/`), com `time.settle` e
-   `max_cpu` em cada caso; os casos são gerados por `tools/paper02_sample.py` (Sobol → `generators/offshore.py`
-   com `gas_lift=true` → JSON + estado inicial gravado); os marcadores por `tools/paper02_markers.py` (lê
-   `runs/paper02/`, escreve a tabela Parquet); nada no guião das figuras simula.
+5. **Ferramenta** `tools/paper02_dataset.py` (feita em 2026-10-18, issue 061): `design` (Sobol → cadeias →
+   `design.json`), `run` (cadeias em processos paralelos, casos gerados por `generators/offshore.py` com
+   `gas_lift=true`, `time.settle` e `max_cpu` em cada caso, retomável, `STOP` para parar a quente), `markers`
+   (corridas → `dataset.csv` + `dataset.json`), `status`; saída em `runs/paper02/<conjunto>/`; nada no guião das
+   figuras simula.
 
 Custo, em ordem de grandeza: com o chaveamento do topo do riser resolvido, uma corrida de 8000–12 000 s custa
 6–10 min numa thread; 500 corridas ≈ 60–80 CPU-h, 6–8 h com 12 processos. Sem o resolver, 3 a 10× mais nos pontos
@@ -293,12 +302,12 @@ com gás rápido no riser.
 0. Artigo 01 fechado e modelo congelado: **feito**, incluindo a §8.8 com a geometria do gas lift.
 1. Rede de gas lift sobre o caso offshore: **feito** (issue 060). Pendentes: decisão sobre o fechamento do topo do
    riser (issue própria se mudar o modelo); verificação contra o caso 10.3.2 (heading).
-2. Issue 061: paragem adaptativa com vários sinais, ciclos alternados e captura de N_c ciclos (opção com
-   bandeira; o comportamento atual de `time.settle` fica intacto).
+2. Issue 061: paragem adaptativa com vários sinais, ciclos alternados e captura de N_c ciclos: **feito**
+   (chaves opcionais de `time.settle`; o comportamento anterior fica intacto).
 3. `tools/offshore_linear.py` estendido ao ramo (estacionário e espetro em função de P_gas e das cinco entradas).
-4. `tools/paper02_sample.py` (Sobol → casos, cadeias e lotes), `tools/paper02_chain.py` (corre uma cadeia com
-   arranque quente) e `tools/paper02_markers.py` (corridas → tabela de marcadores); teste nos sete casos já
-   corridos do artigo 01 (`runs/paper01/gaslift/`), que são o primeiro conjunto de dados.
+4. `tools/paper02_dataset.py` (design, run, markers, status): **feito** (061), com fumo de ponta a ponta numa
+   cadeia de 3 pontos; falta aplicar `markers` aos sete casos do artigo 01 (`runs/paper01/gaslift/`, sem janela
+   de captura: últimos 4000 s) como primeiro conjunto de dados.
 5. Lote piloto (50 pontos em 2–3 cadeias, mais os mesmos pontos da partida bloqueada) para calibrar faixas,
    horizonte, N_c, custo e a poupança do arranque quente, e para a primeira verificação de histerese; depois o
    lote de treino em cadeias, o de teste independente e o adaptativo.

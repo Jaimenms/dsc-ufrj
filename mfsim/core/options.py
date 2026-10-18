@@ -361,8 +361,17 @@ class TimeSpec:
     def to_json(self):
         d = {"t0": self.t0, "tf": self.tf, "dt_out": self.dt_out}
         if self.settle:
-            d["settle"] = {k: (dict(v) if isinstance(v, tuple) else v) for k, v in self.settle}
+            d["settle"] = {
+                k: ([dict(x) for x in v] if k == "signals" else dict(v) if isinstance(v, tuple) else v)
+                for k, v in self.settle
+            }
         return d
+
+    @staticmethod
+    def _freeze(k, v):
+        if k == "signals":  # lista de sinais (061): tuplo de tuplos de pares
+            return tuple(tuple(sorted(x.items())) for x in (v or ()))
+        return v if not isinstance(v, dict) else tuple(sorted(v.items()))
 
     @classmethod
     def from_json(cls, d):
@@ -371,7 +380,7 @@ class TimeSpec:
             float(d.get("t0", 0.0)),
             float(d.get("tf", 200.0)),
             float(d.get("dt_out", 2.0)),
-            tuple(sorted((k, v if not isinstance(v, dict) else tuple(sorted(v.items()))) for k, v in settle.items())),
+            tuple(sorted((k, cls._freeze(k, v)) for k, v in settle.items())),
         )
 
 

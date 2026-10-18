@@ -69,3 +69,23 @@ def test_accumulator_is_continuous_between_windows():
     assert a.shape == b.shape
     scale = np.abs(a).max(axis=1) + 1e-12
     assert np.all(np.abs(a[:, -1] - b[:, -1]) / scale < 0.05)
+
+
+def test_envelope_match_and_capture():
+    """061: `match = "envelope"` aceita ciclos cujo período entre cruzamentos varia; a captura continua N ciclos
+    (ou uma janela fixa num estacionário) e regista a janela em info.settle.capture; vários sinais têm de assentar."""
+    T = np.linspace(0.0, 1000.0, 1001)
+    y1 = 5.0 + np.sin(2 * np.pi * T / 200.0) + 0.3 * np.sin(2 * np.pi * T / 95.0)
+    y2 = 5.0 + np.sin(2 * np.pi * (T + 40) / 200.0) + 0.3 * np.sin(2 * np.pi * (T + 40) / 95.0)
+    w1, w2 = _w(y1, T), _w(y2, T)
+    assert settled([w1, w2], 0.05, 0.1, match="envelope") == "cycle"
+    assert "y_min" in w1 and "y_max" in w1
+    net = _thesis_case(
+        window=20.0, t_min=40.0, amp_tol=1e-3, capture_window=30.0, signals=[{"var": "qL", "amp_tol": 1e-3}]
+    )
+    res = simulate(net, progress=False)
+    st = res.info["settle"]
+    assert st["reason"] == "steady" and abs(res.T[-1] - (net.time.t0 + 70.0)) < 1e-9
+    assert abs(st["capture"][0] - (net.time.t0 + 40.0)) < 1e-9 and abs(st["capture"][1] - res.T[-1]) < 1e-9
+    assert len(st["windows_all"]) == 2 and len(st["signals"]) == 2
+    assert net.time.to_json()["settle"]["signals"] == [{"var": "qL", "amp_tol": 1e-3}]

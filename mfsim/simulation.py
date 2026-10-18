@@ -276,6 +276,10 @@ def _integrate(model, X0, t_eval, spec, progress=True, verbose=False, partial=Fa
 
 
 SETTLE_DEFAULTS = dict(window=2000.0, amp_tol=0.05, rel_tol=0.1)
+# 061: `signals` (lista de sinais além de `signal`, cada um com `amp_tol` próprio opcional), `match` ("period": amplitude e
+# período iguais em duas janelas; "envelope": amplitude, média, mínimo e máximo iguais — serve para ciclos com sopros
+# alternados), `capture_cycles` (continuar N ciclos depois de assentar e registar a janela de captura) e
+# `capture_window` (s, a janela de captura de um estacionário; omissão = `window`). Sem estas chaves nada muda.
 _SIGNAL_SLOT = {"alphaG": 0, "P": 1, "qL": 2, "qG": 3}
 
 
@@ -306,20 +310,28 @@ def window_signature(T, y):
         mean=m,
         crossings=n,
         period=float((t_up[-1] - t_up[0]) / (t_up.size - 1)) if t_up.size >= 2 else float("nan"),
+        y_min=float(np.min(y)),
+        y_max=float(np.max(y)),
     )
 
 
-def settled(windows, amp_tol, rel_tol):
+def settled(windows, amp_tol, rel_tol, match="period"):
     """ "steady" se a amplitude da última janela é menor do que amp_tol; "cycle" se as duas
-    últimas janelas têm pelo menos 4 cruzamentos e amplitude e período iguais a rel_tol;
-    None caso contrário (incluindo uma deriva sem ciclo)."""
+    últimas janelas têm pelo menos 4 cruzamentos e amplitude e período iguais a rel_tol
+    (`match = "period"`), ou amplitude, média, mínimo e máximo iguais a rel_tol da amplitude
+    (`match = "envelope"`, 061: ciclos com sopros alternados, cujo período entre cruzamentos
+    varia de janela para janela); None caso contrário (incluindo uma deriva sem ciclo)."""
     w = windows[-1]
     if w["amp"] < amp_tol:
         return "steady"
     if len(windows) >= 2:
         a = windows[-2]
         if a["crossings"] >= 4 and w["crossings"] >= 4:
-            if (
+            if match == "envelope":
+                scale = max(w["amp"], amp_tol)
+                if all(abs(a[k] - w[k]) <= rel_tol * scale for k in ("amp", "mean", "y_min", "y_max")):
+                    return "cycle"
+            elif (
                 abs(a["amp"] - w["amp"]) <= rel_tol * w["amp"]
                 and abs(a["period"] - w["period"]) <= rel_tol * w["period"]
             ):
@@ -336,14 +348,21 @@ def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, pa
     opt = dict(SETTLE_DEFAULTS, **settle)
     window = float(opt["window"])
     t_min = float(opt.get("t_min", window))
-    sig = dict(opt.get("signal") or {})
+    sigs = [dict(opt.get("signal") or {})] + [dict(sg) for sg in (opt.get("signals") or ())]
+    match = str(opt.get("match", "period"))
+    n_cap = int(opt.get("capture_cycles") or 0)
+    cap_window = opt.get("capture_window")
     t0, tf, dt = model.t0, model.tf, model.dt_out
-    Ts, Xs, accs, windows = [np.array([t0])], [np.asarray(X0, float)[:, None]], [], []
+    Ts, Xs, accs = [np.array([t0])], [np.asarray(X0, float)[:, None]], []
+    windows = [[] for _ in sigs]
     tot = dict(n_steps=0, n_rejected=0, n_rhs=0, n_jac=0, cpu=0.0)
     acc_off, reason, info = None, None, {}
+    capture = None  # [t_início, t_fim] da janela de captura (061)
     t_cur, X_cur = t0, np.asarray(X0, float)
     while t_cur < tf - 1e-9 * max(1.0, dt):
         t_end = min(t_cur + window, tf)
+        if capture is not None:
+            t_end = min(t_end, capture[1])
         te = output_times(t_cur, t_end, dt)
         T, X, info = _integrate(model, X_cur, te, spec, progress=False, verbose=verbose, partial=partial)
         for k in tot:
@@ -360,21 +379,49 @@ def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, pa
         if not info.get("success", True) or np.asarray(T).size < 2:
             reason = "failure"
             break
-        windows.append(window_signature(np.asarray(T), _signal(model, np.asarray(T), np.asarray(X), sig)))
+        for w, sg in zip(windows, sigs):
+            w.append(window_signature(np.asarray(T), _signal(model, np.asarray(T), np.asarray(X), sg)))
         t_cur, X_cur = float(T[-1]), np.asarray(X)[:, -1]
+        if capture is not None:
+            if t_cur >= capture[1] - 1e-9:
+                break
+            continue
         if t_cur - t0 >= t_min - 1e-9:
-            reason = settled(windows, float(opt["amp_tol"]), float(opt["rel_tol"]))
-            if reason:
+            reasons = [
+                settled(w, float(sg.get("amp_tol", opt["amp_tol"])), float(opt["rel_tol"]), match)
+                for w, sg in zip(windows, sigs)
+            ]
+            if all(reasons):
+                reason = "cycle" if "cycle" in reasons else "steady"
+                if n_cap > 0 or cap_window:
+                    periods = [
+                        w[-1]["period"]
+                        for w, r in zip(windows, reasons)
+                        if r == "cycle" and np.isfinite(w[-1]["period"])
+                    ]
+                    if reason == "cycle" and periods and n_cap > 0:
+                        length = n_cap * max(periods)
+                    else:
+                        length = float(cap_window or window)
+                    capture = [t_cur, min(t_cur + length, tf)]
+                    if capture[1] > t_cur + 1e-9:
+                        continue
                 break
     out = dict(info)
     out.update(tot)
     out["success"] = reason != "failure" and info.get("success", True)
     if accs:
         out["accum"] = np.concatenate(accs, axis=1)
-    out["settle"] = dict(reason=reason or "tf", t_end=float(t_cur), windows=windows)
+    out["settle"] = dict(reason=reason or "tf", t_end=float(t_cur), windows=windows[0])
+    if len(sigs) > 1:
+        out["settle"]["windows_all"] = windows
+        out["settle"]["signals"] = sigs
+    if capture is not None:
+        out["settle"]["capture"] = [float(capture[0]), float(t_cur)]
     if progress:
         print(
-            f"[settle] {out['settle']['reason']} em t={t_cur:.0f} s ({len(windows)} janelas, {tot['n_steps']} passos)"
+            f"[settle] {out['settle']['reason']} em t={t_cur:.0f} s ({len(windows[0])} janelas, {tot['n_steps']} passos)"
+            + (f", captura {capture[0]:.0f}–{t_cur:.0f} s" if capture is not None else "")
         )
     return np.concatenate(Ts), np.concatenate(Xs, axis=1), out
 

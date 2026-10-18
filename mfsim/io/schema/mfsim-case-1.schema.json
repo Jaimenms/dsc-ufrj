@@ -158,8 +158,56 @@
                     "qL",
                     "qG"
                   ]
+                },
+                "amp_tol": {
+                  "$ref": "#/$defs/positive",
+                  "description": "amplitude própria deste sinal abaixo da qual é permanente (061)"
                 }
               }
+            },
+            "signals": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "edge": {
+                    "type": "string"
+                  },
+                  "node": {
+                    "type": "integer"
+                  },
+                  "var": {
+                    "enum": [
+                      "P",
+                      "alphaG",
+                      "qL",
+                      "qG"
+                    ]
+                  },
+                  "amp_tol": {
+                    "$ref": "#/$defs/positive",
+                    "description": "amplitude própria deste sinal abaixo da qual é permanente (061)"
+                  }
+                }
+              },
+              "description": "sinais adicionais (061): todos têm de assentar"
+            },
+            "match": {
+              "enum": [
+                "period",
+                "envelope"
+              ],
+              "description": "ciclo repetido: amplitude e período (period) ou amplitude, média, mínimo e máximo (envelope; ciclos com sopros alternados, 061)"
+            },
+            "capture_cycles": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "061: depois de assentar, continuar este número de ciclos (janela de captura em info.settle.capture); 0 = parar ao assentar"
+            },
+            "capture_window": {
+              "$ref": "#/$defs/positive",
+              "description": "061: janela de captura [s] de um estacionário (omissão: window)"
             }
           }
         }
