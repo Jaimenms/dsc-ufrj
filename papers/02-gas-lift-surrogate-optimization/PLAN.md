@@ -320,6 +320,41 @@ com gás rápido no riser.
 - Validação no conjunto de teste; métricas por saída e matriz de confusão da classe.
 - O ótimo final confirma-se sempre com o modelo completo (uma corrida dinâmica no ponto ótimo de cada estágio).
 
+## Substituto: primeira comparação NN × PINN (2026-10-19, `tools/paper02_surrogate.py`)
+
+Abordagem do artigo II do projeto composicional (a dissertação do Gustavo, `research-factory/01-multiphase-
+compositional-flow/papers/02-surrogate-models`): MLP em JAX (2 camadas × 32 tanh, Adam 0,01 em lote completo num
+`lax.scan`, entradas e saídas padronizadas, divisão 70/30) e PINN = mesma rede com a perda dos dados mais λ vezes
+o resíduo da física em pontos de colocação (hipercubo latino no retângulo, sem simular). **Pedido do dono:** a
+física vem das médias dos estados — os balanços médios no tempo são exatos porque são lineares nas médias:
+R1 q̄_L = J_L (P_res − P̄_fundo); R2 q̄_G = J_G (P_res − P̄_fundo) + q̄_inj; R3 P̄_anular = κ P_gas (coluna estática,
+κ = 1,138); R4 lei da retenção nas pressões médias (aproximada, porta suave). A rede prevê as seis saídas pedidas
+(q̄_L e q̄_G no topo, q̄ de gas lift, e os três *spans* máx − mín da janela de captura, a assinatura da golfada) mais
+três pressões médias auxiliares (fundo, injeção, base do anular) que são o que a física liga. Dados: 150 dos 156
+pontos de `base2d` (os 6 de orçamento esgotado ficam de fora), 105 de treino e 45 de teste.
+
+| saída | NN, R² teste | PINN (λ = 1), R² teste |
+|---|---|---|
+| q̄_L topo | 0,45 (0,60 média de 3 sementes) | 0,88 |
+| q̄_G topo | 0,982 | 0,997 |
+| q̄ gas lift | 0,983 | 0,998 |
+| span q_L | 0,93 | 0,83 |
+| span q_G | 0,37 | ≈ 0 |
+| span q_inj | 0,43 | 0,43 |
+| resíduos R1–R4 (RMS, em desvios padrão) | 0,65 / 0,02 / 0,05 / 0,11 | 0,16 / 0,005 / 0,02 / 0,03 |
+
+Leituras: (i) a física resolve a saída que a rede sozinha não aprende, a produção média de líquido, porque o
+balanço R1 a prende à pressão de fundo média, que é suave (R² 0,985); (ii) o gás no topo e o gás de lift ficam
+quase exatos com a física (R² 0,997); (iii) os *spans* são marcadores ruidosos por natureza (o máximo de um
+sopro em 3 ciclos) e nenhuma das duas redes os prevê bem, fora o de líquido (0,8–0,9): para a assinatura da
+golfada é melhor usar a classe e a amplitude de pressão (a fronteira do mapa é nítida) do que o span do gás;
+(iv) com poucos dados (10, 20, 40 pontos, 3 sorteios) o PINN é melhor em q̄_G e q̄ de lift em todos os tamanhos
+(RMSE a metade) e empata em q̄_L e nos spans; (v) λ entre 0,1 e 100 dá o mesmo ajuste, com os resíduos a cair
+com λ — fica λ = 1. Resultados em `runs/paper02/surrogate/` (`results.json`, modelos `nn.json` e `pinn.json`,
+mapas, históricos). Próximos passos: alimentar a física também com a classe (fronteira) e com o resíduo do
+modelo no estado final (`final_state.npz`, zero nos estacionários), e tratar os spans como alvo de classificação
+ordinal em vez de regressão.
+
 ## Otimização
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.
