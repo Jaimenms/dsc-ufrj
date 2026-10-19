@@ -463,6 +463,22 @@ plano a 1 % de 200 a 255 bar e a 0,5 % entre aberturas 0,9 e 1; q̄_L 5,84, 1,73
 (0,97, 122 bar), 265 k$/d; 0,5 → (0,87, 103 bar) na golfada (picos 14); separador de 6 → (0,78, 106 bar). Verificações
 pelo simulador a correr: (0,94, 205) e (1,0, 224), do caso base. `--sparse ""` aceite pela ferramenta (sem o estudo).
 
+**Verificação do ótimo e o ciclo rápido do topo (2026-10-19, 14:30).** (1,0, 224 bar) do caso base, 40 min: não assenta
+(8705 s, 23 304 passos) mas as médias dos últimos 4000 s batem com a PINN — q̄_L 5,79 vs 5,84 (+0,8 %), q̄_G 1,88 vs
+1,92, q_gl 1,71 vs 1,73, P_fundo 58,4 vs 56,0 bar, P_an 254 vs 258; o máximo não: a corrida está num **ciclo rápido do
+topo do riser** (período ≈ 60 s, q_L no choke 2–16 kg/s, α das células do topo 0,6–0,95, cabeça plana a 21 ± 0,2 bar,
+injeção constante), que a PINN, treinada nos pontos que assentaram, não vê (pico previsto 6,4). O ciclo aparece
+abruptamente aos 6000 s, no reinício do integrador entre janelas, depois de a amplitude decair a 0,001 na janela
+anterior — o modo é instável mas os passos grandes do BDF amortecem-no e os pequenos resolvem-no. Contraprova a
+(1,0, 260 bar): reiniciada do estado "estacionário", fica estacionária (42 passos em 3600 s, amplitude 0): a 260 bar é
+mesmo estável; a faixa 165–245 bar × 0,5–1,0 tem o ciclo rápido. Consequências: (i) as falhas de orçamento do canto são
+físicas — o critério de envelope em janelas de 3000 s só aceita um ciclo de 60 s aos 9000 s, e a 0,3 s/passo isso são
+30 mil passos, mais de 40 min com a máquina saturada; (ii) `cycle_class` lê esse ciclo como golfada quando pico > 2×
+média (não é golfada severa: ΔP_cabeça 0,3 bar) — rever a classe com a amplitude de pressão ou o período; (iii) uma
+restrição no pico de líquido no canto exige o ciclo rápido nos dados (orçamento ≈ 90 min nessa faixa, ou janelas de
+paragem mais curtas para ciclos rápidos — opção a desenhar). Figura `scratchpad/top10/why_not_settled.png` (pedido do
+dono: porque não assentam). §6 do artigo atualizado com a verificação; a marca pendente que fica é o Pareto.
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.
