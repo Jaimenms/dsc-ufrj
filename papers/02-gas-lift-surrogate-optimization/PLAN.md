@@ -543,6 +543,9 @@ assentadas, 165/71: PINN q̄_L 0,894 (NN 0,876), gases 0,996–0,998, máximos d
 difícil), resíduos R1 4× e R3 2× menores; poucos dados: PINN ⅓–½ do erro nos gases. Ótimo (1,75 / 20): (1,0, 229
 bar), 309 k$/d; verificações a (1,0, 224), (0,94, 205) e (0,95, 260) batem a < 1,5 % nas médias e pressões. Lição
 registada no artigo: máximos e spans variam com a partição (0,73–0,92 nos máximos de líquido).
+Pedido do dono (21:30): o exemplo do artigo passa a ter **só a restrição do compressor (q_gl máx ≤ 1,75)**; o separador
+de 20 fica na formulação e na varredura, e a região q_L máx > 20 da Fig. 6 fica como referência. Ótimo idêntico
+(`runs/paper02/optimize/` refeito só com q_gl).
 
 ## Otimização (plano original, vários poços)
 
