@@ -432,7 +432,7 @@ mesmos dois pontos sem o troço horizontal de 10 m (`L_h2 = 0`, estado do caso b
 (1,0, 200) 20 373 passos para 5695 s, passo médio 0,28 s, igual; (0,85, 240) 19 308 passos até assentar num ciclo
 aos 12 200 s, passo médio 0,63 s. **O troço não é a causa**: a oscilação rápida do líquido no topo do riser (2–15
 kg/s, período < 1 min) existe com e sem ele e é ela que obriga a passos de 0,3–0,6 s. A geometria fica. Retomadas
-as três campanhas às 12:30 com `run --from-base --retry-failed` (5 instâncias: 1 + 2 + 2), orçamento de 40 min
+as três campanhas perto do meio-dia com `run --from-base --retry-failed` (5 instâncias: 1 + 2 + 2), orçamento de 40 min
 como desenhado; os pontos do canto que o esgotarem ficam como falhas para retentar com orçamento maior se o dono
 quiser.
 
