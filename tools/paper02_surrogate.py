@@ -165,10 +165,12 @@ def to_targets(Y, span_log=True):
 
 
 def from_targets(T, span_log=True):
+    """Alvos → saídas físicas: spans e máximos saem de log1p e nunca são negativos (um alvo previsto ligeiramente
+    abaixo de 0 num ponto estacionário daria expm1 < 0; corta-se em 0, que é o valor físico)."""
     Y = np.array(T, float)
     if span_log:
         for j in SPAN_IDX:
-            Y[:, j] = np.expm1(Y[:, j])
+            Y[:, j] = np.maximum(np.expm1(Y[:, j]), 0.0)
     return Y
 
 

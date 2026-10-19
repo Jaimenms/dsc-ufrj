@@ -296,3 +296,65 @@ def test_chain_locks_allow_parallel_runs_without_duplicates(tmp_path):
     lk.write_text("999999999")  # trinco de um processo morto: toma-se
     assert ds.chain_is_free(tmp_path, 0) and ds.acquire_lock(lk) and lk.read_text() == str(os.getpid())
     ds.release_lock(lk)
+
+
+def test_steady_start_runs_every_point_from_newton(tmp_path, monkeypatch):
+    """`--start steady` (pedido do dono, 2026-10-19): nenhum ponto arranca do caso base nem do anterior; todos partem
+    do estacionário de Newton a partir da estimativa do gerador, com as pressões perturbadas."""
+    root = tmp_path / "steady"
+    ds.main(
+        ["design", "--start", "steady", "--out", str(root), "--n", "3", "--seed", "3", "--perturb", "0.02"]
+        + ["--range", "P_gas_bar=20:260"]
+    )
+    master = json.loads((root / "rounds.json").read_text())
+    assert master["start"] == "steady" and master["steady"] == {"guess": "noslip", "perturb": 0.02, "max_iter": 100}
+    d = root / master["rounds"][0]["folder"]
+    design = ds.load_design(d)
+    assert design["steady"]["perturb"] == 0.02 and design["ranges"]["P_gas_bar"] == [20.0, 260.0]
+    net = ds.build_network(design, design["points"][0], "steady")
+    assert net.initial == "steady" and net.initial_options["from"] == "edges" and net.initial_options["perturb"] == 0.02
+    assert net.initial_options["on_failure"] == "start" and net.meta["initial_guess"]["mode"] == "noslip"
+    calls = []
+
+    def fake_run_point(design, point, out, start, X_prev=None, prev_id=None, progress=True):
+        calls.append((point["id"], start, X_prev, prev_id))
+        rec = dict(
+            id=point["id"],
+            x=point["x"],
+            chain=point["chain"],
+            order=point["order"],
+            round=point.get("round", 0),
+            start=start,
+            from_point=prev_id,
+            markers={"class": "stable"},
+        )
+        ds.save_point(out, rec, np.zeros(3))
+        return "done"
+
+    monkeypatch.setattr(ds, "run_point", fake_run_point)
+    ds.main(["run", "--out", str(root)])
+    assert len(calls) == 3 and all(c[1] == "steady" and c[2] is None and c[3] is None for c in calls)
+    assert all(ds.point_status(d, p["id"]) == "done" for p in design["points"])
+
+
+def test_run_from_base_starts_every_point_from_the_base_state(tmp_path, monkeypatch):
+    """`run --from-base` (pedido do dono, 2026-10-19): todos os pontos arrancam do estado final do caso base, nenhum
+    do anterior; a opção fica gravada no desenho."""
+    out = tmp_path / "flat"
+    ds.main(["design", "--start", "random", "--flat", "--out", str(out), "--n", "3", "--seed", "6"])
+    design = ds.load_design(out)
+    design["base_run"] = "runs/fake_base.npz"
+    ds.save_design(out, design)
+    monkeypatch.setattr(ds, "_base_state", lambda design, chain_id, progress: np.arange(4.0))
+    calls = []
+
+    def fake_run_point(design, point, out, start, X_prev=None, prev_id=None, progress=True):
+        calls.append((point["id"], start, None if X_prev is None else list(X_prev), prev_id))
+        rec = dict(id=point["id"], x=point["x"], chain=point["chain"], order=point["order"], start=start, markers={})
+        ds.save_point(out, rec, np.zeros(3))
+        return "done"
+
+    monkeypatch.setattr(ds, "run_point", fake_run_point)
+    ds.main(["run", "--out", str(out), "--from-base"])
+    assert len(calls) == 3 and all(c[1] == "base" and c[2] == [0.0, 1.0, 2.0, 3.0] and c[3] == "base" for c in calls)
+    assert ds.load_design(out)["from_base"] is True

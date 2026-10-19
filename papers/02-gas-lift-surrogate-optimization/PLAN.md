@@ -401,6 +401,36 @@ região do ótimo e também a do chaveamento do topo do riser (orçamento de 40 
 campanha nessa faixa): se a taxa de falhas se repetir, convém decidir o fechamento do troço horizontal ou subir o
 orçamento. O guião das figuras já lê as três tabelas; o retreino usa `--dataset` com as três.
 
+**Diagnóstico das falhas e quarta campanha (2026-10-19, meio-dia).** As três campanhas pararam a pedido do dono
+(184 + 34 + 3 pontos feitos). O quadro da 2.ª campanha mostrou que o orçamento esgotado não é do ponto mas do caminho:
+acima de 0,5 de abertura, os 8 pontos que arrancaram a quente do vizinho falharam todos (50–80 mil passos para
+0–6000 s) e os 3 que arrancaram do estado final do caso base passaram em 36–69 s; abaixo de 0,5 todos os arranques
+quentes passaram. Uma experiência no ponto (0,51, 216 bar), que falhara a quente, confirmou-o e descartou o troço
+horizontal de 10 m como causa: arrancando do caso base assentou em 742 passos com o troço e em 563 sem ele (a
+retirada dos 10 m não compra desempenho; a geometria do artigo 01 fica). Decisão do dono: partida estacionária em toda a região alargada, sem caso base nem corrida anterior
+(`design --start steady`, implementado: Newton de 040 a partir da estimativa `noslip` do gerador, pressões × 1,01).
+**Testado e abandonado no mesmo dia:** num piloto de 4 pontos o Newton não convergiu em nenhum (Jacobiana por
+diferenças finitas singular; com a exata em JAX converge só a partir do próprio estado final, e falha a 20 bar de
+distância), o pseudo-transiente de passo crescente divergiu nos 4 e a marcha estacionária a dois fluidos (Newton
+reduzido nas variáveis estáticas com as vazões fixas, 162 incógnitas) travou nos 4; a causa, medida ao longo da
+direção de Newton: a previsão linear levaria o resíduo de 140 a 0,06, mas o resíduo real salta 533 e depois 54 000
+na quantidade de movimento do gás nos nós 14–15 da linha, o joelho da base do riser — os fechamentos trocam de
+padrão e as equações estacionárias são descontínuas no estado. Um modelo de parâmetros concentrados daria vazões e
+pressões, não a configuração de padrões por célula; o que resolveria seria um solver com o padrão como incógnita
+discreta (dias, com risco de oscilar no joelho). Decisão do dono (tarde): **todos os pontos arrancam do estado final
+do caso base** (`run --from-base`, gravado na ronda), retomando as três campanhas onde pararam; o canto de abertura
+alta × pressão alta foi verificado antes de retomar (ver abaixo).
+
+**Canto de abertura alta × pressão alta arrancado do caso base (2026-10-19, 4 corridas em paralelo, orçamento 15
+min, máquina carregada):** (1,0, 260 bar) estacionário aos 9600 s em 12 629 passos e 8,5 min; (0,85, 240), (0,70,
+255) e (1,0, 200) esgotaram os 15 min aos 5640, 8390 e 3810 s com 14–18 mil passos. Nenhuma rebenta: o integrador
+rasteja a ~0,3 s por passo com 20–35 % de passos rejeitados, e isso não se vê nas saídas de 5 s (fração de gás das
+células do topo estável em 0,86–0,90, oscilação de 2 bar na cabeça) — o chaveamento é dentro do passo, entre
+tentativas do Newton do integrador. Fora do canto, (0,51, 216) custa 742 passos. Com os 40 min da campanha
+passariam 2–3 destes 4, a 10–40 min cada; os ~50 pontos pendentes do canto são ~20 h em três instâncias. Em
+curso: os mesmos dois pontos que rastejaram sem o troço horizontal de 10 m (`L_h2 = 0`), para decidir se o troço
+é a causa (a experiência da manhã num ponto sem chaveamento não o podia dizer).
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.

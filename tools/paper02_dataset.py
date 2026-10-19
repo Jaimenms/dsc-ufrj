@@ -219,6 +219,12 @@ def _settle_spec(a):
     )
 
 
+def _steady_spec(a):
+    """Partida estacionária (`--start steady`): estimativa do gerador de onde parte o Newton, perturbação das
+    pressões do estacionário e iterações máximas."""
+    return dict(guess=str(a.guess), perturb=float(a.perturb), max_iter=int(a.newton_iter))
+
+
 def point_id(x, n=6):
     """Identificador do ponto (pedido do dono): os primeiros `n` caracteres do SHA-1 do tuplo das entradas, na
     ordem de INPUTS e com a representação completa dos floats — o mesmo tuplo dá sempre o mesmo id."""
@@ -503,6 +509,7 @@ def cmd_design(a):
             grid=grid,
             round_size=int(a.n or (grid["n_gas"] * grid["n_open"] if grid else 25)),
             start=a.start,
+            steady=_steady_spec(a),
             base_run=base["run"],
             x_base=base["x"],
             test=bool(a.test),
@@ -561,6 +568,7 @@ def cmd_design(a):
         round_size=int(X.shape[0]),
         rounds=1,
         start=a.start,
+        steady=_steady_spec(a),
         base_run=base["run"],
         x_base=base["x"],
         test=bool(a.test),
@@ -662,9 +670,11 @@ def build_network(design, point, start, X_prev=None, prev_id=None, keep_case=Non
     case["name"] = f"paper02_{point['id']}"
     net = case_from_json(case)
     model = build_model(net)
-    if start == "blocked":
-        X0, m = initial_state_guess(model, net, case["meta"]["mass"]["w_gas"], mode="blocked")
-        net.meta = dict(net.meta or {}, initial_guess=dict(mode="blocked", m_total=float(m)))
+    if start in ("blocked", "steady"):
+        sd = dict(design.get("steady") or {})
+        mode = str(sd.get("guess", "noslip")) if start == "steady" else "blocked"
+        X0, m = initial_state_guess(model, net, case["meta"]["mass"]["w_gas"], mode=mode)
+        net.meta = dict(net.meta or {}, initial_guess=dict(mode=mode, m_total=float(m)))
     else:
         if np.asarray(X_prev).shape[0] != model.n_states:
             raise ValueError(
@@ -674,6 +684,18 @@ def build_network(design, point, start, X_prev=None, prev_id=None, keep_case=Non
         net.meta = dict(net.meta or {}, initial_guess=dict(mode=start, from_point=prev_id))
     model.state_to_case_ic(X0, 0.0, exact=True)
     net.initial = "edges"
+    if start == "steady":
+        # partida estacionária (pedido do dono, 2026-10-19): Newton (issue 040) a partir da estimativa do gerador
+        # gravada nos nós, sem caso base nem ponto anterior; se não converge, segue da estimativa (partida fria);
+        # a perturbação das pressões tira a trajetória de um equilíbrio instável
+        sd = dict(design.get("steady") or {})
+        net.initial = "steady"
+        net.initial_options = {
+            "from": "edges",
+            "on_failure": "start",
+            "perturb": float(sd.get("perturb", 0.01)),
+            "max_iter": int(sd.get("max_iter", 100)),
+        }
     if keep_case:
         Path(keep_case).parent.mkdir(parents=True, exist_ok=True)
         case_to_json(net, str(keep_case), ic_file="case.ic.npz")
@@ -689,8 +711,9 @@ def _final_state(out, pid):
     return np.asarray(load_run(str(run_path(out, pid))).X)[:, -1]
 
 
-def point_record(design, point, start, prev_id, run, tail=4000.0):
-    """O que fica de um ponto: entradas, cadeia, metadados da corrida e marcadores (`point.json`)."""
+def point_record(design, point, start, prev_id, run, tail=4000.0, initial=None):
+    """O que fica de um ponto: entradas, cadeia, metadados da corrida, o Newton da partida estacionária (`initial`,
+    quando há) e marcadores (`point.json`)."""
     return dict(
         id=point["id"],
         x=point["x"],
@@ -700,6 +723,7 @@ def point_record(design, point, start, prev_id, run, tail=4000.0):
         sobol_index=point.get("sobol_index"),
         start=start,
         from_point=prev_id,
+        initial=initial,
         markers=run_markers(run, tail=tail),
         written=time.strftime("%Y-%m-%d %H:%M"),
     )
@@ -714,6 +738,15 @@ def save_point(out, rec, X_final):
     tmp = pdir / "point.partial.json"
     tmp.write_text(json.dumps(rec, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     os.replace(tmp, point_path(out, rec["id"]))
+
+
+def _newton_note(info):
+    """Sufixo do registo: iterações do Newton da partida estacionária e se convergiu."""
+    ini = info.get("initial") or {}
+    if ini.get("source") != "steady":
+        return ""
+    tail = "" if ini.get("converged") else " (não convergiu: seguiu da estimativa)"
+    return f", Newton {ini.get('iterations')} it{tail}"
 
 
 def run_point(design, point, out, start, X_prev=None, prev_id=None, progress=True):
@@ -745,7 +778,15 @@ def run_point(design, point, out, start, X_prev=None, prev_id=None, progress=Tru
             acc=info.get("accum"),
             command=f"tools/paper02_dataset.py run --out {out} (ponto {pid})",
         )
-        rec = point_record(design, point, start, prev_id, load_run(str(tmp)), tail=float(design.get("tail", 4000.0)))
+        rec = point_record(
+            design,
+            point,
+            start,
+            prev_id,
+            load_run(str(tmp)),
+            tail=float(design.get("tail", 4000.0)),
+            initial=info.get("initial"),
+        )
         save_point(out, rec, np.asarray(res.X)[:, -1])
         if keep_runs:
             os.replace(tmp, run_path(out, pid))
@@ -757,7 +798,7 @@ def run_point(design, point, out, start, X_prev=None, prev_id=None, progress=Tru
             st = info.get("settle") or {}
             print(
                 f"{pid} ({start}): OK {st.get('reason', '?')} em t={st.get('t_end', float('nan')):.0f} s, "
-                f"{info.get('n_steps')} passos, {info['cpu_total']:.0f} s",
+                f"{info.get('n_steps')} passos, {info['cpu_total']:.0f} s" + _newton_note(info),
                 flush=True,
             )
         return "done"
@@ -838,11 +879,29 @@ def run_chain(args):
         release_lock(chain_lock(out, chain_id))
 
 
+def _base_state(design, chain_id, progress):
+    """Estado final do caso base do artigo 01 (`base_run`), ou None se não existe ou não se lê."""
+    if not design.get("base_run") or design.get("test"):
+        return None
+    try:
+        from mfsim.runs import load_run
+
+        return np.asarray(load_run(str(ROOT / design["base_run"])).X)[:, -1]
+    except Exception as e:  # noqa: BLE001
+        if progress:
+            print(f"cadeia {chain_id}: caso base ilegível ({e}); partida bloqueada", flush=True)
+        return None
+
+
 def _run_chain_locked(out, chain_id, progress):
     design = load_design(out)
     pts = sorted((p for p in design["points"] if p["chain"] == chain_id), key=lambda p: p["order"])
     done = []
     prev_done = None
+    # `from_base` (pedido do dono, 2026-10-19): todos os pontos arrancam do estado final do caso base, nenhum do
+    # anterior — a mesma condição inicial para todos; acima de 0,5 de abertura o arranque quente de um vizinho
+    # esgotava o orçamento e o do caso base passava em < 70 s
+    X_base_all = _base_state(design, chain_id, progress) if design.get("from_base") else None
     for p in pts:
         st = point_status(out, p["id"])
         if st == "done":
@@ -854,20 +913,12 @@ def _run_chain_locked(out, chain_id, progress):
             if progress:
                 print(f"cadeia {chain_id}: STOP encontrado, parada antes de {p['id']}", flush=True)
             break
-        if (
-            prev_done is None
-            and design.get("start", "base") == "base"
-            and design.get("base_run")
-            and not design.get("test")
-        ):
-            try:
-                from mfsim.runs import load_run
-
-                X_base = np.asarray(load_run(str(ROOT / design["base_run"])).X)[:, -1]
-            except Exception as e:  # noqa: BLE001
-                X_base = None
-                if progress:
-                    print(f"cadeia {chain_id}: caso base ilegível ({e}); partida bloqueada", flush=True)
+        if design.get("start") == "steady":
+            st = run_point(design, p, out, "steady", progress=progress)
+        elif X_base_all is not None:
+            st = run_point(design, p, out, "base", X_prev=X_base_all, prev_id="base", progress=progress)
+        elif prev_done is None and design.get("start", "base") == "base" and design.get("base_run"):
+            X_base = _base_state(design, chain_id, progress)
             if X_base is not None:
                 st = run_point(design, p, out, "base", X_prev=X_base, prev_id="base", progress=progress)
             else:
@@ -882,6 +933,21 @@ def _run_chain_locked(out, chain_id, progress):
             prev_done = p["id"]
         done.append((p["id"], st))
     return chain_id, done
+
+
+def _run_options_changed(a, design):
+    """Opções de `run` que ficam gravadas no desenho (uma vez ligadas, valem para a ronda toda)."""
+    return (
+        (a.retry_failed and not design.get("retry_failed"))
+        or (a.from_base and not design.get("from_base"))
+        or bool(a.keep_runs) != bool(design.get("keep_runs"))
+    )
+
+
+def _apply_run_options(a, design):
+    design["retry_failed"] = bool(design.get("retry_failed") or a.retry_failed)
+    design["from_base"] = bool(design.get("from_base") or a.from_base)
+    design["keep_runs"] = bool(a.keep_runs)
 
 
 def free_pending_chains(out, design):
@@ -924,11 +990,8 @@ def cmd_run_rounds(a):
         for r in master["rounds"]:
             cur = root / r["folder"]
             design = load_design(cur)
-            if (a.retry_failed and not design.get("retry_failed")) or bool(a.keep_runs) != bool(
-                design.get("keep_runs")
-            ):
-                design["retry_failed"] = bool(design.get("retry_failed") or a.retry_failed)
-                design["keep_runs"] = bool(a.keep_runs)
+            if _run_options_changed(a, design):
+                _apply_run_options(a, design)
                 save_design(cur, design)
             chains = free_pending_chains(cur, design)
             if not chains:
@@ -980,9 +1043,8 @@ def cmd_run(a):
     if is_rounds_root(out):
         return cmd_run_rounds(a)
     design = load_design(out)
-    if a.retry_failed or bool(a.keep_runs) != bool(design.get("keep_runs")):
-        design["retry_failed"] = bool(design.get("retry_failed") or a.retry_failed)
-        design["keep_runs"] = bool(a.keep_runs)
+    if _run_options_changed(a, design):
+        _apply_run_options(a, design)
         save_design(out, design)
     stop = out / "STOP"
     if stop.exists() and not a.keep_stop:
@@ -1176,7 +1238,7 @@ def write_dataset(out, rows, design):
         "id": "identificador do ponto: 6 caracteres do SHA-1 do tuplo das entradas (pasta do ponto na ronda)",
         "chain": "cadeia (processo) a que o ponto pertence",
         "order": "posição na cadeia (0 = partida bloqueada)",
-        "start": "base (estado final do caso base do artigo 01), warm (estado final do ponto anterior) ou blocked (estado bloqueado do gerador)",
+        "start": "base (estado final do caso base do artigo 01), warm (estado final do ponto anterior), blocked (estado bloqueado do gerador) ou steady (estacionário de Newton a partir da estimativa do gerador, perturbado)",
         "from_point": "ponto cujo estado final arrancou esta corrida",
         "t_end": "tempo simulado alcançado [s]",
         "reason": "paragem: steady, cycle, tf (tempo máximo sem assentar), failure, none",
@@ -1317,10 +1379,23 @@ def main(argv=None):
     d.add_argument("--flat", action="store_true", help="conjunto numa só pasta (sem rondas datadas; o modo dos testes)")
     d.add_argument(
         "--start",
-        choices=["base", "random", "centre"],
+        choices=["base", "random", "centre", "steady"],
         default="base",
-        help="primeiro ponto de cada cadeia: o mais perto do caso base do artigo 01, arrancando do seu estado final (omissão, pedido do dono); sorteado; ou o mais perto do centro",
+        help="primeiro ponto de cada cadeia: o mais perto do caso base do artigo 01, arrancando do seu estado final (omissão, pedido do dono); sorteado; o mais perto do centro; ou `steady`: todos os pontos independentes, da partida estacionária (Newton a partir da estimativa do gerador, sem caso base nem ponto anterior; pedido do dono, 2026-10-19)",
     )
+    d.add_argument(
+        "--guess",
+        choices=["noslip", "blocked"],
+        default="noslip",
+        help="estimativa do gerador de onde parte o Newton da partida estacionária (--start steady)",
+    )
+    d.add_argument(
+        "--perturb",
+        type=float,
+        default=0.01,
+        help="partida estacionária: as pressões do estacionário multiplicam-se por 1 + perturb, para a trajetória sair de um equilíbrio instável (issue 040)",
+    )
+    d.add_argument("--newton-iter", type=int, default=100, help="iterações máximas do Newton da partida estacionária")
     d.add_argument(
         "--base-run",
         default="runs/paper01/gaslift/gl_P20.npz",
@@ -1352,6 +1427,11 @@ def main(argv=None):
     r.add_argument("--jobs", type=int, default=1)
     r.add_argument("--retry-failed", action="store_true")
     r.add_argument("--keep-stop", action="store_true", help="não apagar um STOP existente ao arrancar")
+    r.add_argument(
+        "--from-base",
+        action="store_true",
+        help="todos os pontos arrancam do estado final do caso base (`base_run`), nenhum do ponto anterior; fica gravado na ronda (pedido do dono, 2026-10-19)",
+    )
     r.add_argument(
         "--rounds",
         type=int,
