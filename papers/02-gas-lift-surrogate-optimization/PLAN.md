@@ -385,6 +385,16 @@ restrição do compressor é ativa e o ótimo vai para 122,6 bar com o choke abe
 pelo simulador em `runs/paper02/optimize/verify/`. **Próximo (dono):** analisar para várias pressões de sucção/porto
 e gerar a curva de Pareto; capacidades reais; a secção do artigo está marcada como semente.
 
+**Extensão a 160–260 bar (2026-10-19, observação do dono: o ótimo não pode ficar na fronteira).** Segunda campanha
+`runs/paper02/base2d_hi/` (3 rondas de 25, semente 2; 33 feitos quando se retreinou, o resto a correr): acima de 160
+bar tudo o que assenta é estacionário; 7 de 33 esgotam o orçamento (chaveamento do topo do riser, a 0,5–0,8 e 168–244
+bar) e o classificador lê-os como golfada — ficam fora do treino. Substitutos retreinados nas duas campanhas (176 de
+189 corridas, 123/53): NN e PINN empatam em q̄_L (0,90/0,91) e nos gases (0,996–0,999); o PINN mantém os resíduos
+4–6× menores e a vantagem com poucos dados (gás: ¼ do erro com 10 pontos). **Ótimo interior:** abertura 0,73,
+228 bar, 309 k$/d (+6 % sobre o canto da 1.ª campanha), q̄_L prevista 5,75 kg/s, 1,75 kg/s de gás de lift; fica ao
+lado da faixa de corridas com orçamento esgotado — verificação pelo simulador em `runs/paper02/optimize/verify2/`
+(pendente ao escrever isto). Com compressor de 0,8 kg/s: (1,0, 117 bar), 268 k$/d, separador quase ativo (18,5 de 20).
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.
