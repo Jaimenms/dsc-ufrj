@@ -54,8 +54,17 @@ RANGES = {"choke_opening": (0.1, 1.0), "P_gas_bar": (20.0, 160.0)}
 
 # ------------------------------------------------------------------------------------------------ dados
 def load_table(path, exclude_reasons=("failure",)):
-    rows = list(csv.DictReader(open(path, encoding="utf-8")))
+    """Uma ou mais tabelas (`path` pode ser uma lista ou caminhos separados por vírgulas: conjuntos com faixas
+    diferentes de P_gas juntam-se); as faixas das entradas (RANGES) passam a ser as dos dados."""
+    paths = path if isinstance(path, (list, tuple)) else str(path).split(",")
+    rows = []
+    for pth in paths:
+        rows += list(csv.DictReader(open(pth, encoding="utf-8")))
     keep = [r for r in rows if r["reason"] not in exclude_reasons]
+    for k in INPUTS:
+        v = [float(r[k]) for r in keep]
+        if v:
+            RANGES[k] = (min(RANGES[k][0], min(v)), max(RANGES[k][1], max(v)))
     X = np.array([[float(r[k]) for k in INPUTS] for r in keep])
     Y = np.array(
         [
@@ -299,7 +308,11 @@ def load_model(path):
 # ------------------------------------------------------------------------------------------------ estudo
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--dataset", default=str(ROOT / "runs" / "paper02" / "base2d" / "dataset.csv"))
+    ap.add_argument(
+        "--dataset",
+        default=str(ROOT / "runs" / "paper02" / "base2d" / "dataset.csv"),
+        help="tabela de marcadores; várias separadas por vírgulas (p. ex. base2d e base2d_hi)",
+    )
     ap.add_argument("--out", default=str(ROOT / "runs" / "paper02" / "surrogate"))
     ap.add_argument("--epochs", type=int, default=4000)
     ap.add_argument("--hidden", type=int, default=32)
@@ -412,6 +425,8 @@ def main(argv=None):
                 + " ".join(f"{v:.3f}" for v in row["pinn"]["test"]["rmse"][:6]),
                 flush=True,
             )
+    results["ranges"] = {k: list(v) for k, v in RANGES.items()}
+    results["datasets"] = str(a.dataset).split(",")
     (out / "results.json").write_text(json.dumps(results, indent=1) + "\n", encoding="utf-8")
     np.savez(out / "data.npz", X=X, Y=Y, cls=cls, train_idx=tr, test_idx=te, names=np.array(names))
     print(f"{out}/results.json")

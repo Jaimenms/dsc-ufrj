@@ -179,6 +179,13 @@ def main(argv=None):
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     model = sg.load_model(a.model)
+    # faixas das decisões: as do estudo do substituto (results.json ao lado do modelo), para o ótimo não ficar preso
+    # a uma faixa menor do que a dos dados
+    res_path = Path(a.model).parent / "results.json"
+    if res_path.exists():
+        rr = json.load(open(res_path, encoding="utf-8")).get("ranges")
+        if rr:
+            sg.RANGES.update({k: tuple(v) for k, v in rr.items()})
     prices = dict(oil_price=a.oil_price, energy_price=a.energy_price, p_suction=a.p_suction, gas_price=a.gas_price)
     t0 = time.time()
     r = optimise(model, n_grid=a.n_grid, max_gl=a.max_gl, max_oil=a.max_oil, **prices)
