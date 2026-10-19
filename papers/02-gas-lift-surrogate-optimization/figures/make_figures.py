@@ -267,15 +267,16 @@ def surrogate_learning(out, png):
     fl.save(fig, out, "surrogate_learning", png)
 
 
-def surrogate_maps(out, png):
-    """Mapas do PINN no plano das decisões (produção média de líquido, máximo de líquido, gás de lift) com os dados."""
+def surrogate_maps(out, png, model="pinn", name="surrogate_maps"):
+    """Mapas do substituto (`model`: pinn ou nn) no plano das decisões (produção média de líquido, máximo de líquido,
+    gás de lift) com os dados. A variante NN (`surrogate_maps_nn`, pedido do dono) serve de comparação."""
     d = np.load(SURR / "data.npz", allow_pickle=True) if (SURR / "data.npz").exists() else None
-    mp = np.load(SURR / "pinn_map.npz") if (SURR / "pinn_map.npz").exists() else None
+    mp = np.load(SURR / f"{model}_map.npz") if (SURR / f"{model}_map.npz").exists() else None
     fig, axs = plt.subplots(1, 3, figsize=(fl.DOUBLE, 0.34 * fl.DOUBLE))
     if d is None or mp is None:
         for a in axs:
-            fl.placeholder(a, "PINN maps not found")
-        fl.save(fig, out, "surrogate_maps", png)
+            fl.placeholder(a, f"{model.upper()} maps not found")
+        fl.save(fig, out, name, png)
         return
     X, Y = d["X"], d["Y"]
     # curvas de nível (pedido do dono), com os pontos simulados só como posições
@@ -297,7 +298,12 @@ def surrogate_maps(out, png):
     for i, a in enumerate(axs):
         fl.panel_label(a, f"({'abc'[i]})")
     fig.tight_layout()
-    fl.save(fig, out, "surrogate_maps", png)
+    fl.save(fig, out, name, png)
+
+
+def surrogate_maps_nn(out, png):
+    """Fig. 4 alternativa: os mesmos mapas com a rede só de dados."""
+    surrogate_maps(out, png, model="nn", name="surrogate_maps_nn")
 
 
 def tab_surrogate(out):
@@ -541,6 +547,7 @@ FIGURES = {
     "surrogate_parity": surrogate_parity,
     "surrogate_learning": surrogate_learning,
     "surrogate_maps": surrogate_maps,
+    "surrogate_maps_nn": surrogate_maps_nn,
 }
 TABLES = {"tab_dataset": tab_dataset, "tab_surrogate": tab_surrogate, "tab_sparse": tab_sparse}
 
