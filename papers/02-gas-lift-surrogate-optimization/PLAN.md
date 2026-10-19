@@ -492,6 +492,15 @@ Continuação da verificação a (0,94, 205 bar) até 6220 s (lenta: 29 mil pass
 reinício do estado gravado): quase estacionário com ondulação rápida de 0,6 kg/s; médias a 2–3 % da PINN, pressões a
 2–5 %, pico 5,9 vs 6,3 — a amplitude do ciclo rápido varia ao longo da faixa (14 kg/s a (1,0, 224), 0,6 a (0,94, 205)).
 
+**Campanhas paradas pelo dono (2026-10-19, 16:30).** Estado: 1.ª 187 feitos / 13 por fazer; 2.ª 32 / 43; 3.ª 12 / 38
+(os 23 pontos de orçamento esgotado continuam em `runs/paper02/_budget_exhausted/`; `STOP` nas três raízes). Com o
+critério 062 ligado, dos pontos devolvidos à fila: 5 da 2.ª campanha assentaram estacionários em 70–95 s (eram falhas
+de arranque quente), e 2 da 3.ª, (0,64, 219) e (0,98, 206), esgotaram outra vez os 40 min antes dos 3000 s com 26 mil
+passos — aí o custo é o transiente de arranque a 0,1 s/passo, o critério nunca chega a atuar; só orçamento (≈ 60 min)
+os resolve. Nenhum ponto foi ainda aceite como ciclo rápido pelo 062 dentro das campanhas (os dois reruns exatos
+mostraram o ciclo a nascer aos 3000–4200 s). Tabelas atuais: 231 corridas no CSV antes da paragem (refazer `markers`
+com a classe `fast` quando se retomar).
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.
