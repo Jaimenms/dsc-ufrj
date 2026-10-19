@@ -451,6 +451,18 @@ separador de 6 → restrição do separador ativa, (0,81, 103 bar). Verificaçã
 do caso base para todos, porque o estacionário não é alcançável), §3.2 (orçamento: oscilação rápida no topo, troço
 não é a causa), §3.4, §5, §6 e conclusões reescritos com estes números; PDF reconstruído.
 
+**Épocas (2026-10-19, 13:30, pedido do dono: "retreine com mais épocas e rode tudo de novo").** 16 000 épocas
+sobreajustam: PINN q̄_L 0,885 → 0,80, span de líquido 0,91 → −0,25, R1 0,08 → 0,23, R² de treino 0,99–1,00. Varredura
+(1000 a 12 000, 217 pontos, 152/65): q̄_L de teste é plano entre 1000 e 2000 (NN 0,935/0,918, PINN 0,938/0,930) e cai
+monotonamente depois (4000: 0,907/0,921; 8000: 0,82/0,85; 12 000: 0,78/0,80), com R1 a subir; **2000 épocas escolhidas
+(paragem antecipada por varredura, declarada no artigo).** Novos números: PINN q̄_L 0,930 (NN 0,918), gases 0,996–0,998,
+q_L máx 0,89, span de líquido 0,88 (NN 0,82), spans de gás < 0,4; resíduos R1/R3 3,5× menores; grelha 24/24 nas duas;
+poucos dados: ⅓ do erro nos gases com 10–20, ½ com 40. **Ótimo: (1,0, 224 bar), 314 k$/d** (+8 % sobre (1, 160)), planalto
+plano a 1 % de 200 a 255 bar e a 0,5 % entre aberturas 0,9 e 1; q̄_L 5,84, 1,73 kg/s de gás, 1356 kW; óleo a 20 $/bbl →
+220 bar; energia a 2 $/kWh → 194 bar (compressão ⅙ da receita); 5 $/kWh → (0,61, 87 bar). Com compressor de 0,8:
+(0,97, 122 bar), 265 k$/d; 0,5 → (0,87, 103 bar) na golfada (picos 14); separador de 6 → (0,78, 106 bar). Verificações
+pelo simulador a correr: (0,94, 205) e (1,0, 224), do caso base. `--sparse ""` aceite pela ferramenta (sem o estudo).
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.

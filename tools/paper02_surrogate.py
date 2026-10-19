@@ -411,7 +411,7 @@ def main(argv=None):
         G = np.column_stack([ga.ravel(), gp.ravel()])
         np.savez(out / f"{label}_map.npz", a=ga, P=gp, Y=predict(model, G).reshape(60, 60, -1), names=np.array(names))
     # ---- poucos dados: NN × PINN, várias sementes de divisão
-    for n_train in [int(v) for v in a.sparse.split(",")]:
+    for n_train in [int(v) for v in a.sparse.split(",") if v.strip()]:  # "" = sem o estudo de poucos dados
         for seed in range(a.seeds):
             rng = np.random.default_rng(100 + seed)
             sub = np.sort(rng.choice(tr, size=min(n_train, len(tr)), replace=False))
