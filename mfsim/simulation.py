@@ -387,6 +387,12 @@ def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, pa
     w_min = float(opt.get("window_min") or 600.0)
     series = [([], []) for _ in sigs]
     window_eff = None
+    # 062b (pedido do dono): com `window_periods` a integração anda em troços de `window_min` e a decisão é tomada em
+    # cada fim de troço sobre a série acumulada — as duas janelas inteiras de `window` e os troços de N períodos —,
+    # para um ciclo que nasce a meio de uma janela ser aceite logo; o orçamento esgotado durante a captura não
+    # apaga a razão aceite (captura parcial)
+    chunk = w_min if n_per else window
+    partial_capture = False
     t0, tf, dt = model.t0, model.tf, model.dt_out
     Ts, Xs, accs = [np.array([t0])], [np.asarray(X0, float)[:, None]], []
     windows = [[] for _ in sigs]
@@ -398,7 +404,7 @@ def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, pa
 
     budget = spec.max_cpu  # 061: o orçamento de relógio (045) é da corrida inteira, não de cada janela
     while t_cur < tf - 1e-9 * max(1.0, dt):
-        t_end = min(t_cur + window, tf)
+        t_end = min(t_cur + chunk, tf)
         if capture is not None:
             t_end = min(t_end, capture[1])
         te = output_times(t_cur, t_end, dt)
@@ -406,8 +412,12 @@ def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, pa
         if budget is not None:
             left = float(budget) - tot["cpu"]
             if left <= 0.0:
-                reason = "failure"
-                info = dict(info, success=False, note="orçamento de tempo esgotado entre janelas")
+                if capture is not None:
+                    partial_capture = True
+                    info = dict(info, note="orçamento de tempo esgotado durante a captura (captura parcial)")
+                else:
+                    reason = "failure"
+                    info = dict(info, success=False, note="orçamento de tempo esgotado entre janelas")
                 break
             spec_w = replace(spec, max_cpu=left)
         T, X, info = _integrate(model, X_cur, te, spec_w, progress=False, verbose=verbose, partial=partial)
@@ -423,7 +433,11 @@ def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, pa
                 accs.append(a[:, 1:] + acc_off[:, None])
             acc_off = (accs[-1][:, -1]).copy()
         if not info.get("success", True) or np.asarray(T).size < 2:
-            reason = "failure"
+            if capture is not None:
+                partial_capture = True  # a razão aceite fica; a captura é o que se integrou
+                t_cur = float(np.asarray(T)[-1]) if np.asarray(T).size else t_cur
+            else:
+                reason = "failure"
             break
         for (w, sg), sr in zip(zip(windows, sigs), series):
             y = _signal(model, np.asarray(T), np.asarray(X), sg)
@@ -437,23 +451,26 @@ def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, pa
                 break
             continue
         if t_cur - t0 >= t_min - 1e-9:
-            cand = list(windows)  # listas de assinaturas em que a decisão se baseia (janelas inteiras)
-            reasons = [
-                settled(w, float(sg.get("amp_tol", opt["amp_tol"])), float(opt["rel_tol"]), match)
-                for w, sg in zip(cand, sigs)
-            ]
-            if not all(reasons) and n_per:
-                L = effective_window(windows, window, n_per, w_min)
-                if L:
-                    subs = [sub_signatures(np.concatenate(sr[0]), np.concatenate(sr[1]), t_cur, L) for sr in series]
-                    if all(len(s) == 2 for s in subs):
-                        r2 = [
-                            settled(s, float(sg.get("amp_tol", opt["amp_tol"])), float(opt["rel_tol"]), match)
-                            for s, sg in zip(subs, sigs)
-                        ]
-                        if all(r2):
-                            reasons, cand = r2, subs
-                    window, window_eff = L, L  # as janelas seguintes têm o comprimento do ciclo rápido
+            tols = [float(sg.get("amp_tol", opt["amp_tol"])) for sg in sigs]
+            if n_per:
+                # janelas inteiras de `window` recortadas da série acumulada (duas, ou uma só para o estacionário)
+                cand = []
+                for sr in series:
+                    Tc, yc = np.concatenate(sr[0]), np.concatenate(sr[1])
+                    full = sub_signatures(Tc, yc, t_cur, window, n=2) or sub_signatures(Tc, yc, t_cur, window, n=1)
+                    cand.append(full)
+                reasons = [settled(c, tol, float(opt["rel_tol"]), match) if c else None for c, tol in zip(cand, tols)]
+                if not all(reasons):
+                    L = effective_window(windows, window, n_per, w_min)  # período do último troço
+                    if L:
+                        subs = [sub_signatures(np.concatenate(sr[0]), np.concatenate(sr[1]), t_cur, L) for sr in series]
+                        if all(len(sb) == 2 for sb in subs):
+                            r2 = [settled(sb, tol, float(opt["rel_tol"]), match) for sb, tol in zip(subs, tols)]
+                            if all(r2):
+                                reasons, cand, window_eff = r2, subs, L
+            else:
+                cand = list(windows)  # listas de assinaturas em que a decisão se baseia (janelas inteiras)
+                reasons = [settled(w, tol, float(opt["rel_tol"]), match) for w, tol in zip(cand, tols)]
             if all(reasons):
                 reason = "cycle" if "cycle" in reasons else "steady"
                 if n_cap > 0 or cap_window:
@@ -465,12 +482,13 @@ def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, pa
                     else:
                         length = float(cap_window or window)
                     capture = [t_cur, min(t_cur + length, tf)]
+                    chunk = min(chunk, length) if n_per else chunk
                     if capture[1] > t_cur + 1e-9:
                         continue
                 break
     out = dict(info)
     out.update(tot)
-    out["success"] = reason != "failure" and info.get("success", True)
+    out["success"] = reason != "failure" and (info.get("success", True) or partial_capture)
     if accs:
         out["accum"] = np.concatenate(accs, axis=1)
     out["settle"] = dict(reason=reason or "tf", t_end=float(t_cur), windows=windows[0])
@@ -479,6 +497,8 @@ def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, pa
         out["settle"]["signals"] = sigs
     if capture is not None:
         out["settle"]["capture"] = [float(capture[0]), float(t_cur)]
+        if partial_capture:
+            out["settle"]["capture_partial"] = True
     if window_eff is not None:
         out["settle"]["window_eff"] = float(window_eff)
     if progress:

@@ -1242,7 +1242,7 @@ def run_markers(run, tail=4000.0):
     info = run.info or {}
     st = info.get("settle") or {}
     cap = st.get("capture")
-    if cap:
+    if cap and cap[1] - cap[0] >= 60.0:  # uma captura parcial curta (orçamento esgotado na captura, 062b) não serve
         sel = (T >= cap[0] - 1e-9) & (T <= cap[1] + 1e-9)
     else:
         sel = T >= T[-1] - tail

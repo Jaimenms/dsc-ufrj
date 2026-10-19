@@ -30,6 +30,12 @@ oscilação na cabeça contra 2,3–17 bar da golfada severa.
   segundos, `sub_signatures`), e as janelas seguintes passam a ter L segundos. Um ciclo de 60 s com N = 10 é aceite
   aos 3000 s em vez dos 9000; a captura de N_c ciclos continua a usar o período medido. `info.settle.window_eff`
   regista L. Ciclos lentos (10 períodos não cabem na janela) e estacionários: nada muda.
+- 062b (pedido do dono, noite de 2026-10-19, depois de ver o ponto 261ddc com o ciclo estabelecido aos 3100 s e só
+  avaliado aos 6000): com `window_periods` a integração anda em troços de `window_min` e a decisão é tomada em cada fim
+  de troço sobre a série acumulada — as duas janelas inteiras de `window` recortadas da série (ou uma só, para o
+  estacionário) e os troços de N períodos —, pelo que um ciclo que nasce a meio de uma janela é aceite ≈ 2 troços
+  depois; e o orçamento esgotado durante a captura deixa de apagar a razão aceite (`capture_partial`; os marcadores
+  usam a cauda quando a captura tem menos de 60 s).
 - `cycle_class(..., period_fast=300)`: classe `fast` quando a pressão cicla com período menor do que `period_fast`;
   sem o parâmetro, a classe é a de antes. Nas três campanhas os ciclos assentados de golfada e de pressão têm
   período ≥ 546 s e os ciclos rápidos 52–108 s. Os marcadores do artigo 02 usam 300 s (`PERIOD_FAST`); a tabela e
