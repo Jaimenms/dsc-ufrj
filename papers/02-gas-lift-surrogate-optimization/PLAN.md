@@ -514,6 +514,9 @@ sobre (1, 160); planalto plano a 1 % de 205 a 255 bar e a 0,5 % em abertura 0,8�
 médias e pressões com a PINN nova. Com compressor 0,8: 123 bar, 260 k$/d, abertura indiferente acima de 0,7; energia
 2 $/kWh → 173 bar; 5 $/kWh → (0,77, 85 bar) sem gas lift; óleo 20 $/bbl → 228 bar. Artigo: resumo, destaques, §3.2
 (janela encurtada, orçamento 60 min), §3.3 (classe ciclo rápido), §3.4, §4, §5, §6 e conclusões; PDF reconstruído.
+Pedido do dono: compressor de 1,0 kg/s (`runs/paper02/optimize_gl1/`): ótimo (1,0, 142 bar), 284 k$/d (−8 % face ao
+irrestrito), q_gl máx = 1,0 ativo, pico de líquido 5,9, acima da fronteira; ao longo da restrição −1 % a abertura 0,9 e −6 % a
+0,5. Com separador de 20 nada muda.
 
 ## Otimização (plano original, vários poços)
 
