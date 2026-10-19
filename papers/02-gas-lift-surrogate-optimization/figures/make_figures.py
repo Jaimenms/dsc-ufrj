@@ -209,7 +209,7 @@ def surrogate_learning(out, png):
 
 
 def surrogate_maps(out, png):
-    """Mapas do PINN no plano das decisões (produção média de líquido, span de líquido, gás de lift) com os dados."""
+    """Mapas do PINN no plano das decisões (produção média de líquido, máximo de líquido, gás de lift) com os dados."""
     d = np.load(SURR / "data.npz", allow_pickle=True) if (SURR / "data.npz").exists() else None
     mp = np.load(SURR / "pinn_map.npz") if (SURR / "pinn_map.npz").exists() else None
     fig, axs = plt.subplots(1, 3, figsize=(fl.DOUBLE, 0.34 * fl.DOUBLE))
@@ -220,13 +220,15 @@ def surrogate_maps(out, png):
         return
     X, Y = d["X"], d["Y"]
     # curvas de nível (pedido do dono), com os pontos simulados só como posições
+    names = list(mp["names"]) if "names" in mp.files else list(_results()["outputs"])
+    j_max = names.index("qL_max") if "qL_max" in names else 3
     specs = (
         (axs[0], 0, r"$\bar q_L$ at the top (kg s$^{-1}$)", np.arange(3.0, 5.51, 0.25), "%.2f"),
-        (axs[1], 3, r"span of $q_L$ (kg s$^{-1}$)", np.array([1.0, 5.0, 10.0, 20.0, 30.0, 40.0]), "%.0f"),
+        (axs[1], j_max, r"max. $q_L$ at the top (kg s$^{-1}$)", np.array([5.0, 10.0, 20.0, 30.0, 40.0]), "%.0f"),
         (axs[2], 2, r"$\bar q_{gl}$ (kg s$^{-1}$)", np.arange(0.1, 1.21, 0.1), "%.1f"),
     )
     for ax, j, lab, levels, fmt in specs:
-        Z = np.maximum(mp["Y"][:, :, j], 0.0) if j == 3 else mp["Y"][:, :, j]
+        Z = np.maximum(mp["Y"][:, :, j], 0.0) if j == j_max else mp["Y"][:, :, j]
         cs = ax.contour(mp["P"], mp["a"], Z, levels=levels, colors=fl.INK, linewidths=0.7)
         ax.clabel(cs, fmt=fmt, fontsize=6, inline=True, inline_spacing=2)
         ax.scatter(X[:, 1], X[:, 0], s=5, c="0.55", edgecolor="none", zorder=0)
