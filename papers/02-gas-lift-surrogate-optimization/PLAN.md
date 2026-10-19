@@ -501,6 +501,20 @@ os resolve. Nenhum ponto foi ainda aceite como ciclo rápido pelo 062 dentro das
 mostraram o ciclo a nascer aos 3000–4200 s). Tabelas atuais: 231 corridas no CSV antes da paragem (refazer `markers`
 com a classe `fast` quando se retomar).
 
+**Reruns dos esgotados e nova ronda de treino/otimização/artigo (2026-10-19, 17:00, pedido do dono).** `run --only`
+(opção nova) sobre os 23 esgotados, 8 instâncias, orçamento 60 min: 7 já assentaram estacionários em 73–160 s (eram
+falhas do arranque quente), 3 falharam outra vez sob os 40 min antes da paragem e voltaram à fila, 13 a correr.
+Tabelas refeitas com a classe `fast` (nenhum `fast` ainda — os ciclos rápidos são exatamente os esgotados fora da
+tabela): 230 corridas assentadas, 161/69. Com 2000 épocas: NN e PINN iguais nas médias (q̄_L 0,89, RMSE 0,24;
+gases 0,999; pressões 0,99–1,00); máximos q_gl 0,998/0,997, q_L 0,90/0,84; **spans dependem da partição** (span de
+líquido NN 0,90 vs PINN 0,64 nesta, invertido na anterior) — o artigo passa a dizê-lo; resíduos R1 4× e R3 3× menores
+na PINN; poucos dados: gases ⅓ do erro em 10–40, q̄_L melhor a partir de 20. **Ótimo (1,0, 242 bar), 308 k$/d**, +6 %
+sobre (1, 160); planalto plano a 1 % de 205 a 255 bar e a 0,5 % em abertura 0,8–1 (os ajustes sucessivos movem o ótimo
+20 bar ao longo do planalto: é a resolução que os dados dão); verificações a (1,0, 224) e (0,94, 205) batem a < 1 % nas
+médias e pressões com a PINN nova. Com compressor 0,8: 123 bar, 260 k$/d, abertura indiferente acima de 0,7; energia
+2 $/kWh → 173 bar; 5 $/kWh → (0,77, 85 bar) sem gas lift; óleo 20 $/bbl → 228 bar. Artigo: resumo, destaques, §3.2
+(janela encurtada, orçamento 60 min), §3.3 (classe ciclo rápido), §3.4, §4, §5, §6 e conclusões; PDF reconstruído.
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.
