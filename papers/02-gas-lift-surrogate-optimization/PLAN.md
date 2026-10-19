@@ -436,6 +436,21 @@ as três campanhas perto do meio-dia com `run --from-base --retry-failed` (5 ins
 como desenhado; os pontos do canto que o esgotarem ficam como falhas para retentar com orçamento maior se o dono
 quiser.
 
+**Retreino, otimização e artigo com as três campanhas (2026-10-19, 12:40, pedido do dono; campanhas ainda a
+correr).** 231 corridas, 216 no treino/teste (151/65; 15 de orçamento esgotado fora). PINN: q̄_L R² 0,885 (NN 0,807),
+gases 0,998–0,999, q_L máx 0,915 (NN 0,923), q_gl máx 0,995, pressões 0,978–0,999, **span de líquido 0,905** (NN
+0,767; era < 0,65), spans de gás 0,42/0,54; resíduos R1 e R3 3× e 5× menores que a NN, R2 e R4 iguais (≤ 0,03);
+grelha: 24/24 NN e 23/24 PINN com R² médio ≥ 0,8 (a arquitetura não limita); poucos dados: PINN ⅓ do erro nos gases
+com 10–20 corridas, ½ com 40, q̄_L melhor a partir de 20. **Ótimo (70 $/bbl, 0,10 $/kWh): (0,94, 205 bar), 303 k$/d**
+(receita 306 k, compressão 2,9 k, 1193 kW, 1,56 kg/s), +5 % sobre o canto (1, 160); q̄_L 5,64 kg/s; insensível ao
+preço do óleo (20 $/bbl → (0,93, 201)); sai da caixa só pela energia: 2 $/kWh → (1,0, 173 bar), 5 $/kWh → (0,64, 89
+bar), a abertura da válvula. Com compressor de 0,8 kg/s e separador de 20: (0,81, 123 bar), 262 k$/d, compressor
+ativo, logo acima da fronteira (q_L máx 4,7); compressor de 0,5 → (0,88, 103 bar) dentro da golfada (picos de 18);
+separador de 6 → restrição do separador ativa, (0,81, 103 bar). Verificação do ótimo pelo simulador a correr
+(`scratchpad/top10/OPT3`, do caso base, orçamento 40 min). Artigo: resumo, destaques, §3.1 (três campanhas, arranque
+do caso base para todos, porque o estacionário não é alcançável), §3.2 (orçamento: oscilação rápida no topo, troço
+não é a causa), §3.4, §5, §6 e conclusões reescritos com estes números; PDF reconstruído.
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.
