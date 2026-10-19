@@ -23,6 +23,7 @@ DATASETS = (  # 20–160 bar; 160–260 bar; 160–260 bar com abertura 0,5–1,
     fl.RUNS / "paper02" / "base2d" / "dataset.csv",
     fl.RUNS / "paper02" / "base2d_hi" / "dataset.csv",
     fl.RUNS / "paper02" / "base2d_hi_open" / "dataset.csv",
+    fl.RUNS / "paper02" / "extra" / "dataset.csv",  # corridas de verificação que assentaram (§6), mesmas condições
 )
 SURR = fl.RUNS / "paper02" / "surrogate"
 OUTPUT_LABELS = {
