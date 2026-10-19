@@ -350,7 +350,7 @@ def fob_map(out, png):
     axs[0].plot([res["P_gas_bar"]], [res["a"]], marker="*", ms=11, color=fl.COLORS.get("annular", "tab:red"), mec="k", mew=0.5, zorder=5, label="optimum")
     axs[0].set_xlabel("$P_{gas}$ (bar)")
     axs[0].set_ylabel("choke opening $a$")
-    axs[0].set_title(r"objective ($10^3$ \$/d)", fontsize=8, loc="right")
+    # (o título do painel iria colidir com a legenda; a unidade das curvas está na legenda da figura)
     axs[0].legend(fontsize=6, loc="lower left", bbox_to_anchor=(0.0, 1.0), ncol=4, frameon=False, handletextpad=0.3, columnspacing=0.8)
     # receita e custo ao longo de P_gas com o choke na abertura ótima
     i = int(np.argmin(np.abs(mp["a"][:, 0] - res["a"])))
