@@ -358,3 +358,30 @@ def test_run_from_base_starts_every_point_from_the_base_state(tmp_path, monkeypa
     ds.main(["run", "--out", str(out), "--from-base"])
     assert len(calls) == 3 and all(c[1] == "base" and c[2] == [0.0, 1.0, 2.0, 3.0] and c[3] == "base" for c in calls)
     assert ds.load_design(out)["from_base"] is True
+
+
+def test_run_only_runs_the_listed_points(tmp_path, monkeypatch):
+    """`run --only`: só os pontos pedidos correm (os outros ficam pendentes), e a opção não fica gravada."""
+    out = tmp_path / "flat"
+    ds.main(["design", "--start", "random", "--flat", "--out", str(out), "--n", "4", "--seed", "8"])
+    design = ds.load_design(out)
+    wanted = sorted(p["id"] for p in design["points"])[:2]
+    (tmp_path / "ids.txt").write_text("\n".join(wanted) + "\n")
+    calls = []
+
+    def fake_run_point(design, point, out, start, X_prev=None, prev_id=None, progress=True):
+        calls.append(point["id"])
+        ds.save_point(
+            out,
+            dict(id=point["id"], x=point["x"], chain=point["chain"], order=point["order"], start=start, markers={}),
+            np.zeros(2),
+        )
+        return "done"
+
+    monkeypatch.setattr(ds, "run_point", fake_run_point)
+    ds.main(["run", "--out", str(out), "--only", str(tmp_path / "ids.txt")])
+    assert sorted(calls) == wanted
+    assert sum(ds.point_status(out, p["id"]) == "pending" for p in design["points"]) == 2
+    assert "only" not in ds.load_design(out)
+    ds.main(["run", "--out", str(out), "--only", ",".join(sorted(p["id"] for p in design["points"])[2:3])])
+    assert len(calls) == 3

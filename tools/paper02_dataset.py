@@ -876,11 +876,11 @@ def chain_is_free(out, chain_id):
 def run_chain(args):
     """Uma cadeia em sequência: retoma do último ponto concluído; para com o ficheiro STOP. Só corre se conseguir o
     trinco da cadeia (outro processo vivo com a mesma cadeia → devolve sem fazer nada)."""
-    out, chain_id, progress = args
+    out, chain_id, progress, only = (tuple(args) + (None,))[:4]
     if not acquire_lock(chain_lock(out, chain_id)):
         return chain_id, []
     try:
-        return _run_chain_locked(out, chain_id, progress)
+        return _run_chain_locked(out, chain_id, progress, only=only)
     finally:
         release_lock(chain_lock(out, chain_id))
 
@@ -899,7 +899,7 @@ def _base_state(design, chain_id, progress):
         return None
 
 
-def _run_chain_locked(out, chain_id, progress):
+def _run_chain_locked(out, chain_id, progress, only=None):
     design = load_design(out)
     pts = sorted((p for p in design["points"] if p["chain"] == chain_id), key=lambda p: p["order"])
     done = []
@@ -915,6 +915,8 @@ def _run_chain_locked(out, chain_id, progress):
             continue
         if st == "failed" and not design.get("retry_failed", False):
             continue
+        if only is not None and p["id"] not in only:
+            continue  # `run --only`: só os pontos pedidos; os outros pendentes ficam para depois
         if (Path(out) / "STOP").exists() or (Path(out).parent / "STOP").exists():
             if progress:
                 print(f"cadeia {chain_id}: STOP encontrado, parada antes de {p['id']}", flush=True)
@@ -941,6 +943,16 @@ def _run_chain_locked(out, chain_id, progress):
     return chain_id, done
 
 
+def _only_set(a):
+    """`run --only`: conjunto de ids (separados por vírgulas, ou um ficheiro com um id por linha); None = todos."""
+    v = getattr(a, "only", None)
+    if not v:
+        return None
+    if Path(v).exists():
+        return {x.strip() for x in Path(v).read_text(encoding="utf-8").split() if x.strip()}
+    return {x.strip() for x in str(v).split(",") if x.strip()}
+
+
 def _run_options_changed(a, design):
     """Opções de `run` que ficam gravadas no desenho (uma vez ligadas, valem para a ronda toda)."""
     return (
@@ -962,12 +974,16 @@ def free_pending_chains(out, design):
     return [c for c in chains if chain_is_free(out, c)]
 
 
-def _run_pending(out, design, jobs):
-    """Corre as cadeias livres com pontos por fazer; devolve (feitas, falhadas)."""
+def _run_pending(out, design, jobs, only=None):
+    """Corre as cadeias livres com pontos por fazer (com `only`, só os pontos desse conjunto); devolve (feitas,
+    falhadas)."""
     chains = free_pending_chains(out, design)
+    if only is not None:
+        ids = {p["id"] for p in design["points"] if p["id"] in only and point_status(out, p["id"]) == "pending"}
+        chains = [c for c in chains if any(p["chain"] == c and p["id"] in ids for p in design["points"])]
     if not chains:
         return 0, 0
-    work = [(str(out), c, True) for c in chains]
+    work = [(str(out), c, True, only) for c in chains]
     if jobs > 1 and len(chains) > 1:
         from concurrent.futures import ProcessPoolExecutor
 
@@ -1003,7 +1019,7 @@ def cmd_run_rounds(a):
             if not chains:
                 continue
             print(f"ronda {design.get('round', 0)} ({cur.name}): cadeias livres {chains}", flush=True)
-            n_ok, n_bad = _run_pending(cur, design, a.jobs)
+            n_ok, n_bad = _run_pending(cur, design, a.jobs, only=_only_set(a))
             tot_ok, tot_bad = tot_ok + n_ok, tot_bad + n_bad
             claimed = True
             if n_ok == 0 and n_bad > 0:
@@ -1062,7 +1078,7 @@ def cmd_run(a):
         if pending:
             chains = sorted({p["chain"] for p in pending})
             print(f"{len(pending)} pontos por correr em {len(chains)} cadeias ({a.jobs} processos)", flush=True)
-            n_ok, n_bad = _run_pending(out, design, a.jobs)
+            n_ok, n_bad = _run_pending(out, design, a.jobs, only=_only_set(a))
             tot_ok, tot_bad = tot_ok + n_ok, tot_bad + n_bad
         if stop.exists():
             print("STOP encontrado: sem rondas novas", flush=True)
@@ -1442,6 +1458,11 @@ def main(argv=None):
     r.add_argument("--jobs", type=int, default=1)
     r.add_argument("--retry-failed", action="store_true")
     r.add_argument("--keep-stop", action="store_true", help="não apagar um STOP existente ao arrancar")
+    r.add_argument(
+        "--only",
+        default=None,
+        help="só estes pontos (ids separados por vírgulas, ou ficheiro com um id por linha); os outros pendentes ficam para depois; não fica gravado",
+    )
     r.add_argument(
         "--from-base",
         action="store_true",
