@@ -105,7 +105,7 @@ def dataset_map(out, png):
         m = cls == c
         axs[0].scatter(P[m], A[m], c=col, s=16, edgecolor="k", lw=0.3, label=f"{c} ({m.sum()})")
     m = rs == "failure"
-    axs[0].scatter(P[m], A[m], marker="x", c="k", s=30, label=f"40-min budget exhausted ({m.sum()})")
+    axs[0].scatter(P[m], A[m], marker="x", c="k", s=30, label=f"budget exhausted ({m.sum()})")
     # legenda fora do painel (os pontos cobrem todo o plano)
     axs[0].legend(
         fontsize=6,
