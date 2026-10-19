@@ -37,12 +37,28 @@ def test_physics_residuals_vanish_on_consistent_data():
     import jax.numpy as jnp
 
     X, Y = _consistent_rows()
-    r = np.asarray(sg.physics_residuals(jnp.asarray(Y), jnp.asarray(X), np.ones(4)))
-    assert np.abs(r).max() < 1e-4  # float32 do JAX
+    r = np.asarray(sg.physics_residuals(jnp.asarray(Y), jnp.asarray(X), np.ones(8)))
+    assert r.shape[1] == 8 and np.abs(r).max() < 1e-4  # float32 do JAX; R5–R8 nulas (máximos = média + span)
     Y2 = Y.copy()
-    Y2[:, 0] += 0.5  # viola o balanço do líquido
-    r2 = np.asarray(sg.physics_residuals(jnp.asarray(Y2), jnp.asarray(X), np.ones(4)))
-    assert np.allclose(r2[:, 0], 0.5, atol=1e-4) and np.abs(r2[:, 1:]).max() < 1e-4
+    Y2[:, 0] += 0.5  # viola o balanço do líquido; R5 só dispara onde o span é menor do que 0,5
+    r2 = np.asarray(sg.physics_residuals(jnp.asarray(Y2), jnp.asarray(X), np.ones(8)))
+    assert np.allclose(r2[:, 0], 0.5, atol=1e-4) and np.abs(r2[:, 1:4]).max() < 1e-4
+    assert np.allclose(r2[:, 4], np.maximum(0.5 - Y[:, sg.IDX["qL_span"]], 0.0), atol=1e-4)
+    assert np.abs(r2[:, 5:]).max() < 1e-4
+    # desigualdades dos máximos: máximo abaixo da média, e acima de média + span, penalizados; sem `max_physics` só R1–R4
+    Y3 = Y.copy()
+    Y3[:, sg.IDX["q_inj_max"]] = Y3[:, sg.IDX["q_inj"]] - 0.2
+    r3 = np.asarray(sg.physics_residuals(jnp.asarray(Y3), jnp.asarray(X), np.ones(8)))
+    assert np.allclose(r3[:, 5], 0.2, atol=1e-4) and np.abs(r3[:, :5]).max() < 1e-4
+    Y4 = Y.copy()
+    Y4[:, sg.IDX["qL_max"]] += 1.0
+    r4 = np.asarray(sg.physics_residuals(jnp.asarray(Y4), jnp.asarray(X), np.ones(8)))
+    assert np.allclose(r4[:, 6], 1.0, atol=1e-4)
+    assert np.asarray(sg.physics_residuals(jnp.asarray(Y), jnp.asarray(X), np.ones(4), max_physics=False)).shape[1] == 4
+    # em log(1 + x) as colunas dos spans e máximos voltam às unidades físicas antes das desigualdades
+    T = sg.to_targets(Y)
+    rl = np.asarray(sg.physics_residuals(jnp.asarray(T), jnp.asarray(X), np.ones(8), log_space=True))
+    assert np.abs(rl[:, 4:]).max() < 1e-3
 
 
 def test_train_fits_a_smooth_map_and_roundtrips(tmp_path):

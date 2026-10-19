@@ -323,7 +323,7 @@ def tab_surrogate(out):
             ]
         )
     rr = [
-        "residuals $R_1$--$R_4$ (RMS, std units)",
+        f"residuals $R_1$--$R_{{{len(res['full']['pinn']['residual_rms'])}}}$ (RMS, std units)",
         "--",
         ", ".join(f"{v:.3f}" for v in res["full"]["nn"]["residual_rms"]),
         "--",
@@ -338,7 +338,7 @@ def tab_surrogate(out):
         align="lrrrr",
         notes=(
             f"Test set of {res['n_test']} runs ({res['n_train']} for training); RMSE in kg/s for the flow rates and bar for the "
-            "pressures. Residuals: root-mean-square of the four scaled physics residuals on 400 held-out collocation points. "
+            "pressures. Residuals: root-mean-square of the scaled physics residuals (the four balances and the four inequalities of the maxima) on 400 held-out collocation points. "
             "Both networks have two hidden layers of 32 hyperbolic-tangent units; the PINN adds the physics term with "
             "$\\lambda = 1$ on 200 Latin-hypercube collocation points."
         ),

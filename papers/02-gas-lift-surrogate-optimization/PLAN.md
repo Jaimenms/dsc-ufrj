@@ -555,6 +555,16 @@ Números: PINN q̄_L 0,916 (NN 0,889), gases 0,999, máximo de líquido 0,71 vs 
 ótimo (1,75): (1,0, 228 bar), 308 k$/d; verificações a < 1,2 %; 1,5 kg/s → 190 bar com pico previsto 13 (os 3 ciclos
 rápidos já no treino); tabela extra com (0,75, 242).
 
+**Física dos máximos (2026-10-19, 23:00, pedido do dono).** R5–R8: dobradiças q_L máx ≥ q̄_L, q_gl máx ≥ q̄_gl,
+q_L máx ≤ q̄_L + span, q_gl máx ≤ q̄_gl + span (unidades físicas, mesmo com alvos em log1p); ligadas por omissão,
+`--no-max-physics` desliga; as duas redes reportam os 8 resíduos. Efeito (4000 épocas, 4 tabelas, 166/71): PINN
+máximo de líquido 0,71 → **0,86**, span de líquido 0,66 → 0,80, span de gás de lift −0,1 → 0,67; custo pequeno nas
+médias (q̄_L 0,916 → 0,903, gases 0,999 → 0,997) e nos poucos dados (gases ½ do erro da NN em vez de ⅓; q̄_L só melhor
+a partir de 40). NN: R5 0,18 e R7 1,1 (máximos acima de média + span) vs PINN 0,05 e 0,33. Ótimo (1,75): (0,85, 230
+bar), 308 k$/d — a abertura é indiferente (−0,1 % de 0,8 a 0,9, −0,6 % a 1,0), o artigo diz-o. Verificações: (1,0, 224)
+a 2–3 %, (0,94, 205) a 1,5 %, (0,95, 260) a 1,2 %. Pendente: ligar a lei da válvula aos extremos (P_an máx, P_inj mín),
+que exige duas saídas novas. Fig. 4 alternativa com a NN gerada (`surrogate_maps_nn`, fora do texto).
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.

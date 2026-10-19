@@ -135,8 +135,20 @@ def forward(params, x):
     return x @ W + b
 
 
-def physics_residuals(y, x, scale):
-    """Resíduos R1–R4 (n, 4) nas unidades físicas divididos por `scale`; `y` (n, 9) físico, `x` (n, 2) físico."""
+def residual_scale(ys, max_physics=True):
+    """Escalas dos resíduos (desvios padrão das grandezas que cada um compara): R1–R4 e, com `max_physics`, as
+    desigualdades R5–R8 dos máximos (nas unidades das vazões médias)."""
+    base = [ys[IDX["qL_top"]], ys[IDX["qG_top"]], ys[IDX["P_an"]], ys[IDX["q_inj"]]]
+    if max_physics:
+        base += [ys[IDX["qL_top"]], ys[IDX["q_inj"]], ys[IDX["qL_top"]], ys[IDX["q_inj"]]]
+    return np.asarray(base, float)
+
+
+def physics_residuals(y, x, scale, log_space=False, max_physics=True):
+    """Resíduos físicos nas unidades físicas divididos por `scale`: R1–R4 (balanços médios) e, com `max_physics`
+    (pedido do dono, 2026-10-19), as desigualdades de consistência dos máximos R5–R8, como penalizações de
+    dobradiça: q_L máx ≥ q̄_L, q_gl máx ≥ q̄_gl, q_L máx ≤ q̄_L + span_L, q_gl máx ≤ q̄_gl + span_gl. `y` (n, 11) nas
+    saídas (spans e máximos em log(1 + x) quando `log_space`), `x` (n, 2) físico."""
     import jax.numpy as jnp
 
     qL, qG, q_inj = y[:, IDX["qL_top"]], y[:, IDX["qG_top"]], y[:, IDX["q_inj"]]
@@ -152,7 +164,19 @@ def physics_residuals(y, x, scale):
     gate = 0.5 * (1.0 + jnp.tanh(dP / eps))
     q_valve = 0.0075 * CV * jnp.sqrt(rho_G) * gate * jnp.sqrt(jnp.abs(dP) + 1e-3)
     r4 = q_inj - q_valve
-    return jnp.stack([r1, r2, r3, r4], axis=1) / jnp.asarray(scale)
+    res = [r1, r2, r3, r4]
+    if max_physics:
+        cols = [y[:, IDX[k]] for k in ("qL_max", "q_inj_max", "qL_span", "q_inj_span")]
+        if log_space:
+            cols = [jnp.expm1(c) for c in cols]
+        qL_max, q_inj_max, qL_span, q_inj_span = cols
+        res += [
+            jnp.maximum(qL - qL_max, 0.0),
+            jnp.maximum(q_inj - q_inj_max, 0.0),
+            jnp.maximum(qL_max - (qL + qL_span), 0.0),
+            jnp.maximum(q_inj_max - (q_inj + q_inj_span), 0.0),
+        ]
+    return jnp.stack(res, axis=1) / jnp.asarray(scale)
 
 
 def to_targets(Y, span_log=True):
@@ -174,7 +198,20 @@ def from_targets(T, span_log=True):
     return Y
 
 
-def train(X, Y, n_hidden=32, n_layers=2, lr=0.01, epochs=4000, seed=0, lam=0.0, Xc=None, test=None, span_log=True):
+def train(
+    X,
+    Y,
+    n_hidden=32,
+    n_layers=2,
+    lr=0.01,
+    epochs=4000,
+    seed=0,
+    lam=0.0,
+    Xc=None,
+    test=None,
+    span_log=True,
+    max_physics=True,
+):
     """Adam em lote completo num `lax.scan`; `lam` > 0 liga a física nos pontos de colocação `Xc` (PINN); `Y` em
     unidades físicas (os spans passam a log(1 + span) com `span_log`). Devolve (modelo dict com pesos numpy e
     padronização, histórico (épocas, 3): perda de dados, de física, teste)."""
@@ -189,7 +226,7 @@ def train(X, Y, n_hidden=32, n_layers=2, lr=0.01, epochs=4000, seed=0, lam=0.0, 
     if test is not None:
         Xt = jnp.asarray((np.asarray(test[0]) - xm) / xs)
         Yt = jnp.asarray((to_targets(test[1], span_log) - ym) / ys)
-    scale = np.array([ys[IDX["qL_top"]], ys[IDX["qG_top"]], ys[IDX["P_an"]], ys[IDX["q_inj"]]])  # escalas de R1..R4
+    scale = residual_scale(ys, max_physics)  # escalas de R1..R4 (e R5..R8)
     Xc_phys = jnp.asarray(Xc if Xc is not None else X)
     Xcn = (Xc_phys - jnp.asarray(xm)) / jnp.asarray(xs)
     ymj, ysj = jnp.asarray(ym), jnp.asarray(ys)
@@ -199,7 +236,7 @@ def train(X, Y, n_hidden=32, n_layers=2, lr=0.01, epochs=4000, seed=0, lam=0.0, 
     def loss_parts(params):
         ld = jnp.mean((forward(params, Xn) - Yn) ** 2)
         y_phys = forward(params, Xcn) * ysj + ymj
-        lp = jnp.mean(physics_residuals(y_phys, Xc_phys, scale) ** 2)
+        lp = jnp.mean(physics_residuals(y_phys, Xc_phys, scale, log_space=span_log, max_physics=max_physics) ** 2)
         return ld, lp
 
     def loss(params):
@@ -242,6 +279,7 @@ def train(X, Y, n_hidden=32, n_layers=2, lr=0.01, epochs=4000, seed=0, lam=0.0, 
         epochs=epochs,
         seed=seed,
         span_log=bool(span_log),
+        max_physics=bool(max_physics),
     )
     return model, np.asarray(hist)
 
@@ -273,13 +311,16 @@ def evaluate(model, X, Y):
 
 
 def residual_rms(model, Xc):
-    """RMS dos quatro resíduos físicos escalados nos pontos `Xc` (unidades: desvios padrão das grandezas)."""
+    """RMS dos resíduos físicos escalados (R1–R4 e as desigualdades R5–R8) nos pontos `Xc` (unidades: desvios padrão
+    das grandezas)."""
     import jax.numpy as jnp
 
     Yp = predict(model, Xc)
     ys = model["y_std"]
-    scale = np.array([ys[IDX["qL_top"]], ys[IDX["qG_top"]], ys[IDX["P_an"]], ys[IDX["q_inj"]]])
-    r = np.asarray(physics_residuals(jnp.asarray(Yp), jnp.asarray(Xc), scale))
+    scale = residual_scale(
+        ys, True
+    )  # as duas redes reportam os oito resíduos (R5–R8 também para a NN, como diagnóstico)
+    r = np.asarray(physics_residuals(jnp.asarray(Yp), jnp.asarray(Xc), scale, log_space=False, max_physics=True))
     return np.sqrt((r**2).mean(0)).tolist()
 
 
@@ -326,6 +367,11 @@ def main(argv=None):
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--no-span-log", action="store_true", help="spans em unidades físicas em vez de log(1 + span)")
     ap.add_argument(
+        "--no-max-physics",
+        action="store_true",
+        help="sem as desigualdades R5–R8 dos máximos na física do PINN (omissão: com elas; pedido do dono, 2026-10-19)",
+    )
+    ap.add_argument(
         "--grid", action="store_true", help="grelha de hiperparâmetros (camadas × neurónios × taxa), NN e PINN"
     )
     a = ap.parse_args(argv)
@@ -347,11 +393,19 @@ def main(argv=None):
         n_test=int(len(te)),
         outputs=list(names),
         span_log=span_log,
+        max_physics=not a.no_max_physics,
         full={},
         sparse=[],
         grid=[],
     )
-    kw = dict(n_hidden=a.hidden, n_layers=a.layers, lr=a.lr, epochs=a.epochs, span_log=span_log)
+    kw = dict(
+        n_hidden=a.hidden,
+        n_layers=a.layers,
+        lr=a.lr,
+        epochs=a.epochs,
+        span_log=span_log,
+        max_physics=not a.no_max_physics,
+    )
     if a.grid:
         # grelha (como no artigo II do composicional): 1–2 camadas, 8–64 neurónios, 3 taxas; R² das seis saídas no teste
         for layers in (1, 2):
@@ -371,6 +425,7 @@ def main(argv=None):
                             lam=lam,
                             Xc=Xc,
                             span_log=span_log,
+                            max_physics=not a.no_max_physics,
                         )
                         ev = evaluate(m, X[te], Y[te])
                         row[label] = dict(
