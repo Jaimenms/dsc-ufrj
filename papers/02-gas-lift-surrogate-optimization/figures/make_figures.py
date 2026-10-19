@@ -56,17 +56,21 @@ def _model(name):
     m = {k: np.asarray(v, float) for k, v in d["normalization"].items()}
     m.update(d["hyperparameters"])
     m["params"] = [(np.asarray(l["W"], float), np.asarray(l["b"], float)) for l in d["layers"]]
+    m["outputs"] = list(d["outputs"])
     return m
 
 
 def _predict(m, X):
+    """Previsão em unidades físicas: spans e máximos (colunas cujo nome tem "span" ou "max") saem de log(1 + x)."""
     h = (np.atleast_2d(X) - m["x_mean"]) / m["x_std"]
     for W, b in m["params"][:-1]:
         h = np.tanh(h @ W + b)
     W, b = m["params"][-1]
     Y = (h @ W + b) * m["y_std"] + m["y_mean"]
     if m.get("span_log"):
-        Y[:, 3:6] = np.expm1(Y[:, 3:6])
+        for j, n in enumerate(m["outputs"]):
+            if "span" in n or "max" in n:
+                Y[:, j] = np.expm1(Y[:, j])
     return Y
 
 
