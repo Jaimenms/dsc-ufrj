@@ -635,7 +635,7 @@ def point_status(out, pid):
 def _settle_for(design, start):
     s = dict(design["settle"])
     t_min_warm = s.pop("t_min_warm", None)
-    if start in ("warm", "base") and t_min_warm is not None:
+    if start in ("warm", "base", "resume") and t_min_warm is not None:
         s["t_min"] = float(t_min_warm)
     return s
 
@@ -876,11 +876,11 @@ def chain_is_free(out, chain_id):
 def run_chain(args):
     """Uma cadeia em sequência: retoma do último ponto concluído; para com o ficheiro STOP. Só corre se conseguir o
     trinco da cadeia (outro processo vivo com a mesma cadeia → devolve sem fazer nada)."""
-    out, chain_id, progress, only = (tuple(args) + (None,))[:4]
+    out, chain_id, progress, only, resume = (tuple(args) + (None, False))[:5]
     if not acquire_lock(chain_lock(out, chain_id)):
         return chain_id, []
     try:
-        return _run_chain_locked(out, chain_id, progress, only=only)
+        return _run_chain_locked(out, chain_id, progress, only=only, resume=resume)
     finally:
         release_lock(chain_lock(out, chain_id))
 
@@ -899,7 +899,16 @@ def _base_state(design, chain_id, progress):
         return None
 
 
-def _run_chain_locked(out, chain_id, progress, only=None):
+def is_exhausted(out, pid):
+    """Ponto feito cuja corrida esgotou o orçamento (marcadores da trajetória parcial, `reason = failure`)."""
+    try:
+        rec = json.loads(point_path(out, pid).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return (rec.get("markers") or {}).get("reason") == "failure"
+
+
+def _run_chain_locked(out, chain_id, progress, only=None, resume=False):
     design = load_design(out)
     pts = sorted((p for p in design["points"] if p["chain"] == chain_id), key=lambda p: p["order"])
     done = []
@@ -910,13 +919,26 @@ def _run_chain_locked(out, chain_id, progress, only=None):
     X_base_all = _base_state(design, chain_id, progress) if design.get("from_base") else None
     for p in pts:
         st = point_status(out, p["id"])
+        if only is not None and p["id"] not in only:
+            if st == "done":
+                prev_done = p["id"]
+            continue  # `run --only`: só os pontos pedidos; os outros pendentes ficam para depois
+        if st == "done" and resume and is_exhausted(out, p["id"]):
+            # `run --resume-exhausted` (pedido do dono, 2026-10-19): retomar do próprio estado final, com o orçamento
+            # inteiro outra vez; os marcadores passam a ser os da continuação
+            if (Path(out) / "STOP").exists() or (Path(out).parent / "STOP").exists():
+                break
+            st = run_point(
+                design, p, out, "resume", X_prev=_final_state(out, p["id"]), prev_id=p["id"], progress=progress
+            )
+            done.append((p["id"], st))
+            prev_done = p["id"]
+            continue
         if st == "done":
             prev_done = p["id"]
             continue
         if st == "failed" and not design.get("retry_failed", False):
             continue
-        if only is not None and p["id"] not in only:
-            continue  # `run --only`: só os pontos pedidos; os outros pendentes ficam para depois
         if (Path(out) / "STOP").exists() or (Path(out).parent / "STOP").exists():
             if progress:
                 print(f"cadeia {chain_id}: STOP encontrado, parada antes de {p['id']}", flush=True)
@@ -968,22 +990,32 @@ def _apply_run_options(a, design):
     design["keep_runs"] = bool(a.keep_runs)
 
 
-def free_pending_chains(out, design):
-    """Cadeias com pontos por fazer e sem trinco de um processo vivo."""
-    chains = sorted({p["chain"] for p in design["points"] if point_status(out, p["id"]) == "pending"})
+def free_pending_chains(out, design, resume=False):
+    """Cadeias com pontos por fazer (com `resume`, também os esgotados a retomar) e sem trinco de um processo vivo."""
+    chains = sorted(
+        {
+            p["chain"]
+            for p in design["points"]
+            if point_status(out, p["id"]) == "pending" or (resume and is_exhausted(out, p["id"]))
+        }
+    )
     return [c for c in chains if chain_is_free(out, c)]
 
 
-def _run_pending(out, design, jobs, only=None):
-    """Corre as cadeias livres com pontos por fazer (com `only`, só os pontos desse conjunto); devolve (feitas,
-    falhadas)."""
-    chains = free_pending_chains(out, design)
+def _run_pending(out, design, jobs, only=None, resume=False):
+    """Corre as cadeias livres com pontos por fazer (com `only`, só os pontos desse conjunto; com `resume`, também os
+    esgotados, retomados do próprio estado final); devolve (feitas, falhadas)."""
+    chains = free_pending_chains(out, design, resume=resume)
     if only is not None:
-        ids = {p["id"] for p in design["points"] if p["id"] in only and point_status(out, p["id"]) == "pending"}
+        ids = {
+            p["id"]
+            for p in design["points"]
+            if p["id"] in only and (point_status(out, p["id"]) == "pending" or (resume and is_exhausted(out, p["id"])))
+        }
         chains = [c for c in chains if any(p["chain"] == c and p["id"] in ids for p in design["points"])]
     if not chains:
         return 0, 0
-    work = [(str(out), c, True, only) for c in chains]
+    work = [(str(out), c, True, only, resume) for c in chains]
     if jobs > 1 and len(chains) > 1:
         from concurrent.futures import ProcessPoolExecutor
 
@@ -1015,11 +1047,11 @@ def cmd_run_rounds(a):
             if _run_options_changed(a, design):
                 _apply_run_options(a, design)
                 save_design(cur, design)
-            chains = free_pending_chains(cur, design)
+            chains = free_pending_chains(cur, design, resume=bool(a.resume_exhausted))
             if not chains:
                 continue
             print(f"ronda {design.get('round', 0)} ({cur.name}): cadeias livres {chains}", flush=True)
-            n_ok, n_bad = _run_pending(cur, design, a.jobs, only=_only_set(a))
+            n_ok, n_bad = _run_pending(cur, design, a.jobs, only=_only_set(a), resume=bool(a.resume_exhausted))
             tot_ok, tot_bad = tot_ok + n_ok, tot_bad + n_bad
             claimed = True
             if n_ok == 0 and n_bad > 0:
@@ -1074,11 +1106,15 @@ def cmd_run(a):
     tot_ok = tot_bad = 0
     while True:
         design = load_design(out)
-        pending = [p for p in design["points"] if point_status(out, p["id"]) == "pending"]
+        pending = [
+            p
+            for p in design["points"]
+            if point_status(out, p["id"]) == "pending" or (a.resume_exhausted and is_exhausted(out, p["id"]))
+        ]
         if pending:
             chains = sorted({p["chain"] for p in pending})
             print(f"{len(pending)} pontos por correr em {len(chains)} cadeias ({a.jobs} processos)", flush=True)
-            n_ok, n_bad = _run_pending(out, design, a.jobs, only=_only_set(a))
+            n_ok, n_bad = _run_pending(out, design, a.jobs, only=_only_set(a), resume=bool(a.resume_exhausted))
             tot_ok, tot_bad = tot_ok + n_ok, tot_bad + n_bad
         if stop.exists():
             print("STOP encontrado: sem rondas novas", flush=True)
@@ -1262,7 +1298,7 @@ def write_dataset(out, rows, design):
         "id": "identificador do ponto: 6 caracteres do SHA-1 do tuplo das entradas (pasta do ponto na ronda)",
         "chain": "cadeia (processo) a que o ponto pertence",
         "order": "posição na cadeia (0 = partida bloqueada)",
-        "start": "base (estado final do caso base do artigo 01), warm (estado final do ponto anterior), blocked (estado bloqueado do gerador) ou steady (estacionário de Newton a partir da estimativa do gerador, perturbado)",
+        "start": "base (estado final do caso base do artigo 01), warm (estado final do ponto anterior), blocked (estado bloqueado do gerador), steady (estacionário de Newton a partir da estimativa do gerador, perturbado) ou resume (continuação do próprio estado final de uma corrida que esgotou o orçamento)",
         "from_point": "ponto cujo estado final arrancou esta corrida",
         "t_end": "tempo simulado alcançado [s]",
         "reason": "paragem: steady, cycle, tf (tempo máximo sem assentar), failure, none",
@@ -1462,6 +1498,11 @@ def main(argv=None):
         "--only",
         default=None,
         help="só estes pontos (ids separados por vírgulas, ou ficheiro com um id por linha); os outros pendentes ficam para depois; não fica gravado",
+    )
+    r.add_argument(
+        "--resume-exhausted",
+        action="store_true",
+        help="retomar os pontos que esgotaram o orçamento a partir do próprio estado final (orçamento inteiro outra vez; os marcadores passam a ser os da continuação); não fica gravado",
     )
     r.add_argument(
         "--from-base",

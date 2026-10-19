@@ -37,6 +37,9 @@ oscilação na cabeça contra 2,3–17 bar da golfada severa.
 - `tools/paper02_dataset.py design`: `--window-periods` (omissão 10) e `--window-min` (600 s) na especificação da
   paragem; as campanhas em curso receberam as chaves nos `design.json` das rondas e os pontos falhados voltaram à
   fila (`run --retry-failed --from-base`).
+- `run --only ids` corre só os pontos indicados; `run --resume-exhausted` retoma um ponto que esgotou o orçamento a
+  partir do seu próprio `final_state.npz` (start `resume`, orçamento inteiro outra vez, marcadores da continuação) —
+  pedido do dono: no canto, o transiente de arranque custa a hora inteira e só a continuação chega ao ciclo.
 
 ## Benefício medido
 

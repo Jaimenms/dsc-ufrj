@@ -385,3 +385,42 @@ def test_run_only_runs_the_listed_points(tmp_path, monkeypatch):
     assert "only" not in ds.load_design(out)
     ds.main(["run", "--out", str(out), "--only", ",".join(sorted(p["id"] for p in design["points"])[2:3])])
     assert len(calls) == 3
+
+
+def test_resume_exhausted_restarts_from_the_point_final_state(tmp_path, monkeypatch):
+    """`run --resume-exhausted`: um ponto feito cuja corrida esgotou o orçamento volta a correr a partir do seu próprio
+    estado final (start "resume"); os assentados não se tocam; sem a opção nada muda."""
+    out = tmp_path / "flat"
+    ds.main(["design", "--start", "random", "--flat", "--out", str(out), "--n", "3", "--seed", "12"])
+    design = ds.load_design(out)
+    pts = sorted(design["points"], key=lambda p: p["order"])
+    ds.save_point(
+        out,
+        dict(id=pts[0]["id"], x=pts[0]["x"], chain=0, order=0, markers={"reason": "failure", "class": "fast"}),
+        np.array([7.0, 8.0]),
+    )
+    ds.save_point(
+        out,
+        dict(id=pts[1]["id"], x=pts[1]["x"], chain=0, order=1, markers={"reason": "steady", "class": "stable"}),
+        np.array([1.0, 2.0]),
+    )
+    assert ds.is_exhausted(out, pts[0]["id"]) and not ds.is_exhausted(out, pts[1]["id"])
+    calls = []
+
+    def fake_run_point(design, point, out, start, X_prev=None, prev_id=None, progress=True):
+        calls.append((point["id"], start, None if X_prev is None else list(X_prev), prev_id))
+        ds.save_point(
+            out,
+            dict(
+                id=point["id"], x=point["x"], chain=point["chain"], order=point["order"], markers={"reason": "steady"}
+            ),
+            np.zeros(2),
+        )
+        return "done"
+
+    monkeypatch.setattr(ds, "run_point", fake_run_point)
+    ds.main(["run", "--out", str(out)])  # sem a opção: só o pendente corre
+    assert [c[0] for c in calls] == [pts[2]["id"]]
+    ds.main(["run", "--out", str(out), "--resume-exhausted"])
+    assert calls[-1] == (pts[0]["id"], "resume", [7.0, 8.0], pts[0]["id"]) and len(calls) == 2
+    assert not ds.is_exhausted(out, pts[0]["id"])
