@@ -38,7 +38,12 @@ OUTPUT_LABELS = {
     "P_inj": r"$\bar P_{inj}$",
     "P_an": r"$\bar P_{an}$",
 }
-CLASS_COLORS = {"stable": fl.COLORS.get("stable", "tab:green"), "cycling": fl.COLORS.get("cycling", "tab:orange"), "slugging": fl.COLORS.get("slugging", "tab:red")}
+CLASS_COLORS = {
+    "stable": fl.COLORS.get("stable", "tab:green"),
+    "fast": fl.COLORS.get("fast", "tab:purple"),  # 062: ciclo rápido do topo do riser (período < 300 s)
+    "cycling": fl.COLORS.get("cycling", "tab:orange"),
+    "slugging": fl.COLORS.get("slugging", "tab:red"),
+}
 
 
 def _rows():
@@ -102,7 +107,15 @@ def dataset_map(out, png):
     m = rs == "failure"
     axs[0].scatter(P[m], A[m], marker="x", c="k", s=30, label=f"40-min budget exhausted ({m.sum()})")
     # legenda fora do painel (os pontos cobrem todo o plano)
-    axs[0].legend(fontsize=6, loc="lower left", bbox_to_anchor=(0.0, 1.04), ncol=2, frameon=False, handletextpad=0.3, columnspacing=0.8)
+    axs[0].legend(
+        fontsize=6,
+        loc="lower left",
+        bbox_to_anchor=(0.0, 1.04),
+        ncol=2,
+        frameon=False,
+        handletextpad=0.3,
+        columnspacing=0.8,
+    )
     axs[0].set_ylabel("choke opening $a$")
     sc = axs[1].scatter(P, A, c=qL, s=18, cmap="viridis", edgecolor="k", lw=0.3)
     cb = plt.colorbar(sc, ax=axs[1], pad=0.03)
@@ -128,9 +141,18 @@ def tab_dataset(out):
     t_end = np.array([float(r["t_end"]) for r in rows])
     body = [
         ["points (runs)", str(len(rows))],
-        ["steady / pressure cycle / severe slugging", f"{cls.count('stable')} / {cls.count('cycling')} / {cls.count('slugging')}"],
-        ["stop: steady / cycle captured / time limit / budget", f"{rs.count('steady')} / {rs.count('cycle')} / {rs.count('tf')} / {rs.count('failure')}"],
-        ["simulated time per run (s): median, min--max", f"{np.median(t_end):.0f}, {t_end.min():.0f}--{t_end.max():.0f}"],
+        [
+            "steady / fast cycle / pressure cycle / severe slugging",
+            f"{cls.count('stable')} / {cls.count('fast')} / {cls.count('cycling')} / {cls.count('slugging')}",
+        ],
+        [
+            "stop: steady / cycle captured / time limit / budget",
+            f"{rs.count('steady')} / {rs.count('cycle')} / {rs.count('tf')} / {rs.count('failure')}",
+        ],
+        [
+            "simulated time per run (s): median, min--max",
+            f"{np.median(t_end):.0f}, {t_end.min():.0f}--{t_end.max():.0f}",
+        ],
         ["accepted steps per run: median, min--max", f"{np.median(steps):.0f}, {steps.min():.0f}--{steps.max():.0f}"],
         ["integration time per run (min): median, max", f"{np.median(cpu) / 60:.1f}, {cpu.max() / 60:.1f}"],
     ]
@@ -173,10 +195,19 @@ def surrogate_parity(out, png):
         for jj, j in enumerate(cols):
             ax = axs[i, jj]
             y, yp = Y[te, j], Yp[:, j]
-            ax.scatter(y, yp, s=9, c=fl.COLORS.get("stratified", "tab:blue") if k == "nn" else fl.COLORS.get("annular", "tab:red"), edgecolor="k", lw=0.25)
+            ax.scatter(
+                y,
+                yp,
+                s=9,
+                c=fl.COLORS.get("stratified", "tab:blue") if k == "nn" else fl.COLORS.get("annular", "tab:red"),
+                edgecolor="k",
+                lw=0.25,
+            )
             lo, hi = min(y.min(), yp.min()), max(y.max(), yp.max())
             ax.plot([lo, hi], [lo, hi], color="0.5", lw=0.6, ls="--")
-            ax.set_title(f"{OUTPUT_LABELS[names[j]]}\n{k.upper()}, $R^2$ = {res['full'][k]['test']['r2'][j]:.2f}", fontsize=6.5)
+            ax.set_title(
+                f"{OUTPUT_LABELS[names[j]]}\n{k.upper()}, $R^2$ = {res['full'][k]['test']['r2'][j]:.2f}", fontsize=6.5
+            )
             ax.tick_params(labelsize=6)
             if i == 1:
                 ax.set_xlabel("simulated (kg s$^{-1}$)", fontsize=7)
@@ -201,7 +232,11 @@ def surrogate_learning(out, png):
         for k, c in (("nn", fl.COLORS.get("stratified", "tab:blue")), ("pinn", fl.COLORS.get("annular", "tab:red"))):
             mean, sd = [], []
             for n in sizes:
-                v = [r[k]["test"]["rmse"][j] for r in sp if r["n_train"] == n] if n != res["n_train"] else [res["full"][k]["test"]["rmse"][j]]
+                v = (
+                    [r[k]["test"]["rmse"][j] for r in sp if r["n_train"] == n]
+                    if n != res["n_train"]
+                    else [res["full"][k]["test"]["rmse"][j]]
+                )
                 mean.append(np.mean(v))
                 sd.append(np.std(v))
             ax.errorbar(sizes, mean, yerr=sd, marker="o", ms=3, color=c, label=k.upper(), capsize=2, lw=0.9)
@@ -264,7 +299,13 @@ def tab_surrogate(out):
                 fl.fmt(res["full"]["pinn"]["test"]["rmse"][j], "{:.3f}"),
             ]
         )
-    rr = ["residuals $R_1$--$R_4$ (RMS, std units)", "--", ", ".join(f"{v:.3f}" for v in res["full"]["nn"]["residual_rms"]), "--", ", ".join(f"{v:.3f}" for v in res["full"]["pinn"]["residual_rms"])]
+    rr = [
+        "residuals $R_1$--$R_4$ (RMS, std units)",
+        "--",
+        ", ".join(f"{v:.3f}" for v in res["full"]["nn"]["residual_rms"]),
+        "--",
+        ", ".join(f"{v:.3f}" for v in res["full"]["pinn"]["residual_rms"]),
+    ]
     rows.append(rr)
     fl.tex_table(
         out,
@@ -303,7 +344,15 @@ def tab_sparse(out):
     fl.tex_table(
         out,
         "tab_sparse",
-        ["training points", "$\\bar q_L$ NN", "$\\bar q_L$ PINN", "$\\bar q_G$ NN", "$\\bar q_G$ PINN", "$\\bar q_{gl}$ NN", "$\\bar q_{gl}$ PINN"],
+        [
+            "training points",
+            "$\\bar q_L$ NN",
+            "$\\bar q_L$ PINN",
+            "$\\bar q_G$ NN",
+            "$\\bar q_G$ PINN",
+            "$\\bar q_{gl}$ NN",
+            "$\\bar q_{gl}$ PINN",
+        ],
         rows,
         align="rrrrrrr",
         notes="Test RMSE (kg/s), mean $\\pm$ standard deviation over three random subsets of the training set; last row: the full training set.",
@@ -352,17 +401,39 @@ def fob_map(out, png):
         for c, col in CLASS_COLORS.items():
             m = cls == c
             axs[0].scatter(P[m], A[m], c=col, s=7, edgecolor="none", label=c, zorder=2)
-    axs[0].plot([res["P_gas_bar"]], [res["a"]], marker="*", ms=11, color=fl.COLORS.get("annular", "tab:red"), mec="k", mew=0.5, zorder=5, label="optimum")
+    axs[0].plot(
+        [res["P_gas_bar"]],
+        [res["a"]],
+        marker="*",
+        ms=11,
+        color=fl.COLORS.get("annular", "tab:red"),
+        mec="k",
+        mew=0.5,
+        zorder=5,
+        label="optimum",
+    )
     axs[0].set_xlabel("$P_{gas}$ (bar)")
     axs[0].set_ylabel("choke opening $a$")
     # (o título do painel iria colidir com a legenda; a unidade das curvas está na legenda da figura)
-    axs[0].legend(fontsize=6, loc="lower left", bbox_to_anchor=(0.0, 1.0), ncol=4, frameon=False, handletextpad=0.3, columnspacing=0.8)
+    axs[0].legend(
+        fontsize=6,
+        loc="lower left",
+        bbox_to_anchor=(0.0, 1.0),
+        ncol=4,
+        frameon=False,
+        handletextpad=0.3,
+        columnspacing=0.8,
+    )
     # receita e custo ao longo de P_gas com o choke na abertura ótima
     i = int(np.argmin(np.abs(mp["a"][:, 0] - res["a"])))
     Pline = mp["P"][i, :]
     axs[1].plot(Pline, mp["revenue"][i, :] / 1e3, color=fl.INK, lw=1.0, label="oil revenue")
-    axs[1].plot(Pline, mp["cost"][i, :] / 1e3, color=fl.COLORS.get("annular", "tab:red"), lw=1.0, label="compression cost")
-    axs[1].plot(Pline, mp["fob"][i, :] / 1e3, color=fl.COLORS.get("stratified", "tab:blue"), lw=1.2, ls="--", label="objective")
+    axs[1].plot(
+        Pline, mp["cost"][i, :] / 1e3, color=fl.COLORS.get("annular", "tab:red"), lw=1.0, label="compression cost"
+    )
+    axs[1].plot(
+        Pline, mp["fob"][i, :] / 1e3, color=fl.COLORS.get("stratified", "tab:blue"), lw=1.2, ls="--", label="objective"
+    )
     axs[1].set_xlabel("$P_{gas}$ (bar)")
     axs[1].set_ylabel(r"$10^3$ \$/d")
     axs[1].set_title(f"along $a$ = {res['a']:.2f}", fontsize=8)

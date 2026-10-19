@@ -68,6 +68,10 @@ DEFAULT_RANGES = {
     "choke_opening": (0.1, 1.0),
 }
 VARS = ("P", "alphaG", "qL", "qG")
+PERIOD_FAST = (
+    300.0  # 062: classe "fast" — ciclo da pressão na cabeça com período < 300 s (os ciclos assentados de golfada
+)
+# e de pressão têm ≥ 546 s nas três campanhas; a intermitência do topo do riser com gás rápido tem 52–108 s)
 MARKERS = ("mean", "min", "max", "fmin", "fmax")
 AMP_TOL = {"P": 0.1, "alphaG": 0.01, "qL": 0.05, "qG": 0.01}  # amplitude abaixo da qual um sinal é permanente
 SMOOTH = 20.0  # s: média móvel antes de procurar os máximos (como no artigo 01)
@@ -214,6 +218,8 @@ def _settle_spec(a):
         match="envelope",
         capture_cycles=int(a.capture),
         capture_window=float(a.capture_window),
+        window_periods=int(a.window_periods),
+        window_min=float(a.window_min),
         signal={"edge": "1", "node": 1, "var": "P", "amp_tol": AMP_TOL["P"]},
         signals=[{"edge": "1", "node": -1, "var": "qL", "amp_tol": AMP_TOL["qL"]}],
     )
@@ -1202,7 +1208,9 @@ def run_markers(run, tail=4000.0):
         success=info.get("success"),
     )
     if "wellhead" in series and "riser_top" in series:
-        c = cycle_class(Tc, series["wellhead"]["P"][sel], series["riser_top"]["qL"][sel], smooth=SMOOTH)
+        c = cycle_class(
+            Tc, series["wellhead"]["P"][sel], series["riser_top"]["qL"][sel], smooth=SMOOTH, period_fast=PERIOD_FAST
+        )
         row.update({"class": c["cls"], "period": c["period"], "surge": c["surge"]})
     for label, sig in series.items():
         if label == "q_inj":
@@ -1243,7 +1251,7 @@ def write_dataset(out, rows, design):
         "t_end": "tempo simulado alcançado [s]",
         "reason": "paragem: steady, cycle, tf (tempo máximo sem assentar), failure, none",
         "t_cap0/t_cap1": "janela de captura dos marcadores [s]",
-        "class": "stable, cycling (ciclo de pressão) ou slugging (golfada severa) na janela de captura",
+        "class": "stable, fast (ciclo rápido do topo do riser, período < 300 s; 062), cycling (ciclo de pressão) ou slugging (golfada severa) na janela de captura",
         "period": "período entre cruzamentos ascendentes da média de P na cabeça [s]",
         "surge": "razão pico/média de q_L no choke",
         "<ponto>_<var>_<marcador>": "marcadores (mean, min, max, fmin, fmax [1/s]) de P [bar], alphaG, qL e qG [kg/s] no ponto",
@@ -1375,6 +1383,13 @@ def main(argv=None):
     d.add_argument("--rel-tol", type=float, default=0.1)
     d.add_argument("--capture", type=int, default=3, help="ciclos capturados depois de assentar (N_c)")
     d.add_argument("--capture-window", type=float, default=600.0, help="janela de captura de um estacionário [s]")
+    d.add_argument(
+        "--window-periods",
+        type=int,
+        default=10,
+        help="062: ciclos rápidos avaliados em janelas deste número de períodos quando cabem na janela (0 = desligado)",
+    )
+    d.add_argument("--window-min", type=float, default=600.0, help="062: janela mínima dos ciclos rápidos [s]")
     d.add_argument("--force", action="store_true")
     d.add_argument("--flat", action="store_true", help="conjunto numa só pasta (sem rondas datadas; o modo dos testes)")
     d.add_argument(

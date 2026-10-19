@@ -96,3 +96,37 @@ def test_envelope_match_and_capture():
     net2.integration = dataclasses.replace(net2.integration, max_cpu=600.0)
     res2 = simulate(net2, progress=False)
     assert res2.info["settle"]["reason"] == "steady" and abs(res2.T[-1] - (net2.time.t0 + 70.0)) < 1e-9
+
+
+def test_fast_cycle_shortens_the_window_and_is_a_class():
+    """062: um ciclo de 60 s numa janela de 3000 s passa a ser avaliado em janelas de 10 períodos (600 s) sobre a
+    série já integrada, e aceite logo; ciclos lentos e a omissão não mudam nada; `cycle_class(period_fast=300)`
+    chama-lhe "fast" em vez de golfada severa."""
+    from mfsim.analysis import cycle_class
+    from mfsim.simulation import effective_window, sub_signatures
+
+    T = np.linspace(0.0, 3000.0, 6001)
+    y = 5.0 + 7.0 * np.sin(2 * np.pi * T / 60.0)
+    w_fast = [window_signature(T, y)]
+    assert abs(w_fast[0]["period"] - 60.0) < 1.0 and w_fast[0]["crossings"] > 90
+    assert abs(effective_window([w_fast], 3000.0, 10, 600.0) - 600.0) < 1e-9
+    assert effective_window([w_fast], 3000.0, 0, 600.0) is None  # desligado
+    w_slow = [window_signature(T, 5.0 + np.sin(2 * np.pi * T / 1000.0))]
+    assert effective_window([w_slow], 3000.0, 10, 600.0) is None  # 10 períodos não cabem na janela
+    assert effective_window([[window_signature(T, np.full(T.size, 5.0))]], 3000.0, 10, 600.0) is None  # sem ciclo
+    subs = sub_signatures(T, y, 3000.0, 600.0)
+    assert len(subs) == 2 and settled(subs, 0.05, 0.1, match="envelope") == "cycle"
+    assert sub_signatures(T, y, 3000.0, 2000.0) == []  # dois troços de 2000 s não cabem em 3000 s
+    # o caso estacionário da tese dá o mesmo resultado com a opção ligada
+    net = _thesis_case(window=20.0, t_min=40.0, amp_tol=1e-3, window_periods=10, window_min=5.0)
+    res = simulate(net, progress=False)
+    st = res.info["settle"]
+    assert st["reason"] == "steady" and abs(res.T[-1] - (net.time.t0 + 40.0)) < 1e-9 and "window_eff" not in st
+    assert net.time.to_json()["settle"]["window_periods"] == 10
+    # classe: pressão quase plana a oscilar a 60 s com picos de líquido do dobro da média
+    P = 20.0 + 0.3 * np.sin(2 * np.pi * T / 60.0)
+    q = 5.0 + 5.0 * np.sin(2 * np.pi * T / 60.0)
+    assert cycle_class(T, P, q)["cls"] == "slugging"  # sem a opção, o critério do pico manda
+    c = cycle_class(T, P, q, period_fast=300.0)
+    assert c["cls"] == "fast" and abs(c["period"] - 60.0) < 1.0
+    assert cycle_class(T, 20.0 + 8.0 * np.sin(2 * np.pi * T / 1000.0), q, period_fast=300.0)["cls"] == "slugging"

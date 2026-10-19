@@ -15,7 +15,7 @@ dinâmico de escoamento bifásico em redes de dutos (modelo a dois fluidos a 4 e
 mistura, monofásicos; Galerkin, diferenças finitas, volumes finitos escalonados; BDF implícito
 próprio, numpy ou JAX). Reproduz o capítulo 10 da tese bit a bit contra os ficheiros MATLAB e
 resolve o que a tese não conseguiu: a intermitência severa (severe slugging), validada com dados
-de laboratório. As 61 alterações em relação à tese estão em `docs/issues/` (feature, bugfix, estudo).
+de laboratório. As 62 alterações em relação à tese estão em `docs/issues/` (feature, bugfix, estudo).
 
 ## Mapa do repositório
 
@@ -74,6 +74,7 @@ make -C papers/01-severe-slugging-two-fluid                                # art
 - JAX: sequências de passos mudam com 1 ulp na Jacobiana; corridas longas comparam-se por
   assinaturas de ciclo, não ponto a ponto. O período do caso de Jansen não é reprodutível (58–90 s).
 - `tf` menor que `dt_out`: `simulate` inclui sempre `tf` nos instantes de saída.
+- Paragem adaptativa: um ciclo rápido (período ≪ janela) só é aceite ao fim de duas janelas inteiras; com `time.settle.window_periods` (062) a janela encolhe para N períodos e o ciclo é aceite já sobre a série integrada. `cycle_class` lê pico > 2× média como golfada severa mesmo com a cabeça plana; `period_fast` dá-lhe a classe `fast`.
 - O choke usa por omissão a lei homogénea (039); os casos da tese marcam `"law": "thesis"`, e corridas antigas
   sem a chave leem-se com a da tese. Um estado guardado como condição inicial nos nós da malha perde exatidão no
   esquema escalonado: use `state_to_case_ic(X, exact=True)` (040).

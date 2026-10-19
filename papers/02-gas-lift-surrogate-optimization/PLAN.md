@@ -479,6 +479,16 @@ restrição no pico de líquido no canto exige o ciclo rápido nos dados (orçam
 paragem mais curtas para ciclos rápidos — opção a desenhar). Figura `scratchpad/top10/why_not_settled.png` (pedido do
 dono: porque não assentam). §6 do artigo atualizado com a verificação; a marca pendente que fica é o Pareto.
 
+**Issue 062 (2026-10-19, 15:00, aprovada pelo dono): janela da paragem escalada com o período e classe `fast`.**
+`time.settle.window_periods = 10`, `window_min = 600`: quando o período medido cabe 10 vezes na janela, a comparação
+passa a janelas de 10 períodos já sobre a série integrada (um ciclo de 60 s é aceite aos 3000 s em vez de 9000);
+`cycle_class(period_fast=300)` dá a classe `fast` à intermitência do topo do riser (nas campanhas, ciclos assentados
+≥ 546 s, ciclos rápidos 52–108 s). Os 23 pontos de orçamento esgotado das três campanhas foram movidos para
+`runs/paper02/_budget_exhausted/<campanha>/<ronda>/<id>/` (nada apagado) e voltaram à fila; as três campanhas
+relançadas com o critério novo nos `design.json` e no `rounds.json` (5 instâncias, `--from-base --retry-failed`).
+A tabela e o mapa das decisões do artigo ganham a classe; o texto do §3.3/§3.4 atualiza-se quando os pontos do canto
+estiverem refeitos (`markers` de novo → classe `fast` nos que ciclam rápido).
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.

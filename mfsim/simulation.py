@@ -279,7 +279,9 @@ SETTLE_DEFAULTS = dict(window=2000.0, amp_tol=0.05, rel_tol=0.1)
 # 061: `signals` (lista de sinais além de `signal`, cada um com `amp_tol` próprio opcional), `match` ("period": amplitude e
 # período iguais em duas janelas; "envelope": amplitude, média, mínimo e máximo iguais — serve para ciclos com sopros
 # alternados), `capture_cycles` (continuar N ciclos depois de assentar e registar a janela de captura) e
-# `capture_window` (s, a janela de captura de um estacionário; omissão = `window`). Sem estas chaves nada muda.
+# `capture_window` (s, a janela de captura de um estacionário; omissão = `window`). 062: `window_periods` (N > 0: um
+# ciclo com período p tal que N·p < window passa a ser avaliado em janelas de N·p, mínimo `window_min`, já sobre a série
+# integrada — ciclos rápidos do topo do riser deixam de esperar duas janelas inteiras). Sem estas chaves nada muda.
 _SIGNAL_SLOT = {"alphaG": 0, "P": 1, "qL": 2, "qG": 3}
 
 
@@ -339,6 +341,33 @@ def settled(windows, amp_tol, rel_tol, match="period"):
     return None
 
 
+def effective_window(windows, window, n_periods, window_min):
+    """062: janela efetiva para um ciclo rápido — `n_periods` períodos do ciclo mais lento entre os sinais que
+    ciclam (≥ 4 cruzamentos e período finito na última janela), nunca menor do que `window_min`; None quando não
+    há motivo para encurtar a janela (sem ciclo, ciclo que não cabe `n_periods` vezes na janela, ou n_periods = 0)."""
+    if not n_periods:
+        return None
+    periods = [w[-1]["period"] for w in windows if w and w[-1]["crossings"] >= 4 and np.isfinite(w[-1]["period"])]
+    if not periods:
+        return None
+    L = max(float(n_periods) * max(periods), float(window_min))
+    return L if L < float(window) - 1e-9 else None
+
+
+def sub_signatures(T, y, t_end, L, n=2):
+    """062: assinaturas dos últimos `n` troços de comprimento L de uma série já integrada (até t_end); [] se a
+    série não os cobre."""
+    T, y = np.asarray(T, float), np.asarray(y, float)
+    out = []
+    for k in range(n, 0, -1):
+        a, b = t_end - k * L, t_end - (k - 1) * L
+        m = (T >= a - 1e-9) & (T <= b + 1e-9)
+        if a < T[0] - 1e-9 or int(m.sum()) < 4:
+            return []
+        out.append(window_signature(T[m], y[m]))
+    return out
+
+
 def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, partial=False):
     """Paragem adaptativa (issue 041): integra em janelas de `window` segundos a partir do
     estado final da anterior e pára, depois de `t_min`, quando o sinal monitorizado fica
@@ -352,6 +381,12 @@ def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, pa
     match = str(opt.get("match", "period"))
     n_cap = int(opt.get("capture_cycles") or 0)
     cap_window = opt.get("capture_window")
+    # 062: ciclos rápidos — quando o período medido cabe `window_periods` vezes na janela, a janela de comparação
+    # passa a ter esse número de períodos (mínimo `window_min`), avaliada já sobre a série integrada
+    n_per = int(opt.get("window_periods") or 0)
+    w_min = float(opt.get("window_min") or 600.0)
+    series = [([], []) for _ in sigs]
+    window_eff = None
     t0, tf, dt = model.t0, model.tf, model.dt_out
     Ts, Xs, accs = [np.array([t0])], [np.asarray(X0, float)[:, None]], []
     windows = [[] for _ in sigs]
@@ -390,25 +425,40 @@ def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, pa
         if not info.get("success", True) or np.asarray(T).size < 2:
             reason = "failure"
             break
-        for w, sg in zip(windows, sigs):
-            w.append(window_signature(np.asarray(T), _signal(model, np.asarray(T), np.asarray(X), sg)))
+        for (w, sg), sr in zip(zip(windows, sigs), series):
+            y = _signal(model, np.asarray(T), np.asarray(X), sg)
+            w.append(window_signature(np.asarray(T), y))
+            if n_per:
+                sr[0].append(np.asarray(T, float))
+                sr[1].append(np.asarray(y, float))
         t_cur, X_cur = float(T[-1]), np.asarray(X)[:, -1]
         if capture is not None:
             if t_cur >= capture[1] - 1e-9:
                 break
             continue
         if t_cur - t0 >= t_min - 1e-9:
+            cand = list(windows)  # listas de assinaturas em que a decisão se baseia (janelas inteiras)
             reasons = [
                 settled(w, float(sg.get("amp_tol", opt["amp_tol"])), float(opt["rel_tol"]), match)
-                for w, sg in zip(windows, sigs)
+                for w, sg in zip(cand, sigs)
             ]
+            if not all(reasons) and n_per:
+                L = effective_window(windows, window, n_per, w_min)
+                if L:
+                    subs = [sub_signatures(np.concatenate(sr[0]), np.concatenate(sr[1]), t_cur, L) for sr in series]
+                    if all(len(s) == 2 for s in subs):
+                        r2 = [
+                            settled(s, float(sg.get("amp_tol", opt["amp_tol"])), float(opt["rel_tol"]), match)
+                            for s, sg in zip(subs, sigs)
+                        ]
+                        if all(r2):
+                            reasons, cand = r2, subs
+                    window, window_eff = L, L  # as janelas seguintes têm o comprimento do ciclo rápido
             if all(reasons):
                 reason = "cycle" if "cycle" in reasons else "steady"
                 if n_cap > 0 or cap_window:
                     periods = [
-                        w[-1]["period"]
-                        for w, r in zip(windows, reasons)
-                        if r == "cycle" and np.isfinite(w[-1]["period"])
+                        w[-1]["period"] for w, r in zip(cand, reasons) if r == "cycle" and np.isfinite(w[-1]["period"])
                     ]
                     if reason == "cycle" and periods and n_cap > 0:
                         length = n_cap * max(periods)
@@ -429,6 +479,8 @@ def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, pa
         out["settle"]["signals"] = sigs
     if capture is not None:
         out["settle"]["capture"] = [float(capture[0]), float(t_cur)]
+    if window_eff is not None:
+        out["settle"]["window_eff"] = float(window_eff)
     if progress:
         print(
             f"[settle] {out['settle']['reason']} em t={t_cur:.0f} s ({len(windows[0])} janelas, {tot['n_steps']} passos)"

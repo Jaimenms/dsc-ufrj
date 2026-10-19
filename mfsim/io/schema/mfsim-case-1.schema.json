@@ -208,6 +208,15 @@
             "capture_window": {
               "$ref": "#/$defs/positive",
               "description": "061: janela de captura [s] de um estacionário (omissão: window)"
+            },
+            "window_periods": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "062: ciclos rápidos — quando o período medido cabe este número de vezes na janela, a janela de comparação passa a ter esse número de períodos (0 = desligado)"
+            },
+            "window_min": {
+              "$ref": "#/$defs/positive",
+              "description": "062: comprimento mínimo [s] da janela encurtada por window_periods (omissão: 600)"
             }
           }
         }

@@ -470,7 +470,7 @@ def moving_average(T, y, width):
     return np.interp(T, Tu, np.convolve(yp, np.ones(n) / n, mode="valid"))
 
 
-def cycle_class(T, P_in, q_out, amp_stable=0.1, amp_rel=0.01, surge=2.0, smooth=0.0):
+def cycle_class(T, P_in, q_out, amp_stable=0.1, amp_rel=0.01, surge=2.0, smooth=0.0, period_fast=None):
     """Classe de uma janela de corrida a partir da pressão na entrada da linha (bar) e da vazão
     de líquido na saída (kg/s):
 
@@ -478,7 +478,10 @@ def cycle_class(T, P_in, q_out, amp_stable=0.1, amp_rel=0.01, surge=2.0, smooth=
       pressão média (o que for maior), ou sem ciclo na janela (no máximo um cruzamento da média:
       uma deriva que não chegou a ciclar conta como estável);
     - "slugging": golfada severa, pico da vazão de saída de pelo menos `surge` vezes a média;
-    - "cycling": ciclo de pressão com a saída suave (o choke absorve o pico).
+    - "cycling": ciclo de pressão com a saída suave (o choke absorve o pico);
+    - "fast" (062, só com `period_fast` em s): ciclo cujo período da pressão é menor do que `period_fast` — a
+      intermitência hidrodinâmica do topo do riser com gás rápido (≈ 60 s, cabeça quase plana), que o critério do
+      pico lia como golfada severa; sem `period_fast` nada muda.
 
     Devolve a classe e a assinatura: pressão mínima, média e máxima, amplitude, período
     (entre cruzamentos ascendentes, `mfsim.simulation.window_signature`), vazão média e de pico
@@ -494,6 +497,8 @@ def cycle_class(T, P_in, q_out, amp_stable=0.1, amp_rel=0.01, surge=2.0, smooth=
     ratio = q_peak / q_mean if q_mean > 0 else float("inf")
     if w["amp"] < max(amp_stable, amp_rel * abs(w["mean"])) or w["crossings"] <= 1:
         cls = "stable"
+    elif period_fast and np.isfinite(w["period"]) and w["period"] < float(period_fast):
+        cls = "fast"
     elif ratio >= surge:
         cls = "slugging"
     else:
