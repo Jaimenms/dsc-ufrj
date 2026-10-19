@@ -384,8 +384,8 @@ CONSTRAINED = (
     ("optimize_gl05", "0.5"),
     ("optimize_gl05_sep6", "0.5, sep. 6"),
 )
-GL_LEVELS = (0.5, 0.8, 1.0, 1.5, 1.75)  # curvas de nível do pico de gás de lift previsto [kg/s]; 1,75 é o do exemplo
-QL_LEVELS = (6.0, 20.0)  # e do pico de líquido [kg/s]
+GL_LEVELS = (1.75,)  # curva de nível do pico de gás de lift previsto [kg/s]: a capacidade do compressor do exemplo
+QL_LEVELS = (20.0,)  # e do pico de líquido [kg/s]: a capacidade do separador do exemplo
 
 
 def fob_map(out, png):
