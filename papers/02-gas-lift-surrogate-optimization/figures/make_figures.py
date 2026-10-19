@@ -28,6 +28,8 @@ OUTPUT_LABELS = {
     "qL_span": r"span of $q_L$",
     "qG_span": r"span of $q_G$",
     "q_inj_span": r"span of $q_{gl}$",
+    "qL_max": r"max. $q_L$ at the top",
+    "q_inj_max": r"max. $q_{gl}$",
     "P_bh": r"$\bar P_{bh}$",
     "P_inj": r"$\bar P_{inj}$",
     "P_an": r"$\bar P_{an}$",
@@ -307,8 +309,56 @@ def system(out, png):
             src.replace(Path(out) / f"system.{ext}")
 
 
+OPT = fl.RUNS / "paper02" / "optimize"
+
+
+def fob_map(out, png):
+    """Função objetivo (receita do óleo − compressão) do substituto no plano das decisões, curvas de nível, com o
+    ótimo e as corridas por classe (a fronteira de estabilidade dos dados)."""
+    res = json.load(open(OPT / "results.json")) if (OPT / "results.json").exists() else None
+    mp = np.load(OPT / "fob_map.npz") if (OPT / "fob_map.npz").exists() else None
+    rows = _rows()
+    fig, axs = plt.subplots(1, 2, figsize=(fl.DOUBLE, 0.42 * fl.DOUBLE))
+    if res is None or mp is None:
+        for a in axs:
+            fl.placeholder(a, "optimisation results not found (runs/paper02/optimize)")
+        fl.save(fig, out, "fob_map", png)
+        return
+    F = mp["fob"] / 1e3
+    levels = np.linspace(np.floor(F.min() / 10) * 10, np.ceil(F.max() / 10) * 10, 13)
+    cs = axs[0].contour(mp["P"], mp["a"], F, levels=levels, colors=fl.INK, linewidths=0.7)
+    axs[0].clabel(cs, fmt="%.0f", fontsize=6, inline=True)
+    if rows:
+        P = np.array([float(r["P_gas_bar"]) for r in rows])
+        A = np.array([float(r["choke_opening"]) for r in rows])
+        cls = np.array([r["class"] for r in rows])
+        for c, col in CLASS_COLORS.items():
+            m = cls == c
+            axs[0].scatter(P[m], A[m], c=col, s=7, edgecolor="none", label=c, zorder=2)
+    axs[0].plot([res["P_gas_bar"]], [res["a"]], marker="*", ms=11, color=fl.COLORS.get("annular", "tab:red"), mec="k", mew=0.5, zorder=5, label="optimum")
+    axs[0].set_xlabel("$P_{gas}$ (bar)")
+    axs[0].set_ylabel("choke opening $a$")
+    axs[0].set_title(r"objective ($10^3$ \$/d)", fontsize=8)
+    axs[0].legend(fontsize=6, loc="lower right", frameon=True, framealpha=0.9)
+    # receita e custo ao longo de P_gas com o choke na abertura ótima
+    i = int(np.argmin(np.abs(mp["a"][:, 0] - res["a"])))
+    Pline = mp["P"][i, :]
+    axs[1].plot(Pline, mp["revenue"][i, :] / 1e3, color=fl.INK, lw=1.0, label="oil revenue")
+    axs[1].plot(Pline, mp["cost"][i, :] / 1e3, color=fl.COLORS.get("annular", "tab:red"), lw=1.0, label="compression cost")
+    axs[1].plot(Pline, mp["fob"][i, :] / 1e3, color=fl.COLORS.get("stratified", "tab:blue"), lw=1.2, ls="--", label="objective")
+    axs[1].set_xlabel("$P_{gas}$ (bar)")
+    axs[1].set_ylabel(r"$10^3$ \$/d")
+    axs[1].set_title(f"along $a$ = {res['a']:.2f}", fontsize=8)
+    axs[1].legend(fontsize=6.5)
+    for k, ax in enumerate(axs):
+        fl.panel_label(ax, f"({'ab'[k]})")
+    fig.tight_layout()
+    fl.save(fig, out, "fob_map", png)
+
+
 FIGURES = {
     "system": system,
+    "fob_map": fob_map,
     "dataset_map": dataset_map,
     "surrogate_parity": surrogate_parity,
     "surrogate_learning": surrogate_learning,

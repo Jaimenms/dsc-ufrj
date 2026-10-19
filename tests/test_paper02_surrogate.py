@@ -28,7 +28,8 @@ def _consistent_rows(n=40, seed=0):
     qL = sg.IPL * (sg.P_RES - P_bh)
     qG = sg.IPG * (sg.P_RES - P_bh) + q_inj
     spans = np.column_stack([3.0 * X[:, 0] + 0.1 * rng.random(n), 0.02 * X[:, 1], 0.5 * X[:, 0] * (X[:, 1] / 160.0)])
-    Y = np.column_stack([qL, qG, q_inj, spans, P_bh, P_inj, P_an])
+    maxima = np.column_stack([qL + spans[:, 0], q_inj + spans[:, 2]])
+    Y = np.column_stack([qL, qG, q_inj, spans, maxima, P_bh, P_inj, P_an])
     return X, Y
 
 
@@ -60,10 +61,10 @@ def test_train_fits_a_smooth_map_and_roundtrips(tmp_path):
             Xc=sg.latin_hypercube(50, seed=3),
         )
         ev = sg.evaluate(m, X[te], Y[te])
-        assert min(ev["r2"][:3]) > 0.95 and min(ev["r2"][6:]) > 0.95, ev["r2"]
+        assert min(ev["r2"][:3]) > 0.95 and min(ev["r2"][8:]) > 0.95, ev["r2"]
         assert hist.shape == (1500, 3) and hist[-1, 0] < hist[0, 0]
-        assert (sg.predict(m, X)[:, 3:6] >= 0).all()  # spans nunca negativos (log1p)
-    names = sg.OUTPUTS + sg.AUX
+        assert (sg.predict(m, X)[:, 3:8] >= 0).all()  # spans e máximos nunca negativos (log1p)
+    names = sg.NAMES
     sg.save_model(m, tmp_path / "m.json", names)
     m2 = sg.load_model(tmp_path / "m.json")
     assert np.allclose(sg.predict(m2, X[te]), sg.predict(m, X[te])) and m2["outputs"] == names

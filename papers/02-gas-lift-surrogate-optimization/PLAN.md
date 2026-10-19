@@ -370,7 +370,22 @@ tabelas só de `runs/paper02/base2d/dataset.csv` e `runs/paper02/surrogate/` (`f
 `surrogate_learning`; `tab_dataset`, `tab_surrogate`, `tab_sparse`). Pendências: título e autores a confirmar
 pelo dono; a secção da otimização (resultados) por fazer; os spans do gás (R² < 0,65) ficam declarados como limite.
 
-## Otimização
+## Otimização operacional (semente, 2026-10-19, `tools/paper02_optimize.py`)
+
+Pedido do dono: FOB = preço do óleo × óleo produzido − custo de compressão do gás de lift de 5 bar até P_gas, sobre o
+PINN; restrições nas vazões **máximas** previstas pelo substituto (o modelo passou a prever também q_L máx no topo e
+q_gl máx, além das médias e dos spans): compressor (`--max-gl`) e separador (`--max-oil`). Óleo da vazão média de
+líquido (700 kg de líquido por Sm³ de óleo do caso base); compressão politrópica em estágios de razão ≤ 4 com
+arrefecimento (k 1,3, 313 K, η 0,75, M ≈ 19,5 g/mol do ρ_G do fluido). Enumeração em 201 × 201 nós admissíveis +
+SLSQP com as restrições. Resultados com 70 $/bbl e 0,10 $/kWh, sucção 5 bar: ótimo no canto (choke aberto,
+160 bar), FOB 290 k$/d = 292 k de receita − 1,95 k de compressão (813 kW): a compressão é < 1 % da receita, por
+isso o ótimo sem restrições é a produção máxima; só com energia ≥ 5 $/kWh ou óleo ≤ 20 $/bbl o ótimo salta para
+"sem gas lift, choke a 0,65". Com capacidades de exemplo (compressor 0,8 kg/s, separador 20 kg/s de pico) a
+restrição do compressor é ativa e o ótimo vai para 122,6 bar com o choke aberto (FOB 266 k$/d). Verificação do ótimo
+pelo simulador em `runs/paper02/optimize/verify/`. **Próximo (dono):** analisar para várias pressões de sucção/porto
+e gerar a curva de Pareto; capacidades reais; a secção do artigo está marcada como semente.
+
+## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.
 - Objetivo: soma da receita do óleo − custo da compressão. A potência do compressor é função da vazão total de gás

@@ -35,20 +35,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 INPUTS = ("choke_opening", "P_gas_bar")
-OUTPUTS = ("qL_top", "qG_top", "q_inj", "qL_span", "qG_span", "q_inj_span")  # as seis saídas pedidas
-SPAN_IDX = (3, 4, 5)  # os spans treinam-se em log(1 + span) (nunca negativos; a dinâmica das ordens de grandeza)
+OUTPUTS = ("qL_top", "qG_top", "q_inj", "qL_span", "qG_span", "q_inj_span", "qL_max", "q_inj_max")
+# as seis saídas pedidas pelo dono (médias e spans) mais os máximos de líquido no topo e de gás de lift, que as
+# restrições da otimização usam (pedido do dono, 2026-10-19: capacidade do separador e do compressor)
+SPAN_IDX = (3, 4, 5, 6, 7)  # spans e máximos treinam-se em log(1 + x) (nunca negativos; ordens de grandeza)
 AUX = ("P_bh", "P_inj", "P_an")  # médias auxiliares que a física liga às saídas
-UNITS = {
-    "qL_top": "kg/s",
-    "qG_top": "kg/s",
-    "q_inj": "kg/s",
-    "qL_span": "kg/s",
-    "qG_span": "kg/s",
-    "q_inj_span": "kg/s",
-    "P_bh": "bar",
-    "P_inj": "bar",
-    "P_an": "bar",
-}
+NAMES = OUTPUTS + AUX
+IDX = {n: i for i, n in enumerate(NAMES)}
+UNITS = {n: ("bar" if n.startswith("P_") else "kg/s") for n in NAMES}
 # constantes do caso base com gas lift (cases/paper01/gaslift/offshore_gl_P20.json)
 P_RES = 200.0  # bar
 IPL, IPG = 0.04051419143518518, 0.0012021868055555555  # kg/s/bar
@@ -72,6 +66,8 @@ def load_table(path, exclude_reasons=("failure",)):
                 float(r["riser_top_qL_max"]) - float(r["riser_top_qL_min"]),
                 float(r["riser_top_qG_max"]) - float(r["riser_top_qG_min"]),
                 float(r["q_inj_max"]) - float(r["q_inj_min"]),
+                float(r["riser_top_qL_max"]),
+                float(r["q_inj_max"]),
                 float(r["well_bottom_P_mean"]),
                 float(r["injection_P_mean"]),
                 float(r["annulus_base_P_mean"]),
@@ -134,8 +130,8 @@ def physics_residuals(y, x, scale):
     """Resíduos R1–R4 (n, 4) nas unidades físicas divididos por `scale`; `y` (n, 9) físico, `x` (n, 2) físico."""
     import jax.numpy as jnp
 
-    qL, qG, q_inj = y[:, 0], y[:, 1], y[:, 2]
-    P_bh, P_inj, P_an = y[:, 6], y[:, 7], y[:, 8]
+    qL, qG, q_inj = y[:, IDX["qL_top"]], y[:, IDX["qG_top"]], y[:, IDX["q_inj"]]
+    P_bh, P_inj, P_an = y[:, IDX["P_bh"]], y[:, IDX["P_inj"]], y[:, IDX["P_an"]]
     P_gas = x[:, 1]
     r1 = qL - IPL * (P_RES - P_bh)
     r2 = qG - IPG * (P_RES - P_bh) - q_inj
@@ -182,7 +178,7 @@ def train(X, Y, n_hidden=32, n_layers=2, lr=0.01, epochs=4000, seed=0, lam=0.0, 
     if test is not None:
         Xt = jnp.asarray((np.asarray(test[0]) - xm) / xs)
         Yt = jnp.asarray((to_targets(test[1], span_log) - ym) / ys)
-    scale = np.array([ys[0], ys[1], ys[8], ys[2]])  # escalas de R1..R4: as das grandezas que comparam
+    scale = np.array([ys[IDX["qL_top"]], ys[IDX["qG_top"]], ys[IDX["P_an"]], ys[IDX["q_inj"]]])  # escalas de R1..R4
     Xc_phys = jnp.asarray(Xc if Xc is not None else X)
     Xcn = (Xc_phys - jnp.asarray(xm)) / jnp.asarray(xs)
     ymj, ysj = jnp.asarray(ym), jnp.asarray(ys)
@@ -270,7 +266,8 @@ def residual_rms(model, Xc):
     import jax.numpy as jnp
 
     Yp = predict(model, Xc)
-    scale = np.array([model["y_std"][0], model["y_std"][1], model["y_std"][8], model["y_std"][2]])
+    ys = model["y_std"]
+    scale = np.array([ys[IDX["qL_top"]], ys[IDX["qG_top"]], ys[IDX["P_an"]], ys[IDX["q_inj"]]])
     r = np.asarray(physics_residuals(jnp.asarray(Yp), jnp.asarray(Xc), scale))
     return np.sqrt((r**2).mean(0)).tolist()
 
@@ -320,7 +317,7 @@ def main(argv=None):
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     X, Y, cls, meta = load_table(a.dataset)
-    names = OUTPUTS + AUX
+    names = NAMES
     tr, te = split_indices(len(X), 0.7, seed=0)
     Xc = latin_hypercube(a.n_colloc, seed=1)
     Xc_test = latin_hypercube(400, seed=2)
