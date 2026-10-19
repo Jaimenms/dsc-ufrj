@@ -359,12 +359,23 @@ def _integrate_settled(model, X0, spec, settle, progress=True, verbose=False, pa
     acc_off, reason, info = None, None, {}
     capture = None  # [t_início, t_fim] da janela de captura (061)
     t_cur, X_cur = t0, np.asarray(X0, float)
+    from dataclasses import replace
+
+    budget = spec.max_cpu  # 061: o orçamento de relógio (045) é da corrida inteira, não de cada janela
     while t_cur < tf - 1e-9 * max(1.0, dt):
         t_end = min(t_cur + window, tf)
         if capture is not None:
             t_end = min(t_end, capture[1])
         te = output_times(t_cur, t_end, dt)
-        T, X, info = _integrate(model, X_cur, te, spec, progress=False, verbose=verbose, partial=partial)
+        spec_w = spec
+        if budget is not None:
+            left = float(budget) - tot["cpu"]
+            if left <= 0.0:
+                reason = "failure"
+                info = dict(info, success=False, note="orçamento de tempo esgotado entre janelas")
+                break
+            spec_w = replace(spec, max_cpu=left)
+        T, X, info = _integrate(model, X_cur, te, spec_w, progress=False, verbose=verbose, partial=partial)
         for k in tot:
             tot[k] += info.get(k, 0) or 0
         Ts.append(np.asarray(T)[1:])

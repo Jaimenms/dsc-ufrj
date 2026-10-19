@@ -56,7 +56,8 @@ longo da vida dos poços e mostrar a pressão de gas lift e a abertura do choke 
   em curso, com os pontos feitos guardados; a 10 min por ponto não chegavam a cobrir 5 dimensões.
 - **Rondas de 25 pontos de Sobol em 2 dimensões, caminho mais curto a partir do caso base** (vizinho mais
   próximo com 2-opt para 25 pontos), arranque quente do estado final do caso base no ponto mais próximo dele;
-  conjunto `runs/paper02/base2d/` (`design --fix-well`, semente 1), a correr continuamente.
+  conjunto `runs/paper02/base2d/` (`design --fix-well`, semente 1), a correr continuamente com **três instâncias
+  em paralelo** sobre a mesma raiz (trincos por cadeia, rondas novas com 3 cadeias), sem duplicar pontos.
 
 ## O que torna o artigo publicável (e o que não chega)
 

@@ -23,7 +23,9 @@ unidades; todos têm de assentar, e a razão é «cycle» se algum cicla); `matc
 amplitude, média, mínimo e máximo de duas janelas coincidem a `rel_tol` da amplitude (em vez de amplitude e
 período); `capture_cycles = N` continua, depois de assentar, N vezes o maior período dos sinais que ciclam
 (`capture_window` s num estacionário) e regista a janela em `info["settle"]["capture"]`; `windows_all` e
-`signals` guardam as assinaturas de todos os sinais. O comportamento sem estas chaves é o de antes, bit a bit.
+`signals` guardam as assinaturas de todos os sinais; o orçamento de relógio (`max_cpu`, 045) passa a ser da
+corrida inteira e não de cada janela (antes, uma corrida em janelas podia gastar o orçamento vezes o número de
+janelas). O comportamento sem estas chaves é o de antes, bit a bit.
 
 **Ferramenta** `tools/paper02_dataset.py` (plano do artigo 02): `design` sorteia o hipercubo das cinco entradas
 (P_res, PI, RGO, P_gas, abertura) por Sobol embaralhado e agrupa os pontos em cadeias de vizinhos (k-means nas
@@ -48,7 +50,10 @@ marcadores) e `final_state.npz` (arranque quente do ponto seguinte); a trajetór
 guardam (`--keep-runs` para depuração, `compact` converte pontos antigos) —, abertas pela própria ferramenta ao
 acabar a anterior (`run --rounds -1`), com a tabela de cada ronda e a de todas na raiz. As frequências vêm dos intervalos entre máximos do sinal
 suavizado (20 s, proeminência de 5 % da faixa): iguais num ciclo periódico, diferentes com sopros alternados,
-nulas num sinal permanente. **Retomável**: o estado é o conjunto de ficheiros (`<id>.npz` feito, `<id>.failed.json`
+nulas num sinal permanente. **Paralelo sem duplicar**: várias instâncias de `run` na mesma raiz repartem as cadeias por trincos com o pid
+(`chain<k>.lock`, tomados se o processo morreu) e abrem rondas novas uma de cada vez (`rounds.lock`); uma cadeia
+inteira falhada sem nenhuma corrida boa põe o `STOP` em vez de abrir rondas (guarda contra fugas). **Retomável**: o
+estado é o conjunto de ficheiros (`<id>.npz` feito, `<id>.failed.json`
 falhado), uma cadeia retoma do último ponto concluído, e um ficheiro `STOP` na pasta pára as cadeias depois da
 corrida em curso; matar os processos perde só a corrida em curso.
 

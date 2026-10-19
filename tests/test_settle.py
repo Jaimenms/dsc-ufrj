@@ -89,3 +89,10 @@ def test_envelope_match_and_capture():
     assert abs(st["capture"][0] - (net.time.t0 + 40.0)) < 1e-9 and abs(st["capture"][1] - res.T[-1]) < 1e-9
     assert len(st["windows_all"]) == 2 and len(st["signals"]) == 2
     assert net.time.to_json()["settle"]["signals"] == [{"var": "qL", "amp_tol": 1e-3}]
+    # orçamento de relógio da corrida inteira (não de cada janela): com orçamento largo o resultado é o mesmo
+    import dataclasses
+
+    net2 = _thesis_case(window=20.0, t_min=40.0, amp_tol=1e-3, capture_window=30.0)
+    net2.integration = dataclasses.replace(net2.integration, max_cpu=600.0)
+    res2 = simulate(net2, progress=False)
+    assert res2.info["settle"]["reason"] == "steady" and abs(res2.T[-1] - (net2.time.t0 + 70.0)) < 1e-9

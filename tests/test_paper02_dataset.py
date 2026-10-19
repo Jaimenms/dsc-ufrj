@@ -282,3 +282,17 @@ def test_fixed_well_sobol_in_two_dimensions():
     chain, order = ds.make_chains(X, ranges, 1, seed=1, start="base", x_base=x_base)
     ub = ds.scaled(np.array([[x_base[k] for k in ds.INPUTS]]), ranges)[0]
     assert int(np.flatnonzero(order == 0)[0]) == int(np.argmin(np.linalg.norm(U - ub, axis=1)))
+
+
+def test_chain_locks_allow_parallel_runs_without_duplicates(tmp_path):
+    import os
+
+    lk = tmp_path / "chain0.lock"
+    assert ds.acquire_lock(lk) and lk.read_text() == str(os.getpid())
+    assert not ds.chain_is_free(tmp_path, 0)
+    assert ds.acquire_lock(lk)  # o próprio dono volta a entrar
+    ds.release_lock(lk)
+    assert not lk.exists() and ds.chain_is_free(tmp_path, 0)
+    lk.write_text("999999999")  # trinco de um processo morto: toma-se
+    assert ds.chain_is_free(tmp_path, 0) and ds.acquire_lock(lk) and lk.read_text() == str(os.getpid())
+    ds.release_lock(lk)

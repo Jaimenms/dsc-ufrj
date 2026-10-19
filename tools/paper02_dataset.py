@@ -16,6 +16,11 @@ canto mais perto do caso base, com P_gas monótono (a linha de gás nunca se esv
 passo muda uma só decisão de um só nível, e o varrimento dá o mapa completo das decisões desse poço. Ao acabar uma
 ronda, `run --rounds` abre a seguinte (os pontos ou o poço seguintes da mesma sequência de Sobol).
 
+Vários `run` na mesma raiz repartem o trabalho sem duplicar (pedido do dono): cada cadeia tem um trinco com o pid do
+processo que a corre (`chain<k>.lock`, tomado se o processo morreu), cada instância escolhe a ronda mais antiga com uma
+cadeia livre por fazer e, não havendo nenhuma, abre a ronda seguinte (uma de cada vez, com `rounds.lock`); com
+`--chains-per-round k` cada ronda nova tem k cadeias para k instâncias.
+
 Tudo é retomável e nada se perde: o desenho é um ficheiro (`design.json`, só cresce: nunca se substitui quando há
 corridas), cada corrida é um `.npz` gravado atomicamente (ou um `.failed.json`), a ferramenta nunca apaga corridas, e
 uma cadeia retoma do último ponto concluído; um ficheiro `STOP` na pasta pára as cadeias depois da corrida em curso
@@ -767,9 +772,73 @@ def run_point(design, point, out, start, X_prev=None, prev_id=None, progress=Tru
         return "failed"
 
 
+def _pid_alive(pid):
+    try:
+        os.kill(int(pid), 0)
+    except (OSError, ValueError):
+        return False
+    return True
+
+
+def acquire_lock(path):
+    """Trinco por ficheiro com o pid do dono (criação atómica): True se ficou nosso; um trinco de um processo morto
+    é tomado. É o que permite vários `run` na mesma raiz sem duplicar pontos (pedido do dono)."""
+    path = Path(path)
+    for _ in range(2):
+        try:
+            with open(path, "x", encoding="utf-8") as f:
+                f.write(str(os.getpid()))
+            return True
+        except FileExistsError:
+            try:
+                pid = int(path.read_text(encoding="utf-8").strip() or 0)
+            except (OSError, ValueError):
+                pid = 0
+            if pid and _pid_alive(pid) and pid != os.getpid():
+                return False
+            try:
+                path.unlink()  # dono morto: toma-se o trinco
+            except FileNotFoundError:
+                pass
+    return False
+
+
+def release_lock(path):
+    try:
+        if int(Path(path).read_text(encoding="utf-8").strip() or 0) == os.getpid():
+            Path(path).unlink()
+    except (OSError, ValueError):
+        pass
+
+
+def chain_lock(out, chain_id):
+    return Path(out) / f"chain{int(chain_id)}.lock"
+
+
+def chain_is_free(out, chain_id):
+    lk = chain_lock(out, chain_id)
+    if not lk.exists():
+        return True
+    try:
+        pid = int(lk.read_text(encoding="utf-8").strip() or 0)
+    except (OSError, ValueError):
+        return True
+    return not (pid and _pid_alive(pid))
+
+
 def run_chain(args):
-    """Uma cadeia em sequência: retoma do último ponto concluído; para com o ficheiro STOP."""
+    """Uma cadeia em sequência: retoma do último ponto concluído; para com o ficheiro STOP. Só corre se conseguir o
+    trinco da cadeia (outro processo vivo com a mesma cadeia → devolve sem fazer nada)."""
     out, chain_id, progress = args
+    if not acquire_lock(chain_lock(out, chain_id)):
+        return chain_id, []
+    try:
+        return _run_chain_locked(out, chain_id, progress)
+    finally:
+        release_lock(chain_lock(out, chain_id))
+
+
+def _run_chain_locked(out, chain_id, progress):
     design = load_design(out)
     pts = sorted((p for p in design["points"] if p["chain"] == chain_id), key=lambda p: p["order"])
     done = []
@@ -815,9 +884,15 @@ def run_chain(args):
     return chain_id, done
 
 
-def _run_pending(out, design, jobs):
-    """Corre as cadeias com pontos por fazer; devolve (feitas, falhadas)."""
+def free_pending_chains(out, design):
+    """Cadeias com pontos por fazer e sem trinco de um processo vivo."""
     chains = sorted({p["chain"] for p in design["points"] if point_status(out, p["id"]) == "pending"})
+    return [c for c in chains if chain_is_free(out, c)]
+
+
+def _run_pending(out, design, jobs):
+    """Corre as cadeias livres com pontos por fazer; devolve (feitas, falhadas)."""
+    chains = free_pending_chains(out, design)
     if not chains:
         return 0, 0
     work = [(str(out), c, True) for c in chains]
@@ -843,25 +918,60 @@ def cmd_run_rounds(a):
         stop.unlink()
     tot_ok = tot_bad = 0
     while True:
+        # a ronda mais antiga com uma cadeia livre por fazer (vários `run` na mesma raiz repartem as cadeias)
         master = load_rounds(root)
-        cur = root / master["rounds"][-1]["folder"]
-        design = load_design(cur)
-        if (a.retry_failed and not design.get("retry_failed")) or bool(a.keep_runs) != bool(design.get("keep_runs")):
-            design["retry_failed"] = bool(design.get("retry_failed") or a.retry_failed)
-            design["keep_runs"] = bool(a.keep_runs)
-            save_design(cur, design)
-        pending = [p for p in design["points"] if point_status(cur, p["id"]) == "pending"]
-        if pending:
-            print(f"ronda {design.get('round', 0)} ({cur.name}): {len(pending)} pontos por correr", flush=True)
+        claimed = False
+        for r in master["rounds"]:
+            cur = root / r["folder"]
+            design = load_design(cur)
+            if (a.retry_failed and not design.get("retry_failed")) or bool(a.keep_runs) != bool(
+                design.get("keep_runs")
+            ):
+                design["retry_failed"] = bool(design.get("retry_failed") or a.retry_failed)
+                design["keep_runs"] = bool(a.keep_runs)
+                save_design(cur, design)
+            chains = free_pending_chains(cur, design)
+            if not chains:
+                continue
+            print(f"ronda {design.get('round', 0)} ({cur.name}): cadeias livres {chains}", flush=True)
             n_ok, n_bad = _run_pending(cur, design, a.jobs)
             tot_ok, tot_bad = tot_ok + n_ok, tot_bad + n_bad
+            claimed = True
+            if n_ok == 0 and n_bad > 0:
+                # guarda contra a fuga: uma cadeia inteira falhada sem uma corrida boa é um erro de código ou de
+                # ambiente, e abrir rondas novas só multiplicaria falhas
+                print(
+                    f"ronda {cur.name}: {n_bad} falhas e nenhuma corrida feita — a parar (ver failed.json)", flush=True
+                )
+                stop.touch()
+            break
         if stop.exists():
             print("STOP encontrado: sem rondas novas", flush=True)
             break
+        if claimed:
+            continue
         if a.rounds == 0 or (a.rounds > 0 and len(master["rounds"]) >= a.rounds):
-            break
-        d = create_round(root, load_rounds(root), chains=a.chains_per_round)
-        print(f"ronda nova em {d}", flush=True)
+            busy = any(
+                not chain_is_free(root / r["folder"], c)
+                for r in master["rounds"]
+                for c in {p["chain"] for p in load_design(root / r["folder"])["points"]}
+            )
+            if not busy:
+                break
+            time.sleep(60.0)  # outras instâncias ainda a correr: esperar sem abrir rondas
+            continue
+        if acquire_lock(root / "rounds.lock"):
+            try:
+                master = load_rounds(root)
+                if not any(
+                    free_pending_chains(root / r["folder"], load_design(root / r["folder"])) for r in master["rounds"]
+                ):
+                    d = create_round(root, master, chains=a.chains_per_round)
+                    print(f"ronda nova em {d}", flush=True)
+            finally:
+                release_lock(root / "rounds.lock")
+        else:
+            time.sleep(5.0)
     print(f"feito: {tot_ok} corridas, {tot_bad} falhas; estado em `status`", flush=True)
 
 
@@ -916,7 +1026,11 @@ def cmd_status(a):
             c = {"done": 0, "failed": 0, "pending": 0}
             for p in design["points"]:
                 c[point_status(d, p["id"])] += 1
-            print(f"  {d.name}: {c['done']} feitos, {c['failed']} falhados, {c['pending']} por fazer")
+            busy = sorted(ch for ch in {p["chain"] for p in design["points"]} if not chain_is_free(d, ch))
+            print(
+                f"  {d.name}: {c['done']} feitos, {c['failed']} falhados, {c['pending']} por fazer"
+                + (f"; cadeias em curso {busy}" if busy else "")
+            )
         if (out / "STOP").exists():
             print("  STOP presente (as cadeias param depois da corrida em curso)")
         return
