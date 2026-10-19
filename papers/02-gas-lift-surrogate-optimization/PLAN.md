@@ -526,6 +526,14 @@ compressor ativo, pico de líquido 5,7; ao longo da restrição −0,3 % a 0,9 e
 (planalto, sensibilidades a preços, canto da 1.ª campanha) saiu do texto; a estrela da Fig. 6 é este ótimo e a curva
 de 1,75 entrou nas de nível; a verificação a (1,0, 224) fica a 4 bar do ótimo sobre a restrição.
 
+**Retreino com os 8 esgotados refeitos (2026-10-19, 18:30, pedido do dono).** 232 corridas (162/70): NN e PINN iguais
+nas médias (q̄_L 0,92, RMSE 0,20; gases 0,997–1,000); máximos de líquido 0,77 (NN) vs 0,90 (PINN) nesta partição; span
+de líquido 0,62 vs 0,85; resíduos R1 4× e R3 6× menores; poucos dados: PINN ¼–⅓ do erro nos gases e melhor em q̄_L em
+todos os tamanhos. **Ótimo do exemplo (1,75 / 20): (1,0, 224 bar), 315 k$/d** — exatamente o ponto verificado pelo
+simulador (médias a 1 %, P_fundo a 6 %); varredura: 1,5 → 194 bar (−2 %), 1,0 → 141 bar (−11 %), 0,8 → 125 bar (−17 %),
+0,5 → 102 bar na golfada (picos 17), + separador 6 → 106 bar. Fig. 6 com as regiões inadmissíveis pintadas e só as curvas
+1,75 e 20 (pedidos do dono). Texto, figuras e PDF atualizados.
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.
