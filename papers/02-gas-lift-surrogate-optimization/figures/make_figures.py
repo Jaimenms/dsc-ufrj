@@ -140,11 +140,14 @@ def tab_dataset(out):
 
 
 # ------------------------------------------------------------------------------------------------ substitutos
+PARITY_OUTPUTS = ("qL_top", "qG_top", "q_inj", "qL_max", "q_inj_max")  # médias e máximos (pedido do dono: não os spans)
+
+
 def surrogate_parity(out, png):
-    """Paridade no conjunto de teste, NN (cima) e PINN (baixo), seis saídas."""
+    """Paridade no conjunto de teste, NN (cima) e PINN (baixo): as três vazões médias e os dois máximos."""
     res = _results()
     d = np.load(SURR / "data.npz", allow_pickle=True) if (SURR / "data.npz").exists() else None
-    fig, axs = plt.subplots(2, 6, figsize=(fl.DOUBLE, 0.4 * fl.DOUBLE))
+    fig, axs = plt.subplots(2, len(PARITY_OUTPUTS), figsize=(fl.DOUBLE, 0.46 * fl.DOUBLE))
     if res is None or d is None:
         for a in axs.ravel():
             fl.placeholder(a, "surrogate results not found")
@@ -152,11 +155,12 @@ def surrogate_parity(out, png):
         return
     X, Y, te = d["X"], d["Y"], d["test_idx"]
     names = res["outputs"]
+    cols = [names.index(n) for n in PARITY_OUTPUTS if n in names]
     for i, k in enumerate(("nn", "pinn")):
         m = _model(k)
         Yp = _predict(m, X[te])
-        for j in range(6):
-            ax = axs[i, j]
+        for jj, j in enumerate(cols):
+            ax = axs[i, jj]
             y, yp = Y[te, j], Yp[:, j]
             ax.scatter(y, yp, s=9, c=fl.COLORS.get("stratified", "tab:blue") if k == "nn" else fl.COLORS.get("annular", "tab:red"), edgecolor="k", lw=0.25)
             lo, hi = min(y.min(), yp.min()), max(y.max(), yp.max())
@@ -165,7 +169,7 @@ def surrogate_parity(out, png):
             ax.tick_params(labelsize=6)
             if i == 1:
                 ax.set_xlabel("simulated (kg s$^{-1}$)", fontsize=7)
-            if j == 0:
+            if jj == 0:
                 ax.set_ylabel("predicted", fontsize=7)
     fig.tight_layout()
     fl.save(fig, out, "surrogate_parity", png)
