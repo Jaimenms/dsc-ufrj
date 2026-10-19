@@ -488,6 +488,9 @@ passa a janelas de 10 períodos já sobre a série integrada (um ciclo de 60 s �
 relançadas com o critério novo nos `design.json` e no `rounds.json` (5 instâncias, `--from-base --retry-failed`).
 A tabela e o mapa das decisões do artigo ganham a classe; o texto do §3.3/§3.4 atualiza-se quando os pontos do canto
 estiverem refeitos (`markers` de novo → classe `fast` nos que ciclam rápido).
+Continuação da verificação a (0,94, 205 bar) até 6220 s (lenta: 29 mil passos em 60 min a 0,06 s/passo depois do
+reinício do estado gravado): quase estacionário com ondulação rápida de 0,6 kg/s; médias a 2–3 % da PINN, pressões a
+2–5 %, pico 5,9 vs 6,3 — a amplitude do ciclo rápido varia ao longo da faixa (14 kg/s a (1,0, 224), 0,6 a (0,94, 205)).
 
 ## Otimização (plano original, vários poços)
 
