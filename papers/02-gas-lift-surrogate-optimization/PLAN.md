@@ -395,6 +395,12 @@ bar) e o classificador lê-os como golfada — ficam fora do treino. Substitutos
 lado da faixa de corridas com orçamento esgotado — verificação pelo simulador em `runs/paper02/optimize/verify2/`
 (pendente ao escrever isto). Com compressor de 0,8 kg/s: (1,0, 117 bar), 268 k$/d, separador quase ativo (18,5 de 20).
 
+**Terceira campanha (2026-10-19, pedido do dono: mais pontos a alta pressão de gás e abertura alta).**
+`runs/paper02/base2d_hi_open/`: P_gas 160–260 bar × abertura 0,5–1,0, 2 rondas de 25 (semente 3), 2 instâncias. É a
+região do ótimo e também a do chaveamento do topo do riser (orçamento de 40 min esgotado em 7 de 33 pontos da 2.ª
+campanha nessa faixa): se a taxa de falhas se repetir, convém decidir o fechamento do troço horizontal ou subir o
+orçamento. O guião das figuras já lê as três tabelas; o retreino usa `--dataset` com as três.
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.

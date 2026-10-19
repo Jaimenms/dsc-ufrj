@@ -19,7 +19,11 @@ import numpy as np  # noqa: E402
 
 import figlib as fl  # noqa: E402
 
-DATASETS = (fl.RUNS / "paper02" / "base2d" / "dataset.csv", fl.RUNS / "paper02" / "base2d_hi" / "dataset.csv")  # 20–160 e 160–260 bar
+DATASETS = (  # 20–160 bar; 160–260 bar; 160–260 bar com abertura 0,5–1,0 (pedido do dono: mais pontos onde está o ótimo)
+    fl.RUNS / "paper02" / "base2d" / "dataset.csv",
+    fl.RUNS / "paper02" / "base2d_hi" / "dataset.csv",
+    fl.RUNS / "paper02" / "base2d_hi_open" / "dataset.csv",
+)
 SURR = fl.RUNS / "paper02" / "surrogate"
 OUTPUT_LABELS = {
     "qL_top": r"$\bar q_L$ at the top",
@@ -139,7 +143,8 @@ def tab_dataset(out):
         notes=(
             "Base well of Part~I ($P_{res} = \\SI{200}{\\bar}$, $J = \\SI{5}{\\cubic\\metre\\per\\day\\per\\bar}$, GOR 50) "
             "with the gas-lift branch; inputs sampled by scrambled Sobol' sequences in rounds of 25 over $a \\in$ [0.1, 1] and "
-            "$P_{gas} \\in$ [20, 160] bar (first campaign) and [160, 260] bar (second campaign); each round starts from the final state of the base run at the point "
+            "$P_{gas} \\in$ [20, 160] bar (first campaign), [160, 260] bar (second) and [160, 260] bar with $a \\in$ [0.5, 1] (third, "
+            "densifying the region of the optimum); each round starts from the final state of the base run at the point "
             "closest to it and continues along the shortest path with warm starts. Budget: 40 min of integration per run."
         ),
     )
