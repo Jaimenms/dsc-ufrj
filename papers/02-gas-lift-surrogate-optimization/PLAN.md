@@ -534,6 +534,16 @@ simulador (médias a 1 %, P_fundo a 6 %); varredura: 1,5 → 194 bar (−2 %), 1
 0,5 → 102 bar na golfada (picos 17), + separador 6 → 106 bar. Fig. 6 com as regiões inadmissíveis pintadas e só as curvas
 1,75 e 20 (pedidos do dono). Texto, figuras e PDF atualizados.
 
+**Fecho dos reruns e retreino com 4 tabelas (2026-10-19, 21:00).** 22 dos 23 esgotados refeitos com 60 min: 7
+estacionários em < 3 min, 4 ciclos aceites (37–57 min; 3 ciclos rápidos pela janela encurtada, um a 0,11 s/passo
+com 71 mil passos), 11 esgotados outra vez a 0,04–0,1 s/passo (3 na fronteira em golfada severa, 8 no canto do
+ciclo rápido); (0,73, 174) ainda a correr. Tabela extra `runs/paper02/extra/` (corridas de verificação assentadas:
+(1,0, 260) e (0,95, 260), ambas estacionárias com 5,80 kg/s) entra na Fig. 2 e no treino. 247 corridas, 236
+assentadas, 165/71: PINN q̄_L 0,894 (NN 0,876), gases 0,996–0,998, máximos de líquido 0,73 nas duas (partição
+difícil), resíduos R1 4× e R3 2× menores; poucos dados: PINN ⅓–½ do erro nos gases. Ótimo (1,75 / 20): (1,0, 229
+bar), 309 k$/d; verificações a (1,0, 224), (0,94, 205) e (0,95, 260) batem a < 1,5 % nas médias e pressões. Lição
+registada no artigo: máximos e spans variam com a partição (0,73–0,92 nos máximos de líquido).
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.
