@@ -72,7 +72,7 @@ def _predict(m, X):
 def dataset_map(out, png):
     """Mapa dos pontos no plano das decisões: classe, produção média e pico de líquido."""
     rows = _rows()
-    fig, axs = plt.subplots(1, 3, figsize=(fl.DOUBLE, 0.34 * fl.DOUBLE))
+    fig, axs = plt.subplots(1, 3, figsize=(fl.DOUBLE, 0.36 * fl.DOUBLE), sharey=True)
     if not rows:
         for a in axs:
             fl.placeholder(a, "dataset not found (runs/paper02/base2d)")
@@ -88,16 +88,20 @@ def dataset_map(out, png):
         m = cls == c
         axs[0].scatter(P[m], A[m], c=col, s=16, edgecolor="k", lw=0.3, label=f"{c} ({m.sum()})")
     m = rs == "failure"
-    axs[0].scatter(P[m], A[m], marker="x", c="k", s=30, label=f"budget exhausted ({m.sum()})")
-    axs[0].legend(fontsize=6, loc="lower left")
+    axs[0].scatter(P[m], A[m], marker="x", c="k", s=30, label=f"40-min budget exhausted ({m.sum()})")
+    # legenda fora do painel (os pontos cobrem todo o plano)
+    axs[0].legend(fontsize=6, loc="lower left", bbox_to_anchor=(0.0, 1.04), ncol=2, frameon=False, handletextpad=0.3, columnspacing=0.8)
     axs[0].set_ylabel("choke opening $a$")
     sc = axs[1].scatter(P, A, c=qL, s=18, cmap="viridis", edgecolor="k", lw=0.3)
-    plt.colorbar(sc, ax=axs[1], label=r"$\bar q_L$ at the top (kg s$^{-1}$)")
+    cb = plt.colorbar(sc, ax=axs[1], pad=0.03)
+    cb.set_label(r"$\bar q_L$ at the top (kg s$^{-1}$)", fontsize=7)
     sc = axs[2].scatter(P, A, c=np.log10(np.maximum(pk, 0.1)), s=18, cmap="magma", edgecolor="k", lw=0.3)
-    plt.colorbar(sc, ax=axs[2], label=r"$\log_{10}$ peak $q_L$ (kg s$^{-1}$)")
+    cb = plt.colorbar(sc, ax=axs[2], pad=0.03)
+    cb.set_label(r"$\log_{10}$ peak $q_L$ (kg s$^{-1}$)", fontsize=7)
     for i, a in enumerate(axs):
         a.set_xlabel("$P_{gas}$ (bar)")
         fl.panel_label(a, f"({'abc'[i]})")
+    fig.subplots_adjust(left=0.07, right=0.98, bottom=0.17, top=0.86, wspace=0.12)
     fl.save(fig, out, "dataset_map", png)
 
 

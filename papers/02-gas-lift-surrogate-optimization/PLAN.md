@@ -355,19 +355,20 @@ mapas, históricos). Próximos passos: alimentar a física também com a classe 
 modelo no estado final (`final_state.npz`, zero nos estacionários), e tratar os spans como alvo de classificação
 ordinal em vez de regressão.
 
-## Manuscrito: Parte I escrita (2026-10-19)
+## Manuscrito (2026-10-19): um só artigo, otimização em espera
 
-`main.tex` tem a Parte I do artigo (pedido do dono: muito sucinta no modelo fenomenológico, com os modelos
-empíricos, os resultados e a preparação da Parte II): resumo, introdução, §2 modelo fenomenológico (remete para o
+Decisão do dono: **um só artigo**, com a parte do modelo e dos substitutos e a parte da otimização (esta em espera,
+marcada a vermelho com `\tbd`). `main.tex` tem (muito sucinto no modelo fenomenológico, com os modelos empíricos, os
+resultados e a formulação da otimização): resumo, introdução, §2 modelo fenomenológico (remete para o
 artigo 01, "Part 0"), §3 dados (amostragem em cadeias, horizonte adaptativo com captura, marcadores, mapa das
 decisões), §4 substitutos (rede e física das médias R1–R4), §5 resultados (tabelas de métricas e de poucos dados,
-paridade, mapas, curvas de aprendizagem), §6 preparação da Parte II (o que ela herda: o PINN, o mapa de
-estabilidade e a formulação — receita do líquido médio menos custo de compressão, restrições no span/pico de
-líquido e na oscilação de pressão, enumeração no plano e confirmação pelo simulador), §7 conclusões. Figuras e
+paridade, mapas, curvas de aprendizagem), §6 otimização operacional (em espera: a formulação está escrita — receita do líquido médio
+menos custo de compressão, restrições no span/pico de líquido e na oscilação de pressão, enumeração no plano e
+confirmação pelo simulador —, os resultados ficam por fazer), §7 conclusões. Figuras e
 tabelas só de `runs/paper02/base2d/dataset.csv` e `runs/paper02/surrogate/` (`figures/make_figures.py`:
 `system` reusa o desenho da geometria do artigo 01, `dataset_map`, `surrogate_parity`, `surrogate_maps`,
 `surrogate_learning`; `tab_dataset`, `tab_surrogate`, `tab_sparse`). Pendências: título e autores a confirmar
-pelo dono; a Parte II (otimização) por escrever; os spans do gás (R² < 0,65) ficam declarados como limite.
+pelo dono; a secção da otimização (resultados) por fazer; os spans do gás (R² < 0,65) ficam declarados como limite.
 
 ## Otimização
 
