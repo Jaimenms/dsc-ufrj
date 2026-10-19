@@ -517,6 +517,9 @@ médias e pressões com a PINN nova. Com compressor 0,8: 123 bar, 260 k$/d, aber
 Pedido do dono: compressor de 1,0 kg/s (`runs/paper02/optimize_gl1/`): ótimo (1,0, 142 bar), 284 k$/d (−8 % face ao
 irrestrito), q_gl máx = 1,0 ativo, pico de líquido 5,9, acima da fronteira; ao longo da restrição −1 % a abertura 0,9 e −6 % a
 0,5. Com separador de 20 nada muda.
+Compressor de 1,5 kg/s + separador de 20 (`runs/paper02/optimize_gl15/`): (1,0, 200 bar), 304 k$/d (−1 %), compressor ativo,
+separador não; ao longo da restrição −0,6 % a 0,9 e −3,5 % a 0,5. O §6 passou a apresentar a varredura de capacidades
+1,5 / 1,0 / 0,8 / 0,5 kg/s como uma descida pela lei da válvula.
 
 ## Otimização (plano original, vários poços)
 
