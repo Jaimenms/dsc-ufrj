@@ -421,7 +421,7 @@ def fob_map(out, png):
         mec="k",
         mew=0.5,
         zorder=5,
-        label="optimum (compressor 1.75 kg/s, separator 20)",
+        label="optimum (example)",
     )
     # restrições: curvas de nível dos picos previstos de gás de lift e de líquido, e os ótimos restringidos
     if "q_gl_max" in mp:
@@ -461,7 +461,7 @@ def fob_map(out, png):
             mec="k",
             mew=0.8,
             zorder=6,
-            label="constrained optima (compressor, kg/s)" if first else None,
+            label="other compressors (kg/s)" if first else None,
         )
         axs[0].annotate(
             label, (rc["P_gas_bar"], rc["a"]), xytext=(3, -8), textcoords="offset points", fontsize=5.5, zorder=6
