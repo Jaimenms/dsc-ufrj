@@ -428,8 +428,13 @@ rasteja a ~0,3 s por passo com 20–35 % de passos rejeitados, e isso não se v�
 células do topo estável em 0,86–0,90, oscilação de 2 bar na cabeça) — o chaveamento é dentro do passo, entre
 tentativas do Newton do integrador. Fora do canto, (0,51, 216) custa 742 passos. Com os 40 min da campanha
 passariam 2–3 destes 4, a 10–40 min cada; os ~50 pontos pendentes do canto são ~20 h em três instâncias. Em
-curso: os mesmos dois pontos que rastejaram sem o troço horizontal de 10 m (`L_h2 = 0`), para decidir se o troço
-é a causa (a experiência da manhã num ponto sem chaveamento não o podia dizer).
+mesmos dois pontos sem o troço horizontal de 10 m (`L_h2 = 0`, estado do caso base interpolado na malha nova):
+(1,0, 200) 20 373 passos para 5695 s, passo médio 0,28 s, igual; (0,85, 240) 19 308 passos até assentar num ciclo
+aos 12 200 s, passo médio 0,63 s. **O troço não é a causa**: a oscilação rápida do líquido no topo do riser (2–15
+kg/s, período < 1 min) existe com e sem ele e é ela que obriga a passos de 0,3–0,6 s. A geometria fica. Retomadas
+as três campanhas às 12:30 com `run --from-base --retry-failed` (5 instâncias: 1 + 2 + 2), orçamento de 40 min
+como desenhado; os pontos do canto que o esgotarem ficam como falhas para retentar com orçamento maior se o dono
+quiser.
 
 ## Otimização (plano original, vários poços)
 
