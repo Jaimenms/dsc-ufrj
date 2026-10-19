@@ -219,9 +219,10 @@ def surrogate_parity(out, png):
 
 
 def surrogate_learning(out, png):
-    """Curvas de aprendizagem: RMSE de teste contra o número de pontos de treino, NN e PINN (média ± desvio)."""
+    """Curvas de aprendizagem: RMSE de teste contra o número de pontos de treino, NN e PINN (média ± desvio), e a perda
+    de treino e de teste por época das duas redes (pedido do dono: o conjunto de teste à vista no treino)."""
     res = _results()
-    fig, axs = plt.subplots(1, 3, figsize=(fl.DOUBLE, 0.3 * fl.DOUBLE))
+    fig, axs = plt.subplots(1, 4, figsize=(fl.DOUBLE, 0.26 * fl.DOUBLE))
     if res is None or not res.get("sparse"):
         for a in axs:
             fl.placeholder(a, "sparse-data study not found")
@@ -245,8 +246,23 @@ def surrogate_learning(out, png):
         ax.set_xlabel("training points")
         ax.set_ylabel(f"test RMSE, {OUTPUT_LABELS[name]} (kg s$^{{-1}}$)")
         ax.legend(fontsize=6.5)
+    # (d) perda de dados no treino e perda no teste (EQM padronizado) por época, das histórias gravadas
+    ax = axs[3]
+    for k, c in (("nn", fl.COLORS.get("stratified", "tab:blue")), ("pinn", fl.COLORS.get("annular", "tab:red"))):
+        f = SURR / f"{k}_history.npz"
+        if not f.exists():
+            continue
+        h = np.load(f)["history"]
+        ep = np.arange(1, h.shape[0] + 1)
+        ax.plot(ep, h[:, 0], color=c, lw=0.9, label=f"{k.upper()} train")
+        ax.plot(ep, h[:, 2], color=c, lw=0.9, ls="--", label=f"{k.upper()} test")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("epoch")
+    ax.set_ylabel("standardised MSE")
+    ax.legend(fontsize=6)
     for i, a in enumerate(axs):
-        fl.panel_label(a, f"({'abc'[i]})")
+        fl.panel_label(a, f"({'abcd'[i]})")
     fig.tight_layout()
     fl.save(fig, out, "surrogate_learning", png)
 

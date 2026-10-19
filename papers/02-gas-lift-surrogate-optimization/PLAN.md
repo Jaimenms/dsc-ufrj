@@ -547,6 +547,14 @@ Pedido do dono (21:30): o exemplo do artigo passa a ter **só a restrição do c
 de 20 fica na formulação e na varredura, e a região q_L máx > 20 da Fig. 6 fica como referência. Ótimo idêntico
 (`runs/paper02/optimize/` refeito só com q_gl).
 
+**4000 épocas (2026-10-19, 22:00, pedido do dono "mais épocas").** Varredura nas 4 tabelas (237 assentadas): a PINN é
+insensível ao tempo de treino (q̄_L 0,91–0,92 de 1000 a 8000 épocas), a NN sobreajusta a partir de ~1000 (q̄_L 0,91 → 0,83,
+máximo de líquido 0,87 → 0; mínimo da perda de teste às 674/848 épocas). Artigo com 4000 épocas nas duas redes **para
+mostrar a diferença** (a física como regularizador), painel (d) novo na Fig. 5 com perda de treino e teste por época.
+Números: PINN q̄_L 0,916 (NN 0,889), gases 0,999, máximo de líquido 0,71 vs 0,49, resíduos R1/R3 3,6×/2,6× menores;
+ótimo (1,75): (1,0, 228 bar), 308 k$/d; verificações a < 1,2 %; 1,5 kg/s → 190 bar com pico previsto 13 (os 3 ciclos
+rápidos já no treino); tabela extra com (0,75, 242).
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.
