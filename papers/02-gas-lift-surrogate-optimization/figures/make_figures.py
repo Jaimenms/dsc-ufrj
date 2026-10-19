@@ -19,7 +19,7 @@ import numpy as np  # noqa: E402
 
 import figlib as fl  # noqa: E402
 
-DATASET = fl.RUNS / "paper02" / "base2d" / "dataset.csv"
+DATASETS = (fl.RUNS / "paper02" / "base2d" / "dataset.csv", fl.RUNS / "paper02" / "base2d_hi" / "dataset.csv")  # 20–160 e 160–260 bar
 SURR = fl.RUNS / "paper02" / "surrogate"
 OUTPUT_LABELS = {
     "qL_top": r"$\bar q_L$ at the top",
@@ -38,9 +38,11 @@ CLASS_COLORS = {"stable": fl.COLORS.get("stable", "tab:green"), "cycling": fl.CO
 
 
 def _rows():
-    if not DATASET.exists():
-        return []
-    return list(csv.DictReader(open(DATASET, encoding="utf-8")))
+    rows = []
+    for p in DATASETS:
+        if p.exists():
+            rows += list(csv.DictReader(open(p, encoding="utf-8")))
+    return rows
 
 
 def _results():
@@ -136,8 +138,8 @@ def tab_dataset(out):
         align="lr",
         notes=(
             "Base well of Part~I ($P_{res} = \\SI{200}{\\bar}$, $J = \\SI{5}{\\cubic\\metre\\per\\day\\per\\bar}$, GOR 50) "
-            "with the gas-lift branch; inputs sampled by scrambled Sobol' sequences in rounds of 25 over $P_{gas} \\in$ "
-            "[20, 160] bar and $a \\in$ [0.1, 1]; each round starts from the final state of the base run at the point "
+            "with the gas-lift branch; inputs sampled by scrambled Sobol' sequences in rounds of 25 over $a \\in$ [0.1, 1] and "
+            "$P_{gas} \\in$ [20, 160] bar (first campaign) and [160, 260] bar (second campaign); each round starts from the final state of the base run at the point "
             "closest to it and continues along the shortest path with warm starts. Budget: 40 min of integration per run."
         ),
     )
