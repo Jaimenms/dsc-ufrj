@@ -520,6 +520,11 @@ irrestrito), q_gl máx = 1,0 ativo, pico de líquido 5,9, acima da fronteira; ao
 Compressor de 1,5 kg/s + separador de 20 (`runs/paper02/optimize_gl15/`): (1,0, 200 bar), 304 k$/d (−1 %), compressor ativo,
 separador não; ao longo da restrição −0,6 % a 0,9 e −3,5 % a 0,5. O §6 passou a apresentar a varredura de capacidades
 1,5 / 1,0 / 0,8 / 0,5 kg/s como uma descida pela lei da válvula.
+Decisão do dono (17:40): **o problema do artigo é o restringido** — compressor de 1,75 kg/s e separador de 20 kg/s
+(`runs/paper02/optimize/`; o irrestrito ficou em `runs/paper02/optimize_unconstrained/`): ótimo (1,0, 229 bar), 308 k$/d,
+compressor ativo, pico de líquido 5,7; ao longo da restrição −0,3 % a 0,9 e −2,4 % a 0,5. A análise sem restrições
+(planalto, sensibilidades a preços, canto da 1.ª campanha) saiu do texto; a estrela da Fig. 6 é este ótimo e a curva
+de 1,75 entrou nas de nível; a verificação a (1,0, 224) fica a 4 bar do ótimo sobre a restrição.
 
 ## Otimização (plano original, vários poços)
 

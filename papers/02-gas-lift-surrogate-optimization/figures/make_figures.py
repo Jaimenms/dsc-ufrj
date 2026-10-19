@@ -384,7 +384,7 @@ CONSTRAINED = (
     ("optimize_gl05", "0.5"),
     ("optimize_gl05_sep6", "0.5, sep. 6"),
 )
-GL_LEVELS = (0.5, 0.8, 1.0, 1.5)  # curvas de nível do pico de gás de lift previsto [kg/s]
+GL_LEVELS = (0.5, 0.8, 1.0, 1.5, 1.75)  # curvas de nível do pico de gás de lift previsto [kg/s]; 1,75 é o do exemplo
 QL_LEVELS = (6.0, 20.0)  # e do pico de líquido [kg/s]
 
 
@@ -421,7 +421,7 @@ def fob_map(out, png):
         mec="k",
         mew=0.5,
         zorder=5,
-        label="optimum",
+        label="optimum (compressor 1.75 kg/s, separator 20)",
     )
     # restrições: curvas de nível dos picos previstos de gás de lift e de líquido, e os ótimos restringidos
     if "q_gl_max" in mp:
