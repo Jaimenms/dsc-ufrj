@@ -268,3 +268,17 @@ def test_grid_decisions_snake_is_the_shortest_warm_start_path(tmp_path):
     assert master["n"] == 2 and master["rounds"][1]["well"] != master["rounds"][0]["well"]
     W = ds.sobol_wells(2, ranges, seed=3)
     assert np.allclose([master["rounds"][1]["well"][k] for k in ds.WELL_INPUTS], W[1])
+
+
+def test_fixed_well_sobol_in_two_dimensions():
+    ranges = dict(ds.DEFAULT_RANGES, P_res_bar=(200.0, 200.0), PI=(5.0, 5.0), GOR=(50.0, 50.0))
+    X = ds.sobol_design(25, ranges, seed=1)
+    assert X.shape == (25, 5)
+    assert np.all(X[:, 0] == 200.0) and np.all(X[:, 1] == 5.0) and np.all(X[:, 2] == 50.0)
+    assert len(set(np.round(X[:, 3], 6))) == 25 and X[:, 3].min() >= 20.0 and X[:, 4].max() <= 1.0
+    U = ds.scaled(X, ranges)
+    assert np.all(U[:, :3] == 0.0) and U[:, 3:].min() >= -1.0 and U[:, 3:].max() <= 1.0
+    x_base = {"P_res_bar": 200.0, "PI": 5.0, "GOR": 50.0, "P_gas_bar": 20.0, "choke_opening": 1.0}
+    chain, order = ds.make_chains(X, ranges, 1, seed=1, start="base", x_base=x_base)
+    ub = ds.scaled(np.array([[x_base[k] for k in ds.INPUTS]]), ranges)[0]
+    assert int(np.flatnonzero(order == 0)[0]) == int(np.argmin(np.linalg.norm(U - ub, axis=1)))

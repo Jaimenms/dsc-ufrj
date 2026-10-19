@@ -32,7 +32,7 @@ do estado final desse caso (`gl_P20.npz`; `--start random|centre` são as altern
 caminho mais curto com as entradas reescalonadas a [−1, 1] — exato até 10 pontos, 2-opt acima —, a sequência
 pedida pelo dono; rondas sucessivas continuam a sequência de Sobol; `--resequence` reordena uma ronda sem corridas; `--grid-decisions 6x6`: por ronda um estado do poço de Sobol em 3
 dimensões e a malha P_gas × abertura varrida em serpentina com P_gas monótono, o caminho de arranque quente mais
-curto numa malha), gravando `design.json`; `run` corre as cadeias em
+curto numa malha; `--fix-well`: o poço é o do caso base e só as duas decisões variam, Sobol em 2 dimensões), gravando `design.json`; `run` corre as cadeias em
 processos paralelos, o primeiro ponto de cada cadeia a quente do estado final do caso base (ou da partida bloqueada
 do gerador, nos conjuntos de teste) e os seguintes com arranque quente a partir do estado final do anterior
 (`state_to_case_ic`), cada corrida com a paragem adaptativa (P na

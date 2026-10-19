@@ -95,28 +95,34 @@ def parse_ranges(items):
 
 def scaled(X, ranges):
     """Entradas reescalonadas dimensão a dimensão para [−1, +1] (pedido do dono): é neste espaço que se medem as
-    distâncias do caminho mais curto, o centro da distribuição e os grupos."""
+    distâncias do caminho mais curto, o centro da distribuição e os grupos. Uma entrada fixa (faixa nula) vale 0."""
     lo = np.array([ranges[k][0] for k in INPUTS])
     hi = np.array([ranges[k][1] for k in INPUTS])
-    return 2.0 * (np.asarray(X, float) - lo) / (hi - lo) - 1.0
+    span = np.where(hi > lo, hi - lo, 1.0)
+    return np.where(hi > lo, 2.0 * (np.asarray(X, float) - lo) / span - 1.0, 0.0)
 
 
 def sobol_design(n, ranges, seed, skip=0):
     """`n` pontos de Sobol embaralhado nas faixas (matriz n × 5 na ordem de INPUTS), a partir do ponto `skip` da
-    sequência: rondas sucessivas da mesma semente continuam a mesma sequência e, juntas, são um só desenho."""
+    sequência: rondas sucessivas da mesma semente continuam a mesma sequência e, juntas, são um só desenho. As
+    entradas de faixa nula ficam fixas e não contam para a dimensão da sequência (pedido do dono: só as decisões
+    variam, o poço é o do caso base)."""
     import warnings
 
     from scipy.stats import qmc
 
-    gen = qmc.Sobol(d=len(INPUTS), scramble=True, seed=seed)
+    lo = np.array([ranges[k][0] for k in INPUTS])
+    hi = np.array([ranges[k][1] for k in INPUTS])
+    free = np.flatnonzero(hi > lo)
+    gen = qmc.Sobol(d=int(free.size), scramble=True, seed=seed)
     if skip:
         gen.fast_forward(int(skip))
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)  # n fora das potências de 2 é deliberado (rondas)
         u = gen.random(int(n))
-    lo = np.array([ranges[k][0] for k in INPUTS])
-    hi = np.array([ranges[k][1] for k in INPUTS])
-    return lo + u * (hi - lo)
+    X = np.tile(lo, (int(n), 1))
+    X[:, free] = lo[free] + u * (hi[free] - lo[free])
+    return X
 
 
 def path_length(D, path):
@@ -452,9 +458,11 @@ def resequence_round(d, master, chains=1):
 
 def cmd_design(a):
     out = Path(a.out)
-    base = base_point(a.base_run if a.start == "base" else "")
+    base = base_point(a.base_run if (a.start == "base" or a.fix_well) else "")
     if a.start == "base" and base["x"] is None:
         raise SystemExit("--start base precisa de --base-run (corrida do caso base do artigo 01)")
+    if a.fix_well:
+        a.range = list(a.range) + [f"{k}={base['x'][k]}:{base['x'][k]}" for k in WELL_INPUTS]
     if not a.flat:
         # omissão: raiz de rondas, cada ronda na sua pasta datada
         if is_rounds_root(out):
@@ -1176,6 +1184,11 @@ def main(argv=None):
     d.add_argument("--chains", type=int, default=1, help="cadeias por ronda (1 = uma sequência por ronda)")
     d.add_argument("--seed", type=int, default=1)
     d.add_argument("--range", action="append", default=[], help="nome=lo:hi (omissão: faixas do plano)")
+    d.add_argument(
+        "--fix-well",
+        action="store_true",
+        help="o poço é o do caso base (P_res, PI, RGO fixos nos valores da corrida base); só P_gas e a abertura variam (pedido do dono)",
+    )
     d.add_argument("--test", action="store_true", help="conjunto de teste: todos os pontos da partida bloqueada")
     d.add_argument("--tf-max", type=float, default=24000.0)
     d.add_argument("--dt-out", type=float, default=5.0)
