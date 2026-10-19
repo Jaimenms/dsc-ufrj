@@ -155,7 +155,7 @@ Table~\ref{tab:surrogate} and Fig.~\ref{fig:parity} compare the two networks on 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{surrogate_maps}
-\caption{The physics-informed surrogate on the plane of the decisions (background) and the simulated runs (dots): (a) mean liquid rate at the top; (b) span of the liquid rate, the signature of slugging; (c) mean gas-lift rate.}\label{fig:maps}
+\caption{The physics-informed surrogate on the plane of the decisions as labelled level curves, with the positions of the simulated runs (grey dots): (a) mean liquid rate at the top; (b) span of the liquid rate, the signature of slugging; (c) mean gas-lift rate.}\label{fig:maps}
 \end{figure}
 
 With few data the physics counts more. Table~\ref{tab:sparse} and Fig.~\ref{fig:learning} retrain both networks on 10, 20 and 40 runs drawn from the training set, three draws each, and test them on the same 45 runs. The physics-informed network has the lower error for the gas and lift-gas rates at every size --- about half the error of the data-only network with 10 and 20 runs --- and for the liquid rate from 20 runs on; with 40 runs it reaches the liquid error that the data-only network does not reach with 105. The hyperparameter grid confirms the picture: of 24 architectures, one data-only network and nine physics-informed networks reach a mean $R^2$ of 0.8 over the six requested outputs, and the best physics-informed networks are small (two layers of 8 or 16 units).

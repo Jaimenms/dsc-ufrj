@@ -209,13 +209,19 @@ def surrogate_maps(out, png):
         fl.save(fig, out, "surrogate_maps", png)
         return
     X, Y = d["X"], d["Y"]
-    for ax, j, lab in ((axs[0], 0, r"$\bar q_L$ at the top (kg s$^{-1}$)"), (axs[1], 3, r"span of $q_L$ (kg s$^{-1}$)"), (axs[2], 2, r"$\bar q_{gl}$ (kg s$^{-1}$)")):
-        Z = mp["Y"][:, :, j]
-        vmin, vmax = float(min(Z.min(), Y[:, j].min())), float(max(Z.max(), Y[:, j].max()))
-        cf = ax.contourf(mp["P"], mp["a"], Z, 20, cmap="viridis", vmin=vmin, vmax=vmax)
-        plt.colorbar(cf, ax=ax, label=lab)
-        ax.scatter(X[:, 1], X[:, 0], c=Y[:, j], cmap="viridis", s=10, edgecolor="k", lw=0.3, vmin=vmin, vmax=vmax)
+    # curvas de nível (pedido do dono), com os pontos simulados só como posições
+    specs = (
+        (axs[0], 0, r"$\bar q_L$ at the top (kg s$^{-1}$)", np.arange(3.0, 5.51, 0.25), "%.2f"),
+        (axs[1], 3, r"span of $q_L$ (kg s$^{-1}$)", np.array([1.0, 5.0, 10.0, 20.0, 30.0, 40.0]), "%.0f"),
+        (axs[2], 2, r"$\bar q_{gl}$ (kg s$^{-1}$)", np.arange(0.1, 1.21, 0.1), "%.1f"),
+    )
+    for ax, j, lab, levels, fmt in specs:
+        Z = np.maximum(mp["Y"][:, :, j], 0.0) if j == 3 else mp["Y"][:, :, j]
+        cs = ax.contour(mp["P"], mp["a"], Z, levels=levels, colors=fl.INK, linewidths=0.7)
+        ax.clabel(cs, fmt=fmt, fontsize=6, inline=True, inline_spacing=2)
+        ax.scatter(X[:, 1], X[:, 0], s=5, c="0.55", edgecolor="none", zorder=0)
         ax.set_xlabel("$P_{gas}$ (bar)")
+        ax.set_title(lab, fontsize=8)
     axs[0].set_ylabel("choke opening $a$")
     for i, a in enumerate(axs):
         fl.panel_label(a, f"({'abc'[i]})")
