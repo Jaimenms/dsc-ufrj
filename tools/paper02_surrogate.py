@@ -36,6 +36,7 @@ sys.path.insert(0, str(ROOT))
 
 INPUTS = ("choke_opening", "P_gas_bar")
 OUTPUTS = ("qL_top", "qG_top", "q_inj", "qL_span", "qG_span", "q_inj_span")  # as seis saídas pedidas
+SPAN_IDX = (3, 4, 5)  # os spans treinam-se em log(1 + span) (nunca negativos; a dinâmica das ordens de grandeza)
 AUX = ("P_bh", "P_inj", "P_an")  # médias auxiliares que a física liga às saídas
 UNITS = {
     "qL_top": "kg/s",
@@ -149,19 +150,38 @@ def physics_residuals(y, x, scale):
     return jnp.stack([r1, r2, r3, r4], axis=1) / jnp.asarray(scale)
 
 
-def train(X, Y, n_hidden=32, n_layers=2, lr=0.01, epochs=4000, seed=0, lam=0.0, Xc=None, test=None):
-    """Adam em lote completo num `lax.scan`; `lam` > 0 liga a física nos pontos de colocação `Xc` (PINN).
-    Devolve (modelo dict com pesos numpy e padronização, histórico (épocas, 3): perda de dados, de física, teste)."""
+def to_targets(Y, span_log=True):
+    """Alvos de treino: os spans em log(1 + span) quando `span_log`."""
+    T = np.array(Y, float)
+    if span_log:
+        for j in SPAN_IDX:
+            T[:, j] = np.log1p(np.maximum(T[:, j], 0.0))
+    return T
+
+
+def from_targets(T, span_log=True):
+    Y = np.array(T, float)
+    if span_log:
+        for j in SPAN_IDX:
+            Y[:, j] = np.expm1(Y[:, j])
+    return Y
+
+
+def train(X, Y, n_hidden=32, n_layers=2, lr=0.01, epochs=4000, seed=0, lam=0.0, Xc=None, test=None, span_log=True):
+    """Adam em lote completo num `lax.scan`; `lam` > 0 liga a física nos pontos de colocação `Xc` (PINN); `Y` em
+    unidades físicas (os spans passam a log(1 + span) com `span_log`). Devolve (modelo dict com pesos numpy e
+    padronização, histórico (épocas, 3): perda de dados, de física, teste)."""
     import jax
     import jax.numpy as jnp
 
-    X, Y = np.asarray(X, float), np.asarray(Y, float)
+    X, Y = np.asarray(X, float), to_targets(Y, span_log)
     xm, xs = X.mean(0), np.where(X.std(0) > 0, X.std(0), 1.0)
     ym, ys = Y.mean(0), np.where(Y.std(0) > 0, Y.std(0), 1.0)
     Xn, Yn = jnp.asarray((X - xm) / xs), jnp.asarray((Y - ym) / ys)
     Xt = Yt = None
     if test is not None:
-        Xt, Yt = jnp.asarray((np.asarray(test[0]) - xm) / xs), jnp.asarray((np.asarray(test[1]) - ym) / ys)
+        Xt = jnp.asarray((np.asarray(test[0]) - xm) / xs)
+        Yt = jnp.asarray((to_targets(test[1], span_log) - ym) / ys)
     scale = np.array([ys[0], ys[1], ys[8], ys[2]])  # escalas de R1..R4: as das grandezas que comparam
     Xc_phys = jnp.asarray(Xc if Xc is not None else X)
     Xcn = (Xc_phys - jnp.asarray(xm)) / jnp.asarray(xs)
@@ -214,6 +234,7 @@ def train(X, Y, n_hidden=32, n_layers=2, lr=0.01, epochs=4000, seed=0, lam=0.0, 
         lr=lr,
         epochs=epochs,
         seed=seed,
+        span_log=bool(span_log),
     )
     return model, np.asarray(hist)
 
@@ -224,7 +245,7 @@ def predict(model, X):
     for W, b in model["params"][:-1]:
         h = np.tanh(h @ W + b)
     W, b = model["params"][-1]
-    return (h @ W + b) * model["y_std"] + model["y_mean"]
+    return from_targets((h @ W + b) * model["y_std"] + model["y_mean"], model.get("span_log", False))
 
 
 def r2(y, yp):
@@ -259,11 +280,23 @@ def save_model(model, path, names):
         format="paper02-surrogate-mlp/1",
         inputs=list(INPUTS),
         outputs=list(names),
-        hyperparameters={k: model[k] for k in ("n_hidden", "n_layers", "lr", "epochs", "seed", "lam")},
+        hyperparameters={k: model[k] for k in ("n_hidden", "n_layers", "lr", "epochs", "seed", "lam", "span_log")},
         normalization={k: np.asarray(model[k]).tolist() for k in ("x_mean", "x_std", "y_mean", "y_std")},
         layers=[{"W": W.tolist(), "b": b.tolist()} for W, b in model["params"]],
     )
     Path(path).write_text(json.dumps(d) + "\n", encoding="utf-8")
+
+
+def load_model(path):
+    """Modelo gravado → dict de `predict` (é o que a otimização da parte II consome)."""
+    d = json.loads(Path(path).read_text(encoding="utf-8"))
+    if d.get("format") != "paper02-surrogate-mlp/1":
+        raise ValueError(f"formato desconhecido: {d.get('format')}")
+    m = {k: np.asarray(v, float) for k, v in d["normalization"].items()}
+    m.update(d["hyperparameters"])
+    m["params"] = [(np.asarray(l["W"], float), np.asarray(l["b"], float)) for l in d["layers"]]
+    m["outputs"] = tuple(d["outputs"])
+    return m
 
 
 # ------------------------------------------------------------------------------------------------ estudo
@@ -279,6 +312,10 @@ def main(argv=None):
     ap.add_argument("--n-colloc", type=int, default=200)
     ap.add_argument("--sparse", default="10,20,40", help="tamanhos de treino do estudo com poucos dados")
     ap.add_argument("--seeds", type=int, default=3)
+    ap.add_argument("--no-span-log", action="store_true", help="spans em unidades físicas em vez de log(1 + span)")
+    ap.add_argument(
+        "--grid", action="store_true", help="grelha de hiperparâmetros (camadas × neurónios × taxa), NN e PINN"
+    )
     a = ap.parse_args(argv)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -291,8 +328,51 @@ def main(argv=None):
         f"dados: {meta['n_used']} de {meta['n_rows']} pontos ({meta['reasons']}); treino {len(tr)}, teste {len(te)}",
         flush=True,
     )
-    results = dict(meta=meta, n_train=int(len(tr)), n_test=int(len(te)), outputs=list(names), full={}, sparse=[])
-    kw = dict(n_hidden=a.hidden, n_layers=a.layers, lr=a.lr, epochs=a.epochs)
+    span_log = not a.no_span_log
+    results = dict(
+        meta=meta,
+        n_train=int(len(tr)),
+        n_test=int(len(te)),
+        outputs=list(names),
+        span_log=span_log,
+        full={},
+        sparse=[],
+        grid=[],
+    )
+    kw = dict(n_hidden=a.hidden, n_layers=a.layers, lr=a.lr, epochs=a.epochs, span_log=span_log)
+    if a.grid:
+        # grelha (como no artigo II do composicional): 1–2 camadas, 8–64 neurónios, 3 taxas; R² das seis saídas no teste
+        for layers in (1, 2):
+            for hidden in (8, 16, 32, 64):
+                for lr in (0.03, 0.01, 0.003):
+                    row = dict(layers=layers, hidden=hidden, lr=lr)
+                    for label, lam in (("nn", 0.0), ("pinn", a.lam)):
+                        t0 = time.time()
+                        m, _ = train(
+                            X[tr],
+                            Y[tr],
+                            n_hidden=hidden,
+                            n_layers=layers,
+                            lr=lr,
+                            epochs=a.epochs,
+                            seed=0,
+                            lam=lam,
+                            Xc=Xc,
+                            span_log=span_log,
+                        )
+                        ev = evaluate(m, X[te], Y[te])
+                        row[label] = dict(
+                            r2=ev["r2"],
+                            r2_min6=float(min(ev["r2"][:6])),
+                            r2_mean6=float(np.mean(ev["r2"][:6])),
+                            wall=time.time() - t0,
+                        )
+                    results["grid"].append(row)
+                    print(
+                        f"grelha {layers}×{hidden} lr {lr}: R² mín/médio NN {row['nn']['r2_min6']:.3f}/{row['nn']['r2_mean6']:.3f}, "
+                        f"PINN {row['pinn']['r2_min6']:.3f}/{row['pinn']['r2_mean6']:.3f}",
+                        flush=True,
+                    )
     # ---- todos os dados de treino: NN e PINN
     for label, lam in (("nn", 0.0), ("pinn", a.lam)):
         t0 = time.time()

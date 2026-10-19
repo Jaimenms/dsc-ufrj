@@ -1,6 +1,8 @@
-%% 02-gas-lift-surrogate-optimization — esqueleto Elsevier CAS (cas-sc). Construção: `make` nesta pasta (ver ../README.md).
+%% 02-gas-lift-surrogate-optimization — Parte I (massa de dados e substitutos). Construção: `make` nesta pasta (ver ../README.md).
 %% Guia de autores da revista alvo: ver ../00-escolha-da-revista.md (citações autor–ano, resumo <= 250 palavras,
 %% 3–5 highlights <= 85 caracteres, 1–7 palavras-chave, SI, figuras vetoriais, declarações e CRediT no fim).
+%% Estado (2026-10-19): primeira parte escrita (modelo fenomenológico em resumo, massa de dados, NN e PINN, resultados,
+%% preparação da otimização operacional da Parte II); a Parte II (otimização com o melhor substituto) fica para depois.
 
 \documentclass[a4paper,fleqn]{cas-sc}
 %\documentclass[a4paper,fleqn,review]{cas-sc}   % revisão: espaçamento largo e números de linha
@@ -9,67 +11,176 @@
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{siunitx}
-\usepackage{lipsum}  % texto de preenchimento; remover quando houver conteúdo
+\usepackage{placeins}
 
 \graphicspath{{figures/generated/}{figures/static/}}
+
+\newcommand{\aG}{\alpha_G}
+\newcommand{\btheta}{\boldsymbol{\theta}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\by}{\mathbf{y}}
 
 \begin{document}
 \let\WriteBookmarks\relax
 \def\floatpagepagefraction{1}
 \def\textpagefraction{.001}
 
-\shorttitle{Gas-lift allocation over the life of a field under dynamic stability constraints, with a two-fluid-model surrogate}
-\shortauthors{A. Author et~al.}
+\shorttitle{Gas-lifted well under severe slugging: data from a two-fluid simulator and neural surrogates}
+\shortauthors{J.N.M. de Souza and A.L.H. Costa}
 
-\title[mode = title]{Gas-lift allocation over the life of a field under dynamic stability constraints, with a two-fluid-model surrogate}
+\title[mode = title]{Operating a gas-lifted well under severe slugging. Part I: time-averaged signatures from a two-fluid simulator and neural and physics-informed surrogates of the choke and gas-lift decisions}
 
-\author[1]{First Author}
+\author[1]{Jaime Neiva Miranda de Souza}
+
+\author[2]{Andr\'e Luiz Hemerly Costa}
 \cormark[1]
-\ead{corresponding.author@example.org}  % TODO
-\credit{Conceptualization, Methodology, Software, Writing -- original draft}
+\ead{andrehc@uerj.br}
 
 \affiliation[1]{organization={Miradouro Digital}}  % TODO: morada, cidade e país
+
+\affiliation[2]{organization={Instituto de Qu\'imica, Universidade do Estado do Rio de Janeiro},
+                addressline={Rua S\~ao Francisco Xavier 524},
+                city={Rio de Janeiro},
+                postcode={20550-900},
+                state={RJ},
+                country={Brazil}}
 
 \cortext[1]{Corresponding author.}
 
 \begin{abstract}
-% texto literal: a classe CAS não expande \lipsum aqui
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Curabitur pretium tincidunt lacus, nulla gravida orci a odio. Nullam varius, turpis et commodo pharetra, est eros bibendum elit, nec luctus magna felis sollicitudin mauris. Integer in mauris eu nibh euismod gravida. Duis ac tellus et risus vulputate vehicula. Donec lobortis risus a elit. Etiam tempor. Ut ullamcorper, ligula eu tempor congue, eros est euismod turpis, id tincidunt sapien risus a quam. Maecenas fermentum consequat mi. Donec fermentum. Pellentesque malesuada nulla a mi. Duis sapien sem, aliquet nec, commodo eget, consequat quis, neque.
+A gas-lifted satellite well with a flowline and a riser can produce in severe slugging, in a pressure cycle or in a steady state depending on two operating decisions, the opening of the topside choke and the pressure of the lift gas at the platform, and the time-averaged production of an unstable operating point is not what a steady-state model predicts for it. This paper, the first of two, builds the data and the surrogate models with which the second will optimise those two decisions. The well, flowline, riser and gas-lift branch are simulated with the four-equation two-fluid model of a companion study, with the flow pattern identified dynamically and the gas-lift line, annulus and check valve simulated with the same model and controlled only by the platform gas pressure. A sampling campaign over the two decisions, in rounds of Sobol' points run as warm-started chains along the shortest path from the base case, with an adaptive horizon that detects the established regime and captures three cycles, produced 156 runs in a day on a laptop; each run is reduced to time-averaged markers (mean, minimum, maximum and the two extreme frequencies) of pressure, void fraction and phase flow rates at eight characteristic points of the network. The map of the decisions shows a stability boundary that runs from \SI{80}{\bar} of lift gas with the choke nearly closed to \SI{125}{\bar} with it open, continuous injection modulated by the cycle below it, and a production gain of up to \SI{34}{\percent} above it. Two surrogates of the mean liquid, gas and lift-gas rates and of their spans were trained on the markers: a neural network and a physics-informed network whose physics are the time-averaged mass balances of the well, the gas-lift branch and the valve, exact for the averages and evaluated at collocation points without simulation. The physics raise the test coefficient of determination of the mean liquid rate from 0.71 to 0.89 and those of the gas and lift-gas rates to 0.997, halve the error with ten to forty training runs, and leave the spans, the signature of slugging, as the quantity that neither network predicts well. The surrogate and the stability map prepare the operational optimisation of Part~II.
 \end{abstract}
 
 \begin{highlights}
-\item Highlight 1 (max. 85 characters)
-\item Highlight 2
-\item Highlight 3
+\item Gas-lift branch simulated with the two-fluid model, controlled by the platform gas pressure
+\item Warm-started Sobol' campaign with adaptive horizon: 156 runs over choke and lift gas in a day
+\item Time-averaged markers at eight points replace trajectories as the training data
+\item Physics of the averages lifts the surrogate of the mean liquid rate from $R^2$ 0.71 to 0.89
+\item Stability boundary from 80 to 125 bar of lift gas; spans of the rates remain hard to predict
 \end{highlights}
 
 \begin{keywords}
-keyword1 \sep keyword2 \sep keyword3
+severe slugging \sep gas lift \sep two-fluid model \sep surrogate models \sep physics-informed neural networks \sep design of experiments
 \end{keywords}
 
 \maketitle
 
 \section{Introduction}\label{sec:intro}
-\lipsum[2]
-See \citet{souza2010} and \citep{taitel1986}.
 
-\section{Methods}\label{sec:methods}
-\lipsum[3]
+Continuous gas lift is the artificial-lift method of most deepwater satellite wells in Brazil, and its optimisation --- how much gas to inject in each well of a field that shares a compressor --- has a large literature built on steady-state performance curves \citep{souza2010}. A well with a flowline and a riser, however, does not always have a steady state to be optimised: with the choke open and little gas it produces in severe slugging \citep{schmidt1980,taitel1986,jansen1996}, and the time-averaged production, the liquid surges that reach the separator and the pressure swings at the wellhead are quantities of the cycle, not of the unstable steady state that a nodal model would return for the same point. The companion study \citep[hereafter Part~0]{souza2026a} developed a four-equation two-fluid model with dynamic flow-pattern identification that reproduces the cycle in a well--flowline--riser system of field dimensions, located the onset of slugging as the choke opens and showed, with a gas-lift branch added to the system, that injection at 100 to \SI{120}{\bar} regularises the cycle and from \SI{130}{\bar} suppresses it.
 
-\section{Results and discussion}\label{sec:results}
-Fig.~\ref{fig:example} is produced by \texttt{figures/make\_figures.py}. \lipsum[4]
+This paper is the first of two on the operation of that gas-lifted well. Its question is practical: given the two decisions an operator has, the opening of the topside choke and the pressure of the lift gas at the platform, what does the well deliver on average, with what surges and in which regime --- and can a model cheap enough for optimisation answer that over the whole plane of the two decisions? The dynamic simulation is too expensive to be called inside an optimiser (minutes per point), so the paper builds a surrogate, and it does so with a method that follows the companion work on compositional steady-state surrogates \citep{carvalho2026b}: a multilayer perceptron trained on simulated data, and the same network with a physics term \citep{raissi2019,karniadakis2021}. The novelty is on both sides of the surrogate. On the data side, the targets are not profiles but time-averaged signatures of a dynamic simulation, and producing them in affordable time required a campaign design of its own: an adaptive horizon that recognises the established regime, warm starts along a shortest path through the sampled points, and a storage that keeps only what the training needs. On the physics side, the governing equations cannot be imposed on a time average of a cycling system; what can, exactly, are the time-averaged mass balances of the well, of the gas-lift branch and of the valve, and the paper shows that this much physics is what the data alone cannot supply.
+
+Section~\ref{sec:model} summarises the phenomenological model and the gas-lift branch. Section~\ref{sec:data} describes the campaign, the horizon, the markers and the resulting map of the decisions. Section~\ref{sec:surrogates} presents the two surrogates and Section~\ref{sec:results} compares them. Section~\ref{sec:part2} states what Part~II takes from here: the surrogate, the stability map and the formulation of the operational optimisation.
+
+\section{The phenomenological model}\label{sec:model}
+
+The system is the well--flowline--riser of Part~0 with its gas-lift branch (Fig.~\ref{fig:system}): a vertical well of \SI{1500}{\metre} (\SI{127}{\milli\metre}) fed by a linear inflow performance relation, a flowline of \SI{2000}{\metre} (\SI{152.4}{\milli\metre}) whose last \SI{500}{\metre} descend at \SI{2}{\degree} to a low point, a bend of \SI{5}{\metre} radius, a riser of \SI{317.5}{\metre} and \SI{10}{\metre} of horizontal pipe to a choke that discharges into a separator at \SI{10}{\bar}. The gas-lift branch is a 4-in line that runs from the platform along the route of the production line to the wellhead, the casing--tubing annulus (9~5/8~in by 5~1/2~in) to a gas-lift valve \SI{30}{\metre} above the bottom of the well, and a check valve fed by a chamber at the base of the annulus. The base well has a reservoir pressure of \SI{200}{\bar}, a productivity index of \SI{5}{\cubic\metre\per\day\per\bar} and a gas--oil ratio of \SI{50}{\cubic\metre\per\cubic\metre}; the fluid is the light oil of \citet{carvalho2022} frozen as a polytropic pair.
+
+Every pipe, the gas pipes included, is described by the one-dimensional four-equation two-fluid model of Part~0: mass and momentum of each phase, closures by flow pattern (stratified, intermittent, bubbly, annular) selected dynamically on the local state through smooth logistic switches, a low-void rule, an objective virtual-mass term and an interfacial pressure in the slug unit that keep the model hyperbolic along the simulated trajectories. The staggered finite-volume discretisation with phase-wise donor cells and the conservative variable-step implicit integration of Part~0 are kept unchanged, with a compiled right-hand side and exact Jacobians; the base mesh has 15 cells in the well, 35 in the flowline--riser pipe, 19 in the gas-lift line and 10 in the annulus, 323 states in all. The gas-lift branch is controlled by one number, the gas pressure $P_{gas}$ at the platform end of the line: the injected rate is not prescribed but follows from $P_{gas}$, the static gas columns of the line and the annulus, the valve law $q = 0.0075\,C_V\sqrt{\rho_G\,\Delta P}$ ($C_V = 1.5$, $\Delta P$ in bar, regularised at the origin) and the pressure of the well at the injection point, so that it responds to whatever the well does; at \SI{20}{\bar} the valve never opens and the system is the base case of Part~0 with the branch inert. The reservoir gas is the gas of the well; the lift gas adds to it at the injection point.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\linewidth]{example}
-\caption{Example figure.}\label{fig:example}
+\includegraphics[width=\linewidth]{system}
+\caption{The well--flowline--riser system with the gas-lift branch (schematic, from Part~0): the gas-lift line follows the route of the production line, the annulus runs beside the well and the check valve injects \SI{30}{\metre} above the bottom. The two operating decisions are the choke opening $a$ and the platform gas pressure $P_{gas}$.}\label{fig:system}
 \end{figure}
 
+\section{Data: campaign, horizon and markers}\label{sec:data}
+
+\subsection{Sampling the two decisions}\label{sec:sampling}
+
+The inputs are the choke opening $a \in [0.1, 1]$ and the platform gas pressure $P_{gas} \in [20, 160]$~bar, with the well fixed at its base state. Points are drawn from a scrambled Sobol' sequence \citep{sobol1967,owen1998} in rounds of 25, so that the rounds together remain a single space-filling design, and each round is run as one chain: the first point is the one closest to the base case (choke open, \SI{20}{\bar}) and the run starts from the final state of the base run of Part~0 (\SI{8000}{\second} of severe slugging); every later point starts from the final state of the previous one, in the order of the shortest open path through the 25 points (nearest neighbour improved by 2-opt, on the inputs rescaled to $[-1, 1]$). The warm start spares the transient of a blocked start --- three to five cycles in Part~0 --- and keeps the steps between consecutive runs small; a large drop of $P_{gas}$ between neighbours is the one expensive transition, since the gas line and the annulus then drain towards the platform, and the shortest path avoids most of them. Each point is identified by a hash of its input tuple, and only what the training needs is stored: the markers below and the final state that seeds the next run.
+
+\subsection{Adaptive horizon with capture of cycles}\label{sec:horizon}
+
+Each run integrates in windows of \SI{3000}{\second} and monitors two signals, the pressure at the wellhead and the liquid rate through the choke. After a minimum time (\SI{4000}{\second} from a blocked start, \SI{1500}{\second} from a warm start) the regime is taken as established when both signals are permanent (amplitude below \SI{0.1}{\bar} and \SI{0.05}{\kilogram\per\second}) or when two consecutive windows have the same envelope, that is, the same amplitude, mean, minimum and maximum within \SI{10}{\percent} of the amplitude; the envelope criterion, rather than equality of periods, is what accepts the cycles whose blowouts alternate in size. The run then continues for three more cycles of the longest monitored period (\SI{600}{\second} for a steady state), which are the capture window of the markers, and stops; a run that never settles stops at \SI{24000}{\second} and is kept with the markers of its last \SI{4000}{\second} and a flag. A wall-clock budget of \SI{40}{\minute} per run bounds the few points where the two horizontal cells between the riser and the choke switch flow pattern at every step, the one open point of the closures that Part~0 reported; those runs are flagged and excluded from the training.
+
+\subsection{Markers at characteristic points}\label{sec:markers}
+
+A run is reduced to markers of its capture window at eight points of the network: the bottom of the well, the injection point, the wellhead, the low point of the flowline, the top of the riser, the two ends of the gas-lift line and the base of the annulus. At each point four signals are recorded --- pressure, void fraction, liquid and gas mass flow rates --- and each signal is summarised by its mean, minimum, maximum and two frequencies, the inverse of the longest and of the shortest interval between successive maxima of the smoothed signal: equal for a periodic cycle, different when blowouts alternate, zero for a permanent signal. The gas injected through the valve is recorded in the same way, and a class is assigned from the wellhead pressure and the choke liquid rate as in Part~0 (steady, pressure cycle or severe slugging when the peak liquid rate exceeds twice its mean). Trajectories are not kept: they would cost \SI{12}{\mega\byte} per run against \SI{10}{\kilo\byte} of markers, and the surrogate consumes only the markers.
+
+\subsection{The map of the decisions}\label{sec:map}
+
+Table~\ref{tab:dataset} summarises the campaign and Fig.~\ref{fig:dataset_map} shows it on the plane of the decisions. Of the 156 runs, 83 produce in severe slugging, 10 in a pressure cycle and 63 in a steady state; 88 settled on a repeated cycle, 60 on a steady state, 2 reached the time limit and 6 the budget. The stability boundary is a diagonal that runs from about \SI{80}{\bar} of lift gas with the choke at 0.1 to about \SI{125}{\bar} with it open: the more open the choke, the more gas is needed to suppress the cycle. The check valve opens between 86 and \SI{95}{\bar} almost independently of the choke, so that below \SI{90}{\bar} the data are the base well with the choke as the only decision; between the opening of the valve and the boundary the injection is continuous and modulated by the cycle, which shortens and regularises; above the boundary the well is steady and its production rises with the gas, to \SI{5.3}{\kilogram\per\second} at \SI{160}{\bar} with the choke open, \SI{34}{\percent} above the base case. The peak liquid rate through the choke reaches \SI{45}{\kilogram\per\second} in the slugging region with the choke open and falls below \SI{5}{\kilogram\per\second} in the steady region; the six runs that exhausted the budget sit on the boundary at high opening, where the riser receives the most gas.
+
+\begin{table}[htbp]
+\caption{The sampling campaign over the two decisions.}\label{tab:dataset}
+\footnotesize
+\input{tables/generated/tab_dataset}
+\input{tables/generated/tab_dataset_note}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{dataset_map}
+\caption{The 156 runs on the plane of the choke opening and the platform gas pressure: (a) class of the established regime, with the runs that exhausted the budget marked; (b) mean liquid rate through the choke; (c) peak liquid rate through the choke on a logarithmic scale.}\label{fig:dataset_map}
+\end{figure}
+
+\section{Surrogates}\label{sec:surrogates}
+
+\subsection{Outputs and network}\label{sec:network}
+
+The surrogate maps the two decisions to nine time-averaged quantities: the mean liquid and gas rates at the top of the riser, the mean gas-lift rate through the valve, the spans (maximum minus minimum over the capture window) of the same three rates, which are the signature of slugging, and three auxiliary mean pressures --- at the bottom of the well, at the injection point and at the base of the annulus --- that the physics of the next section needs. The spans are learnt as $\log(1 + \text{span})$, so that they are never negative and their orders of magnitude are resolved. The network is a multilayer perceptron \citep{hornik1989} with two hidden layers of 32 hyperbolic-tangent units and a linear output, inputs and outputs standardised with the training statistics, trained with Adam \citep{kingma2015} in full batch for 4000 epochs on the mean squared error of the standardised outputs, with the epochs unrolled in a compiled scan so that a network trains in about a second; 70\,\% of the 150 retained runs train it and 30\,\% test it. A grid of one or two layers, 8 to 64 units and three learning rates (24 networks of each kind, Section~\ref{sec:results}) checked that the architecture is not critical.
+
+\subsection{Physics of the averages}\label{sec:physics}
+
+A physics-informed network adds to the data loss the residual of the governing equations at collocation points that need not be simulated \citep{raissi2019}. Here the targets are time averages of a dynamic system, and the time average of a cycle does not satisfy the two-fluid equations, which are nonlinear; what it satisfies exactly are the balances that are linear in the averaged quantities. Over a periodic cycle or a steady state, the mass of each phase in the system does not change on average, so that
+\begin{align}
+R_1 &= \bar q_L - J_L\,(P_{res} - \bar P_{bh}), \label{eq:r1}\\
+R_2 &= \bar q_G - J_G\,(P_{res} - \bar P_{bh}) - \bar q_{gl}, \label{eq:r2}\\
+R_3 &= \bar P_{an} - \kappa\,P_{gas}, \label{eq:r3}\\
+R_4 &= \bar q_{gl} - 0.0075\,C_V\sqrt{\rho_G(\bar P)\,\langle \bar P_{an} - \bar P_{inj}\rangle_+}, \label{eq:r4}
+\end{align}
+where $R_1$ and $R_2$ are the liquid and gas balances between the linear inflow relation at the mean bottom-hole pressure and the mean rates at the top, $R_3$ is the static gas column from the platform to the base of the annulus ($\kappa = 1.138$ for this fluid and depth), and $R_4$ is the valve law written with the mean pressures, the only approximate relation of the four (the mean of a square root is not the square root of the mean, but the modulation of the valve pressure drop is within \SI{25}{\percent} and the error is a few per cent), with a smooth gate that closes the valve when the mean annulus pressure falls below the mean injection pressure. The loss is the data term plus $\lambda$ times the mean square of the four residuals, each scaled by the standard deviation of the quantity it compares, evaluated on 200 Latin-hypercube points \citep{mckay1979} of the plane of the decisions; $\lambda = 1$, and values from 0.1 to 100 give the same fit with residuals decreasing with $\lambda$. The residuals are closed-form functions of the network outputs, so that the gradient of the physics term is exact and cheap, unlike the detached-Jacobian construction that the compositional surrogates needed \citep{carvalho2026b}. The information in the physics is therefore not the dynamics but the accounting: the network is told that whatever enters the well on average leaves it on average, and that the lift gas is set by two mean pressures it also predicts.
+
+\section{Results}\label{sec:results}
+
+Table~\ref{tab:surrogate} and Fig.~\ref{fig:parity} compare the two networks on the 45 test runs. The data-only network predicts the mean gas rate at the top and the mean gas-lift rate with $R^2$ of 0.99 and the three mean pressures with 0.986 to 0.998, but the mean liquid rate only with 0.71: that rate varies little over the plane (3.5 to \SI{5.3}{\kilogram\per\second}) and its time average over three cycles of a surging signal is the noisiest of the targets. The physics-informed network raises it to 0.89, with the root-mean-square error falling from 0.29 to \SI{0.18}{\kilogram\per\second}, because the balance $R_1$ ties it to the mean bottom-hole pressure, which is smooth; the gas and lift-gas rates reach 0.997 and 0.998 and the scaled residuals fall by a factor of four to ten. The spans are the weak point of both networks: the liquid span, which carries the surge, reaches 0.73 and 0.87; the gas span and the span of the injected gas stay below 0.65, since the maximum of a surge in three cycles is a noisy marker by nature. Fig.~\ref{fig:maps} shows the physics-informed surrogate on the plane of the decisions: the mean liquid rate rises with the lift gas above the boundary and falls as the choke closes, the lift-gas rate is zero below \SI{90}{\bar} and rises with $P_{gas}$ as the valve law dictates, and the span of the liquid rate marks the slugging region with a narrow band of artefacts along the boundary, where the data change class within a few bar.
+
+\begin{table}[htbp]
+\caption{Test metrics of the two surrogates.}\label{tab:surrogate}
+\footnotesize
+\input{tables/generated/tab_surrogate}
+\input{tables/generated/tab_surrogate_note}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{surrogate_parity}
+\caption{Test parity of the six requested outputs for the data-only network (top row) and the physics-informed network (bottom row).}\label{fig:parity}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{surrogate_maps}
+\caption{The physics-informed surrogate on the plane of the decisions (background) and the simulated runs (dots): (a) mean liquid rate at the top; (b) span of the liquid rate, the signature of slugging; (c) mean gas-lift rate.}\label{fig:maps}
+\end{figure}
+
+With few data the physics counts more. Table~\ref{tab:sparse} and Fig.~\ref{fig:learning} retrain both networks on 10, 20 and 40 runs drawn from the training set, three draws each, and test them on the same 45 runs. The physics-informed network has the lower error for the gas and lift-gas rates at every size --- about half the error of the data-only network with 10 and 20 runs --- and for the liquid rate from 20 runs on; with 40 runs it reaches the liquid error that the data-only network does not reach with 105. The hyperparameter grid confirms the picture: of 24 architectures, one data-only network and nine physics-informed networks reach a mean $R^2$ of 0.8 over the six requested outputs, and the best physics-informed networks are small (two layers of 8 or 16 units).
+
+\begin{table}[htbp]
+\caption{Sparse-data study: test error of the mean rates against the number of training runs.}\label{tab:sparse}
+\footnotesize
+\input{tables/generated/tab_sparse}
+\input{tables/generated/tab_sparse_note}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{surrogate_learning}
+\caption{Learning curves of the two surrogates: test root-mean-square error of (a) the mean liquid rate, (b) the mean gas rate and (c) the mean gas-lift rate against the number of training runs (mean and standard deviation over three draws; the last point is the full training set).}\label{fig:learning}
+\end{figure}
+
+\section{Preparation of Part II: the operational optimisation}\label{sec:part2}
+
+Part~II takes three things from here. First, the physics-informed surrogate of Section~\ref{sec:physics}, which returns for any $(a, P_{gas})$ the mean liquid, gas and lift-gas rates and their spans in a fraction of a millisecond, with the balances of the well and of the branch built in; its weights are stored with the campaign and the optimiser will call it directly. Second, the stability map of Section~\ref{sec:map}, which bounds where the surrogate is trusted: the boundary between the cycling and the steady regions is where the markers change fastest and where the spans carry the surges, and the six budget-limited runs mark the strip where the simulator itself is least reliable. Third, the formulation. The operator maximises the revenue of the mean liquid rate minus the cost of compressing the lift gas from the separator pressure to $P_{gas}$ --- the mean gas-lift rate and $P_{gas}$ set the compressor power --- subject to the capacity of the separator for liquid surges, expressed on the span or the peak of the liquid rate, and to a bound on the pressure swing at the wellhead; both constraints have operational meaning and replace an arbitrary penalty on slugging. Over the plane of the two decisions this is a two-variable problem that can be solved by enumeration on the surrogate and verified by the simulator at the optimum, and the comparison with the optimum of a steady-state model at the same points will measure the bias of nodal optimisation on an unstable well. The one open point that Part~II inherits is the quality of the spans: the surrogate ranks the surges but does not predict them to better than a quarter, so the surge constraint will be formulated on the class and on the liquid span, the two markers the surrogate resolves, and confirmed by simulation where it is active.
+
 \section{Conclusions}\label{sec:conclusions}
-\lipsum[5]
+
+A dynamic two-fluid simulation of a gas-lifted well can feed a surrogate of its operating decisions once the campaign is designed for it: warm-started chains along the shortest path through the sampled points, an adaptive horizon that recognises the established regime and captures three cycles, and markers at characteristic points instead of trajectories. Over the plane of the choke opening and the platform gas pressure the well of Part~0 has a stability boundary from 80 to \SI{125}{\bar} of lift gas, continuous injection modulated by the cycle below it and up to \SI{34}{\percent} more production above it. Of the two surrogates trained on the 156 runs, the physics-informed one, whose physics are the time-averaged mass balances of the well and of the gas-lift branch, predicts the mean liquid rate with $R^2$ 0.89 against 0.71 for the data-only network and the gas and lift-gas rates with 0.997, needs half the data for the same error, and leaves the spans of the rates as the quantity to be handled by the class and the stability map rather than by regression. Part~II uses this surrogate to optimise the two decisions under separator and pressure-swing constraints.
 
 \section*{Acknowledgements}
-\lipsum[6][1-2]
+% TODO
 
 \section*{Declaration of competing interest}
 The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
@@ -78,15 +189,7 @@ The authors declare that they have no known competing financial interests or per
 During the preparation of this work the authors used AI-assisted tools for language editing and code assistance. After using these tools, the authors reviewed and edited the content as needed and take full responsibility for the content of the publication.
 
 \section*{Data availability}
-% O código não é público: descrever no artigo (ou num apêndice) tudo o que é preciso para reproduzir os resultados.
-The data supporting the findings of this study are available from the corresponding author upon reasonable request.
-
-%% Apêndices: \appendix e, a seguir, renumerar Eq. (A.1), Tabela A.1, Fig. A.1:
-%\appendix
-%\setcounter{equation}{0}\renewcommand{\theequation}{\Alph{section}.\arabic{equation}}
-%\setcounter{table}{0}\renewcommand{\thetable}{\Alph{section}.\arabic{table}}
-%\setcounter{figure}{0}\renewcommand{\thefigure}{\Alph{section}.\arabic{figure}}
-%\section{Appendix title}\label{app:a}
+The simulator used in this study is not publicly available; the campaign design (sampling, horizon, markers) and the surrogates are described in full so that they can be reproduced with an independent implementation, and the table of markers and the trained networks are available from the corresponding author upon reasonable request.
 
 \printcredits
 
