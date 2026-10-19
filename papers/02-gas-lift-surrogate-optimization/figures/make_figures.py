@@ -376,6 +376,16 @@ def system(out, png):
 
 
 OPT = fl.RUNS / "paper02" / "optimize"
+# ótimos com restrições (pedido do dono): pasta → rótulo (capacidade do compressor em kg/s; "sep." = separador)
+CONSTRAINED = (
+    ("optimize_gl15", "1.5"),
+    ("optimize_gl1", "1.0"),
+    ("optimize_constrained", "0.8"),
+    ("optimize_gl05", "0.5"),
+    ("optimize_gl05_sep6", "0.5, sep. 6"),
+)
+GL_LEVELS = (0.5, 0.8, 1.0, 1.5)  # curvas de nível do pico de gás de lift previsto [kg/s]
+QL_LEVELS = (6.0, 20.0)  # e do pico de líquido [kg/s]
 
 
 def fob_map(out, png):
@@ -400,7 +410,8 @@ def fob_map(out, png):
         cls = np.array([r["class"] for r in rows])
         for c, col in CLASS_COLORS.items():
             m = cls == c
-            axs[0].scatter(P[m], A[m], c=col, s=7, edgecolor="none", label=c, zorder=2)
+            if m.any():  # uma classe sem pontos não entra na legenda
+                axs[0].scatter(P[m], A[m], c=col, s=7, edgecolor="none", label=c, zorder=2)
     axs[0].plot(
         [res["P_gas_bar"]],
         [res["a"]],
@@ -412,6 +423,50 @@ def fob_map(out, png):
         zorder=5,
         label="optimum",
     )
+    # restrições: curvas de nível dos picos previstos de gás de lift e de líquido, e os ótimos restringidos
+    if "q_gl_max" in mp:
+        cg = axs[0].contour(
+            mp["P"],
+            mp["a"],
+            mp["q_gl_max"],
+            levels=GL_LEVELS,
+            colors=fl.COLORS.get("annular", "tab:red"),
+            linewidths=0.8,
+            linestyles="--",
+        )
+        axs[0].clabel(cg, fmt=lambda v: f"$q_{{gl}}$ {v:g}", fontsize=5.5, inline=True)
+    if "qL_max" in mp:
+        cq = axs[0].contour(
+            mp["P"],
+            mp["a"],
+            mp["qL_max"],
+            levels=QL_LEVELS,
+            colors=fl.COLORS.get("stratified", "tab:blue"),
+            linewidths=0.8,
+            linestyles=":",
+        )
+        axs[0].clabel(cq, fmt=lambda v: f"$q_L$ {v:g}", fontsize=5.5, inline=True)
+    first = True
+    for folder, label in CONSTRAINED:
+        f = fl.RUNS / "paper02" / folder / "results.json"
+        if not f.exists():
+            continue
+        rc = json.load(open(f))
+        axs[0].plot(
+            [rc["P_gas_bar"]],
+            [rc["a"]],
+            marker="s",
+            ms=5,
+            color="w",
+            mec="k",
+            mew=0.8,
+            zorder=6,
+            label="constrained optima (compressor, kg/s)" if first else None,
+        )
+        axs[0].annotate(
+            label, (rc["P_gas_bar"], rc["a"]), xytext=(3, -8), textcoords="offset points", fontsize=5.5, zorder=6
+        )
+        first = False
     axs[0].set_xlabel("$P_{gas}$ (bar)")
     axs[0].set_ylabel("choke opening $a$")
     # (o título do painel iria colidir com a legenda; a unidade das curvas está na legenda da figura)
