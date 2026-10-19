@@ -423,7 +423,17 @@ def fob_map(out, png):
         zorder=5,
         label="optimum (example)",
     )
-    # restrições: curvas de nível dos picos previstos de gás de lift e de líquido, e os ótimos restringidos
+    # restrições: região inadmissível pintada (pedido do dono) — pico de gás de lift acima da capacidade do
+    # compressor, pico de líquido acima da do separador —, as curvas de nível dos dois limites e os ótimos
+    from matplotlib.patches import Patch
+
+    c_gl, c_ql = fl.COLORS.get("annular", "tab:red"), fl.COLORS.get("stratified", "tab:blue")
+    if "q_gl_max" in mp:
+        over = (mp["q_gl_max"] > GL_LEVELS[0]).astype(float)
+        axs[0].contourf(mp["P"], mp["a"], over, levels=[0.5, 1.5], colors=[c_gl], alpha=0.12, zorder=0)
+    if "qL_max" in mp:
+        over = (mp["qL_max"] > QL_LEVELS[0]).astype(float)
+        axs[0].contourf(mp["P"], mp["a"], over, levels=[0.5, 1.5], colors=[c_ql], alpha=0.12, zorder=0)
     if "q_gl_max" in mp:
         cg = axs[0].contour(
             mp["P"],
@@ -469,8 +479,16 @@ def fob_map(out, png):
         first = False
     axs[0].set_xlabel("$P_{gas}$ (bar)")
     axs[0].set_ylabel("choke opening $a$")
+    handles, labels = axs[0].get_legend_handles_labels()
+    handles += [
+        Patch(facecolor=c_gl, alpha=0.25, label=f"peak $q_{{gl}}$ > {GL_LEVELS[0]:g} kg/s"),
+        Patch(facecolor=c_ql, alpha=0.25, label=f"peak $q_L$ > {QL_LEVELS[0]:g} kg/s"),
+    ]
+    labels += [h.get_label() for h in handles[-2:]]
     # (o título do painel iria colidir com a legenda; a unidade das curvas está na legenda da figura)
     axs[0].legend(
+        handles,
+        labels,
         fontsize=6,
         loc="lower left",
         bbox_to_anchor=(0.0, 1.0),
