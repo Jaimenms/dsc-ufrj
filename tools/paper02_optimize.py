@@ -101,10 +101,14 @@ def optimise(model, n_grid=201, max_gl=np.inf, max_oil=np.inf, **prices):
     k = int(np.argmax(fob_f))
     a0, p0 = float(A.ravel()[k]), float(P.ravel()[k])
 
+    n_calls = [0]
+
     def f(x):
+        n_calls[0] += 1
         return -float(objective(model, np.array([x[0]]), np.array([x[1]]), **prices)["fob"][0]) / 1e5
 
     def g(x):
+        n_calls[0] += 1
         Y = sg.predict(model, np.array([[x[0], x[1]]]))
         gl, oil = constraints_values(Y)
         return np.array(
@@ -158,6 +162,7 @@ def optimise(model, n_grid=201, max_gl=np.inf, max_oil=np.inf, **prices):
             q_gl_max=gl_max.reshape(A.shape),
         ),
         grid_best=dict(a=a0, P_gas_bar=p0, fob=float(res["fob"].ravel()[k])),
+        n_eval=dict(grid=int(A.size), refine=int(n_calls[0])),
     )
 
 
@@ -179,6 +184,7 @@ def operating_curve(model, n_p=121, n_a=201, max_gl=np.inf, max_oil=np.inf, **pr
     keys = ("a", "fob", "revenue", "cost", "power_kw", "qL", "q_gl", "qL_max", "q_gl_max")
     out = {k: np.full(n_p, np.nan) for k in keys}
     ok = feasible.any(axis=0)
+    n_calls = [0]
     for j in range(n_p):
         if not ok[j]:
             continue
@@ -186,9 +192,11 @@ def operating_curve(model, n_p=121, n_a=201, max_gl=np.inf, max_oil=np.inf, **pr
         a_b, p = float(As[i]), float(Ps[j])
 
         def f(x):
+            n_calls[0] += 1
             return -float(objective(model, np.array([x]), np.array([p]), **prices)["fob"][0])
 
         def feas(x):
+            n_calls[0] += 1
             gl, oil = constraints_values(sg.predict(model, np.array([[x, p]])))
             return bool(gl[0] <= max_gl and oil[0] <= max_oil)
 
@@ -207,7 +215,26 @@ def operating_curve(model, n_p=121, n_a=201, max_gl=np.inf, max_oil=np.inf, **pr
         )
         out["qL"][j], out["q_gl"][j] = float(best["Y"][0, sg.IDX["qL_top"]]), float(best["Y"][0, sg.IDX["q_inj"]])
         out["qL_max"][j], out["q_gl_max"][j] = float(oil_b[0]), float(gl_b[0])
+    out["n_eval"] = np.array([A.size, n_calls[0] + 2 * int(ok.sum())])  # grelha; refinamento + avaliação final
     return dict(P_gas_bar=Ps, feasible=ok, **out)
+
+
+def timing(model, n_grid=201, n_single=50, **prices):
+    """Custo de avaliar o substituto (secção do custo computacional do artigo): segundos de uma avaliação num ponto
+    (mediana de n_single chamadas depois do aquecimento) e de uma grelha n_grid por n_grid num só lote."""
+    a_lo, a_hi = sg.RANGES["choke_opening"]
+    p_lo, p_hi = sg.RANGES["P_gas_bar"]
+    objective(model, np.array([0.5]), np.array([100.0]), **prices)  # aquecimento
+    ts = []
+    for _ in range(n_single):
+        t = time.perf_counter()
+        objective(model, np.array([0.5]), np.array([100.0]), **prices)
+        ts.append(time.perf_counter() - t)
+    A, P = np.meshgrid(np.linspace(a_lo, a_hi, n_grid), np.linspace(p_lo, p_hi, n_grid), indexing="ij")
+    t = time.perf_counter()
+    objective(model, A, P, **prices)
+    t_grid = time.perf_counter() - t
+    return dict(single_s=float(np.median(ts)), grid_s=float(t_grid), n_grid=int(A.size))
 
 
 def main(argv=None):
@@ -239,10 +266,23 @@ def main(argv=None):
     prices = dict(oil_price=a.oil_price, energy_price=a.energy_price, p_suction=a.p_suction, gas_price=a.gas_price)
     t0 = time.time()
     r = optimise(model, n_grid=a.n_grid, max_gl=a.max_gl, max_oil=a.max_oil, **prices)
+    t_opt = time.time() - t0
     grid = r.pop("grid")
     np.savez(out / "fob_map.npz", **grid)
+    t1 = time.time()
     curve = operating_curve(model, max_gl=a.max_gl, max_oil=a.max_oil, **prices)
+    t_curve = time.time() - t1
     np.savez(out / "operating_curve.npz", **curve)
+    tm = timing(model, n_grid=a.n_grid, **prices)
+    r["timing"] = dict(
+        optimise_s=t_opt,
+        curve_s=t_curve,
+        n_eval_optimise=r.pop("n_eval"),
+        n_eval_curve=dict(grid=int(curve["n_eval"][0]), refine=int(curve["n_eval"][1])),
+        single_eval_s=tm["single_s"],
+        grid_eval_s=tm["grid_s"],
+        grid_eval_n=tm["n_grid"],
+    )
     ok = curve["feasible"]
     r["curve"] = dict(
         P_gas_bar=curve["P_gas_bar"].tolist(),
@@ -274,6 +314,12 @@ def main(argv=None):
         Pc, ac, fc = curve["P_gas_bar"], curve["a"], curve["fob"]
         print(
             f"  curva operacional (abertura ótima a P_gas fixa): admissível de {Pc[ok].min():.0f} a {Pc[ok].max():.0f} bar"
+        )
+        tm = r["timing"]
+        print(
+            f"  custo: otimização {tm['optimise_s']:.2f} s ({tm['n_eval_optimise']['grid']} + {tm['n_eval_optimise']['refine']} avaliações), "
+            f"curva {tm['curve_s']:.2f} s ({tm['n_eval_curve']['grid']} + {tm['n_eval_curve']['refine']}); uma avaliação "
+            f"{tm['single_eval_s']*1e3:.2f} ms, grelha de {tm['grid_eval_n']} em {tm['grid_eval_s']:.3f} s"
         )
         for p_show in (20.0, 60.0, 100.0, 140.0, 180.0, 220.0, 260.0):
             j = int(np.argmin(np.abs(Pc - p_show)))

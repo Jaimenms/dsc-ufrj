@@ -383,6 +383,74 @@ def tab_sparse(out):
     )
 
 
+def tab_cost(out):
+    """Custo computacional (pedido do dono, 2026-10-20): compilação e integração por corrida (média, mínimo, máximo,
+    por desfecho), treino e avaliação do substituto, e o que a mesma otimização custaria no simulador."""
+    rows = _rows()
+    res = _results()
+    opt = json.load(open(OPT / "results.json")) if (OPT / "results.json").exists() else None
+    if not rows or res is None or opt is None or "timing" not in opt:
+        return
+    groups = (
+        ("all runs", rows),
+        ("settled steady", [r for r in rows if r["reason"] == "steady"]),
+        ("settled on a cycle", [r for r in rows if r["reason"] == "cycle"]),
+        ("budget exhausted", [r for r in rows if r["reason"] == "failure"]),
+    )
+    comp = np.array([float(r["compile"]) for r in rows])
+    body = [
+        [
+            "compilation of the model (first run of a process; s)",
+            (
+                f"{comp[comp > 1.0].mean():.0f}, {comp[comp > 1.0].min():.0f}--{comp[comp > 1.0].max():.0f}"
+                if (comp > 1.0).any()
+                else "--"
+            ),
+        ]
+    ]
+    for lab, sel in groups:
+        cpu = np.array([float(r["cpu"]) for r in sel]) / 60.0
+        body.append(
+            [f"integration per run, {lab} ({len(sel)}; min)", f"{cpu.mean():.1f}, {cpu.min():.2g}--{cpu.max():.0f}"]
+        )
+    cpu_all = np.array([float(r["cpu"]) for r in rows])
+    settled = [r for r in rows if r["reason"] != "failure"]
+    t_run = np.mean([float(r["cpu"]) for r in settled])  # s: corrida assentada média
+    body.append(["campaign, all runs (h)", f"{cpu_all.sum() / 3600:.0f}"])
+    tm = opt["timing"]
+    body.append(
+        [
+            "surrogate training, 4000 epochs (s)",
+            f"{res['full']['pinn']['wall']:.1f} (PINN), {res['full']['nn']['wall']:.1f} (NN)",
+        ]
+    )
+    body.append(["one evaluation of the surrogate (ms)", f"{tm['single_eval_s'] * 1e3:.2f}"])
+    body.append([f"grid of {tm['grid_eval_n']} evaluations in one batch (s)", f"{tm['grid_eval_s']:.3f}"])
+    n_opt = tm["n_eval_optimise"]["grid"] + tm["n_eval_optimise"]["refine"]
+    n_cv = tm["n_eval_curve"]["grid"] + tm["n_eval_curve"]["refine"]
+    body.append([f"optimisation, {n_opt} evaluations (s)", f"{tm['optimise_s']:.2f}"])
+    body.append([f"operating curve, {n_cv} evaluations (s)", f"{tm['curve_s']:.2f}"])
+    n_tot = n_opt + n_cv
+    body.append(
+        ["same evaluations on the simulator, mean settled run (years)", f"{n_tot * t_run / 3600 / 24 / 365:.1f}"]
+    )
+    body.append(["derivative-free optimisation on the simulator, 200 runs (h)", f"{200 * t_run / 3600:.0f}"])
+    fl.tex_table(
+        out,
+        "tab_cost",
+        ["", ""],
+        body,
+        align="lr",
+        notes=(
+            "Wall-clock times of the campaigns (JAX backend; each run in one process of the campaign, which XLA spreads over "
+            "three to four cores of a laptop) and of the surrogate on the same machine, so that the hours are process-hours; "
+            "the model compiles once per process and the compiled code serves the later runs of that process. The simulator equivalents multiply the number of evaluations of the optimisation "
+            "and of the operating curve of Section~\\ref{sec:optresults} by the mean integration time of a settled run; "
+            "the last row is a direct derivative-free search on the simulator for one set of prices and capacities."
+        ),
+    )
+
+
 def system(out, png):
     """Esquema do sistema com o ramo de gas lift: a figura da geometria do artigo 01 (o mesmo guião, lê os casos)."""
     import importlib.util
@@ -569,7 +637,7 @@ FIGURES = {
     "surrogate_maps": surrogate_maps,
     "surrogate_maps_nn": surrogate_maps_nn,
 }
-TABLES = {"tab_dataset": tab_dataset, "tab_surrogate": tab_surrogate, "tab_sparse": tab_sparse}
+TABLES = {"tab_dataset": tab_dataset, "tab_surrogate": tab_surrogate, "tab_sparse": tab_sparse, "tab_cost": tab_cost}
 
 if __name__ == "__main__":
     fl.run_cli(FIGURES, __doc__.splitlines()[0], tables=TABLES)

@@ -609,6 +609,16 @@ vira**: o poço estrangulado injeta menos (a válvula vê a pressão do tubing m
 choke (0,76 a 228 bar, 0,30 a 230, 0,13 a 260) com −17 % a 230 bar e mais de metade a 260. Fig. 6 passou a três painéis
 (mapa, a*(P_gas), FOB/receita/custo ao longo da curva); os três `\tbd` saíram do texto (§6, resumo, conclusões).
 
+**§6.3 Custo computacional (pedido do dono, 2026-10-20, 08:30).** Tabela nova `tab_cost` (guião das figuras, lê as 4
+tabelas, o results.json do substituto e o do otimizador): compilação 16–27 s na primeira corrida de cada processo (21 em
+média, 10 das 320 corridas; o código compilado serve as seguintes), integração por corrida 14,1 min em média (3 s a 60
+min; 2,1 min estacionárias, 16,4 ciclos, 60 esgotadas), campanha 75 horas-processo (29 delas nos esgotados; ≈ 3 dias com
+5 processos); PINN treina em 1,3 s (4000 épocas, scan compilado), avalia em 20 µs por ponto e 9 ms a grelha de 40 401;
+otimização 40 468 avaliações em 0,13 s, curva operacional 25 717 em 0,03 s; o mesmo no simulador à corrida média assentada
+(9,6 min) daria 1,2 anos-processo; uma busca sem derivadas com 200 corridas custaria 32 h por conjunto de preços/
+capacidades. O otimizador passou a gravar `timing` (contagens de avaliações, tempos) no results.json. Resumo e conclusões
+com uma frase; nota da tabela explica que as horas são de processo (XLA usa 3–4 núcleos por corrida; Apple M5 Pro).
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.
