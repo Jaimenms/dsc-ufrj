@@ -565,6 +565,16 @@ bar), 308 k$/d — a abertura é indiferente (−0,1 % de 0,8 a 0,9, −0,6 % a 
 a 2–3 %, (0,94, 205) a 1,5 %, (0,95, 260) a 1,2 %. Pendente: ligar a lei da válvula aos extremos (P_an máx, P_inj mín),
 que exige duas saídas novas. Fig. 4 alternativa com a NN gerada (`surrogate_maps_nn`, fora do texto).
 
+**062b e o fim das retomas (2026-10-19, 23:30–00:30).** Dono viu o 261ddc com o ciclo estabelecido aos 3100 s e só
+avaliado aos 6000: 062b integra em troços de `window_min` e decide em cada fim de troço sobre a série acumulada
+(janelas inteiras recortadas + troços de N períodos), e o orçamento esgotado na captura mantém a razão aceite
+(`capture_partial`). Rotina verde (444). Mas as 14 retomas (do próprio estado final, +60 min, critério novo) falharam
+todas sem fechar um troço de 600 s: 14–18 mil passos por hora com a máquina saturada (10 corridas em 15 núcleos),
+0,03–0,04 s/passo — o (0,95, 163) continuado 10 min fez 145 s de simulação em 4623 passos. **Decisão: os 14
+esgotados ficam declarados, sem mais retomas**; `--resume-exhausted` fora do relançamento (as instâncias `--only
+--resume-exhausted` repetiam a retoma de hora a hora: duplicados no run.log; mortas às 00:30, pendentes relançados
+sem a bandeira). Pendentes: 2 + 34 + 35 às 00:30.
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.
