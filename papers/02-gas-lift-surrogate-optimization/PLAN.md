@@ -575,6 +575,29 @@ esgotados ficam declarados, sem mais retomas**; `--resume-exhausted` fora do rel
 --resume-exhausted` repetiam a retoma de hora a hora: duplicados no run.log; mortas às 00:30, pendentes relançados
 sem a bandeira). Pendentes: 2 + 34 + 35 às 00:30.
 
+**Campanhas quase completas e nova ronda de treino/otimização/artigo (2026-10-20, 07:30, pedido do dono).** Dos 80
+pendentes relançados sem `--resume-exhausted` (5 instâncias, 60 min), faltam 8 (2 + 6) a correr; `markers` refeitos:
+320 corridas (200 + 73 + 44 + 3), 291 assentadas (176 estacionárias, 99 golfadas, 13 ciclos de pressão, 3 rápidos;
+paragens 152 ciclo / 137 estacionário / 2 tf), 29 esgotadas (12 refeitas que esgotaram outra vez + 17 à primeira com
+60 min; 4 na fronteira da 1.ª campanha a 110–120 bar, 25 no canto 163–256 bar com abertura 0,61–0,99; 0,03–0,26
+s/passo, até 112 mil passos na hora). **Achado:** 38 corridas assentadas do canto são o ciclo rápido do topo do riser
+(períodos 60–90 s, picos de líquido 7–16 kg/s com médias 5–6) e a regra de classe lê-as como estacionárias porque a
+cabeça oscila 0,06–0,3 bar (< 1 % da média); só 3 com 1,5–2,2 bar levam a classe `fast`. O artigo passou a dizê-lo
+(§3.4, §5, §6) em vez de "o pico fica abaixo de 6 na região estacionária". Retreino (4000 épocas, grelha, 4 tabelas,
+física dos máximos; 204/87): PINN q̄_L **0,957** (NN 0,903), gases 0,997–0,998, máximo de líquido 0,82 (NN 0,68),
+span de líquido 0,76 (NN falha), spans de gás 0,11/0,08 (os dois); resíduos R1 0,20 → 0,056, R7 1,54 → 0,28; perda
+de teste mínima às ≈ 400 épocas (NN, sobe 2,4×) e ≈ 700 (PINN, 1,5×); varredura 1000/4000/8000: NN q̄_L 0,94 → 0,90
+→ 0,86 e máximo 0,79 → 0,68 → < 0, PINN 0,95–0,96 e 0,84 → 0,80. Poucos dados: PINN metade do erro nos gases com 10,
+⅔ com 20, ¾ com 40; q̄_L melhor a partir de 20. Grelha: nenhuma NN e só 2 PINN chegam a 0,8 de R² médio nas seis
+saídas (os spans do ciclo rápido limitam; 12/15 de 24 entre 0,7 e 0,81) — frase do artigo reescrita. **Ótimo (1,75):
+(0,82, 227 bar), 310 k$/d**, pico de líquido previsto 11,6 (o ciclo rápido já está nos dados: a PINN prevê ≈ 10 em toda
+a faixa, enquanto o simulador dá 5,8 a 16 conforme o ponto); plano a 0,15 % entre 0,8 e 1; verificações: (1,0, 224)
+médias a 2 %, (0,94, 205) a 2 %, (0,95, 260) a 1,5 %, picos só em ordem de grandeza. Varredura: 1,5 → (1,0, 197) 305
+k$/d; 1,0 → 140 bar 282; 0,8 → (0,85, 121) 260 (choke aberto já na fronteira, −4 %); 0,5 → (0,69, 102) 232 com pico 20
+(o separador de 20 exclui o choke aberto); 0,5 + sep. 6 → (0,59, 99) 230. Preços: óleo 20 $/bbl não move; energia 2
+$/kWh → 184 bar; 5 $/kWh → (0,64, 87 bar) sem gas lift. Nota da Tab. 1 corrigida (arranque do caso base, orçamento 40
+→ 60 min). Texto, figuras e PDF refeitos; os 8 pontos em curso entram na próxima ronda.
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.

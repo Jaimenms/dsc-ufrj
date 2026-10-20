@@ -167,8 +167,9 @@ def tab_dataset(out):
             "Base well of Part~I ($P_{res} = \\SI{200}{\\bar}$, $J = \\SI{5}{\\cubic\\metre\\per\\day\\per\\bar}$, GOR 50) "
             "with the gas-lift branch; inputs sampled by scrambled Sobol' sequences in rounds of 25 over $a \\in$ [0.1, 1] and "
             "$P_{gas} \\in$ [20, 160] bar (first campaign), [160, 260] bar (second) and [160, 260] bar with $a \\in$ [0.5, 1] (third, "
-            "densifying the region of the optimum); each round starts from the final state of the base run at the point "
-            "closest to it and continues along the shortest path with warm starts. Budget: 40 min of integration per run."
+            "densifying the region of the optimum); every run starts from the final state of the base run (the first rounds "
+            "chained warm starts along the shortest path, Section~\\ref{sec:sampling}). Budget: 40 min of integration per "
+            "run in the first rounds, 60 min afterwards and for the re-runs of the points that had exhausted it."
         ),
     )
 
