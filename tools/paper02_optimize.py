@@ -10,8 +10,9 @@ energia. Restrições (pedido do dono): a vazão máxima de gás de lift previst
 compressor (`--max-gl`, kg/s) e a vazão máxima de líquido no topo não excede a capacidade do separador
 (`--max-oil`, kg/s); ambas usam os máximos que o substituto prevê (não as médias). Resolve por enumeração numa
 grelha fina do plano (a, P_gas) sobre o substituto (só nós admissíveis), refina com SLSQP com as restrições e
-reporta o ótimo com as saídas previstas e as restrições ativas. Semente da segunda parte do artigo; a curva de
-Pareto para várias pressões de sucção/porto fica para depois.
+reporta o ótimo com as saídas previstas e as restrições ativas. Traça também a curva operacional (pedido do dono,
+2026-10-20, no lugar da frente de Pareto): para cada pressão do gás fixa, a abertura do choke que maximiza a FOB
+entre as admissíveis, com a FOB, a receita e o custo ao longo dela (`operating_curve.npz` e `curve` no results.json).
 
     uv run python tools/paper02_optimize.py [--model runs/paper02/surrogate/pinn.json] [--oil-price 70]
         [--energy-price 0.10] [--p-suction 5] [--out runs/paper02/optimize]
@@ -160,6 +161,55 @@ def optimise(model, n_grid=201, max_gl=np.inf, max_oil=np.inf, **prices):
     )
 
 
+def operating_curve(model, n_p=121, n_a=201, max_gl=np.inf, max_oil=np.inf, **prices):
+    """Curva operacional: para cada pressão do gás na plataforma fixa (n_p valores na faixa), a abertura do choke que
+    maximiza a FOB entre as admissíveis (q_gl máx ≤ max_gl, q_L máx ≤ max_oil), por enumeração em n_a aberturas e
+    refinamento unidimensional entre os nós vizinhos; devolve as pressões, a abertura ótima, a FOB, a receita, o custo,
+    a potência e as saídas previstas ao longo da curva (NaN e `feasible` falso onde nenhuma abertura é admissível)."""
+    from scipy.optimize import minimize_scalar
+
+    a_lo, a_hi = sg.RANGES["choke_opening"]
+    p_lo, p_hi = sg.RANGES["P_gas_bar"]
+    Ps, As = np.linspace(p_lo, p_hi, n_p), np.linspace(a_lo, a_hi, n_a)
+    A, P = np.meshgrid(As, Ps, indexing="ij")
+    res = objective(model, A, P, **prices)
+    gl_max, oil_max = constraints_values(res["Y"])
+    feasible = ((gl_max <= max_gl) & (oil_max <= max_oil)).reshape(A.shape)
+    fob = np.where(feasible, np.asarray(res["fob"]).reshape(A.shape), -np.inf)
+    keys = ("a", "fob", "revenue", "cost", "power_kw", "qL", "q_gl", "qL_max", "q_gl_max")
+    out = {k: np.full(n_p, np.nan) for k in keys}
+    ok = feasible.any(axis=0)
+    for j in range(n_p):
+        if not ok[j]:
+            continue
+        i = int(np.argmax(fob[:, j]))
+        a_b, p = float(As[i]), float(Ps[j])
+
+        def f(x):
+            return -float(objective(model, np.array([x]), np.array([p]), **prices)["fob"][0])
+
+        def feas(x):
+            gl, oil = constraints_values(sg.predict(model, np.array([[x, p]])))
+            return bool(gl[0] <= max_gl and oil[0] <= max_oil)
+
+        lo, hi = float(As[max(i - 1, 0)]), float(As[min(i + 1, n_a - 1)])
+        if hi > lo:
+            r = minimize_scalar(f, bounds=(lo, hi), method="bounded", options=dict(xatol=1e-4))
+            if r.success and feas(float(r.x)) and r.fun <= f(a_b):
+                a_b = float(r.x)
+        best = objective(model, np.array([a_b]), np.array([p]), **prices)
+        gl_b, oil_b = constraints_values(best["Y"])
+        out["a"][j], out["fob"][j] = a_b, float(best["fob"][0])
+        out["revenue"][j], out["cost"][j], out["power_kw"][j] = (
+            float(best["revenue"][0]),
+            float(best["cost"][0]),
+            float(best["power_kw"][0]),
+        )
+        out["qL"][j], out["q_gl"][j] = float(best["Y"][0, sg.IDX["qL_top"]]), float(best["Y"][0, sg.IDX["q_inj"]])
+        out["qL_max"][j], out["q_gl_max"][j] = float(oil_b[0]), float(gl_b[0])
+    return dict(P_gas_bar=Ps, feasible=ok, **out)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--model", default=str(ROOT / "runs" / "paper02" / "surrogate" / "pinn.json"))
@@ -191,6 +241,15 @@ def main(argv=None):
     r = optimise(model, n_grid=a.n_grid, max_gl=a.max_gl, max_oil=a.max_oil, **prices)
     grid = r.pop("grid")
     np.savez(out / "fob_map.npz", **grid)
+    curve = operating_curve(model, max_gl=a.max_gl, max_oil=a.max_oil, **prices)
+    np.savez(out / "operating_curve.npz", **curve)
+    ok = curve["feasible"]
+    r["curve"] = dict(
+        P_gas_bar=curve["P_gas_bar"].tolist(),
+        a=[None if not np.isfinite(v) else float(v) for v in curve["a"]],
+        fob=[None if not np.isfinite(v) else float(v) for v in curve["fob"]],
+        P_feasible=[float(curve["P_gas_bar"][ok].min()), float(curve["P_gas_bar"][ok].max())] if ok.any() else None,
+    )
     r.update(prices=prices, model=str(a.model), wall=time.time() - t0, n_grid=a.n_grid)
     (out / "results.json").write_text(json.dumps(r, indent=1) + "\n", encoding="utf-8")
     o = r["outputs"]
@@ -211,6 +270,18 @@ def main(argv=None):
     print(
         f"  grelha {a.n_grid}×{a.n_grid}: melhor nó ({r['grid_best']['a']:.3f}, {r['grid_best']['P_gas_bar']:.1f}) FOB {r['grid_best']['fob']:,.0f}; {r['wall']:.1f} s"
     )
+    if ok.any():
+        Pc, ac, fc = curve["P_gas_bar"], curve["a"], curve["fob"]
+        print(
+            f"  curva operacional (abertura ótima a P_gas fixa): admissível de {Pc[ok].min():.0f} a {Pc[ok].max():.0f} bar"
+        )
+        for p_show in (20.0, 60.0, 100.0, 140.0, 180.0, 220.0, 260.0):
+            j = int(np.argmin(np.abs(Pc - p_show)))
+            if ok[j]:
+                print(
+                    f"    P_gas {Pc[j]:5.0f} bar: a* {ac[j]:.2f}, FOB {fc[j]:,.0f} $/d, q_L {curve['qL'][j]:.2f}, "
+                    f"pico q_L {curve['qL_max'][j]:.1f}, q_gl {curve['q_gl'][j]:.2f} kg/s"
+                )
     print(out / "results.json")
 
 

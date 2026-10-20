@@ -66,3 +66,18 @@ def test_optimise_prices_and_constraints():
     oil = opt.optimise(model, n_grid=41, oil_price=70.0, energy_price=0.01, p_suction=5.0, max_oil=18.0)
     assert "max_oil" in oil["constraints"]["active"] and oil["outputs"]["qL_max"] <= 18.0 + 1e-6
     assert oil["constraints"]["n_feasible"] < oil["constraints"]["n_grid"]
+
+
+def test_operating_curve_matches_the_optimum_and_marks_infeasible_pressures():
+    """Curva operacional (pedido do dono, 2026-10-20): a P_gas fixa, a abertura ótima entre as admissíveis; o máximo
+    da curva é o ótimo global com as mesmas restrições e as pressões sem abertura admissível ficam marcadas."""
+    model = _linear_model()
+    kw = dict(oil_price=70.0, energy_price=0.01, p_suction=5.0)
+    cv = opt.operating_curve(model, n_p=71, n_a=41, max_gl=1.0, **kw)
+    ok = cv["feasible"]
+    assert ok.any() and (~ok).any() and np.all(np.isnan(cv["a"][~ok]))
+    assert np.all((cv["a"][ok] >= 0.1 - 1e-9) & (cv["a"][ok] <= 1.0 + 1e-9))
+    assert np.all(cv["q_gl_max"][ok] <= 1.0 + 1e-6)
+    best = opt.optimise(model, n_grid=41, max_gl=1.0, **kw)
+    assert best["fob"] * 0.99 <= np.nanmax(cv["fob"]) <= best["fob"] * (1 + 1e-6)
+    assert np.allclose(cv["a"][ok], 1.0, atol=1e-6)  # q_L sobe com a abertura: a curva fica no choke aberto

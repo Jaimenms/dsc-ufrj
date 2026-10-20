@@ -598,6 +598,17 @@ k$/d; 1,0 → 140 bar 282; 0,8 → (0,85, 121) 260 (choke aberto já na fronteir
 $/kWh → 184 bar; 5 $/kWh → (0,64, 87 bar) sem gas lift. Nota da Tab. 1 corrigida (arranque do caso base, orçamento 40
 → 60 min). Texto, figuras e PDF refeitos; os 8 pontos em curso entram na próxima ronda.
 
+**Campanhas interrompidas pelo dono (2026-10-20, 07:45)** com 2 + 5 pontos por fazer (c8e9f8 e 990b0b a meio, pastas
+vazias); STOP nas duas raízes, instâncias mortas, relatório periódico apagado. **Curva operacional no lugar do Pareto
+(pedido do dono, 08:00):** `operating_curve` em `tools/paper02_optimize.py` — a cada P_gas fixa (121 valores), a abertura
+que maximiza a FOB entre as admissíveis (201 aberturas + refinamento limitado), gravada em `operating_curve.npz` e
+`curve` no results.json; teste novo. Resultado (compressor 1,75): abaixo da válvula a curva passa pela golfada (a* 0,4–0,66,
+212–221 k$/d); na abertura da válvula o choke fecha a 0,6 para fugir ao ciclo; de 110 bar em diante choke aberto e a FOB
+sobe pela lei da válvula (229 → 262 → 290 → 310 k$/d a 100/120/160/226 bar); **acima do limite do compressor a curva
+vira**: o poço estrangulado injeta menos (a válvula vê a pressão do tubing mais alta), e a restrição cumpre-se fechando o
+choke (0,76 a 228 bar, 0,30 a 230, 0,13 a 260) com −17 % a 230 bar e mais de metade a 260. Fig. 6 passou a três painéis
+(mapa, a*(P_gas), FOB/receita/custo ao longo da curva); os três `\tbd` saíram do texto (§6, resumo, conclusões).
+
 ## Otimização (plano original, vários poços)
 
 - N poços (4–8, a decidir) em fases diferentes da vida; decisões por poço: P_gas e abertura do choke.

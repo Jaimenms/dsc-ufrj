@@ -418,7 +418,7 @@ def fob_map(out, png):
     res = json.load(open(OPT / "results.json")) if (OPT / "results.json").exists() else None
     mp = np.load(OPT / "fob_map.npz") if (OPT / "fob_map.npz").exists() else None
     rows = _rows()
-    fig, axs = plt.subplots(1, 2, figsize=(fl.DOUBLE, 0.42 * fl.DOUBLE))
+    fig, axs = plt.subplots(1, 3, figsize=(fl.DOUBLE, 0.4 * fl.DOUBLE), gridspec_kw=dict(width_ratios=[1.6, 1.0, 1.0]))
     if res is None or mp is None:
         for a in axs:
             fl.placeholder(a, "optimisation results not found (runs/paper02/optimize)")
@@ -509,35 +509,54 @@ def fob_map(out, png):
         Patch(facecolor=c_ql, alpha=0.25, label=f"peak $q_L$ > {QL_LEVELS[0]:g} kg/s"),
     ]
     labels += [h.get_label() for h in handles[-2:]]
-    # (o título do painel iria colidir com a legenda; a unidade das curvas está na legenda da figura)
-    axs[0].legend(
+    # legenda única no topo da figura (os painéis não têm título: a legenda da figura diz o que são)
+    fig.legend(
         handles,
         labels,
         fontsize=6,
-        loc="lower left",
-        bbox_to_anchor=(0.0, 1.0),
-        ncol=4,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.0),
+        ncol=7,
         frameon=False,
         handletextpad=0.3,
         columnspacing=0.8,
     )
-    # receita e custo ao longo de P_gas com o choke na abertura ótima
-    i = int(np.argmin(np.abs(mp["a"][:, 0] - res["a"])))
-    Pline = mp["P"][i, :]
-    axs[1].plot(Pline, mp["revenue"][i, :] / 1e3, color=fl.INK, lw=1.0, label="oil revenue")
-    axs[1].plot(
-        Pline, mp["cost"][i, :] / 1e3, color=fl.COLORS.get("annular", "tab:red"), lw=1.0, label="compression cost"
-    )
-    axs[1].plot(
-        Pline, mp["fob"][i, :] / 1e3, color=fl.COLORS.get("stratified", "tab:blue"), lw=1.2, ls="--", label="objective"
-    )
-    axs[1].set_xlabel("$P_{gas}$ (bar)")
-    axs[1].set_ylabel(r"$10^3$ \$/d")
-    axs[1].set_title(f"along $a$ = {res['a']:.2f}", fontsize=8)
-    axs[1].legend(fontsize=6.5)
+    # curva operacional (pedido do dono, 2026-10-20): a P_gas fixa, a abertura que maximiza a FOB entre as
+    # admissíveis (tools/paper02_optimize.py, operating_curve.npz); a faixa de pressões sem abertura admissível fica
+    # pintada, e a estrela é o ótimo do exemplo
+    cv = np.load(OPT / "operating_curve.npz") if (OPT / "operating_curve.npz").exists() else None
+    c_opt = fl.COLORS.get("annular", "tab:red")
+    if cv is None:
+        for ax in axs[1:]:
+            fl.placeholder(ax, "operating curve not found (runs/paper02/optimize)")
+    else:
+        ok = cv["feasible"].astype(bool)
+        Pc = cv["P_gas_bar"]
+        for ax in axs[1:]:
+            if (~ok).any():
+                ax.axvspan(Pc[~ok].min(), Pc[~ok].max(), color=c_gl, alpha=0.12, lw=0)
+        axs[1].plot(Pc[ok], cv["a"][ok], color=fl.INK, lw=1.2)
+        axs[1].plot([res["P_gas_bar"]], [res["a"]], marker="*", ms=9, color=c_opt, mec="k", mew=0.5, zorder=5)
+        axs[1].set_ylim(0.0, 1.05)
+        axs[1].set_ylabel("optimal choke opening $a^*$")
+        axs[2].plot(Pc[ok], cv["revenue"][ok] / 1e3, color=fl.INK, lw=1.0, label="oil revenue")
+        axs[2].plot(Pc[ok], cv["cost"][ok] / 1e3, color=c_opt, lw=1.0, label="compression cost")
+        axs[2].plot(
+            Pc[ok],
+            cv["fob"][ok] / 1e3,
+            color=fl.COLORS.get("stratified", "tab:blue"),
+            lw=1.2,
+            ls="--",
+            label="objective",
+        )
+        axs[2].plot([res["P_gas_bar"]], [res["fob"] / 1e3], marker="*", ms=9, color=c_opt, mec="k", mew=0.5, zorder=5)
+        axs[2].set_ylabel(r"$10^3$ \$/d")
+        axs[2].legend(fontsize=6.5, loc="center")
+    for ax in axs[1:]:
+        ax.set_xlabel("$P_{gas}$ (bar)")
     for k, ax in enumerate(axs):
-        fl.panel_label(ax, f"({'ab'[k]})")
-    fig.tight_layout()
+        fl.panel_label(ax, f"({'abc'[k]})")
+    fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.94))
     fl.save(fig, out, "fob_map", png)
 
 
