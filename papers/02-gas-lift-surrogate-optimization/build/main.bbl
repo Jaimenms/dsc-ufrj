@@ -1,0 +1,138 @@
+\begin{thebibliography}{14}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\href}[2]{#2}
+\providecommand{\path}[1]{#1}
+\providecommand{\DOIprefix}{doi:}
+\providecommand{\ArXivprefix}{arXiv:}
+\providecommand{\URLprefix}{URL: }
+\providecommand{\Pubmedprefix}{pmid:}
+\providecommand{\doi}[1]{\href{http://dx.doi.org/#1}{\path{#1}}}
+\providecommand{\Pubmed}[1]{\href{pmid:#1}{\path{#1}}}
+\providecommand{\bibinfo}[2]{#2}
+\ifx\xfnm\relax \def\xfnm[#1]{\unskip,\space#1}\fi
+%Type = Phdthesis
+\bibitem[{Carvalho(2022)}]{carvalho2022}
+\bibinfo{author}{Carvalho, G.A.d.}, \bibinfo{year}{2022}.
+\newblock \bibinfo{title}{Modelagem e simula{\c c}{\~a}o composicional do
+  escoamento multif{\'a}sico em tubula{\c c}{\~o}es com gera{\c c}{\~a}o de
+  modelos substitutos}.
+\newblock \bibinfo{type}{Disserta{\c c}{\~a}o de mestrado}. Universidade do
+  Estado do Rio de Janeiro, Instituto de Qu{\'i}mica. \bibinfo{address}{Rio de
+  Janeiro}.
+%Type = Unpublished
+\bibitem[{Carvalho et~al.(2026)Carvalho, Costa, Nunes and
+  Souza}]{carvalho2026b}
+\bibinfo{author}{Carvalho, G.A.d.}, \bibinfo{author}{Costa, A.L.H.},
+  \bibinfo{author}{Nunes, G.C.}, \bibinfo{author}{Souza, J.N.M.d.},
+  \bibinfo{year}{2026}.
+\newblock \bibinfo{title}{Steady-state compositional gas--liquid flow in
+  production pipelines. {P}art {II}: neural and physics-informed surrogates
+  with the axial position as a feature}.
+\newblock \bibinfo{note}{Companion paper, submitted to Geoenergy Science and
+  Engineering}.
+%Type = Article
+\bibitem[{Hornik et~al.(1989)Hornik, Stinchcombe and White}]{hornik1989}
+\bibinfo{author}{Hornik, K.}, \bibinfo{author}{Stinchcombe, M.},
+  \bibinfo{author}{White, H.}, \bibinfo{year}{1989}.
+\newblock \bibinfo{title}{Multilayer feedforward networks are universal
+  approximators}.
+\newblock \bibinfo{journal}{Neural Netw.} \bibinfo{volume}{2},
+  \bibinfo{pages}{359--366}.
+\newblock \DOIprefix\doi{10.1016/0893-6080(89)90020-8}.
+%Type = Article
+\bibitem[{Jansen et~al.(1996)Jansen, Shoham and Taitel}]{jansen1996}
+\bibinfo{author}{Jansen, F.E.}, \bibinfo{author}{Shoham, O.},
+  \bibinfo{author}{Taitel, Y.}, \bibinfo{year}{1996}.
+\newblock \bibinfo{title}{The elimination of severe slugging---experiments and
+  modeling}.
+\newblock \bibinfo{journal}{Int. J. Multiph. Flow} \bibinfo{volume}{22},
+  \bibinfo{pages}{1055--1072}.
+\newblock \DOIprefix\doi{10.1016/0301-9322(96)00027-4}.
+%Type = Article
+\bibitem[{Karniadakis et~al.(2021)Karniadakis, Kevrekidis, Lu, Perdikaris, Wang
+  and Yang}]{karniadakis2021}
+\bibinfo{author}{Karniadakis, G.E.}, \bibinfo{author}{Kevrekidis, I.G.},
+  \bibinfo{author}{Lu, L.}, \bibinfo{author}{Perdikaris, P.},
+  \bibinfo{author}{Wang, S.}, \bibinfo{author}{Yang, L.}, \bibinfo{year}{2021}.
+\newblock \bibinfo{title}{Physics-informed machine learning}.
+\newblock \bibinfo{journal}{Nat. Rev. Phys.} \bibinfo{volume}{3},
+  \bibinfo{pages}{422--440}.
+\newblock \DOIprefix\doi{10.1038/s42254-021-00314-5}.
+%Type = Inproceedings
+\bibitem[{Kingma and Ba(2015)}]{kingma2015}
+\bibinfo{author}{Kingma, D.P.}, \bibinfo{author}{Ba, J.}, \bibinfo{year}{2015}.
+\newblock \bibinfo{title}{Adam: A method for stochastic optimization}, in:
+  \bibinfo{booktitle}{3rd International Conference on Learning Representations
+  (ICLR)}, \bibinfo{address}{San Diego, CA}.
+\newblock \bibinfo{note}{ArXiv:1412.6980}.
+%Type = Article
+\bibitem[{McKay et~al.(1979)McKay, Beckman and Conover}]{mckay1979}
+\bibinfo{author}{McKay, M.D.}, \bibinfo{author}{Beckman, R.J.},
+  \bibinfo{author}{Conover, W.J.}, \bibinfo{year}{1979}.
+\newblock \bibinfo{title}{A comparison of three methods for selecting values of
+  input variables in the analysis of output from a computer code}.
+\newblock \bibinfo{journal}{Technometrics} \bibinfo{volume}{21},
+  \bibinfo{pages}{239--245}.
+\newblock \DOIprefix\doi{10.1080/00401706.1979.10489755}.
+%Type = Article
+\bibitem[{Owen(1998)}]{owen1998}
+\bibinfo{author}{Owen, A.B.}, \bibinfo{year}{1998}.
+\newblock \bibinfo{title}{Scrambling {S}obol' and {N}iederreiter--{X}ing
+  points}.
+\newblock \bibinfo{journal}{J. Complexity} \bibinfo{volume}{14},
+  \bibinfo{pages}{466--489}.
+\newblock \DOIprefix\doi{10.1006/jcom.1998.0487}.
+%Type = Article
+\bibitem[{Raissi et~al.(2019)Raissi, Perdikaris and Karniadakis}]{raissi2019}
+\bibinfo{author}{Raissi, M.}, \bibinfo{author}{Perdikaris, P.},
+  \bibinfo{author}{Karniadakis, G.E.}, \bibinfo{year}{2019}.
+\newblock \bibinfo{title}{Physics-informed neural networks: A deep learning
+  framework for solving forward and inverse problems involving nonlinear
+  partial differential equations}.
+\newblock \bibinfo{journal}{J. Comput. Phys.} \bibinfo{volume}{378},
+  \bibinfo{pages}{686--707}.
+\newblock \DOIprefix\doi{10.1016/j.jcp.2018.10.045}.
+%Type = Article
+\bibitem[{Schmidt et~al.(1980)Schmidt, Brill and Beggs}]{schmidt1980}
+\bibinfo{author}{Schmidt, Z.}, \bibinfo{author}{Brill, J.P.},
+  \bibinfo{author}{Beggs, H.D.}, \bibinfo{year}{1980}.
+\newblock \bibinfo{title}{Experimental study of severe slugging in a
+  two-phase-flow pipeline--riser pipe system}.
+\newblock \bibinfo{journal}{Soc. Pet. Eng. J.} \bibinfo{volume}{20},
+  \bibinfo{pages}{407--414}.
+\newblock \DOIprefix\doi{10.2118/8306-PA}.
+%Type = Article
+\bibitem[{Sobol'(1967)}]{sobol1967}
+\bibinfo{author}{Sobol', I.M.}, \bibinfo{year}{1967}.
+\newblock \bibinfo{title}{On the distribution of points in a cube and the
+  approximate evaluation of integrals}.
+\newblock \bibinfo{journal}{USSR Comput. Math. Math. Phys.}
+  \bibinfo{volume}{7}, \bibinfo{pages}{86--112}.
+\newblock \DOIprefix\doi{10.1016/0041-5553(67)90144-9}.
+%Type = Phdthesis
+\bibitem[{Souza(2010)}]{souza2010}
+\bibinfo{author}{Souza, J.N.M.}, \bibinfo{year}{2010}.
+\newblock \bibinfo{title}{Modelagem e simula{\c{c}}{\~a}o de escoamento
+  multif{\'a}sico em dutos de produ{\c{c}}{\~a}o de {\'o}leo e g{\'a}s
+  natural}.
+\newblock \bibinfo{type}{{D.Sc.} thesis}. Escola de Qu{\'\i}mica, Universidade
+  Federal do Rio de Janeiro. \bibinfo{address}{Rio de Janeiro, Brazil}.
+\newblock \bibinfo{note}{In Portuguese}.
+%Type = Unpublished
+\bibitem[{Souza and Costa(2026)}]{souza2026a}
+\bibinfo{author}{Souza, J.N.M.d.}, \bibinfo{author}{Costa, A.L.H.},
+  \bibinfo{year}{2026}.
+\newblock \bibinfo{title}{Severe slugging with a four-equation two-fluid model
+  and dynamic flow-pattern identification: well-posedness, discretisation, time
+  integration and choke stability maps}.
+\newblock \bibinfo{note}{Companion paper (Part I of this study), submitted}.
+%Type = Article
+\bibitem[{Taitel(1986)}]{taitel1986}
+\bibinfo{author}{Taitel, Y.}, \bibinfo{year}{1986}.
+\newblock \bibinfo{title}{Stability of severe slugging}.
+\newblock \bibinfo{journal}{Int. J. Multiph. Flow} \bibinfo{volume}{12},
+  \bibinfo{pages}{203--217}.
+\newblock \DOIprefix\doi{10.1016/0301-9322(86)90026-1}.
+
+\end{thebibliography}
